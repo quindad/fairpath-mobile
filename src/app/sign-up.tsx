@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { supabase } from '../lib/supabase';
@@ -47,10 +47,16 @@ export default function SignUpScreen() {
     setErrorMessage('');
 
     try {
+      const emailRedirectTo =
+        Platform.OS === 'web'
+          ? window.location.origin + '/auth/callback'
+          : 'fairpathmobile://auth/callback';
+
       const { data, error } = await supabase.auth.signUp({
         email: cleanEmail,
         password,
         options: {
+          emailRedirectTo,
           data: {
             first_name: cleanFirstName,
             last_name: cleanLastName,
@@ -65,7 +71,7 @@ export default function SignUpScreen() {
       }
 
       if (data.session) {
-        router.replace('/check-email?email=' + encodeURIComponent(cleanEmail));
+        router.replace('/auth/callback');
         return;
       }
 
