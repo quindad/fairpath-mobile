@@ -2,8 +2,10 @@ import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { FairPathLogo } from '@/components/FairPathLogo';
+import { FairPathColors } from '@/constants/theme';
 
-const LIME='#A8F32C', BLACK='#090A09', CARD='#121412', MUTED='#9AA09A';
+const LIME=FairPathColors.lime, BLACK=FairPathColors.black, CARD=FairPathColors.card, MUTED=FairPathColors.muted;
 
 const items=[
  {title:'Find work',body:'Jobs matched to your goals and preferences.',route:'/find-jobs'},
@@ -16,7 +18,7 @@ export default function AppHome(){
  return <View style={s.screen}><StatusBar style="light"/><SafeAreaView style={s.safe}>
   <View pointerEvents="none" style={s.glow}/>
   <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-   <View style={s.top}><View><Text style={s.brand}><Text style={s.white}>Fair</Text>Path</Text><Text style={s.tag}>A FAIRPATH FORWARD.</Text></View><Pressable onPress={()=>router.push('/me')} style={s.avatar}><Text style={s.avatarText}>FP</Text></Pressable></View>
+   <View style={s.top}><FairPathLogo width={132}/><Pressable onPress={()=>router.push('/me')} style={s.avatar}><Text style={s.avatarText}>FP</Text></Pressable></View>
    <Text style={s.kicker}>YOUR FAIRPATH</Text><Text style={s.title}>WHAT COMES{String.fromCharCode(10)}<Text style={s.lime}>NEXT.</Text></Text>
    <Text style={s.sub}>Your personalized starting point for opportunity, support and forward motion.</Text>
    <View style={s.hero}><Text style={s.heroKicker}>FAIRPATH AI</Text><Text style={s.heroTitle}>Start with what you need.</Text><Text style={s.heroBody}>Tell FairPath what you’re trying to accomplish and we’ll help you find the next move.</Text><Pressable style={s.heroBtn} onPress={()=>router.push('/fairpath-ai')}><Text style={s.heroBtnText}>Ask FairPath AI</Text><Text style={s.arrow}>→</Text></Pressable></View>
@@ -29,7 +31,7 @@ export default function AppHome(){
 const s=StyleSheet.create({
  screen:{flex:1,backgroundColor:BLACK},safe:{flex:1},glow:{position:'absolute',width:420,height:420,borderRadius:210,backgroundColor:'#234806',opacity:.34,right:-270,top:-230},
  content:{width:'100%',maxWidth:760,alignSelf:'center',paddingHorizontal:24,paddingTop:24,paddingBottom:120},
- top:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:70},brand:{color:LIME,fontFamily:'LeagueSpartan_900Black',fontSize:27,letterSpacing:-1.2},white:{color:'#fff'},tag:{color:'#8E948E',fontFamily:'LeagueSpartan_700Bold',fontSize:7,letterSpacing:2.3,marginTop:3},avatar:{width:44,height:44,borderRadius:14,backgroundColor:LIME,alignItems:'center',justifyContent:'center'},avatarText:{fontFamily:'LeagueSpartan_900Black',color:BLACK},
+ top:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:70},avatar:{width:44,height:44,borderRadius:14,backgroundColor:LIME,alignItems:'center',justifyContent:'center'},avatarText:{fontFamily:'LeagueSpartan_900Black',color:BLACK},
  kicker:{color:LIME,fontFamily:'LeagueSpartan_800ExtraBold',fontSize:11,letterSpacing:2,marginBottom:14},title:{color:'#F8F8F7',fontFamily:'LeagueSpartan_900Black',fontSize:55,lineHeight:48,letterSpacing:-2.4},lime:{color:LIME},sub:{color:MUTED,fontSize:16,lineHeight:24,maxWidth:540,marginTop:20,marginBottom:34},
  hero:{backgroundColor:'#151A11',borderWidth:1,borderColor:'#334125',borderRadius:24,padding:24,marginBottom:34},heroKicker:{color:LIME,fontFamily:'LeagueSpartan_800ExtraBold',fontSize:10,letterSpacing:1.8},heroTitle:{color:'#fff',fontFamily:'LeagueSpartan_900Black',fontSize:29,letterSpacing:-1,marginTop:12},heroBody:{color:MUTED,fontSize:14,lineHeight:21,marginTop:9,maxWidth:560},heroBtn:{height:56,borderRadius:15,backgroundColor:LIME,marginTop:22,paddingHorizontal:18,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},heroBtnText:{color:BLACK,fontFamily:'LeagueSpartan_800ExtraBold',fontSize:15},arrow:{fontSize:24,color:BLACK},
  section:{color:'#777D77',fontFamily:'LeagueSpartan_800ExtraBold',fontSize:10,letterSpacing:2,marginBottom:12},grid:{flexDirection:'row',flexWrap:'wrap',gap:12},card:{backgroundColor:CARD,borderWidth:1,borderColor:'#2C302C',borderRadius:20,padding:20,minHeight:155,flexGrow:1,flexBasis:'45%',position:'relative'},cardTitle:{color:'#fff',fontFamily:'LeagueSpartan_800ExtraBold',fontSize:20},cardBody:{color:MUTED,fontSize:13,lineHeight:19,marginTop:8,paddingRight:18},cardArrow:{position:'absolute',right:18,bottom:15,color:LIME,fontSize:22},
