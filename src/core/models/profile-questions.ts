@@ -26,6 +26,8 @@ export type ProfileQuestion = {
   required: boolean;
   sensitive?: boolean;
   purposes: QuestionPurpose[];
+  options?: string[];
+  placeholder?: string;
   dependsOn?: {
     questionId: string;
     equals: string | boolean;
@@ -91,6 +93,7 @@ export const PROFILE_QUESTIONS: ProfileQuestion[] = [
     required: true,
     sensitive: true,
     purposes: ['matching', 'program_screening', 'compliance'],
+    options: ['Ohio','Maryland','Michigan','Pennsylvania','West Virginia','Indiana','Kentucky','Other'],
     dependsOn: { questionId: 'convictions.has_felony', equals: true },
   },
   {
@@ -113,6 +116,7 @@ export const PROFILE_QUESTIONS: ProfileQuestion[] = [
     required: true,
     sensitive: true,
     purposes: ['matching', 'pre_release', 'compliance'],
+    options: ['None','Probation','Parole','Post-release control','Other'],
   },
   {
     id: 'employment.education_level',
@@ -122,6 +126,7 @@ export const PROFILE_QUESTIONS: ProfileQuestion[] = [
     input: 'single_select',
     required: true,
     purposes: ['matching', 'autofill', 'application'],
+    options: ['Less than high school','High school diploma','GED','Some college','Associate degree','Bachelor’s degree','Graduate degree','Trade or vocational training'],
   },
   {
     id: 'employment.skills',
@@ -131,6 +136,7 @@ export const PROFILE_QUESTIONS: ProfileQuestion[] = [
     input: 'multi_select',
     required: true,
     purposes: ['matching', 'autofill', 'application'],
+    options: ['Customer service','Warehouse','Construction','Driving','Food service','Cleaning','Manufacturing','Sales','Office / admin','Technology','Skilled trades','Other'],
   },
   {
     id: 'employment.licenses_certifications',
@@ -140,6 +146,7 @@ export const PROFILE_QUESTIONS: ProfileQuestion[] = [
     input: 'multi_select',
     required: false,
     purposes: ['matching', 'autofill', 'application'],
+    options: ['Driver license','CDL','Forklift','OSHA','ServSafe','STNA / CNA','Trade license','Other'],
   },
   {
     id: 'housing.target_cities',
@@ -149,6 +156,7 @@ export const PROFILE_QUESTIONS: ProfileQuestion[] = [
     input: 'multi_select',
     required: true,
     purposes: ['matching', 'autofill'],
+    options: ['Current city','Nearby cities','Anywhere in my state','Open to relocating'],
   },
   {
     id: 'housing.monthly_income_range',
@@ -159,6 +167,7 @@ export const PROFILE_QUESTIONS: ProfileQuestion[] = [
     required: true,
     sensitive: true,
     purposes: ['matching', 'application', 'program_screening'],
+    options: ['No current income','Under $1,000','$1,000–$1,999','$2,000–$2,999','$3,000–$4,999','$5,000+'],
   },
   {
     id: 'documents.social_security_card',
@@ -260,6 +269,7 @@ export const PROFILE_QUESTIONS: ProfileQuestion[] = [
     input: 'multi_select',
     required: true,
     purposes: ['matching', 'autofill', 'application'],
+    options: ['Full-time','Part-time','Temporary','Gig work','Remote','Open to anything'],
   },
   {
     id: 'employment.transportation',
@@ -269,6 +279,7 @@ export const PROFILE_QUESTIONS: ProfileQuestion[] = [
     input: 'multi_select',
     required: true,
     purposes: ['matching'],
+    options: ['Own vehicle','Public transit','Ride from someone','Bike / walk','Rideshare','Employer transportation'],
   },
   {
     id: 'housing.household_size',
