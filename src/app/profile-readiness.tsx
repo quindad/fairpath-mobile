@@ -1,37 +1,21 @@
 import { router } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useEffect, useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
+import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { loadFairPathReadiness } from '@/core/profile/profile-service';
 import type { FairPathReadiness } from '@/core/models/readiness';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { FairPathColors } from '@/constants/fairpath';
-
-const areaCopy={
- identity:['Identity','Basic information used for autofill and nearby opportunities.'],
- employment:['Employment','Skills, education, work goals and transportation.'],
- housing:['Housing','Household, income and where you want to live.'],
- reentry:['Reentry','Release and supervision information for your FairPath Forward plan.'],
- documents:['Documents','Know what you have and what you still need.'],
- eligibility:['Eligibility','Information used to improve compatibility and program screening.'],
-} as const;
-
+const copy={identity:['Identity','Contact and basic information'],employment:['Employment','Skills, education and work preferences'],housing:['Housing','Household, income and target areas'],reentry:['Reentry','Release and supervision information'],documents:['Documents','IDs, résumé and document readiness'],eligibility:['Eligibility','Information used for compatibility screening']} as const;
 export default function ProfileReadiness(){
- const [readiness,setReadiness]=useState<FairPathReadiness|null>(null);
- useEffect(()=>{let active=true;loadFairPathReadiness().then(x=>{if(active)setReadiness(x.readiness);}).catch(()=>{if(active)setReadiness(null);});return()=>{active=false;};},[]);
- const overall=readiness?.overallPercentage ?? 0;
- const areas=useMemo(()=>readiness?.areas.map(a=>[areaCopy[a.area][0],areaCopy[a.area][1],a.percentage,a.area]) ?? [],[readiness]);
- return <View style={s.screen}><StatusBar style="light"/><SafeAreaView style={s.safe}>
-  <ScrollView contentContainerStyle={s.content}>
-   <Pressable style={s.back} onPress={()=>router.back()}><Text style={s.backText}>←</Text></Pressable>
-   <Text style={s.kicker}>FAIRPATH READINESS</Text><Text style={s.title}>YOUR PROFILE{String.fromCharCode(10)}<Text style={s.lime}>UNLOCKS MORE.</Text></Text>
-   <Text style={s.body}>Complete your FairPath so we can improve matching, reuse confirmed information in applications and screen for relevant programs.</Text>
-   <View style={s.overall}><View style={s.overallTop}><Text style={s.overallTitle}>Overall readiness</Text><Text style={s.percent}>{overall}%</Text></View><View style={s.track}><View style={[s.fill,{width:`${overall}%`}]}/></View><Text style={s.note}>We’ll only ask follow-up questions that apply to you.</Text></View>
-   <Text style={s.section}>COMPLETE YOUR FAIRPATH</Text>
-   {areas.map(([title,body,pct,area])=><Pressable key={String(title)} style={s.card} onPress={()=>router.push({pathname:'/complete-profile',params:{area:String(area)}} as never)}><View style={s.cardTop}><Text style={s.cardTitle}>{title}</Text><Text style={s.cardPct}>{pct}%</Text></View><Text style={s.cardBody}>{body}</Text><View style={s.cardBottom}><Text style={s.continue}>Continue section</Text><Text style={s.arrow}>→</Text></View></Pressable>)}
-   <View style={s.privacy}><Text style={s.privacyTitle}>YOUR INFORMATION, USED WITH PURPOSE.</Text><Text style={s.privacyBody}>Sensitive justice-history information is used for permitted FairPath screening and is not automatically displayed as a general partner-visible profile field.</Text></View>
-  </ScrollView>
- </SafeAreaView></View>
+ const [r,setR]=useState<FairPathReadiness|null>(null);useEffect(()=>{let a=true;loadFairPathReadiness().then(x=>{if(a)setR(x.readiness)}).catch(()=>{});return()=>{a=false}},[]);
+ const areas=useMemo(()=>r?.areas.map(x=>[x.area,copy[x.area][0],copy[x.area][1],x.percentage] as const)??[],[r]);const overall=r?.overallPercentage??0;
+ return <ScreenFrame><PageHeader eyebrow="FAIRPATH READINESS" title="Your profile"/>
+ <ScrollView contentContainerStyle={s.content}>
+  <View style={s.score}><View><Text style={s.scoreLabel}>OVERALL READINESS</Text><Text style={s.scoreSub}>Complete information once. Reuse it across FairPath.</Text></View><Text style={s.scoreNumber}>{overall}%</Text></View>
+  <View style={s.track}><View style={[s.fill,{width:overall+'%'}]}/></View>
+  <Text style={s.section}>PROFILE SECTIONS</Text>
+  {areas.map(([area,title,body,pct])=><Pressable key={area} style={s.row} onPress={()=>router.push({pathname:'/complete-profile',params:{area}} as never)}><View style={s.copy}><View style={s.titleLine}><Text style={s.title}>{title}</Text><Text style={s.pct}>{pct}%</Text></View><Text style={s.body}>{body}</Text><View style={s.miniTrack}><View style={[s.miniFill,{width:pct+'%'}]}/></View></View><Text style={s.arrow}>→</Text></Pressable>)}
+  <View style={s.privacy}><Text style={s.privacyTitle}>PRIVATE BY DESIGN</Text><Text style={s.privacyBody}>Sensitive justice-history information supports permitted screening and matching. It is not automatically displayed as a general partner-visible profile field.</Text></View>
+ </ScrollView></ScreenFrame>
 }
-const LIME=FairPathColors.lime,BLACK=FairPathColors.black,CARD=FairPathColors.card,MUTED=FairPathColors.muted;
-const s=StyleSheet.create({screen:{flex:1,backgroundColor:BLACK},safe:{flex:1},content:{width:'100%',maxWidth:700,alignSelf:'center',padding:24,paddingBottom:70},back:{width:44,height:44,borderRadius:14,borderWidth:1,borderColor:'#303330',backgroundColor:CARD,alignItems:'center',justifyContent:'center',marginBottom:52},backText:{color:'#fff',fontSize:22},kicker:{color:LIME,fontFamily:'LeagueSpartan_800ExtraBold',fontSize:10,letterSpacing:2},title:{color:'#fff',fontFamily:'LeagueSpartan_900Black',fontSize:45,lineHeight:42,letterSpacing:-1.8,marginTop:14},lime:{color:LIME},body:{color:MUTED,fontSize:15,lineHeight:23,marginTop:18,maxWidth:590},overall:{backgroundColor:'#111611',borderWidth:1,borderColor:'#3B4B2E',borderRadius:22,padding:20,marginTop:26},overallTop:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},overallTitle:{color:'#fff',fontFamily:'LeagueSpartan_800ExtraBold',fontSize:18},percent:{color:LIME,fontFamily:'LeagueSpartan_900Black',fontSize:25},track:{height:8,backgroundColor:'#293028',borderRadius:8,overflow:'hidden',marginTop:15},fill:{height:'100%',backgroundColor:LIME},note:{color:MUTED,fontSize:12,marginTop:12},section:{color:'#777D77',fontFamily:'LeagueSpartan_800ExtraBold',fontSize:10,letterSpacing:2,marginTop:32,marginBottom:12},card:{backgroundColor:CARD,borderWidth:1,borderColor:'#2C302C',borderRadius:20,padding:19,marginBottom:10},cardTop:{flexDirection:'row',justifyContent:'space-between'},cardTitle:{color:'#fff',fontFamily:'LeagueSpartan_800ExtraBold',fontSize:19},cardPct:{color:LIME,fontFamily:'LeagueSpartan_800ExtraBold',fontSize:14},cardBody:{color:MUTED,fontSize:13,lineHeight:19,marginTop:7,paddingRight:20},cardBottom:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginTop:15},continue:{color:'#DDE2DA',fontFamily:'LeagueSpartan_700Bold',fontSize:12},arrow:{color:LIME,fontSize:20},privacy:{borderRadius:20,backgroundColor:'#0E100E',borderWidth:1,borderColor:'#292D29',padding:18,marginTop:12},privacyTitle:{color:LIME,fontFamily:'LeagueSpartan_800ExtraBold',fontSize:9,letterSpacing:1.4},privacyBody:{color:MUTED,fontSize:12,lineHeight:18,marginTop:8}});
+const s=StyleSheet.create({content:{paddingHorizontal:L.mobileGutter,paddingBottom:30},score:{paddingVertical:20,flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start'},scoreLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.2},scoreSub:{color:C.muted,fontSize:11,marginTop:5,maxWidth:260},scoreNumber:{color:C.white,fontFamily:F.black,fontSize:28},track:{height:4,backgroundColor:C.border},fill:{height:'100%',backgroundColor:C.lime},section:{color:C.muted,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.2,marginTop:24,marginBottom:4},row:{minHeight:96,borderBottomWidth:1,borderBottomColor:C.border,flexDirection:'row',alignItems:'center'},copy:{flex:1,paddingRight:15},titleLine:{flexDirection:'row',justifyContent:'space-between'},title:{color:C.white,fontFamily:F.extraBold,fontSize:17},pct:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:10},body:{color:C.muted,fontSize:11,marginTop:4},miniTrack:{height:2,backgroundColor:C.border,marginTop:10},miniFill:{height:'100%',backgroundColor:C.lime},arrow:{color:C.lime,fontSize:18},privacy:{paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.border},privacyTitle:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8,letterSpacing:1},privacyBody:{color:C.muted,fontSize:11,lineHeight:17,marginTop:6}});
