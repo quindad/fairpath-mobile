@@ -1,0 +1,8 @@
+export type RecordReliefRemedy='expungement'|'sealing'|'set_aside'|'automatic_clearing'|'certificate'|'pardon'|'other';
+export type ReliefOutcome='potentially_eligible'|'waiting_period'|'additional_review'|'appears_excluded'|'insufficient_information';
+export type ReliefRule={id:string;state:string;remedy:RecordReliefRemedy;title:string;effectiveFrom:string;effectiveTo?:string;sourceUrl:string;sourceLabel:string;verifiedAt:string;requiredFields:string[];notes?:string[]};
+export type ReliefResult={outcome:ReliefOutcome;state:string;remedy?:RecordReliefRemedy;title:string;summary:string;estimatedEligibilityDate?:string;daysRemaining?:number;ruleId?:string;sourceUrl?:string;missingFields?:string[]};
+export type LegalPartnerProfile={id:string;firmName:string;lawyerName:string;statesLicensed:string[];services:RecordReliefRemedy[];languages:string[];remoteAvailable:boolean;consultationFee?:number;pricingNote?:string;verified:boolean};
+export const RECORD_RELIEF_REQUIRED=['state','offense','disposition','conviction_date','sentence_completed_date','supervision_completed_date'] as const;
+export function daysUntil(date:string,now=new Date()){return Math.max(0,Math.ceil((new Date(date).getTime()-now.getTime())/86400000))}
+export function safeReliefResult(state:string,missingFields:string[]=[]):ReliefResult{return missingFields.length?{outcome:'insufficient_information',state,title:'More information needed',summary:'Finish the record details below so FairPath can check the applicable verified rule.',missingFields}:{outcome:'additional_review',state,title:'Review required',summary:'FairPath needs a verified, current rule for this record before showing an eligibility result.'}}
