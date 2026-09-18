@@ -6,6 +6,7 @@ import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L, FairPathR
 import { loadHousing, saveHousing, type HousingListing } from '@/core/opportunities/opportunity-service';
 import { loadProfileAnswers } from '@/core/profile/profile-service';
 import { openGoogleMaps } from '@/core/location/maps';
+import { demoHousingImage } from '@/core/demo/demo-media';
 
 type Lane='all'|'match'|'fast';
 export default function Housing(){
@@ -31,7 +32,7 @@ export default function Housing(){
    <View style={s.resultsTop}><Text style={s.results}>{loading?'SEARCHING':String(visible.length)+' RESULTS'}</Text><Text style={s.sort}>Recommended</Text></View>
    {error?<Text style={s.error}>{error}</Text>:null}
    {!loading&&visible.length===0?<View style={s.empty}><Text style={s.emptyTitle}>No homes match these filters.</Text><Text style={s.emptyBody}>Try a wider area or remove one of the filters.</Text></View>:null}
-   {visible.map(h=>{const photo=h.housing_media?.filter(m=>m.media_type==='photo').sort((a,b)=>a.sort_order-b.sort_order)[0]?.url;return <Pressable key={h.id} style={s.card} onPress={()=>router.push(('/housing/'+h.id) as never)}>
+   {visible.map((h,index)=>{const photo=h.housing_media?.filter(m=>m.media_type==='photo').sort((a,b)=>a.sort_order-b.sort_order)[0]?.url || demoHousingImage(index);return <Pressable key={h.id} style={s.card} onPress={()=>router.push(('/housing/'+h.id) as never)}>
     <View style={s.media}>{photo?<Image source={{uri:photo}} style={s.photo}/>:<View style={s.noPhoto}><Text style={s.noPhotoText}>NO PHOTO</Text></View>}<Pressable style={s.saveBtn} onPress={(e)=>{e.stopPropagation?.();void saveHousing(h.id)}}><Text style={s.saveText}>SAVE</Text></Pressable></View>
     <View style={s.body}><View style={s.priceRow}><Text style={s.price}>{'$'+Number(h.rent_monthly).toLocaleString()}</Text><Text style={s.per}> / month</Text></View><Text style={s.homeTitle}>{h.title}</Text>
     <Text style={s.meta}>{[h.bedrooms!=null?h.bedrooms+' bd':null,h.bathrooms!=null?h.bathrooms+' ba':null,h.square_feet?h.square_feet.toLocaleString()+' sq ft':null].filter(Boolean).join('  ·  ')}</Text>
