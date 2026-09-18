@@ -1,0 +1,5 @@
+import { FairPathPlan } from './fairpath-plus';
+export type PlusFeature='ai_resume'|'ai_cover_letter'|'ai_application'|'ai_interview'|'ai_housing'|'ai_forward_plan'|'ai_document'|'credit_builder'|'marketplace_claims'|'fasttrack_discount';
+export const PLUS_FEATURES:Record<PlusFeature,{title:string;route:string}>={ai_resume:{title:'Résumé Builder',route:'/plus'},ai_cover_letter:{title:'Cover Letters',route:'/plus'},ai_application:{title:'Application Assistant',route:'/plus'},ai_interview:{title:'Interview Prep',route:'/plus'},ai_housing:{title:'Housing Assistant',route:'/plus'},ai_forward_plan:{title:'FairPath Forward Plan',route:'/plus'},ai_document:{title:'Document Assistant',route:'/plus'},credit_builder:{title:'Credit Builder',route:'/credit-tools'},marketplace_claims:{title:'Marketplace claims',route:'/plus'},fasttrack_discount:{title:'FastTrack savings',route:'/plus'}};
+export function hasPlusAccess(plan:FairPathPlan,feature:PlusFeature){return plan==='plus';}
+export function getFeatureDestination(plan:FairPathPlan,feature:PlusFeature){return hasPlusAccess(plan,feature)?PLUS_FEATURES[feature].route:'/plus';}
