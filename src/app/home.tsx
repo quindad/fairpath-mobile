@@ -3,7 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FairPathLogo } from '@/components/FairPathLogo';
-import { FairPathColors } from '@/constants/theme';
+import { FairPathColors } from '@/constants/fairpath';
 
 const LIME=FairPathColors.lime, BLACK=FairPathColors.black, CARD=FairPathColors.card, MUTED=FairPathColors.muted;
 
