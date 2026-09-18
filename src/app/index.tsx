@@ -34,7 +34,7 @@ export default function HomeScreen() {
             <Text style={styles.primaryButtonText}>Get started</Text>
             <Text style={styles.arrow}>→</Text>
           </Pressable>
-          <Pressable style={styles.secondaryButton}>
+          <Pressable style={styles.secondaryButton} onPress={() => router.push('/sign-in')}>
             <Text style={styles.secondaryButtonText}>I already have an account</Text>
           </Pressable>
           <View style={styles.trustCard}>
