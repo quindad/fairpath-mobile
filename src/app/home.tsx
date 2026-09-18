@@ -1,8 +1,7 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useCallback, useState } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { useEffect, useState } from 'react';
 import { loadFairPathReadiness } from '@/core/profile/profile-service';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FairPathLogo } from '@/components/FairPathLogo';
@@ -20,11 +19,11 @@ const items=[
 export default function AppHome(){
  const [readiness,setReadiness]=useState(0);
  const [readinessError,setReadinessError]=useState(false);
- useFocusEffect(useCallback(()=>{
+ useEffect(()=>{
   let active=true;
   loadFairPathReadiness().then(({readiness:next})=>{if(active){setReadiness(next.overallPercentage);setReadinessError(false);}}).catch(()=>{if(active)setReadinessError(true);});
   return()=>{active=false;};
- },[]));
+ },[]);
  return <View style={s.screen}><StatusBar style="light"/><SafeAreaView style={s.safe}>
   <View pointerEvents="none" style={s.glow}/>
   <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
