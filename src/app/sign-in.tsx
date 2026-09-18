@@ -54,7 +54,7 @@ export default function SignInScreen() {
         return;
       }
 
-      router.replace(profile?.onboarding_completed ? '/' : '/onboarding');
+      router.replace(profile?.onboarding_completed ? '/home' : '/onboarding');
     } catch {
       setErrorMessage('We could not sign you in right now. Check your connection and try again.');
     } finally {
