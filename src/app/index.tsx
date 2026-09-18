@@ -1,19 +1,20 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { FairPathLogo } from '@/components/FairPathLogo';
+import { FairPathColors, FairPathLayout } from '@/constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const LIME='#A8F32C', BLACK='#090A09', CARD='#111311', MUTED='#B0B4AF';
-const FAIRPATH_LOGO=require('../../assets/brand/fairpath-logo.png');
+const LIME=FairPathColors.lime, BLACK=FairPathColors.black, CARD='#111311', MUTED='#B0B4AF';
 
 export default function HomeScreen(){
  const {width}=useWindowDimensions();
- const desktop=width>=768;
+ const desktop=width>=FairPathLayout.desktopBreakpoint;
  return <View style={styles.screen}><StatusBar style="light"/><SafeAreaView style={styles.safe}>
    <View pointerEvents="none" style={styles.glowTop}/><View pointerEvents="none" style={styles.glowBottom}/>
    <View style={[styles.frame,desktop&&styles.frameDesktop]}>
      <View style={styles.brand}>
-       <Image source={FAIRPATH_LOGO} style={[styles.logo,desktop&&styles.logoDesktop]} resizeMode="contain" accessibilityLabel="FairPath"/>
+       <FairPathLogo width={desktop ? 210 : 168}/>
        <Text style={styles.tag}>A FAIRPATH FORWARD.</Text>
      </View>
      <View style={styles.main}>
@@ -36,7 +37,6 @@ const styles=StyleSheet.create({
  frame:{flex:1,width:'100%',maxWidth:620,alignSelf:'center',paddingHorizontal:24,paddingTop:24,paddingBottom:28},
  frameDesktop:{maxWidth:690,paddingTop:28,paddingBottom:34},
  brand:{alignSelf:'center',alignItems:'center'},
- logo:{width:168,height:94},logoDesktop:{width:190,height:106},
  tag:{color:'#E2E4E1',fontFamily:'LeagueSpartan_700Bold',fontSize:8,letterSpacing:3.4,marginTop:-4},
  main:{flex:1,justifyContent:'center',paddingTop:28,paddingBottom:20},
  eyebrow:{flexDirection:'row',alignItems:'center',gap:14,marginBottom:25},line:{width:52,height:2,backgroundColor:LIME},
