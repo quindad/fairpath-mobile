@@ -33,7 +33,7 @@ export default function AppHome(){
    <Text style={s.kicker}>YOUR FAIRPATH</Text><Text style={s.title}>WHAT COMES{String.fromCharCode(10)}<Text style={s.lime}>NEXT.</Text></Text>
    <Text style={s.sub}>Your personalized starting point for opportunity, support and forward motion.</Text>
 
-   <Pressable style={s.readiness} onPress={()=>router.push('/profile-readiness' as never)}>
+   <Pressable style={s.readiness} onPress={()=>router.push('/complete-profile' as never)}>
     <View style={s.readinessTop}><View><Text style={s.readinessKicker}>FAIRPATH READINESS</Text><Text style={s.readinessTitle}>Complete your profile</Text></View><Text style={s.readinessPercent}>{readinessError || readiness===null ? '—' : `${readiness}%`}</Text></View>
     <View style={s.track}><View style={[s.fill,{width:`${readiness ?? 0}%`}]}/></View>
     <Text style={s.readinessBody}>The more FairPath knows, the better we can screen jobs, housing and available programs for you.</Text>
