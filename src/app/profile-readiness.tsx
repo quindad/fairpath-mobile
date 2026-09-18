@@ -1,8 +1,7 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useCallback, useMemo, useState } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { useEffect, useMemo, useState } from 'react';
 import { loadFairPathReadiness } from '@/core/profile/profile-service';
 import type { FairPathReadiness } from '@/core/models/readiness';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,7 +18,7 @@ const areaCopy={
 
 export default function ProfileReadiness(){
  const [readiness,setReadiness]=useState<FairPathReadiness|null>(null);
- useFocusEffect(useCallback(()=>{let active=true;loadFairPathReadiness().then(x=>{if(active)setReadiness(x.readiness);}).catch(()=>{if(active)setReadiness(null);});return()=>{active=false;};},[]));
+ useEffect(()=>{let active=true;loadFairPathReadiness().then(x=>{if(active)setReadiness(x.readiness);}).catch(()=>{if(active)setReadiness(null);});return()=>{active=false;};},[]);
  const overall=readiness?.overallPercentage ?? 0;
  const areas=useMemo(()=>readiness?.areas.map(a=>[areaCopy[a.area][0],areaCopy[a.area][1],a.percentage]) ?? [],[readiness]);
  return <View style={s.screen}><StatusBar style="light"/><SafeAreaView style={s.safe}>
