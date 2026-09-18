@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ScreenFrame, PageHeader, FilterStrip, SharpChip, InlineBadge } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L, FairPathRadius as R } from '@/constants/fairpath';
 import { loadJobs, saveJob, type Job } from '@/core/opportunities/opportunity-service';
@@ -12,9 +12,9 @@ export default function FindJobs(){
  const [query,setQuery]=useState(''); const [location,setLocation]=useState(''); const [jobs,setJobs]=useState<Job[]>([]);
  const [lane,setLane]=useState<Lane>('all'); const [remote,setRemote]=useState(false); const [fullTime,setFullTime]=useState(false); const [partTime,setPartTime]=useState(false);
  const [loading,setLoading]=useState(true); const [error,setError]=useState('');
- async function run(){
+ async function run(next={remote,fullTime,partTime,lane}){
   setLoading(true);setError('');
-  try{setJobs(await loadJobs(query,location,{remote,fullTime,partTime,secondChance:lane==='second'}));}
+  try{setJobs(await loadJobs(query,location,{remote:next.remote,fullTime:next.fullTime,partTime:next.partTime,secondChance:next.lane==='second'}));}
   catch{setError('Jobs could not load. Check your connection and try again.');}
   finally{setLoading(false);}
  }
@@ -22,6 +22,11 @@ export default function FindJobs(){
  const counts=useMemo(()=>({all:jobs.length,second:jobs.filter(j=>j.eligibility_rules?.second_chance_evidence==='explicit').length}),[jobs]);
  function openJob(j:Job){router.push(('/job/'+j.id) as never)}
  function matchLabel(j:Job){return j.eligibility_rules?.second_chance_evidence==='explicit'?'VERIFIED SECOND-CHANCE':'POLICY REVIEW NEEDED'}
+ async function handleSave(id:string){try{await saveJob(id);Alert.alert('Saved','Job saved to your FairPath.')}catch(e){if(e instanceof Error&&e.message==='SIGNED_OUT'){Alert.alert('Sign in to save','Create an account or sign in to save jobs.',[{text:'Not now',style:'cancel'},{text:'Sign in',onPress:()=>router.push('/sign-in' as never)}]);return}Alert.alert('Could not save','Please try again.')}}
+ function chooseLane(next:Lane){setLane(next);void run({remote,fullTime,partTime,lane:next})}
+ function chooseRemote(){const next=!remote;setRemote(next);void run({remote:next,fullTime,partTime,lane})}
+ function chooseFull(){const next=!fullTime;setFullTime(next);setPartTime(false);void run({remote,fullTime:next,partTime:false,lane})}
+ function choosePart(){const next=!partTime;setPartTime(next);setFullTime(false);void run({remote,fullTime:false,partTime:next,lane})}
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH JOBS" title="Find work"/>
   <View style={s.searchBlock}>
@@ -30,17 +35,17 @@ export default function FindJobs(){
    <Pressable style={s.primary} onPress={run}><Text style={s.primaryText}>Search jobs</Text><Text style={s.primaryText}>→</Text></Pressable>
   </View>
   <View style={s.lanes}>
-   <Pressable style={[s.lane,lane==='all'&&s.laneActive]} onPress={()=>setLane('all')}><Text style={[s.laneText,lane==='all'&&s.laneTextActive]}>ALL JOBS</Text><Text style={[s.laneCount,lane==='all'&&s.laneTextActive]}>{counts.all}</Text></Pressable>
-   <Pressable style={[s.lane,lane==='match'&&s.laneActive]} onPress={()=>setLane('match')}><Text style={[s.laneText,lane==='match'&&s.laneTextActive]}>FAIRPATH MATCH</Text></Pressable>
-   <Pressable style={[s.lane,lane==='second'&&s.laneActive]} onPress={()=>setLane('second')}><Text style={[s.laneText,lane==='second'&&s.laneTextActive]}>2ND CHANCE</Text><Text style={[s.laneCount,lane==='second'&&s.laneTextActive]}>{counts.second}</Text></Pressable>
+   <Pressable style={[s.lane,lane==='all'&&s.laneActive]} onPress={()=>chooseLane('all')}><Text style={[s.laneText,lane==='all'&&s.laneTextActive]}>ALL JOBS</Text><Text style={[s.laneCount,lane==='all'&&s.laneTextActive]}>{counts.all}</Text></Pressable>
+   <Pressable style={[s.lane,lane==='match'&&s.laneActive]} onPress={()=>chooseLane('match')}><Text style={[s.laneText,lane==='match'&&s.laneTextActive]}>FAIRPATH MATCH</Text></Pressable>
+   <Pressable style={[s.lane,lane==='second'&&s.laneActive]} onPress={()=>chooseLane('second')}><Text style={[s.laneText,lane==='second'&&s.laneTextActive]}>2ND CHANCE</Text><Text style={[s.laneCount,lane==='second'&&s.laneTextActive]}>{counts.second}</Text></Pressable>
   </View>
-  <FilterStrip><SharpChip label="Remote" active={remote} onPress={()=>setRemote(!remote)}/><SharpChip label="Full-time" active={fullTime} onPress={()=>{setFullTime(!fullTime);if(!fullTime)setPartTime(false)}}/><SharpChip label="Part-time" active={partTime} onPress={()=>{setPartTime(!partTime);if(!partTime)setFullTime(false)}}/><SharpChip label="Pay"/><SharpChip label="Experience"/><SharpChip label="Benefits"/></FilterStrip>
+  <FilterStrip><SharpChip label="Remote" active={remote} onPress={chooseRemote}/><SharpChip label="Full-time" active={fullTime} onPress={chooseFull}/><SharpChip label="Part-time" active={partTime} onPress={choosePart}/></FilterStrip>
   <ScrollView contentContainerStyle={s.list} showsVerticalScrollIndicator={false}>
    <View style={s.resultsTop}><Text style={s.results}>{loading?'SEARCHING':String(jobs.length)+' RESULTS'}</Text><Text style={s.sort}>Most relevant</Text></View>
    {error?<Text style={s.error}>{error}</Text>:null}
    {!loading&&jobs.length===0?<View style={s.empty}><Text style={s.emptyTitle}>No jobs match these filters.</Text><Text style={s.emptyBody}>Try a wider location, remove a filter, or switch back to All Jobs.</Text></View>:null}
    {jobs.map(j=><Pressable key={j.id} style={s.card} onPress={()=>openJob(j)}>
-    <View style={s.cardHeader}><View style={s.companyMark}><Text style={s.companyMarkText}>{j.company_name.slice(0,1).toUpperCase()}</Text></View><Pressable style={s.saveBtn} onPress={(e)=>{e.stopPropagation?.();void saveJob(j.id)}}><Text style={s.saveText}>SAVE</Text></Pressable></View>
+    <View style={s.cardHeader}><View style={s.companyMark}><Text style={s.companyMarkText}>{j.company_name.slice(0,1).toUpperCase()}</Text></View><Pressable style={s.saveBtn} onPress={(e)=>{e.stopPropagation?.();void handleSave(j.id)}}><Text style={s.saveText}>SAVE</Text></Pressable></View>
     <Text style={s.jobTitle}>{j.title}</Text><Text style={s.company}>{j.company_name}</Text>
     <View style={s.locationLine}><Text style={s.meta}>{j.location_text||[j.city,j.state].filter(Boolean).join(', ')||'Location not listed'}</Text><Text style={s.dot}>·</Text><Text style={s.meta}>{j.workplace_type.replace('_',' ')}</Text></View>
     {j.pay_min!=null?<Text style={s.pay}>{'$'+Number(j.pay_min).toLocaleString()+(j.pay_max?' – $'+Number(j.pay_max).toLocaleString():'')+' / '+(j.pay_period||'period')}</Text>:null}
