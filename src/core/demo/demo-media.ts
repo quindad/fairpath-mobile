@@ -1,0 +1,7 @@
+export const DEMO_MEDIA={
+ jobs:{warehouse:'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=900&q=80',support:'https://images.unsplash.com/photo-1556745757-8d76bdb6984b?auto=format&fit=crop&w=900&q=80',construction:'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=900&q=80',delivery:'https://images.unsplash.com/photo-1586864387789-628af9feed72?auto=format&fit=crop&w=900&q=80'},
+ housing:['https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=900&q=80','https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=900&q=80','https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=900&q=80'],
+ marketplace:{Furniture:'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=700&q=80',Electronics:'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=700&q=80',Home:'https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=700&q=80',Clothing:'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=700&q=80',Kids:'https://images.unsplash.com/photo-1599443015574-be5fe8a05783?auto=format&fit=crop&w=700&q=80'}
+} as const;
+export function demoHousingImage(index:number){return DEMO_MEDIA.housing[index%DEMO_MEDIA.housing.length]}
+export function demoMarketplaceImage(category:string){return DEMO_MEDIA.marketplace[category as keyof typeof DEMO_MEDIA.marketplace]||DEMO_MEDIA.marketplace.Home}
