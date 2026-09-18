@@ -20,7 +20,7 @@ export default function ProfileReadiness(){
  const [readiness,setReadiness]=useState<FairPathReadiness|null>(null);
  useEffect(()=>{let active=true;loadFairPathReadiness().then(x=>{if(active)setReadiness(x.readiness);}).catch(()=>{if(active)setReadiness(null);});return()=>{active=false;};},[]);
  const overall=readiness?.overallPercentage ?? 0;
- const areas=useMemo(()=>readiness?.areas.map(a=>[areaCopy[a.area][0],areaCopy[a.area][1],a.percentage]) ?? [],[readiness]);
+ const areas=useMemo(()=>readiness?.areas.map(a=>[areaCopy[a.area][0],areaCopy[a.area][1],a.percentage,a.area]) ?? [],[readiness]);
  return <View style={s.screen}><StatusBar style="light"/><SafeAreaView style={s.safe}>
   <ScrollView contentContainerStyle={s.content}>
    <Pressable style={s.back} onPress={()=>router.back()}><Text style={s.backText}>←</Text></Pressable>
@@ -28,7 +28,7 @@ export default function ProfileReadiness(){
    <Text style={s.body}>Complete your FairPath so we can improve matching, reuse confirmed information in applications and screen for relevant programs.</Text>
    <View style={s.overall}><View style={s.overallTop}><Text style={s.overallTitle}>Overall readiness</Text><Text style={s.percent}>{overall}%</Text></View><View style={s.track}><View style={[s.fill,{width:`${overall}%`}]}/></View><Text style={s.note}>We’ll only ask follow-up questions that apply to you.</Text></View>
    <Text style={s.section}>COMPLETE YOUR FAIRPATH</Text>
-   {areas.map(([title,body,pct])=><Pressable key={String(title)} style={s.card} onPress={()=>router.push('/onboarding' as never)}><View style={s.cardTop}><Text style={s.cardTitle}>{title}</Text><Text style={s.cardPct}>{pct}%</Text></View><Text style={s.cardBody}>{body}</Text><View style={s.cardBottom}><Text style={s.continue}>Continue section</Text><Text style={s.arrow}>→</Text></View></Pressable>)}
+   {areas.map(([title,body,pct,area])=><Pressable key={String(title)} style={s.card} onPress={()=>router.push({pathname:'/complete-profile',params:{area:String(area)}} as never)}><View style={s.cardTop}><Text style={s.cardTitle}>{title}</Text><Text style={s.cardPct}>{pct}%</Text></View><Text style={s.cardBody}>{body}</Text><View style={s.cardBottom}><Text style={s.continue}>Continue section</Text><Text style={s.arrow}>→</Text></View></Pressable>)}
    <View style={s.privacy}><Text style={s.privacyTitle}>YOUR INFORMATION, USED WITH PURPOSE.</Text><Text style={s.privacyBody}>Sensitive justice-history information is used for permitted FairPath screening and is not automatically displayed as a general partner-visible profile field.</Text></View>
   </ScrollView>
  </SafeAreaView></View>
