@@ -4,6 +4,7 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { ScreenFrame, PageHeader, FilterStrip, SharpChip } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L, FairPathRadius as R } from '@/constants/fairpath';
 import { loadMarketplace, saveMarketplace, type MarketplaceItem } from '@/core/opportunities/opportunity-service';
+import { demoMarketplaceImage } from '@/core/demo/demo-media';
 
 const categories=['All','Furniture','Clothing','Electronics','Home','Kids'];
 export default function Marketplace(){
@@ -17,10 +18,10 @@ export default function Marketplace(){
   <View style={s.searchBlock}><View style={s.searchRow}><TextInput value={query} onChangeText={setQuery} onSubmitEditing={()=>run()} style={s.input} placeholder="Search free items" placeholderTextColor={C.muted}/><Pressable style={s.searchBtn} onPress={()=>run()}><Text style={s.searchBtnText}>SEARCH</Text></Pressable></View></View>
   <FilterStrip>{categories.map(x=><SharpChip key={x} label={x} active={category===x} onPress={()=>selectCategory(x)}/>)}</FilterStrip>
   <ScrollView contentContainerStyle={s.list} showsVerticalScrollIndicator={false}>
-   <View style={s.resultsTop}><View><Text style={s.results}>{loading?'LOADING':String(visible.length)+' ITEMS'}</Text><Text style={s.subline}>Free local items · claim required</Text></View><Pressable style={s.sellBtn}><Text style={s.sellBtnText}>LIST ITEM</Text></Pressable></View>
+   <View style={s.resultsTop}><View><Text style={s.results}>{loading?'LOADING':String(visible.length)+' ITEMS'}</Text><Text style={s.subline}>Free local items · claim required</Text></View><Pressable style={s.sellBtn} onPress={()=>router.push('/plus' as never)}><Text style={s.sellBtnText}>LIST ITEM</Text></Pressable></View>
    {error?<Text style={s.error}>{error}</Text>:null}
    {!loading&&visible.length===0?<View style={s.empty}><Text style={s.emptyTitle}>Nothing available here yet.</Text><Text style={s.emptyBody}>Try another category or search term.</Text></View>:null}
-   <View style={s.grid}>{visible.map(i=>{const photo=i.marketplace_media?.sort((a,b)=>a.sort_order-b.sort_order)[0]?.url;return <Pressable key={i.id} style={s.card} onPress={()=>router.push(('/market-item/'+i.id) as never)}>
+   <View style={s.grid}>{visible.map(i=>{const photo=i.marketplace_media?.sort((a,b)=>a.sort_order-b.sort_order)[0]?.url || demoMarketplaceImage(i.category);return <Pressable key={i.id} style={s.card} onPress={()=>router.push(('/market-item/'+i.id) as never)}>
     <View style={s.media}>{photo?<Image source={{uri:photo}} style={s.photo}/>:<View style={s.noPhoto}><Text style={s.noPhotoCategory}>{i.category.toUpperCase()}</Text><Text style={s.noPhotoText}>NO PHOTO</Text></View>}<Pressable style={s.saveBtn} onPress={(e)=>{e.stopPropagation?.();void saveMarketplace(i.id)}}><Text style={s.saveText}>♡</Text></Pressable></View>
     <View style={s.body}><Text style={s.price}>{i.is_free?'FREE':'$'+Number(i.price).toLocaleString()}</Text><Text style={s.itemTitle} numberOfLines={2}>{i.title}</Text><Text style={s.location}>{i.city+', '+i.state}</Text><View style={s.metaRow}><Text style={s.condition}>{i.condition||'Condition not listed'}</Text>{i.safe_pickup?<Text style={s.safe}>SAFE PICKUP</Text>:null}</View></View>
    </Pressable>})}</View>
