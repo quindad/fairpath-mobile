@@ -1,6 +1,8 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useMemo, useState } from 'react';
+
+import { supabase } from '../lib/supabase';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -76,6 +78,8 @@ export default function OnboardingScreen() {
   const [stepIndex, setStepIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string[]>>({});
   const [textAnswers, setTextAnswers] = useState<Record<number, string>>({});
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   const step = steps[stepIndex];
   const selected = answers[stepIndex] ?? [];
@@ -112,14 +116,61 @@ export default function OnboardingScreen() {
     setStepIndex((current) => current - 1);
   }
 
+  async function finishOnboarding() {
+    if (saving) return;
+
+    setSaving(true);
+    setSaveError('');
+
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        setSaveError('Your session expired. Sign in again so FairPath can securely save your setup.');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          goals: answers[0] ?? [],
+          location_text: textAnswers[1]?.trim() ?? '',
+          justice_impacted: answers[2]?.[0] ?? null,
+          opportunity_priorities: answers[3] ?? [],
+          work_preferences: answers[4] ?? [],
+          housing_preferences: answers[5] ?? [],
+          ai_preferences: answers[6] ?? [],
+          onboarding_completed: true,
+          onboarding_completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id);
+
+      if (error) {
+        setSaveError('We could not save your setup. Your answers are still here — try again.');
+        return;
+      }
+
+      router.replace('/');
+    } catch {
+      setSaveError('We could not save your setup. Check your connection and try again.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   function goNext() {
-    if (!canContinue) return;
+    if (!canContinue || saving) return;
 
     if (stepIndex === steps.length - 1) {
-      router.replace('/');
+      void finishOnboarding();
       return;
     }
 
+    setSaveError('');
     setStepIndex((current) => current + 1);
   }
 
@@ -187,12 +238,13 @@ export default function OnboardingScreen() {
         <View style={styles.footer}>
           <Pressable
             onPress={goNext}
-            disabled={!canContinue}
-            style={[styles.primaryButton, !canContinue && styles.primaryButtonDisabled]}
+            disabled={!canContinue || saving}
+            style={[styles.primaryButton, (!canContinue || saving) && styles.primaryButtonDisabled]}
           >
-            <Text style={styles.primaryButtonText}>{buttonLabel}</Text>
+            <Text style={styles.primaryButtonText}>{saving ? 'Saving your FairPath…' : buttonLabel}</Text>
             <Text style={styles.arrow}>→</Text>
           </Pressable>
+          {saveError ? <Text style={styles.errorText}>{saveError}</Text> : null}
           <Text style={styles.footerNote}>You stay in control of what FairPath uses to personalize your experience.</Text>
         </View>
       </SafeAreaView>
@@ -280,5 +332,6 @@ const styles = StyleSheet.create({
   primaryButtonDisabled: { opacity: 0.32 },
   primaryButtonText: { color: BLACK, fontSize: 17, fontWeight: '900' },
   arrow: { color: BLACK, fontSize: 25 },
+  errorText: { color: '#FF8A8A', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 12, paddingHorizontal: 14 },
   footerNote: { color: '#626762', fontSize: 10, lineHeight: 15, textAlign: 'center', marginTop: 11, paddingHorizontal: 14 },
 });
