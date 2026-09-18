@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { FairPathLogo } from '@/components/FairPathLogo';
-import { FairPathColors, FairPathLayout } from '@/constants/theme';
+import { FairPathColors, FairPathLayout } from '@/constants/fairpath';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const LIME=FairPathColors.lime, BLACK=FairPathColors.black, CARD='#111311', MUTED='#B0B4AF';
