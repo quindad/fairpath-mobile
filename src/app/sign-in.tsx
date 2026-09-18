@@ -104,6 +104,10 @@ export default function SignInScreen() {
               onSubmitEditing={signIn}
             />
 
+            <Pressable onPress={() => router.push('/forgot-password')} style={styles.forgotButton}>
+              <Text style={styles.forgotText}>Forgot password?</Text>
+            </Pressable>
+
             {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
             <Pressable
@@ -141,6 +145,8 @@ const styles = StyleSheet.create({
   form: { gap: 10 },
   label: { color: '#D7DAD6', fontSize: 13, fontWeight: '700', marginTop: 4 },
   input: { minHeight: 56, borderRadius: 16, borderWidth: 1, borderColor: BORDER, backgroundColor: CARD, color: '#F7F8F6', fontSize: 16, paddingHorizontal: 17 },
+  forgotButton: { alignSelf: 'flex-end', paddingVertical: 5 },
+  forgotText: { color: LIME, fontSize: 13, fontWeight: '800' },
   errorText: { color: ERROR, fontSize: 13, lineHeight: 19, marginTop: 4 },
   primaryButton: { minHeight: 60, borderRadius: 18, backgroundColor: LIME, paddingHorizontal: 20, marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   primaryButtonDisabled: { opacity: 0.65 },
