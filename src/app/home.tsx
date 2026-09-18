@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useEffect, useState } from 'react';
+import { usePathname } from 'expo-router';
 import { loadFairPathReadiness } from '@/core/profile/profile-service';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FairPathLogo } from '@/components/FairPathLogo';
@@ -17,13 +18,14 @@ const items=[
 ];
 
 export default function AppHome(){
- const [readiness,setReadiness]=useState(0);
+ const pathname=usePathname();
+ const [readiness,setReadiness]=useState<number|null>(null);
  const [readinessError,setReadinessError]=useState(false);
  useEffect(()=>{
   let active=true;
   loadFairPathReadiness().then(({readiness:next})=>{if(active){setReadiness(next.overallPercentage);setReadinessError(false);}}).catch(()=>{if(active)setReadinessError(true);});
   return()=>{active=false;};
- },[]);
+ },[pathname]);
  return <View style={s.screen}><StatusBar style="light"/><SafeAreaView style={s.safe}>
   <View pointerEvents="none" style={s.glow}/>
   <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
@@ -32,8 +34,8 @@ export default function AppHome(){
    <Text style={s.sub}>Your personalized starting point for opportunity, support and forward motion.</Text>
 
    <Pressable style={s.readiness} onPress={()=>router.push('/profile-readiness' as never)}>
-    <View style={s.readinessTop}><View><Text style={s.readinessKicker}>FAIRPATH READINESS</Text><Text style={s.readinessTitle}>Complete your profile</Text></View><Text style={s.readinessPercent}>{readinessError ? '—' : `${readiness}%`}</Text></View>
-    <View style={s.track}><View style={[s.fill,{width:`${readiness}%`}]}/></View>
+    <View style={s.readinessTop}><View><Text style={s.readinessKicker}>FAIRPATH READINESS</Text><Text style={s.readinessTitle}>Complete your profile</Text></View><Text style={s.readinessPercent}>{readinessError || readiness===null ? '—' : `${readiness}%`}</Text></View>
+    <View style={s.track}><View style={[s.fill,{width:`${readiness ?? 0}%`}]}/></View>
     <Text style={s.readinessBody}>The more FairPath knows, the better we can screen jobs, housing and available programs for you.</Text>
     <View style={s.unlockRow}><Text style={s.unlock}>BETTER MATCHES</Text><Text style={s.unlock}>FASTER AUTOFILL</Text><Text style={s.unlock}>PROGRAM SCREENING</Text></View>
     <View style={s.continueRow}><Text style={s.continueText}>Continue my profile</Text><Text style={s.continueArrow}>→</Text></View>
