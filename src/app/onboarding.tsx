@@ -154,7 +154,7 @@ export default function OnboardingScreen() {
         return;
       }
 
-      router.replace('/');
+      router.replace('/home');
     } catch {
       setSaveError('We could not save your setup. Check your connection and try again.');
     } finally {
