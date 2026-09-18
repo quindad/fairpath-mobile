@@ -14,9 +14,12 @@ export const FairPathColors = {
 } as const;
 
 export const FairPathFonts = {
-  bold: 'LeagueSpartan_700Bold',
-  extraBold: 'LeagueSpartan_800ExtraBold',
-  black: 'LeagueSpartan_900Black',
+  regular: 'Manrope_400Regular',
+  medium: 'Manrope_500Medium',
+  semiBold: 'Manrope_600SemiBold',
+  bold: 'Manrope_700Bold',
+  extraBold: 'Manrope_800ExtraBold',
+  black: 'Manrope_800ExtraBold',
 } as const;
 
 export const FairPathRadius = {
