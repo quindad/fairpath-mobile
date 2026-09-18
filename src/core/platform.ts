@@ -1,6 +1,7 @@
 export type FairPathExperience =
   | 'consumer-mobile'
   | 'consumer-web'
+  | 'pre-release'
   | 'partner-web'
   | 'admin-web';
 
@@ -9,6 +10,7 @@ export const FairPathPlatform = {
   experiences: {
     consumerMobile: 'consumer-mobile',
     consumerWeb: 'consumer-web',
+    preRelease: 'pre-release',
     partnerWeb: 'partner-web',
     adminWeb: 'admin-web',
   },
