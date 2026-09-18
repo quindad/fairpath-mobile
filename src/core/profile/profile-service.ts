@@ -5,7 +5,7 @@ export type StoredProfileAnswers = Record<string, unknown>;
 
 export async function loadProfileAnswers(): Promise<StoredProfileAnswers> {
   const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) throw new Error('SIGNED_OUT');
+  if (userError || !user) return {};
 
   const [{ data: rows, error }, { data: profile, error: profileError }] = await Promise.all([
     supabase.from('profile_answers').select('question_id,answer').eq('user_id', user.id),
