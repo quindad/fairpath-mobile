@@ -26,7 +26,7 @@ const s=StyleSheet.create({
  screen:{flex:1,backgroundColor:C.black},safe:{flex:1,width:'100%',maxWidth:L.consumerMaxWidth,alignSelf:'center'},
  header:{minHeight:86,paddingHorizontal:L.mobileGutter,paddingTop:14,paddingBottom:14,flexDirection:'row',alignItems:'center',borderBottomWidth:1,borderBottomColor:C.border},
  back:{width:34,height:34,borderRadius:R.sm,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center',marginRight:12},
- backText:{color:C.white,fontSize:18},headerCopy:{flex:1},eyebrow:{color:C.lime,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.5},title:{color:C.white,fontFamily:F.black,fontSize:26,lineHeight:28,letterSpacing:-.7,marginTop:3},trailing:{marginLeft:10},
+ backText:{color:C.white,fontSize:18},headerCopy:{flex:1,minWidth:0},eyebrow:{color:C.lime,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.5},title:{color:C.white,fontFamily:F.black,fontSize:24,lineHeight:26,letterSpacing:-.6,marginTop:3,flexShrink:1},trailing:{marginLeft:10},
  section:{color:C.muted,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.4,marginBottom:8},
  chip:{height:34,borderRadius:R.sm,borderWidth:1,borderColor:C.border,paddingHorizontal:12,alignItems:'center',justifyContent:'center',backgroundColor:C.black},
  chipActive:{backgroundColor:C.white,borderColor:C.white},chipText:{color:C.mutedStrong,fontFamily:F.bold,fontSize:11},chipTextActive:{color:C.black},
