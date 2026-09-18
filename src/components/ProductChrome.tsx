@@ -16,8 +16,8 @@ export function SharpChip({label,active,onPress}:{label:string;active?:boolean;o
 export function FilterStrip({children}:{children:React.ReactNode}){return <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterStrip}>{children}</ScrollView>}
 export function BottomNav(){
  const pathname=usePathname();
- const items:[string,string,string][]=[['⌂','Home','/home'],['⌕','Find','/find'],['▱','Messages','/fairpath-ai'],['◇','Market','/marketplace'],['♙','Me','/me']];
- return <View style={s.nav}>{items.map(([icon,label,route])=>{const active=pathname===route||(route==='/find'&&(pathname.includes('job')||pathname.includes('housing')))||(route==='/marketplace'&&pathname.includes('market'));return <Pressable key={label} style={s.navItem} onPress={()=>router.replace(route as never)}><Text style={[s.navIcon,active&&s.navActive]}>{icon}</Text><Text style={[s.navText,active&&s.navActive]}>{label}</Text></Pressable>})}</View>
+ const items:[string,string,string][]=[['⌂','Home','/home'],['⌕','Find','/find'],['✦','AI','/fairpath-ai'],['◇','Market','/marketplace'],['♙','Me','/me']];
+ return <View style={s.nav}>{items.map(([icon,label,route])=>{const active=pathname===route||(route==='/find'&&(pathname.includes('job')||pathname.includes('housing')))||(route==='/fairpath-ai'&&(pathname.includes('fairpath-ai')||pathname.includes('credit-tools')))||(route==='/marketplace'&&pathname.includes('market'));return <Pressable key={label} style={s.navItem} onPress={()=>router.replace(route as never)}><Text style={[s.navIcon,active&&s.navActive]}>{icon}</Text><Text style={[s.navText,active&&s.navActive]}>{label}</Text></Pressable>})}</View>
 }
 export function Divider(){return <View style={s.divider}/>}
 export function InlineBadge({children,tone='default'}:{children:React.ReactNode;tone?:'default'|'lime'}){
