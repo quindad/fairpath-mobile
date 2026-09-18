@@ -1,4 +1,4 @@
-import { LeagueSpartan_700Bold, LeagueSpartan_800ExtraBold, LeagueSpartan_900Black, useFonts } from '@expo-google-fonts/league-spartan';
+import { Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold, useFonts } from '@expo-google-fonts/manrope';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
@@ -7,9 +7,11 @@ void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    LeagueSpartan_700Bold,
-    LeagueSpartan_800ExtraBold,
-    LeagueSpartan_900Black,
+    Manrope_400Regular,
+    Manrope_500Medium,
+    Manrope_600SemiBold,
+    Manrope_700Bold,
+    Manrope_800ExtraBold,
   });
 
   useEffect(() => {
