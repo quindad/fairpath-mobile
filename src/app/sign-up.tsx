@@ -172,7 +172,7 @@ export default function SignUpScreen() {
 
           <View style={styles.loginRow}>
             <Text style={styles.loginMuted}>Already have an account?</Text>
-            <Text style={styles.loginLink}> Sign in</Text>
+            <Pressable onPress={() => router.replace('/sign-in')}><Text style={styles.loginLink}> Sign in</Text></Pressable>
           </View>
         </ScrollView>
       </SafeAreaView>
