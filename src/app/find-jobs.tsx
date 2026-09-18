@@ -1,21 +1,75 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { FairPathColors as C } from '@/constants/fairpath';
+import { ScreenFrame, PageHeader, FilterStrip, SharpChip, InlineBadge } from '@/components/ProductChrome';
+import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L, FairPathRadius as R } from '@/constants/fairpath';
 import { loadJobs, saveJob, type Job } from '@/core/opportunities/opportunity-service';
+import { loadProfileAnswers } from '@/core/profile/profile-service';
+import { openGoogleMaps } from '@/core/location/maps';
+
+type Lane='all'|'match'|'second';
 export default function FindJobs(){
- const [query,setQuery]=useState(''); const [jobs,setJobs]=useState<Job[]>([]); const [loading,setLoading]=useState(true); const [error,setError]=useState('');
- async function run(value=query){setLoading(true);setError('');try{setJobs(await loadJobs(value));}catch{setError('Jobs could not load. Try again.');}finally{setLoading(false);}}
- useEffect(()=>{run('');},[]);
- return <View style={s.screen}><SafeAreaView style={s.safe}>
- <View style={s.head}><Pressable onPress={()=>router.back()}><Text style={s.back}>←</Text></Pressable><View><Text style={s.kicker}>FAIRPATH JOBS</Text><Text style={s.title}>Work that fits your path.</Text></View></View>
- <View style={s.search}><TextInput value={query} onChangeText={setQuery} onSubmitEditing={()=>run()} placeholder="Job title, company or location" placeholderTextColor="#6D736D" style={s.input}/><Pressable style={s.searchBtn} onPress={()=>run()}><Text style={s.searchText}>Search</Text></Pressable></View>
- <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filters}>{['Best match','Remote','Full-time','Part-time','Pay','Experience','Benefits','Background fit'].map(x=><Pressable key={x} style={s.chip}><Text style={s.chipText}>{x}</Text></Pressable>)}</ScrollView>
- <ScrollView contentContainerStyle={s.list}>{loading?<Text style={s.muted}>Finding opportunities…</Text>:error?<Text style={s.error}>{error}</Text>:jobs.length===0?<View style={s.empty}><Text style={s.emptyTitle}>No published jobs yet.</Text><Text style={s.muted}>The marketplace is live. Employer listings will appear here when published.</Text></View>:jobs.map(j=><Pressable key={j.id} style={s.card}>
- <View style={s.cardTop}><View style={s.logo}><Text style={s.logoText}>{j.company_name.slice(0,1)}</Text></View><Pressable onPress={()=>saveJob(j.id)}><Text style={s.save}>♡</Text></Pressable></View>
- <Text style={s.jobTitle}>{j.title}</Text><Text style={s.company}>{j.company_name}</Text><Text style={s.meta}>{[j.location_text,j.workplace_type.replace('_',' '),j.employment_type.replace('_',' ')].filter(Boolean).join(' · ')}</Text>
- {j.pay_min!=null?<Text style={s.pay}>{'$'+j.pay_min+(j.pay_max?'–$'+j.pay_max:'')+' / '+(j.pay_period??'period')}</Text>:null}
- <View style={s.tags}>{j.skills.slice(0,3).map(x=><Text key={x} style={s.tag}>{x}</Text>)}</View><View style={s.match}><Text style={s.matchText}>FAIRPATH MATCH</Text><Text style={s.matchSub}>Compatibility details improve as your FairPath profile becomes more complete.</Text></View><View style={s.apply}><Text style={s.applyText}>View job</Text><Text style={s.applyText}>→</Text></View></Pressable>)}</ScrollView>
- </SafeAreaView></View>}
-const s=StyleSheet.create({screen:{flex:1,backgroundColor:C.black},safe:{flex:1,width:'100%',maxWidth:850,alignSelf:'center'},head:{padding:24,paddingBottom:16,flexDirection:'row',gap:20,alignItems:'center'},back:{color:'#fff',fontSize:24},kicker:{color:C.lime,fontFamily:'LeagueSpartan_800ExtraBold',fontSize:9,letterSpacing:1.8},title:{color:'#fff',fontFamily:'LeagueSpartan_900Black',fontSize:28,marginTop:4},search:{flexDirection:'row',gap:10,paddingHorizontal:24},input:{flex:1,height:54,borderRadius:16,borderWidth:1,borderColor:C.border,backgroundColor:C.card,color:'#fff',paddingHorizontal:16},searchBtn:{backgroundColor:C.lime,borderRadius:16,paddingHorizontal:20,justifyContent:'center'},searchText:{color:C.black,fontFamily:'LeagueSpartan_800ExtraBold'},filters:{gap:8,paddingHorizontal:24,paddingVertical:14},chip:{height:34,borderRadius:18,borderWidth:1,borderColor:C.border,paddingHorizontal:13,justifyContent:'center'},chipText:{color:'#C7CBC7',fontSize:11,fontWeight:'700'},list:{padding:24,paddingTop:8,paddingBottom:70,gap:12},card:{borderRadius:22,borderWidth:1,borderColor:C.border,backgroundColor:C.card,padding:20},cardTop:{flexDirection:'row',justifyContent:'space-between'},logo:{width:42,height:42,borderRadius:12,backgroundColor:'#202620',alignItems:'center',justifyContent:'center'},logoText:{color:C.lime,fontFamily:'LeagueSpartan_900Black',fontSize:18},save:{color:'#fff',fontSize:27},jobTitle:{color:'#fff',fontFamily:'LeagueSpartan_900Black',fontSize:23,marginTop:14},company:{color:'#D6D9D6',fontSize:14,marginTop:5},meta:{color:C.muted,fontSize:12,marginTop:7,textTransform:'capitalize'},pay:{color:'#fff',fontWeight:'800',marginTop:12},tags:{flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:12},tag:{color:'#C9D1C4',fontSize:10,borderWidth:1,borderColor:'#384037',borderRadius:12,paddingHorizontal:9,paddingVertical:5},match:{backgroundColor:'#101610',borderRadius:14,padding:12,marginTop:15},matchText:{color:C.lime,fontFamily:'LeagueSpartan_800ExtraBold',fontSize:8,letterSpacing:1.2},matchSub:{color:C.muted,fontSize:11,marginTop:4},apply:{height:48,borderRadius:14,backgroundColor:C.lime,marginTop:15,paddingHorizontal:15,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},applyText:{color:C.black,fontFamily:'LeagueSpartan_800ExtraBold'},muted:{color:C.muted,lineHeight:20},error:{color:'#FF8A8A'},empty:{padding:24,borderWidth:1,borderColor:C.border,borderRadius:20},emptyTitle:{color:'#fff',fontFamily:'LeagueSpartan_800ExtraBold',fontSize:18,marginBottom:6}});
+ const [query,setQuery]=useState(''); const [location,setLocation]=useState(''); const [jobs,setJobs]=useState<Job[]>([]);
+ const [lane,setLane]=useState<Lane>('all'); const [remote,setRemote]=useState(false); const [fullTime,setFullTime]=useState(false); const [partTime,setPartTime]=useState(false);
+ const [loading,setLoading]=useState(true); const [error,setError]=useState('');
+ async function run(){
+  setLoading(true);setError('');
+  try{setJobs(await loadJobs(query,location,{remote,fullTime,partTime,secondChance:lane==='second'}));}
+  catch{setError('Jobs could not load. Check your connection and try again.');}
+  finally{setLoading(false);}
+ }
+ useEffect(()=>{let active=true;loadProfileAnswers().then(a=>{if(!active)return;const v=a['identity.current_location'];if(typeof v==='string')setLocation(v);}).finally(()=>{if(active)loadJobs().then(setJobs).catch(()=>setError('Jobs could not load.')).finally(()=>setLoading(false));});return()=>{active=false};},[]);
+ const counts=useMemo(()=>({all:jobs.length,second:jobs.filter(j=>j.eligibility_rules?.second_chance_evidence==='explicit').length}),[jobs]);
+ function openJob(j:Job){router.push(('/job/'+j.id) as never)}
+ function matchLabel(j:Job){return j.eligibility_rules?.second_chance_evidence==='explicit'?'VERIFIED SECOND-CHANCE':'POLICY REVIEW NEEDED'}
+ return <ScreenFrame>
+  <PageHeader eyebrow="FAIRPATH JOBS" title="Find work"/>
+  <View style={s.searchBlock}>
+   <View style={s.searchRow}><Text style={s.fieldLabel}>WHAT</Text><TextInput value={query} onChangeText={setQuery} style={s.input} placeholder="Job title, skill or company" placeholderTextColor={C.muted}/></View>
+   <View style={s.searchRow}><Text style={s.fieldLabel}>WHERE</Text><TextInput value={location} onChangeText={setLocation} style={s.input} placeholder="City, state or ZIP" placeholderTextColor={C.muted}/><Pressable style={s.mapBtn} onPress={()=>openGoogleMaps((location||'Columbus, OH')+' jobs')}><Text style={s.mapBtnText}>MAP</Text></Pressable></View>
+   <Pressable style={s.primary} onPress={run}><Text style={s.primaryText}>Search jobs</Text><Text style={s.primaryText}>→</Text></Pressable>
+  </View>
+  <View style={s.lanes}>
+   <Pressable style={[s.lane,lane==='all'&&s.laneActive]} onPress={()=>setLane('all')}><Text style={[s.laneText,lane==='all'&&s.laneTextActive]}>ALL JOBS</Text><Text style={[s.laneCount,lane==='all'&&s.laneTextActive]}>{counts.all}</Text></Pressable>
+   <Pressable style={[s.lane,lane==='match'&&s.laneActive]} onPress={()=>setLane('match')}><Text style={[s.laneText,lane==='match'&&s.laneTextActive]}>FAIRPATH MATCH</Text></Pressable>
+   <Pressable style={[s.lane,lane==='second'&&s.laneActive]} onPress={()=>setLane('second')}><Text style={[s.laneText,lane==='second'&&s.laneTextActive]}>2ND CHANCE</Text><Text style={[s.laneCount,lane==='second'&&s.laneTextActive]}>{counts.second}</Text></Pressable>
+  </View>
+  <FilterStrip><SharpChip label="Remote" active={remote} onPress={()=>setRemote(!remote)}/><SharpChip label="Full-time" active={fullTime} onPress={()=>{setFullTime(!fullTime);if(!fullTime)setPartTime(false)}}/><SharpChip label="Part-time" active={partTime} onPress={()=>{setPartTime(!partTime);if(!partTime)setFullTime(false)}}/><SharpChip label="Pay"/><SharpChip label="Experience"/><SharpChip label="Benefits"/></FilterStrip>
+  <ScrollView contentContainerStyle={s.list} showsVerticalScrollIndicator={false}>
+   <View style={s.resultsTop}><Text style={s.results}>{loading?'SEARCHING':String(jobs.length)+' RESULTS'}</Text><Text style={s.sort}>Most relevant</Text></View>
+   {error?<Text style={s.error}>{error}</Text>:null}
+   {!loading&&jobs.length===0?<View style={s.empty}><Text style={s.emptyTitle}>No jobs match these filters.</Text><Text style={s.emptyBody}>Try a wider location, remove a filter, or switch back to All Jobs.</Text></View>:null}
+   {jobs.map(j=><Pressable key={j.id} style={s.card} onPress={()=>openJob(j)}>
+    <View style={s.cardHeader}><View style={s.companyMark}><Text style={s.companyMarkText}>{j.company_name.slice(0,1).toUpperCase()}</Text></View><Pressable style={s.saveBtn} onPress={(e)=>{e.stopPropagation?.();void saveJob(j.id)}}><Text style={s.saveText}>SAVE</Text></Pressable></View>
+    <Text style={s.jobTitle}>{j.title}</Text><Text style={s.company}>{j.company_name}</Text>
+    <View style={s.locationLine}><Text style={s.meta}>{j.location_text||[j.city,j.state].filter(Boolean).join(', ')||'Location not listed'}</Text><Text style={s.dot}>·</Text><Text style={s.meta}>{j.workplace_type.replace('_',' ')}</Text></View>
+    {j.pay_min!=null?<Text style={s.pay}>{'$'+Number(j.pay_min).toLocaleString()+(j.pay_max?' – $'+Number(j.pay_max).toLocaleString():'')+' / '+(j.pay_period||'period')}</Text>:null}
+    <View style={s.badgeRow}><InlineBadge tone={j.eligibility_rules?.second_chance_evidence==='explicit'?'lime':'default'}>{matchLabel(j)}</InlineBadge><InlineBadge>{j.employment_type.replace('_',' ').toUpperCase()}</InlineBadge></View>
+    <Text style={s.desc} numberOfLines={2}>{j.description}</Text>
+    <View style={s.cardFooter}><Text style={s.source}>{j.source_label||'FairPath'}</Text><Text style={s.viewText}>VIEW JOB  →</Text></View>
+   </Pressable>)}
+  </ScrollView>
+ </ScreenFrame>
+}
+const s=StyleSheet.create({
+ searchBlock:{paddingHorizontal:L.mobileGutter,paddingTop:16,paddingBottom:12,borderBottomWidth:1,borderBottomColor:C.border},
+ searchRow:{minHeight:48,flexDirection:'row',alignItems:'center',borderWidth:1,borderColor:C.border,backgroundColor:C.surface,marginBottom:8},
+ fieldLabel:{width:58,color:C.muted,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.1,paddingLeft:12},
+ input:{flex:1,color:C.white,fontSize:14,paddingHorizontal:8,paddingVertical:13},
+ mapBtn:{height:46,paddingHorizontal:12,justifyContent:'center',borderLeftWidth:1,borderLeftColor:C.border},mapBtnText:{color:C.lime,fontFamily:F.extraBold,fontSize:9,letterSpacing:1},
+ primary:{height:46,borderRadius:R.sm,backgroundColor:C.lime,paddingHorizontal:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},primaryText:{color:C.black,fontFamily:F.extraBold,fontSize:13},
+ lanes:{flexDirection:'row',marginHorizontal:L.mobileGutter,marginTop:14,borderWidth:1,borderColor:C.border},
+ lane:{flex:1,minHeight:46,paddingHorizontal:8,alignItems:'center',justifyContent:'center',borderRightWidth:1,borderRightColor:C.border},laneActive:{backgroundColor:C.white},
+ laneText:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8,letterSpacing:.7,textAlign:'center'},laneTextActive:{color:C.black},laneCount:{color:C.muted,fontSize:9,marginTop:2},
+ list:{paddingHorizontal:L.mobileGutter,paddingBottom:28},resultsTop:{height:42,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},results:{color:C.muted,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.1},sort:{color:C.mutedStrong,fontSize:11},
+ card:{borderTopWidth:1,borderTopColor:C.border,paddingVertical:17},cardHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
+ companyMark:{width:34,height:34,borderRadius:R.sm,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center'},companyMarkText:{color:C.white,fontFamily:F.black,fontSize:14},
+ saveBtn:{height:30,borderRadius:R.xs,borderWidth:1,borderColor:C.borderStrong,paddingHorizontal:10,justifyContent:'center'},saveText:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8},
+ jobTitle:{color:C.white,fontFamily:F.black,fontSize:22,lineHeight:24,letterSpacing:-.5,marginTop:12},company:{color:C.mutedStrong,fontSize:13,fontWeight:'700',marginTop:4},
+ locationLine:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',marginTop:7},meta:{color:C.muted,fontSize:12,textTransform:'capitalize'},dot:{color:C.muted,marginHorizontal:6},
+ pay:{color:C.white,fontFamily:F.bold,fontSize:14,marginTop:10},badgeRow:{flexDirection:'row',gap:6,flexWrap:'wrap',marginTop:11},
+ desc:{color:C.mutedStrong,fontSize:12,lineHeight:18,marginTop:12},cardFooter:{marginTop:14,paddingTop:12,borderTopWidth:1,borderTopColor:C.border,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
+ source:{color:C.muted,fontSize:10},viewText:{color:C.lime,fontFamily:F.extraBold,fontSize:9,letterSpacing:.8},
+ empty:{borderTopWidth:1,borderTopColor:C.border,paddingVertical:28},emptyTitle:{color:C.white,fontFamily:F.extraBold,fontSize:18},emptyBody:{color:C.muted,fontSize:13,lineHeight:20,marginTop:7},
+ error:{color:C.danger,fontSize:12,paddingVertical:12}
+});
