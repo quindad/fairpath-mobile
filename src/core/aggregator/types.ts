@@ -1,0 +1,10 @@
+export type OpportunityKind='job'|'housing';
+export type SourceStatus='planned'|'pending_approval'|'active'|'paused'|'disabled';
+export type IngestionMode='api'|'feed'|'webhook'|'partner_direct'|'manual';
+export type OpportunitySource={id:string;kind:'jobs'|'housing';providerKey:string;displayName:string;status:SourceStatus;ingestionMode:IngestionMode;aiProcessingAllowed:boolean;attributionRequired:boolean};
+export type NormalizedJob={externalId:string;title:string;companyName:string;description?:string;locationText?:string;workplaceType?:'onsite'|'hybrid'|'remote';employmentType?:string;payMin?:number;payMax?:number;payPeriod?:string;skills?:string[];benefits?:string[];applyUrl?:string;sourceUrl?:string};
+export type NormalizedHousing={externalId:string;title:string;description?:string;city:string;state:string;rentMonthly:number;bedrooms?:number;bathrooms?:number;squareFeet?:number;amenities?:string[];photos?:string[];virtualTourUrl?:string;floorPlanUrl?:string;sourceUrl?:string};
+export type CompatibilityEvidenceType='second_chance_explicit'|'fair_chance_explicit'|'background_policy'|'restriction'|'license_requirement'|'income_requirement'|'credit_requirement'|'rental_history_requirement'|'source_verified'|'unknown';
+export type CompatibilityEvidence={type:CompatibilityEvidenceType;text?:string;source:string;confidence?:number;machineExtracted:boolean};
+export type MatchBand='verified_second_chance'|'strong_match'|'compatible'|'needs_review'|'unknown';
+export type MatchExplanation={band:MatchBand;reasons:string[];unknowns:string[];hardRestrictions:string[]};
