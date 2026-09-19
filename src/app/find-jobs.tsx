@@ -5,7 +5,7 @@ import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, SharpChip, InlineBadge } from '@/components/ProductChrome';
 import { JobMap } from '@/components/JobMap';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
-import { loadJobs, saveJob, type Job } from '@/core/opportunities/opportunity-service';
+import { loadJobs, loadSavedJobIds, saveJob, unsaveJob, type Job } from '@/core/opportunities/opportunity-service';
 import { loadProfileAnswers } from '@/core/profile/profile-service';
 
 type Lane='all'|'second';
@@ -23,6 +23,7 @@ export default function FindJobs(){
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
  const [viewMode,setViewMode]=useState<'list'|'map'>('list');
+ const [savedJobs,setSavedJobs]=useState<Record<string,boolean>>({});
 
  async function run(next={remote,fullTime,partTime,lane}){
   setLoading(true);
@@ -55,6 +56,9 @@ export default function FindJobs(){
       .then(setJobs)
       .catch(()=>setError('Jobs could not load.'))
       .finally(()=>setLoading(false));
+     loadSavedJobIds()
+      .then(ids=>{if(active)setSavedJobs(Object.fromEntries(ids.map(id=>[id,true])))})
+      .catch(()=>{});
     }
    });
   return()=>{active=false};
@@ -76,18 +80,20 @@ export default function FindJobs(){
  }
 
  async function handleSave(id:string){
+  const currentlySaved=Boolean(savedJobs[id]);
   try{
-   await saveJob(id);
-   Alert.alert('Saved','Job saved to your FairPath.');
+   if(currentlySaved)await unsaveJob(id);
+   else await saveJob(id);
+   setSavedJobs(prev=>({...prev,[id]:!currentlySaved}));
   }catch(e){
    if(e instanceof Error&&e.message==='SIGNED_OUT'){
     Alert.alert('Sign in to save','Create an account or sign in to save jobs.',[
      {text:'Not now',style:'cancel'},
-     {text:'Sign in',onPress:()=>router.push('/sign-in' as never)}
+     {text:'Sign in',onPress:()=>router.push('/sign-in?returnTo=/find-jobs' as never)}
     ]);
     return;
    }
-   Alert.alert('Could not save','Please try again.');
+   Alert.alert('Could not update saved job','Please try again.');
   }
  }
 
@@ -192,15 +198,15 @@ export default function FindJobs(){
 
    {!loading&&jobs.length>0&&viewMode==='map'?<JobMap jobs={jobs} onOpenJob={openJob}/>:null}
 
-   {viewMode==='list'?jobs.map(j=><Pressable key={j.id} style={s.card} onPress={()=>openJob(j)}>
+   {viewMode==='list'?jobs.map(j=>{const saved=Boolean(savedJobs[j.id]);return <Pressable key={j.id} style={s.card} onPress={()=>openJob(j)}>
     <View style={s.cardTop}>
      <View style={s.companyMark}><Text style={s.companyMarkText}>{j.company_name.slice(0,1).toUpperCase()}</Text></View>
      <View style={s.cardTopCopy}>
       <Text style={s.jobTitle}>{j.title}</Text>
       <Text style={s.company}>{j.company_name}</Text>
      </View>
-     <Pressable accessibilityRole="button" accessibilityLabel="Save job" style={s.saveBtn} onPress={(e)=>{e.stopPropagation?.();void handleSave(j.id)}}>
-      <Lucide name="bookmark" color={C.mutedStrong} size={15}/>
+     <Pressable accessibilityRole="button" accessibilityLabel={saved?'Remove saved job':'Save job'} style={[s.saveBtn,saved&&s.saveBtnActive]} onPress={(e)=>{e.stopPropagation?.();void handleSave(j.id)}}>
+      <Lucide name={saved?'bookmark-check':'bookmark'} color={saved?C.black:C.mutedStrong} size={15}/>
      </Pressable>
     </View>
 
@@ -233,7 +239,7 @@ export default function FindJobs(){
       <Lucide name="arrow-right" color={C.lime} size={14}/>
      </View>
     </View>
-   </Pressable>):null}
+   </Pressable>}):null}
   </ScrollView>
  </ScreenFrame>;
 }
@@ -275,7 +281,7 @@ const s=StyleSheet.create({
  companyMark:{width:36,height:36,borderRadius:2,borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#0A0C0A',alignItems:'center',justifyContent:'center',marginRight:10},
  companyMarkText:{color:C.white,fontFamily:F.extraBold,fontSize:13},
  cardTopCopy:{flex:1,minWidth:0,paddingRight:10},
- saveBtn:{width:34,height:34,borderRadius:2,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center',backgroundColor:'#0A0C0A'},
+ saveBtn:{width:34,height:34,borderRadius:2,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center',backgroundColor:'#0A0C0A'},saveBtnActive:{backgroundColor:C.lime,borderColor:C.lime},
  jobTitle:{color:C.white,fontFamily:F.extraBold,fontSize:20,lineHeight:22,letterSpacing:-.4},
  company:{color:C.mutedStrong,fontFamily:F.bold,fontSize:12,marginTop:3},
  metaRow:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:6,marginTop:12},
