@@ -5,6 +5,7 @@ import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome
 import { JobMap } from '@/components/JobMap';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { loadJob, saveJob, type Job } from '@/core/opportunities/opportunity-service';
+import { loadFairPathReadiness } from '@/core/profile/profile-service';
 
 const DEMO_JOBS:Record<string,Job>={
  'demo-warehouse':{
@@ -36,9 +37,11 @@ export default function JobDetail(){
  const [job,setJob]=useState<Job|null>(null);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
+ const [readiness,setReadiness]=useState<number|null>(null);
 
  useEffect(()=>{
   if(!id)return;
+  loadFairPathReadiness().then(({readiness})=>setReadiness(readiness.overallPercentage)).catch(()=>setReadiness(0));
   if(DEMO_JOBS[id]){setJob(DEMO_JOBS[id]);setLoading(false);return}
   loadJob(id).then(setJob).catch(()=>setError('This job could not be loaded.')).finally(()=>setLoading(false));
  },[id]);
@@ -63,6 +66,10 @@ export default function JobDetail(){
   }
   if(job.application_method==='external'&&job.external_apply_url){
    await Linking.openURL(job.external_apply_url);
+   return;
+  }
+  if(job.easy_apply_enabled&&readiness!==100){
+   router.push('/complete-profile' as never);
    return;
   }
   router.push(('/job-apply/'+job.id) as never);
@@ -113,7 +120,7 @@ export default function JobDetail(){
 
   <View style={s.bottom}>
    <Pressable style={s.apply} onPress={apply}>
-    <Text style={s.applyText}>{job.application_method==='demo'?'PREVIEW LISTING':job.application_method==='external'?'CONTINUE TO APPLY':job.easy_apply_enabled?'EASY APPLY WITH FAIRPATH':'APPLY WITH FAIRPATH'}</Text>
+    <Text style={s.applyText}>{job.application_method==='demo'?'PREVIEW LISTING':job.application_method==='external'?'CONTINUE TO APPLY':job.easy_apply_enabled&&readiness!==100?'COMPLETE PROFILE TO UNLOCK':job.easy_apply_enabled?'EASY APPLY WITH FAIRPATH':'APPLY WITH FAIRPATH'}</Text>
     <Text style={s.applyText}>→</Text>
    </Pressable>
   </View>
