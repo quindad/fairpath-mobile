@@ -114,7 +114,7 @@ export default function FindJobs(){
  }
 
  return <ScreenFrame>
-  <PageHeader eyebrow="FAIRPATH JOBS" title="Find work"/>
+  <PageHeader eyebrow="FAIRPATH JOBS" title="Find work" trailing={<Pressable style={s.applicationsLink} onPress={()=>router.push('/job-applications' as never)}><Text style={s.applicationsLinkText}>MY APPLICATIONS</Text></Pressable>}/>
   <View style={s.searchBlock}>
    <View style={s.searchRow}>
     <View style={s.fieldIcon}><Lucide name="briefcase-business" color={C.lime} size={15}/></View>
@@ -235,6 +235,7 @@ export default function FindJobs(){
 }
 
 const s=StyleSheet.create({
+ applicationsLink:{height:32,borderWidth:1,borderColor:C.borderStrong,paddingHorizontal:10,justifyContent:'center'},applicationsLinkText:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},
  searchBlock:{paddingHorizontal:L.mobileGutter,paddingTop:14,paddingBottom:14,borderBottomWidth:1,borderBottomColor:C.borderStrong},
  searchRow:{minHeight:58,flexDirection:'row',alignItems:'center',borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#0A0C0A',marginBottom:8},
  fieldIcon:{width:42,alignItems:'center',justifyContent:'center'},
