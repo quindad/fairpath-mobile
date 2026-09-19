@@ -6,11 +6,16 @@ import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L, FairPathR
 import { loadJob, saveJob, submitJobApplication, type Job } from '@/core/opportunities/opportunity-service';
 import { openGoogleMaps } from '@/core/location/maps';
 
+const DEMO_JOBS:Record<string,Job>={
+ 'demo-warehouse':{id:'demo-warehouse',title:'Warehouse Associate',company_name:'Second Chance Logistics',description:'Sample FairPath opportunity used to preview the job experience.',location_text:'Columbus, OH',city:'Columbus',state:'OH',postal_code:null,workplace_type:'onsite',employment_type:'full_time',pay_min:19,pay_max:23,pay_period:'hour',benefits:['Sample benefits'],skills:['Warehouse operations'],requirements:['Sample requirements shown for preview only'],background_policy_summary:'Demo second-chance opportunity. This is sample data, not a live employer posting.',eligibility_rules:{second_chance_evidence:'explicit'},application_method:'demo',external_apply_url:null,source_label:'FairPath Demo',source_url:null,featured:true,created_at:new Date().toISOString()},
+ 'demo-support':{id:'demo-support',title:'Customer Support Specialist',company_name:'Pathway Services',description:'Sample FairPath opportunity used to preview the job experience.',location_text:'Remote',city:null,state:null,postal_code:null,workplace_type:'remote',employment_type:'full_time',pay_min:20,pay_max:25,pay_period:'hour',benefits:['Sample benefits'],skills:['Customer support'],requirements:['Sample requirements shown for preview only'],background_policy_summary:'Demo opportunity. This is sample data, not a live employer posting.',eligibility_rules:{second_chance_evidence:'explicit'},application_method:'demo',external_apply_url:null,source_label:'FairPath Demo',source_url:null,featured:true,created_at:new Date().toISOString()}
+};
+
 export default function JobDetail(){
  const {id}=useLocalSearchParams<{id:string}>(); const [job,setJob]=useState<Job|null>(null); const [loading,setLoading]=useState(true); const [error,setError]=useState('');
- useEffect(()=>{if(!id)return;loadJob(id).then(setJob).catch(()=>setError('This job could not be loaded.')).finally(()=>setLoading(false))},[id]);
- async function save(){if(!job)return;try{await saveJob(job.id);Alert.alert('Saved','Job saved to your FairPath.')}catch(e){if(e instanceof Error&&e.message==='SIGNED_OUT'){router.push('/sign-in' as never);return}Alert.alert('Could not save','Please try again.')}}
- async function apply(){if(!job)return;if(job.application_method==='external'&&job.external_apply_url){await Linking.openURL(job.external_apply_url);return}try{await submitJobApplication(job.id);Alert.alert('Application submitted','Your FairPath application has been submitted.')}catch(e){if(e instanceof Error&&e.message==='SIGNED_OUT'){router.push('/sign-in' as never);return}Alert.alert('Could not apply','Please try again.')}}
+ useEffect(()=>{if(!id)return;if(DEMO_JOBS[id]){setJob(DEMO_JOBS[id]);setLoading(false);return;}loadJob(id).then(setJob).catch(()=>setError('This job could not be loaded.')).finally(()=>setLoading(false))},[id]);
+ async function save(){if(!job)return;if(job.application_method==='demo'){Alert.alert('Preview job','This is sample data for the FairPath preview. Live jobs can be saved to your account.');return;}try{await saveJob(job.id);Alert.alert('Saved','Job saved to your FairPath.')}catch(e){if(e instanceof Error&&e.message==='SIGNED_OUT'){router.push('/sign-in' as never);return}Alert.alert('Could not save','Please try again.')}}
+ async function apply(){if(!job)return;if(job.application_method==='demo'){Alert.alert('Preview job','This is sample data for the FairPath preview. Live applications will use the real employer or FairPath application flow.');return;}if(job.application_method==='external'&&job.external_apply_url){await Linking.openURL(job.external_apply_url);return}try{await submitJobApplication(job.id);Alert.alert('Application submitted','Your FairPath application has been submitted.')}catch(e){if(e instanceof Error&&e.message==='SIGNED_OUT'){router.push('/sign-in' as never);return}Alert.alert('Could not apply','Please try again.')}}
  if(loading)return <ScreenFrame><PageHeader eyebrow="FAIRPATH JOBS" title="Job"/><View style={s.state}><Text style={s.stateText}>Loading job…</Text></View></ScreenFrame>;
  if(error||!job)return <ScreenFrame><PageHeader eyebrow="FAIRPATH JOBS" title="Job"/><View style={s.state}><Text style={s.error}>{error||'Job not found.'}</Text></View></ScreenFrame>;
  const location=job.location_text||[job.city,job.state,job.postal_code].filter(Boolean).join(', ');
@@ -28,7 +33,7 @@ export default function JobDetail(){
   {job.benefits?.length?<View style={s.section}><Text style={s.sectionLabel}>BENEFITS</Text><Text style={s.body}>{job.benefits.join(' · ')}</Text></View>:null}
   <View style={s.source}><Text style={s.sourceLabel}>SOURCE</Text><Text style={s.sourceText}>{job.source_label||'FairPath'}</Text></View>
  </ScrollView>
- <View style={s.bottom}><Pressable style={s.apply} onPress={apply}><Text style={s.applyText}>{job.application_method==='external'?'CONTINUE TO APPLY':'APPLY WITH FAIRPATH'}</Text><Text style={s.applyText}>→</Text></Pressable></View>
+ <View style={s.bottom}><Pressable style={s.apply} onPress={apply}><Text style={s.applyText}>{job.application_method==='demo'?'PREVIEW LISTING':job.application_method==='external'?'CONTINUE TO APPLY':'APPLY WITH FAIRPATH'}</Text><Text style={s.applyText}>→</Text></Pressable></View>
  </ScreenFrame>
 }
 const s=StyleSheet.create({
