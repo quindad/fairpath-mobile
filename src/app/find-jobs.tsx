@@ -7,6 +7,7 @@ import { JobMap } from '@/components/JobMap';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { loadJobs, loadSavedJobIds, saveJob, unsaveJob, type Job } from '@/core/opportunities/opportunity-service';
 import { loadProfileAnswers } from '@/core/profile/profile-service';
+import { supabase } from '@/lib/supabase';
 
 type Lane='all'|'second';
 
@@ -81,6 +82,12 @@ export default function FindJobs(){
   router.push(('/job/'+j.id) as never);
  }
 
+ async function openAccountArea(route:string){
+  const {data:{user}}=await supabase.auth.getUser();
+  if(user){router.push(route as never);return}
+  router.push(('/sign-up?returnTo='+encodeURIComponent(route)) as never);
+ }
+
  function matchLabel(j:Job){
   return j.eligibility_rules?.second_chance_evidence==='explicit'
    ?'VERIFIED SECOND-CHANCE'
@@ -97,7 +104,8 @@ export default function FindJobs(){
    if(e instanceof Error&&e.message==='SIGNED_OUT'){
     Alert.alert('Sign in to save','Create an account or sign in to save jobs.',[
      {text:'Not now',style:'cancel'},
-     {text:'Sign in',onPress:()=>router.push('/sign-in?returnTo=/find-jobs' as never)}
+     {text:'Sign in',onPress:()=>router.push('/sign-in?returnTo=/find-jobs' as never)},
+     {text:'Create account',onPress:()=>router.push('/sign-up?returnTo=/find-jobs' as never)}
     ]);
     return;
    }
@@ -131,8 +139,8 @@ export default function FindJobs(){
   <PageHeader eyebrow="FAIRPATH JOBS" title="Find work" backTo="/find"/>
   <View style={s.utilityRow}>
    <Pressable style={s.utilityBtn} onPress={()=>router.push('/find-housing' as never)}><Lucide name="house" color={C.lime} size={13}/><Text style={s.utilityText}>HOUSING</Text></Pressable>
-   <Pressable style={s.utilityBtn} onPress={()=>router.push('/saved-jobs' as never)}><Lucide name="bookmark" color={C.lime} size={13}/><Text style={s.utilityText}>SAVED JOBS</Text></Pressable>
-   <Pressable style={s.utilityBtn} onPress={()=>router.push('/job-applications' as never)}><Lucide name="file-check-2" color={C.lime} size={13}/><Text style={s.utilityText}>MY APPLICATIONS</Text></Pressable>
+   <Pressable style={s.utilityBtn} onPress={()=>void openAccountArea('/saved-jobs')}><Lucide name="bookmark" color={C.lime} size={13}/><Text style={s.utilityText}>SAVED JOBS</Text></Pressable>
+   <Pressable style={s.utilityBtn} onPress={()=>void openAccountArea('/job-applications')}><Lucide name="file-check-2" color={C.lime} size={13}/><Text style={s.utilityText}>MY APPLICATIONS</Text></Pressable>
   </View>
   <View style={s.searchBlock}>
    <View style={s.searchRow}>
