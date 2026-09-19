@@ -4,7 +4,7 @@ import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'r
 import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome';
 import { JobMap } from '@/components/JobMap';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
-import { loadJob, loadMyJobApplicationForJob, saveJob, type Job, type JobApplicationStatus } from '@/core/opportunities/opportunity-service';
+import { isJobSaved, loadJob, loadMyJobApplicationForJob, saveJob, unsaveJob, type Job, type JobApplicationStatus } from '@/core/opportunities/opportunity-service';
 import { loadFairPathReadiness } from '@/core/profile/profile-service';
 
 const DEMO_JOBS:Record<string,Job>={
@@ -39,24 +39,26 @@ export default function JobDetail(){
  const [error,setError]=useState('');
  const [readiness,setReadiness]=useState<number|null>(null);
  const [applicationStatus,setApplicationStatus]=useState<JobApplicationStatus|null>(null);
+ const [saved,setSaved]=useState(false);
 
  useEffect(()=>{
   if(!id)return;
   loadFairPathReadiness().then(({readiness})=>setReadiness(readiness.overallPercentage)).catch(()=>setReadiness(0));
   loadMyJobApplicationForJob(id).then(x=>setApplicationStatus(x?.status??null)).catch(()=>setApplicationStatus(null));
+  if(!id.startsWith('demo-'))isJobSaved(id).then(setSaved).catch(()=>setSaved(false));
   if(DEMO_JOBS[id]){setJob(DEMO_JOBS[id]);setLoading(false);return}
   loadJob(id).then(setJob).catch(()=>setError('This job could not be loaded.')).finally(()=>setLoading(false));
  },[id]);
 
  async function save(){
   if(!job)return;
-  if(job.application_method==='demo'){Alert.alert('Preview job','This is sample data for the FairPath preview. Live jobs can be saved to your account.');return}
+  if(job.application_method==='demo'){Alert.alert('Preview job','Sample jobs are not saved to your account.');return}
   try{
-   await saveJob(job.id);
-   Alert.alert('Saved','Job saved to your FairPath.');
+   if(saved){await unsaveJob(job.id);setSaved(false)}
+   else{await saveJob(job.id);setSaved(true)}
   }catch(e){
-   if(e instanceof Error&&e.message==='SIGNED_OUT'){router.push('/sign-in' as never);return}
-   Alert.alert('Could not save','Please try again.');
+   if(e instanceof Error&&e.message==='SIGNED_OUT'){router.push(('/sign-in?returnTo='+encodeURIComponent('/job/'+job.id)) as never);return}
+   Alert.alert('Could not update saved job','Please try again.');
   }
  }
 
@@ -102,7 +104,7 @@ export default function JobDetail(){
  const applied=Boolean(applicationStatus);
 
  return <ScreenFrame>
-  <PageHeader eyebrow="FAIRPATH JOBS" title="Job details" backTo="/find-jobs" trailing={<Pressable style={s.save} onPress={save}><Text style={s.saveText}>SAVE</Text></Pressable>}/>
+  <PageHeader eyebrow="FAIRPATH JOBS" title="Job details" backTo="/find-jobs" trailing={<Pressable style={[s.save,saved&&s.saveActive]} onPress={()=>void save()}><Text style={[s.saveText,saved&&s.saveTextActive]}>{saved?'SAVED':'SAVE'}</Text></Pressable>}/>
   <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <Text style={s.company}>{job.company_name.toUpperCase()}</Text>
    <Text style={s.title}>{job.title}</Text>
@@ -156,7 +158,7 @@ export default function JobDetail(){
 const s=StyleSheet.create({
  content:{paddingHorizontal:L.mobileGutter,paddingTop:20,paddingBottom:110},
  state:{padding:L.mobileGutter},stateText:{color:C.muted},error:{color:C.danger},
- save:{height:32,borderWidth:1,borderColor:C.borderStrong,paddingHorizontal:10,justifyContent:'center'},saveText:{color:C.white,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8},
+ save:{height:32,borderWidth:1,borderColor:C.borderStrong,paddingHorizontal:10,justifyContent:'center'},saveActive:{backgroundColor:C.lime,borderColor:C.lime},saveText:{color:C.white,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8},saveTextActive:{color:C.black},
  company:{color:C.lime,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.2},
  title:{color:C.white,fontFamily:F.extraBold,fontSize:31,lineHeight:33,letterSpacing:-.9,marginTop:7},
  locationRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12,marginTop:10},
