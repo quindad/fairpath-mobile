@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, SharpChip, InlineBadge } from '@/components/ProductChrome';
+import { JobMap } from '@/components/JobMap';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { loadJobs, saveJob, type Job } from '@/core/opportunities/opportunity-service';
 import { loadProfileAnswers } from '@/core/profile/profile-service';
@@ -22,6 +23,7 @@ export default function FindJobs(){
  const [partTime,setPartTime]=useState(false);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
+ const [viewMode,setViewMode]=useState<'list'|'map'>('list');
 
  async function run(next={remote,fullTime,partTime,lane}){
   setLoading(true);
@@ -166,7 +168,16 @@ export default function FindJobs(){
   <ScrollView contentContainerStyle={s.list} showsVerticalScrollIndicator={false}>
    <View style={s.resultsTop}>
     <Text style={s.results}>{loading?'SEARCHING':String(jobs.length)+' RESULTS'}</Text>
-    <Text style={s.sort}>Most relevant</Text>
+    <View style={s.viewToggle}>
+     <Pressable style={[s.viewButton,viewMode==='list'&&s.viewButtonActive]} onPress={()=>setViewMode('list')}>
+      <Lucide name="list" color={viewMode==='list'?C.lime:C.mutedStrong} size={13}/>
+      <Text style={[s.viewButtonText,viewMode==='list'&&s.viewButtonTextActive]}>LIST</Text>
+     </Pressable>
+     <Pressable style={[s.viewButton,viewMode==='map'&&s.viewButtonActive]} onPress={()=>setViewMode('map')}>
+      <Lucide name="map" color={viewMode==='map'?C.lime:C.mutedStrong} size={13}/>
+      <Text style={[s.viewButtonText,viewMode==='map'&&s.viewButtonTextActive]}>MAP</Text>
+     </Pressable>
+    </View>
    </View>
 
    {error?<Text style={s.error}>{error}</Text>:null}
@@ -176,7 +187,9 @@ export default function FindJobs(){
     <Text style={s.emptyBody}>Try a wider location, remove a filter, or switch back to All Jobs.</Text>
    </View>:null}
 
-   {jobs.map(j=><Pressable key={j.id} style={s.card} onPress={()=>openJob(j)}>
+   {!loading&&jobs.length>0&&viewMode==='map'?<JobMap jobs={jobs} onOpenJob={openJob}/>:null}
+
+   {viewMode==='list'?jobs.map(j=><Pressable key={j.id} style={s.card} onPress={()=>openJob(j)>
     <View style={s.cardTop}>
      <View style={s.companyMark}><Text style={s.companyMarkText}>{j.company_name.slice(0,1).toUpperCase()}</Text></View>
      <View style={s.cardTopCopy}>
@@ -216,7 +229,7 @@ export default function FindJobs(){
       <Lucide name="arrow-right" color={C.lime} size={14}/>
      </View>
     </View>
-   </Pressable>)}
+   </Pressable>):null}
   </ScrollView>
  </ScreenFrame>;
 }
@@ -245,9 +258,13 @@ const s=StyleSheet.create({
  filtersStrip:{height:52,paddingHorizontal:L.mobileGutter,paddingVertical:9,flexDirection:'row',gap:7},
  filterCell:{flex:1},
  list:{paddingHorizontal:L.mobileGutter,paddingBottom:28},
- resultsTop:{height:42,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
+ resultsTop:{height:46,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
  results:{color:C.muted,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.1},
- sort:{color:C.mutedStrong,fontSize:11},
+ viewToggle:{flexDirection:'row',borderWidth:1,borderColor:C.borderStrong},
+ viewButton:{height:28,paddingHorizontal:9,flexDirection:'row',gap:5,alignItems:'center',justifyContent:'center',backgroundColor:'#090B09'},
+ viewButtonActive:{backgroundColor:'#10150C'},
+ viewButtonText:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},
+ viewButtonTextActive:{color:C.lime},
  card:{borderTopWidth:1,borderTopColor:C.borderStrong,paddingVertical:18},
  cardTop:{flexDirection:'row',alignItems:'flex-start'},
  companyMark:{width:36,height:36,borderRadius:2,borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#0A0C0A',alignItems:'center',justifyContent:'center',marginRight:10},
