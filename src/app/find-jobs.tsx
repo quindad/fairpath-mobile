@@ -1,5 +1,5 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, SharpChip, InlineBadge } from '@/components/ProductChrome';
@@ -63,6 +63,14 @@ export default function FindJobs(){
    });
   return()=>{active=false};
  },[initialSearch]);
+
+ useFocusEffect(useCallback(()=>{
+  let active=true;
+  loadSavedJobIds()
+   .then(ids=>{if(active)setSavedJobs(Object.fromEntries(ids.map(id=>[id,true])))})
+   .catch(()=>{});
+  return()=>{active=false};
+ },[]));
 
  const counts=useMemo(()=>({
   all:jobs.length,
