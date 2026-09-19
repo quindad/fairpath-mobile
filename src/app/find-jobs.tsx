@@ -114,7 +114,7 @@ export default function FindJobs(){
  }
 
  return <ScreenFrame>
-  <PageHeader eyebrow="FAIRPATH JOBS" title="Find work" trailing={<Pressable style={s.applicationsLink} onPress={()=>router.push('/job-applications' as never)}><Text style={s.applicationsLinkText}>MY APPLICATIONS</Text></Pressable>}/>
+  <PageHeader eyebrow="FAIRPATH JOBS" title="Find work" backTo="/find" trailing={<Pressable style={s.applicationsLink} onPress={()=>router.push('/job-applications' as never)}><Text style={s.applicationsLinkText}>MY APPLICATIONS</Text></Pressable>}/>
   <View style={s.searchBlock}>
    <View style={s.searchRow}>
     <View style={s.fieldIcon}><Lucide name="briefcase-business" color={C.lime} size={15}/></View>
