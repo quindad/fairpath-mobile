@@ -13,9 +13,9 @@ const rows=[
 
 export default function Screen(){
  async function signOut(){
-  const {error}=await supabase.auth.signOut();
-  if(error){Alert.alert('Could not sign out','Please try again.');return}
   router.replace('/find-jobs' as never);
+  const {error}=await supabase.auth.signOut();
+  if(error){Alert.alert('Could not sign out','Please try again.');}
  }
 
  return <ScreenFrame>
