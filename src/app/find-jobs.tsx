@@ -130,6 +130,7 @@ export default function FindJobs(){
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH JOBS" title="Find work" backTo="/find"/>
   <View style={s.utilityRow}>
+   <Pressable style={s.utilityBtn} onPress={()=>router.push('/find-housing' as never)}><Lucide name="house" color={C.lime} size={13}/><Text style={s.utilityText}>HOUSING</Text></Pressable>
    <Pressable style={s.utilityBtn} onPress={()=>router.push('/saved-jobs' as never)}><Lucide name="bookmark" color={C.lime} size={13}/><Text style={s.utilityText}>SAVED JOBS</Text></Pressable>
    <Pressable style={s.utilityBtn} onPress={()=>router.push('/job-applications' as never)}><Lucide name="file-check-2" color={C.lime} size={13}/><Text style={s.utilityText}>MY APPLICATIONS</Text></Pressable>
   </View>
