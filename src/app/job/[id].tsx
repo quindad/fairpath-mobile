@@ -39,12 +39,13 @@ export default function JobDetail(){
  const [error,setError]=useState('');
  const [readiness,setReadiness]=useState<number|null>(null);
  const [applicationStatus,setApplicationStatus]=useState<JobApplicationStatus|null>(null);
+ const [applicationId,setApplicationId]=useState<string|null>(null);
  const [saved,setSaved]=useState(false);
 
  useEffect(()=>{
   if(!id)return;
   loadFairPathReadiness().then(({readiness})=>setReadiness(readiness.overallPercentage)).catch(()=>setReadiness(0));
-  loadMyJobApplicationForJob(id).then(x=>setApplicationStatus(x?.status??null)).catch(()=>setApplicationStatus(null));
+  loadMyJobApplicationForJob(id).then(x=>{setApplicationStatus(x?.status??null);setApplicationId(x?.id??null)}).catch(()=>{setApplicationStatus(null);setApplicationId(null)});
   if(!id.startsWith('demo-'))isJobSaved(id).then(setSaved).catch(()=>setSaved(false));
   if(DEMO_JOBS[id]){setJob(DEMO_JOBS[id]);setLoading(false);return}
   loadJob(id).then(setJob).catch(()=>setError('This job could not be loaded.')).finally(()=>setLoading(false));
@@ -71,7 +72,7 @@ export default function JobDetail(){
 
  async function apply(){
   if(!job)return;
-  if(applicationStatus){router.push('/job-applications' as never);return;}
+  if(applicationStatus){router.push((applicationId?'/job-application/'+applicationId:'/job-applications') as never);return;}
   const expiredByTime=Boolean(job.expires_at&&new Date(job.expires_at).getTime()<=Date.now());
   if(expiredByTime||job.status==='expired'||job.status==='closed'||job.status==='filled'){
    Alert.alert('Job unavailable',job.status==='filled'?'This position has been filled.':expiredByTime||job.status==='expired'?'This job posting has expired.':'This job is no longer accepting applications.');
