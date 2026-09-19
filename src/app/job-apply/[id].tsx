@@ -56,11 +56,11 @@ export default function JobApply(){
   }finally{setSubmitting(false)}
  }
 
- if(loading)return <ScreenFrame><PageHeader eyebrow="EASY APPLY" title="Application"/><View style={s.state}><Text style={s.muted}>Preparing your application…</Text></View></ScreenFrame>;
+ if(loading)return <ScreenFrame><PageHeader eyebrow="EASY APPLY" title="Application" backTo={id?'/job/'+id:'/find-jobs'}/><View style={s.state}><Text style={s.muted}>Preparing your application…</Text></View></ScreenFrame>;
  if(error||!job)return <ScreenFrame><PageHeader eyebrow="EASY APPLY" title="Application"/><View style={s.state}><Text style={s.error}>{error||'Job not found.'}</Text></View></ScreenFrame>;
 
  return <ScreenFrame>
-  <PageHeader eyebrow="FAIRPATH EASY APPLY" title="Review application"/>
+  <PageHeader eyebrow="FAIRPATH EASY APPLY" title="Review application" backTo={id?'/job/'+id:'/find-jobs'}/>
   <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <View style={s.hero}>
     <Text style={s.company}>{job.company_name.toUpperCase()}</Text>
