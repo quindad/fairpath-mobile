@@ -4,7 +4,7 @@ export type Job = {
  id:string; title:string; company_name:string; description:string; location_text:string|null; city:string|null; state:string|null; postal_code:string|null;
  workplace_type:string; employment_type:string; pay_min:number|null; pay_max:number|null; pay_period:string|null; benefits:string[]; skills:string[]; requirements:string[];
  background_policy_summary:string|null; eligibility_rules:Record<string,unknown>; application_method:string; external_apply_url:string|null; company_website_url?:string|null;
- source_label:string; source_url:string|null; featured:boolean; created_at:string; latitude:number|null; longitude:number|null; location_precision:string|null;
+ source_label:string; source_url:string|null; featured:boolean; created_at:string; status?:'draft'|'published'|'paused'|'closed'|'expired'|'filled'; published_at?:string|null; expires_at?:string|null; closed_at?:string|null; latitude:number|null; longitude:number|null; location_precision:string|null;
  easy_apply_enabled?:boolean; application_questions?:{id:string;label:string;type:'text'|'yes_no';required?:boolean}[];
 };
 export type HousingListing = {
@@ -21,7 +21,7 @@ export type MarketplaceItem = {
 
 type JobFilters={remote?:boolean;fullTime?:boolean;partTime?:boolean;secondChance?:boolean};
 export async function loadJobs(search='',location='',filters:JobFilters={}){
- let q=supabase.from('jobs').select('id,title,company_name,description,location_text,city,state,postal_code,workplace_type,employment_type,pay_min,pay_max,pay_period,benefits,skills,requirements,background_policy_summary,eligibility_rules,application_method,external_apply_url,company_website_url,source_label,source_url,featured,created_at,latitude,longitude,location_precision,easy_apply_enabled,application_questions').eq('status','published').order('featured',{ascending:false}).order('created_at',{ascending:false}).limit(100);
+ let q=supabase.from('jobs').select('id,title,company_name,description,location_text,city,state,postal_code,workplace_type,employment_type,pay_min,pay_max,pay_period,benefits,skills,requirements,background_policy_summary,eligibility_rules,application_method,external_apply_url,company_website_url,source_label,source_url,featured,created_at,status,published_at,expires_at,closed_at,latitude,longitude,location_precision,easy_apply_enabled,application_questions').eq('status','published').gt('expires_at',new Date().toISOString()).order('featured',{ascending:false}).order('created_at',{ascending:false}).limit(100);
  if(search.trim())q=q.or(`title.ilike.%${search.trim()}%,company_name.ilike.%${search.trim()}%,description.ilike.%${search.trim()}%`);
  if(location.trim())q=q.or(`location_text.ilike.%${location.trim()}%,city.ilike.%${location.trim()}%,state.ilike.%${location.trim()}%`);
  if(filters.remote)q=q.eq('workplace_type','remote');
@@ -33,7 +33,7 @@ export async function loadJobs(search='',location='',filters:JobFilters={}){
  return rows;
 }
 export async function loadJob(id:string){
- const {data,error}=await supabase.from('jobs').select('id,title,company_name,description,location_text,city,state,postal_code,workplace_type,employment_type,pay_min,pay_max,pay_period,benefits,skills,requirements,background_policy_summary,eligibility_rules,application_method,external_apply_url,company_website_url,source_label,source_url,featured,created_at,latitude,longitude,location_precision,easy_apply_enabled,application_questions').eq('id',id).single();
+ const {data,error}=await supabase.from('jobs').select('id,title,company_name,description,location_text,city,state,postal_code,workplace_type,employment_type,pay_min,pay_max,pay_period,benefits,skills,requirements,background_policy_summary,eligibility_rules,application_method,external_apply_url,company_website_url,source_label,source_url,featured,created_at,status,published_at,expires_at,closed_at,latitude,longitude,location_precision,easy_apply_enabled,application_questions').eq('id',id).single();
  if(error)throw error;return data as Job;
 }
 export async function loadHousing(search='',location=''){
