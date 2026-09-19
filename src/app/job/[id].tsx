@@ -58,6 +58,13 @@ export default function JobDetail(){
   }
  }
 
+ async function openCompanyWebsite(){
+  if(!job?.company_website_url)return;
+  const raw=job.company_website_url.trim();
+  const url=/^https?:\/\//i.test(raw)?raw:'https://'+raw;
+  try{await Linking.openURL(url)}catch{Alert.alert('Website unavailable','We could not open this company website.')}
+ }
+
  async function apply(){
   if(!job)return;
   if(job.application_method==='demo'){
@@ -91,6 +98,11 @@ export default function JobDetail(){
     <Text style={s.location}>{location||'Location not listed'}</Text>
     {job.location_precision==='city'?<Text style={s.approx}>APPROX. AREA</Text>:null}
    </View>
+
+   {job.company_website_url?<Pressable style={s.companySite} onPress={()=>void openCompanyWebsite()}>
+    <Text style={s.companySiteLabel}>COMPANY WEBSITE</Text>
+    <Text style={s.companySiteAction}>VISIT ↗</Text>
+   </Pressable>:null}
 
    <View style={s.badges}>
     <InlineBadge tone={second?'lime':'default'}>{second?'VERIFIED SECOND-CHANCE':'POLICY REVIEW NEEDED'}</InlineBadge>
@@ -135,6 +147,7 @@ const s=StyleSheet.create({
  title:{color:C.white,fontFamily:F.extraBold,fontSize:31,lineHeight:33,letterSpacing:-.9,marginTop:7},
  locationRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12,marginTop:10},
  location:{color:C.mutedStrong,fontSize:13,flex:1},approx:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},
+ companySite:{marginTop:14,paddingVertical:11,borderTopWidth:1,borderBottomWidth:1,borderColor:C.border,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},companySiteLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:8,letterSpacing:1},companySiteAction:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8},
  badges:{flexDirection:'row',gap:6,flexWrap:'wrap',marginTop:15},
  fact:{paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.border},
  factLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:8,letterSpacing:1},
