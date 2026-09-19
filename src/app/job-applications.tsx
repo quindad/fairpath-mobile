@@ -68,7 +68,7 @@ export default function JobApplications(){
     const copy=STATUS_COPY[item.status]??STATUS_COPY.submitted;
     const job=item.job;
     const location=job?.location_text||[job?.city,job?.state].filter(Boolean).join(', ')||'Location not listed';
-    return <Pressable key={item.id} style={s.card} onPress={()=>job&&router.push(('/job/'+job.id) as never)}>
+    return <Pressable key={item.id} style={s.card} onPress={()=>router.push(('/job-application/'+item.id) as never)}>
      <View style={s.cardTop}>
       <View style={s.cardCopy}>
        <Text style={s.title}>{job?.title||'Job application'}</Text>
@@ -86,7 +86,7 @@ export default function JobApplications(){
        <Text style={s.footerLabel}>SUBMITTED</Text>
        <Text style={s.footerValue}>{formatDate(item.submitted_at)}</Text>
       </View>
-      {job?<View style={s.openRow}><Text style={s.openText}>VIEW JOB</Text><Lucide name="arrow-right" color={C.lime} size={13}/></View>:null}
+      <View style={s.openRow}><Text style={s.openText}>VIEW APPLICATION</Text><Lucide name="arrow-right" color={C.lime} size={13}/></View>
      </View>
     </Pressable>
    }):null}
