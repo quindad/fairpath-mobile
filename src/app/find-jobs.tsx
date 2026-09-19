@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, FilterStrip, SharpChip, InlineBadge } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L, FairPathRadius as R } from '@/constants/fairpath';
 import { loadJobs, saveJob, type Job } from '@/core/opportunities/opportunity-service';
@@ -32,15 +33,22 @@ export default function FindJobs(){
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH JOBS" title="Find work"/>
   <View style={s.searchBlock}>
-   <View style={s.searchRow}><Text style={s.fieldLabel}>WHAT</Text><TextInput value={query} onChangeText={setQuery} style={s.input} placeholder="Job title, skill or company" placeholderTextColor={C.muted}/></View>
-   <View style={s.searchRow}><Text style={s.fieldLabel}>WHERE</Text><TextInput value={location} onChangeText={setLocation} style={s.input} placeholder="City, state or ZIP" placeholderTextColor={C.muted}/><Pressable style={s.mapBtn} onPress={()=>openGoogleMaps((location||'Columbus, OH')+' jobs')}><Text style={s.mapBtnText}>MAP</Text></Pressable></View>
-   <Pressable style={s.primary} onPress={()=>void run()}><Text style={s.primaryText}>Search jobs</Text><Text style={s.primaryText}>→</Text></Pressable>
+   <View style={s.searchRow}>
+    <View style={s.fieldIcon}><Lucide name="briefcase-business" color={C.lime} size={15}/></View>
+    <View style={s.fieldCopy}><Text style={s.fieldLabel}>WHAT</Text><TextInput value={query} onChangeText={setQuery} style={s.input} placeholder="Job title, skill or company" placeholderTextColor={C.muted}/></View>
+   </View>
+   <View style={s.searchRow}>
+    <View style={s.fieldIcon}><Lucide name="map-pin" color={C.lime} size={15}/></View>
+    <View style={s.fieldCopy}><Text style={s.fieldLabel}>WHERE</Text><TextInput value={location} onChangeText={setLocation} style={s.input} placeholder="City, state or ZIP" placeholderTextColor={C.muted}/></View>
+    <Pressable accessibilityRole="button" accessibilityLabel="Open jobs in map" style={s.mapBtn} onPress={()=>openGoogleMaps((location||'Columbus, OH')+' jobs')}><Lucide name="map" color={C.lime} size={15}/><Text style={s.mapBtnText}>MAP</Text></Pressable>
+   </View>
+   <Pressable style={s.primary} onPress={()=>void run()}><Text style={s.primaryText}>SEARCH JOBS</Text><Lucide name="arrow-right" color={C.black} size={16}/></Pressable>
   </View>
   <View style={s.lanes}>
-   <Pressable style={[s.lane,lane==='all'&&s.laneActive]} onPress={()=>chooseLane('all')}><Text style={[s.laneText,lane==='all'&&s.laneTextActive]}>ALL JOBS</Text><Text style={[s.laneCount,lane==='all'&&s.laneTextActive]}>{counts.all}</Text></Pressable>
-   <Pressable style={[s.lane,lane==='match'&&s.laneActive]} onPress={()=>chooseLane('match')}><Text style={[s.laneText,lane==='match'&&s.laneTextActive]}>FAIRPATH MATCH</Text></Pressable>
-   <Pressable style={[s.lane,lane==='second'&&s.laneActive]} onPress={()=>chooseLane('second')}><Text style={[s.laneText,lane==='second'&&s.laneTextActive]}>2ND CHANCE</Text><Text style={[s.laneCount,lane==='second'&&s.laneTextActive]}>{counts.second}</Text></Pressable>
+   <Pressable style={[s.lane,lane==='all'&&s.laneActive]} onPress={()=>chooseLane('all')}><Text style={[s.laneText,lane==='all'&&s.laneTextActive]}>ALL JOBS</Text><Text style={[s.laneCount,lane==='all'&&s.laneCountActive]}>{counts.all}</Text></Pressable>
+   <Pressable style={[s.lane,lane==='second'&&s.laneActive]} onPress={()=>chooseLane('second')}><Text style={[s.laneText,lane==='second'&&s.laneTextActive]}>SECOND CHANCE</Text><Text style={[s.laneCount,lane==='second'&&s.laneCountActive]}>{counts.second}</Text></Pressable>
   </View>
+  <View style={s.filtersHead}><Text style={s.filtersLabel}>FILTERS</Text><Text style={s.filtersHint}>Narrow the list</Text></View>
   <FilterStrip><SharpChip label="Remote" active={remote} onPress={chooseRemote}/><SharpChip label="Full-time" active={fullTime} onPress={chooseFull}/><SharpChip label="Part-time" active={partTime} onPress={choosePart}/></FilterStrip>
   <ScrollView contentContainerStyle={s.list} showsVerticalScrollIndicator={false}>
    <View style={s.resultsTop}><Text style={s.results}>{loading?'SEARCHING':String(jobs.length)+' RESULTS'}</Text><Text style={s.sort}>Most relevant</Text></View>
@@ -59,15 +67,18 @@ export default function FindJobs(){
  </ScreenFrame>
 }
 const s=StyleSheet.create({
- searchBlock:{paddingHorizontal:L.mobileGutter,paddingTop:16,paddingBottom:12,borderBottomWidth:1,borderBottomColor:C.border},
- searchRow:{minHeight:48,flexDirection:'row',alignItems:'center',borderWidth:1,borderColor:C.border,backgroundColor:C.surface,marginBottom:8},
- fieldLabel:{width:58,color:C.muted,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.1,paddingLeft:12},
- input:{flex:1,color:C.white,fontSize:14,paddingHorizontal:8,paddingVertical:13},
- mapBtn:{height:46,paddingHorizontal:12,justifyContent:'center',borderLeftWidth:1,borderLeftColor:C.border},mapBtnText:{color:C.lime,fontFamily:F.extraBold,fontSize:9,letterSpacing:1},
- primary:{height:46,borderRadius:R.sm,backgroundColor:C.lime,paddingHorizontal:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},primaryText:{color:C.black,fontFamily:F.extraBold,fontSize:13},
- lanes:{flexDirection:'row',marginHorizontal:L.mobileGutter,marginTop:14,borderWidth:1,borderColor:C.border},
- lane:{flex:1,minHeight:46,paddingHorizontal:8,alignItems:'center',justifyContent:'center',borderRightWidth:1,borderRightColor:C.border},laneActive:{backgroundColor:C.white},
- laneText:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8,letterSpacing:.7,textAlign:'center'},laneTextActive:{color:C.black},laneCount:{color:C.muted,fontSize:9,marginTop:2},
+ searchBlock:{paddingHorizontal:L.mobileGutter,paddingTop:14,paddingBottom:14,borderBottomWidth:1,borderBottomColor:C.borderStrong},
+ searchRow:{minHeight:58,flexDirection:'row',alignItems:'center',borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#0A0C0A',marginBottom:8},
+ fieldIcon:{width:42,alignItems:'center',justifyContent:'center'},
+ fieldCopy:{flex:1,minWidth:0,paddingVertical:9},
+ fieldLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:1.25,marginBottom:2},
+ input:{color:C.white,fontFamily:F.medium,fontSize:13,paddingVertical:2,paddingHorizontal:0},
+ mapBtn:{height:56,paddingHorizontal:12,flexDirection:'row',gap:6,alignItems:'center',justifyContent:'center',borderLeftWidth:1,borderLeftColor:C.borderStrong,backgroundColor:'#0C100B'},mapBtnText:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:1},
+ primary:{height:44,borderRadius:2,backgroundColor:C.lime,paddingHorizontal:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginTop:2},primaryText:{color:C.black,fontFamily:F.extraBold,fontSize:10,letterSpacing:1},
+ lanes:{flexDirection:'row',marginHorizontal:L.mobileGutter,marginTop:14,borderTopWidth:1,borderBottomWidth:1,borderColor:C.borderStrong},
+ lane:{flex:1,minHeight:52,paddingHorizontal:10,alignItems:'flex-start',justifyContent:'center',borderRightWidth:1,borderRightColor:C.borderStrong,backgroundColor:'#090B09'},laneActive:{backgroundColor:'#10150C',borderBottomWidth:2,borderBottomColor:C.lime},
+ laneText:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8,textAlign:'left'},laneTextActive:{color:C.lime},laneCount:{color:C.muted,fontFamily:F.semiBold,fontSize:8,marginTop:4},laneCountActive:{color:C.white},
+ filtersHead:{paddingHorizontal:L.mobileGutter,paddingTop:13,paddingBottom:0,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},filtersLabel:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.1},filtersHint:{color:C.muted,fontFamily:F.medium,fontSize:9},
  list:{paddingHorizontal:L.mobileGutter,paddingBottom:28},resultsTop:{height:42,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},results:{color:C.muted,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.1},sort:{color:C.mutedStrong,fontSize:11},
  card:{borderTopWidth:1,borderTopColor:C.border,paddingVertical:17},cardHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
  companyMark:{width:34,height:34,borderRadius:R.sm,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center'},companyMarkText:{color:C.white,fontFamily:F.black,fontSize:14},
