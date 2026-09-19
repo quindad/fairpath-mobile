@@ -114,5 +114,16 @@ export async function loadMyJobApplications():Promise<MyJobApplication[]>{
  if(error)throw error;
  return (data??[]) as unknown as MyJobApplication[];
 }
+export async function loadMyJobApplicationForJob(jobId:string):Promise<{status:JobApplicationStatus;submitted_at:string|null}|null>{
+ const user=await currentUser();
+ const {data,error}=await supabase
+  .from('job_applications')
+  .select('status,submitted_at')
+  .eq('user_id',user.id)
+  .eq('job_id',jobId)
+  .maybeSingle();
+ if(error)throw error;
+ return data as {status:JobApplicationStatus;submitted_at:string|null}|null;
+}
 export async function submitHousingApplication(listingId:string,fastTrack=false){const user=await currentUser();const {error}=await supabase.from('housing_applications').upsert({user_id:user.id,listing_id:listingId,application_type:fastTrack?'fasttrack':'standard',status:'submitted',submitted_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:'user_id,listing_id'});if(error)throw error;}
 export async function claimMarketplaceItem(itemId:string){const user=await currentUser();const {data:existing,error:findError}=await supabase.from('marketplace_claims').select('id,status').eq('item_id',itemId).eq('claimant_id',user.id).in('status',['requested','approved','ready']).maybeSingle();if(findError)throw findError;if(existing)return existing;const {data,error}=await supabase.from('marketplace_claims').insert({item_id:itemId,claimant_id:user.id,status:'requested',pickup_deadline:new Date(Date.now()+48*60*60*1000).toISOString()}).select('id,status').single();if(error)throw error;return data;}
