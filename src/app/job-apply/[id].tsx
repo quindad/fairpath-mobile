@@ -88,8 +88,8 @@ export default function JobApply(){
    </View>
 
    <Pressable style={[s.submit,!ready&&s.submitDisabled]} disabled={!ready||submitting} onPress={()=>void submit()}>
-    <Text style={s.submitText}>{submitting?'SUBMITTING…':ready?'SUBMIT APPLICATION':'COMPLETE REQUIRED ITEMS'}</Text>
-    <Lucide name="arrow-right" color={C.black} size={16}/>
+    <Text style={[s.submitText,!ready&&s.submitTextDisabled]}>{submitting?'SUBMITTING…':ready?'SUBMIT APPLICATION':'COMPLETE REQUIRED ITEMS'}</Text>
+    <Lucide name="arrow-right" color={ready?C.black:C.mutedStrong} size={16}/>
    </Pressable>
   </ScrollView>
  </ScreenFrame>;
@@ -109,5 +109,5 @@ const s=StyleSheet.create({
  field:{borderTopWidth:1,borderTopColor:C.border,paddingVertical:11,paddingLeft:0},fieldMissing:{borderLeftWidth:2,borderLeftColor:C.lime,paddingLeft:10},fieldHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},fieldLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},requiredTag:{color:C.lime,fontFamily:F.extraBold,fontSize:6,letterSpacing:.9},input:{color:C.white,fontFamily:F.medium,fontSize:12,paddingVertical:6,paddingHorizontal:0},multiline:{minHeight:58,textAlignVertical:'top'},
  question:{borderTopWidth:1,borderTopColor:C.border,paddingVertical:12},questionHead:{flexDirection:'row',alignItems:'flex-start',justifyContent:'space-between',gap:12},questionLabel:{color:C.white,fontFamily:F.bold,fontSize:11,lineHeight:16,flex:1},yesNo:{flexDirection:'row',gap:8,marginTop:9},choice:{flex:1,height:38,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center'},choiceActive:{borderColor:C.lime,backgroundColor:'#10150C'},choiceText:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8},choiceTextActive:{color:C.lime},
  review:{flexDirection:'row',gap:9,paddingVertical:16,borderTopWidth:1,borderTopColor:C.borderStrong,marginTop:18},reviewText:{flex:1,color:C.mutedStrong,fontSize:9,lineHeight:14},
- submit:{height:48,backgroundColor:C.lime,paddingHorizontal:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},submitDisabled:{opacity:.35},submitText:{color:C.black,fontFamily:F.extraBold,fontSize:9,letterSpacing:.9}
+ submit:{height:48,backgroundColor:C.lime,paddingHorizontal:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},submitDisabled:{backgroundColor:'#1A2114',borderWidth:1,borderColor:'#2C3823',opacity:1},submitText:{color:C.black,fontFamily:F.extraBold,fontSize:9,letterSpacing:.9}
 });
