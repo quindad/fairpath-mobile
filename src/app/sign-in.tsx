@@ -70,7 +70,7 @@ export default function SignInScreen() {
       <StatusBar style="light" />
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <Pressable onPress={() => { if(router.canGoBack()) router.back(); else router.replace('/find-jobs' as never); }} style={styles.backButton}>
             <Text style={styles.backArrow}>←</Text>
           </Pressable>
 
