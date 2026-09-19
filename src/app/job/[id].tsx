@@ -84,7 +84,7 @@ export default function JobDetail(){
    return;
   }
   if(job.easy_apply_enabled&&readiness!==100){
-   router.push('/complete-profile' as never);
+   router.push(('/complete-profile?returnTo='+encodeURIComponent('/job/'+job.id)) as never);
    return;
   }
   router.push(('/job-apply/'+job.id) as never);
