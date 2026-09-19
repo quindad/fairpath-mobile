@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -14,6 +14,8 @@ const MUTED = '#909690';
 const ERROR = '#FF8A8A';
 
 export default function SignUpScreen() {
+  const params=useLocalSearchParams<{returnTo?:string}>();
+  const returnTo=typeof params.returnTo==='string'&&params.returnTo.startsWith('/')?params.returnTo:null;
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -88,7 +90,7 @@ export default function SignUpScreen() {
       <StatusBar style="light" />
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <Pressable onPress={() => router.replace('/find-jobs' as never)} style={styles.backButton}>
             <Text style={styles.backArrow}>←</Text>
           </Pressable>
 
@@ -172,7 +174,7 @@ export default function SignUpScreen() {
 
           <View style={styles.loginRow}>
             <Text style={styles.loginMuted}>Already have an account?</Text>
-            <Pressable onPress={() => router.replace('/sign-in')}><Text style={styles.loginLink}> Sign in</Text></Pressable>
+            <Pressable onPress={() => router.replace(returnTo?('/sign-in?returnTo='+encodeURIComponent(returnTo)) as never:'/sign-in')}><Text style={styles.loginLink}> Sign in</Text></Pressable>
           </View>
         </ScrollView>
       </SafeAreaView>
