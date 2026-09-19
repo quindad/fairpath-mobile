@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Lucide } from '@react-native-vector-icons/lucide';
-import { ScreenFrame, PageHeader, FilterStrip, SharpChip, InlineBadge } from '@/components/ProductChrome';
+import { ScreenFrame, PageHeader, SharpChip, InlineBadge } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L, FairPathRadius as R } from '@/constants/fairpath';
 import { loadJobs, saveJob, type Job } from '@/core/opportunities/opportunity-service';
 import { loadProfileAnswers } from '@/core/profile/profile-service';
@@ -49,7 +49,7 @@ export default function FindJobs(){
    <Pressable style={[s.lane,lane==='second'&&s.laneActive]} onPress={()=>chooseLane('second')}><Text style={[s.laneText,lane==='second'&&s.laneTextActive]}>SECOND CHANCE</Text><Text style={[s.laneCount,lane==='second'&&s.laneCountActive]}>{counts.second}</Text></Pressable>
   </View>
   <View style={s.filtersHead}><Text style={s.filtersLabel}>FILTERS</Text><Text style={s.filtersHint}>Narrow the list</Text></View>
-  <FilterStrip><SharpChip label="Remote" active={remote} onPress={chooseRemote}/><SharpChip label="Full-time" active={fullTime} onPress={chooseFull}/><SharpChip label="Part-time" active={partTime} onPress={choosePart}/></FilterStrip>
+  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.filtersStrip} contentContainerStyle={s.filtersStripContent}><SharpChip label="Remote" active={remote} onPress={chooseRemote}/><SharpChip label="Full-time" active={fullTime} onPress={chooseFull}/><SharpChip label="Part-time" active={partTime} onPress={choosePart}/></ScrollView>
   <ScrollView contentContainerStyle={s.list} showsVerticalScrollIndicator={false}>
    <View style={s.resultsTop}><Text style={s.results}>{loading?'SEARCHING':String(jobs.length)+' RESULTS'}</Text><Text style={s.sort}>Most relevant</Text></View>
    {error?<Text style={s.error}>{error}</Text>:null}
@@ -78,7 +78,7 @@ const s=StyleSheet.create({
  lanes:{flexDirection:'row',marginHorizontal:L.mobileGutter,marginTop:14,borderTopWidth:1,borderBottomWidth:1,borderColor:C.borderStrong},
  lane:{flex:1,minHeight:52,paddingHorizontal:10,alignItems:'flex-start',justifyContent:'center',borderRightWidth:1,borderRightColor:C.borderStrong,backgroundColor:'#090B09'},laneActive:{backgroundColor:'#10150C',borderBottomWidth:2,borderBottomColor:C.lime},
  laneText:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8,textAlign:'left'},laneTextActive:{color:C.lime},laneCount:{color:C.muted,fontFamily:F.semiBold,fontSize:8,marginTop:4},laneCountActive:{color:C.white},
- filtersHead:{paddingHorizontal:L.mobileGutter,paddingTop:13,paddingBottom:0,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},filtersLabel:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.1},filtersHint:{color:C.muted,fontFamily:F.medium,fontSize:9},
+ filtersHead:{paddingHorizontal:L.mobileGutter,paddingTop:13,paddingBottom:0,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},filtersLabel:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.1},filtersHint:{color:C.muted,fontFamily:F.medium,fontSize:9},filtersStrip:{height:52,flexGrow:0},filtersStripContent:{paddingHorizontal:L.mobileGutter,paddingVertical:9,gap:7},
  list:{paddingHorizontal:L.mobileGutter,paddingBottom:28},resultsTop:{height:42,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},results:{color:C.muted,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.1},sort:{color:C.mutedStrong,fontSize:11},
  card:{borderTopWidth:1,borderTopColor:C.border,paddingVertical:17},cardHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
  companyMark:{width:34,height:34,borderRadius:R.sm,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center'},companyMarkText:{color:C.white,fontFamily:F.black,fontSize:14},
