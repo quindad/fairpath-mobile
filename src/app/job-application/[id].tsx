@@ -22,6 +22,22 @@ function fmt(value:string|null){
  const d=new Date(value);
  return Number.isNaN(d.getTime())?'—':d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
 }
+const PROFILE_ORDER=['first_name','last_name','email','phone','address','date_of_birth','education','skills','certifications','desired_roles','resume_ready'];
+function profileLabel(key:string){
+ const labels:Record<string,string>={
+  first_name:'FIRST NAME',last_name:'LAST NAME',email:'EMAIL',phone:'PHONE',address:'HOME ADDRESS',
+  date_of_birth:'DATE OF BIRTH',education:'EDUCATION',skills:'SKILLS',certifications:'CERTIFICATIONS',
+  desired_roles:'WORK PREFERENCES',resume_ready:'RESUME READY'
+ };
+ return labels[key]??key.replace(/_/g,' ').toUpperCase();
+}
+function profileValue(key:string,value:unknown){
+ if(key==='date_of_birth'){
+  const raw=String(value??'').replace(/\D/g,'');
+  if(raw.length===8)return raw.slice(0,2)+'/'+raw.slice(2,4)+'/'+raw.slice(4);
+ }
+ return Array.isArray(value)?value.join(', '):String(value);
+}
 
 export default function JobApplicationDetail(){
  const {id}=useLocalSearchParams<{id:string}>();
@@ -92,7 +108,7 @@ export default function JobApplicationDetail(){
 
    <View style={s.section}>
     <Text style={s.sectionLabel}>YOUR APPLICATION</Text>
-    {Object.entries(profile).filter(([,v])=>v!==''&&v!=null).map(([k,v])=><View key={k} style={s.answer}><Text style={s.answerKey}>{k.replace(/_/g,' ').toUpperCase()}</Text><Text style={s.answerValue}>{Array.isArray(v)?v.join(', '):String(v)}</Text></View>)}
+    {PROFILE_ORDER.filter(k=>profile[k]!==''&&profile[k]!=null).map(k=><View key={k} style={s.answer}><Text style={s.answerKey}>{profileLabel(k)}</Text><Text style={s.answerValue}>{profileValue(k,profile[k])}</Text></View>)}
     {!Object.keys(profile).length?<Text style={s.muted}>No reusable profile answers were stored with this application.</Text>:null}
    </View>
 
