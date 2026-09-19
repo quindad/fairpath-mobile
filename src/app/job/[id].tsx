@@ -102,7 +102,7 @@ export default function JobDetail(){
  const applied=Boolean(applicationStatus);
 
  return <ScreenFrame>
-  <PageHeader eyebrow="FAIRPATH JOBS" title="Job details" trailing={<Pressable style={s.save} onPress={save}><Text style={s.saveText}>SAVE</Text></Pressable>}/>
+  <PageHeader eyebrow="FAIRPATH JOBS" title="Job details" backTo="/find-jobs" trailing={<Pressable style={s.save} onPress={save}><Text style={s.saveText}>SAVE</Text></Pressable>}/>
   <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <Text style={s.company}>{job.company_name.toUpperCase()}</Text>
    <Text style={s.title}>{job.title}</Text>
