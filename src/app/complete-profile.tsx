@@ -38,8 +38,9 @@ export default function CompleteProfile(){
  const {width,height}=useWindowDimensions();
  const compact=height<760;
  const desktop=width>=768;
- const params=useLocalSearchParams<{area?:string}>();
+ const params=useLocalSearchParams<{area?:string;returnTo?:string}>();
  const requestedArea=(typeof params.area==='string'?params.area:null) as ReadinessArea|null;
+ const returnTo=typeof params.returnTo==='string'&&params.returnTo.startsWith('/')?params.returnTo:null;
  const [answers,setAnswers]=useState<Record<string,unknown>>({});
  const [question,setQuestion]=useState<ProfileQuestion|null>(null);
  const [value,setValue]=useState<string|string[]>('');
@@ -56,7 +57,7 @@ export default function CompleteProfile(){
   setQuestion(next);
   setValue(next?decodeValue(next,nextAnswers[next.id]):'');
   setPercent(calculateFairPathReadiness(nextAnswers).overallPercentage);
-  if(!next) router.replace('/profile-readiness' as never);
+  if(!next) router.replace((returnTo??'/profile-readiness') as never);
  }
 
  useEffect(()=>{let active=true;loadProfileAnswers().then(a=>{if(active){setAnswers(a);chooseNext(a);}}).catch(()=>{if(active){setDemoMode(true);setError('Preview mode: sign in to save this profile permanently.');chooseNext({});}}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;};},[]);
