@@ -1,5 +1,5 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome';
 import { JobMap } from '@/components/JobMap';
@@ -50,6 +50,13 @@ export default function JobDetail(){
   if(DEMO_JOBS[id]){setJob(DEMO_JOBS[id]);setLoading(false);return}
   loadJob(id).then(setJob).catch(()=>setError('This job could not be loaded.')).finally(()=>setLoading(false));
  },[id]);
+
+ useFocusEffect(useCallback(()=>{
+  if(!id||id.startsWith('demo-'))return;
+  let active=true;
+  isJobSaved(id).then(value=>{if(active)setSaved(value)}).catch(()=>{});
+  return()=>{active=false};
+ },[id]));
 
  async function save(){
   if(!job)return;
