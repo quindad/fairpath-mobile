@@ -24,6 +24,15 @@ function encodeValue(q:ProfileQuestion,value:string|string[]){
  if(q.input==='number') return Number(value);
  return value;
 }
+function validationMessage(q:ProfileQuestion|null,value:string|string[]){
+ if(!q)return '';
+ const text=Array.isArray(value)?'':String(value).trim();
+ if(q.id==='identity.phone'){
+  const digits=text.replace(/\D/g,'');
+  if(digits.length!==10)return 'Enter a valid 10-digit phone number.';
+ }
+ return '';
+}
 
 export default function CompleteProfile(){
  const {width,height}=useWindowDimensions();
@@ -54,7 +63,9 @@ export default function CompleteProfile(){
 
  const options=useMemo(()=>question?.input==='yes_no'?YES_NO:question?.options??[],[question]);
  const multi=question?.input==='multi_select';
- const canContinue=Array.isArray(value)?value.length>0:String(value).trim().length>0;
+ const validation=validationMessage(question,value);
+ const hasValue=Array.isArray(value)?value.length>0:String(value).trim().length>0;
+ const canContinue=hasValue&&!validation;
 
  function selectOption(option:string){
   if(!question)return;
@@ -65,7 +76,9 @@ export default function CompleteProfile(){
  }
 
  async function saveAndContinue(){
-  if(!question||!canContinue||saving)return;
+  if(!question||saving)return;
+  const message=validationMessage(question,value);
+  if(!hasValue||message){setError(message||'Enter an answer before continuing.');return;}
   setSaving(true);setError('');
   try{
    const encoded=encodeValue(question,value);
@@ -88,9 +101,9 @@ export default function CompleteProfile(){
    <Text style={s.help}>{question.helpText}</Text>
    {question.sensitive?<View style={s.private}><Text style={s.privateText}>PRIVATE PROFILE INFORMATION</Text><Text style={s.privateBody}>This answer is not automatically displayed as a general partner-visible profile field.</Text></View>:null}
    {options.length>0?<View style={s.options}>{options.map(o=>{const selected=Array.isArray(value)?value.includes(o):value===o;return <Pressable key={o} style={[s.option,selected&&s.optionSelected]} onPress={()=>selectOption(o)}><View style={[s.mark,selected&&s.markSelected]}><Text style={s.check}>{selected?'✓':''}</Text></View><Text style={[s.optionText,selected&&s.optionTextSelected]}>{o}</Text></Pressable>})}</View>:
-   <TextInput value={String(value)} onChangeText={setValue} style={s.input} placeholder={question.input==='date'?'MM/DD/YYYY':question.input==='number'?'Enter a number':'Type your answer'} placeholderTextColor="#666C66" keyboardType={question.input==='number'?'numeric':'default'} onSubmitEditing={saveAndContinue}/>}
+   <><TextInput value={String(value)} onChangeText={v=>{setValue(v);if(error)setError('')}} style={s.input} placeholder={question.id==='identity.phone'?'(555) 555-1234':question.input==='date'?'MM/DD/YYYY':question.input==='number'?'Enter a number':'Type your answer'} placeholderTextColor="#666C66" keyboardType={question.id==='identity.phone'?'phone-pad':question.input==='number'?'numeric':'default'} onSubmitEditing={saveAndContinue}/>{validation?<Text style={s.validation}>{validation}</Text>:null}</>}
   </ScrollView>
   <View style={[s.footer,desktop&&s.footerDesktop]}><Pressable disabled={!canContinue||saving} style={[s.button,(!canContinue||saving)&&s.disabled]} onPress={saveAndContinue}><Text style={[s.buttonText,(!canContinue||saving)&&s.buttonTextDisabled]}>{saving?'Saving…':'Save & continue'}</Text><Text style={[s.buttonArrow,(!canContinue||saving)&&s.buttonArrowDisabled]}>→</Text></Pressable>{error?<Text style={s.error}>{error}</Text>:null}<Text style={s.note}>{demoMode?'Preview mode · answers stay in this session until you sign in.':'Saved to your FairPath so you can pick up where you left off.'}</Text></View>
  </SafeAreaView></View>
 }
-const s=StyleSheet.create({screen:{flex:1,backgroundColor:BLACK},safe:{flex:1,width:'100%',maxWidth:650,alignSelf:'center'},center:{flex:1,alignItems:'center',justifyContent:'center'},loading:{color:MUTED,fontSize:15},top:{paddingHorizontal:24,paddingTop:12,paddingBottom:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},back:{width:44,height:44,borderRadius:14,backgroundColor:CARD,borderWidth:1,borderColor:'#303330',alignItems:'center',justifyContent:'center'},backText:{color:'#fff',fontSize:22},percent:{color:LIME,fontFamily:'LeagueSpartan_800ExtraBold',fontSize:11,letterSpacing:1.3},track:{height:3,marginHorizontal:24,backgroundColor:'#252925',borderRadius:10,overflow:'hidden'},fill:{height:'100%',backgroundColor:LIME},content:{flexGrow:1,paddingHorizontal:24,paddingTop:42,paddingBottom:24},contentDesktop:{flexGrow:0,paddingTop:34},contentCompact:{paddingTop:24},kicker:{color:LIME,fontFamily:'LeagueSpartan_800ExtraBold',fontSize:10,letterSpacing:2,marginBottom:14},title:{color:'#fff',fontFamily:'LeagueSpartan_900Black',fontSize:40,lineHeight:44,letterSpacing:-1.5,maxWidth:580},help:{color:MUTED,fontSize:15,lineHeight:23,marginTop:15,maxWidth:560},private:{backgroundColor:'#101510',borderWidth:1,borderColor:'#33412C',borderRadius:16,padding:14,marginTop:18},privateText:{color:LIME,fontFamily:'LeagueSpartan_800ExtraBold',fontSize:8,letterSpacing:1.2},privateBody:{color:'#929A8E',fontSize:11,lineHeight:17,marginTop:5},options:{gap:10,marginTop:30},option:{minHeight:60,borderRadius:17,borderWidth:1,borderColor:'#303330',backgroundColor:CARD,paddingHorizontal:16,flexDirection:'row',alignItems:'center',gap:13},optionSelected:{borderColor:LIME,backgroundColor:'#182014'},mark:{width:25,height:25,borderRadius:8,borderWidth:1,borderColor:'#4A4F4A',alignItems:'center',justifyContent:'center'},markSelected:{backgroundColor:LIME,borderColor:LIME},check:{color:BLACK,fontWeight:'900'},optionText:{color:'#D7DAD6',fontSize:15,fontWeight:'700',flex:1},optionTextSelected:{color:'#fff'},input:{minHeight:62,borderRadius:17,borderWidth:1,borderColor:'#303330',backgroundColor:CARD,color:'#fff',fontSize:16,paddingHorizontal:17,marginTop:30},footer:{padding:24,paddingTop:12},footerDesktop:{paddingTop:18,paddingBottom:28},button:{minHeight:60,borderRadius:17,backgroundColor:LIME,paddingHorizontal:19,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},disabled:{backgroundColor:'#1B201A',borderWidth:1,borderColor:'#303630'},buttonText:{color:BLACK,fontFamily:'LeagueSpartan_800ExtraBold',fontSize:16},buttonArrow:{color:BLACK,fontSize:24},buttonTextDisabled:{color:'#697069'},buttonArrowDisabled:{color:'#697069'},error:{color:'#FF8A8A',fontSize:12,textAlign:'center',marginTop:10},note:{color:'#626762',fontSize:10,textAlign:'center',marginTop:10}});
+const s=StyleSheet.create({screen:{flex:1,backgroundColor:BLACK},safe:{flex:1,width:'100%',maxWidth:650,alignSelf:'center'},center:{flex:1,alignItems:'center',justifyContent:'center'},loading:{color:MUTED,fontSize:15},top:{paddingHorizontal:24,paddingTop:12,paddingBottom:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},back:{width:44,height:44,borderRadius:14,backgroundColor:CARD,borderWidth:1,borderColor:'#303330',alignItems:'center',justifyContent:'center'},backText:{color:'#fff',fontSize:22},percent:{color:LIME,fontFamily:'LeagueSpartan_800ExtraBold',fontSize:11,letterSpacing:1.3},track:{height:3,marginHorizontal:24,backgroundColor:'#252925',borderRadius:10,overflow:'hidden'},fill:{height:'100%',backgroundColor:LIME},content:{flexGrow:1,paddingHorizontal:24,paddingTop:42,paddingBottom:24},contentDesktop:{flexGrow:0,paddingTop:34},contentCompact:{paddingTop:24},kicker:{color:LIME,fontFamily:'LeagueSpartan_800ExtraBold',fontSize:10,letterSpacing:2,marginBottom:14},title:{color:'#fff',fontFamily:'LeagueSpartan_900Black',fontSize:40,lineHeight:44,letterSpacing:-1.5,maxWidth:580},help:{color:MUTED,fontSize:15,lineHeight:23,marginTop:15,maxWidth:560},private:{backgroundColor:'#101510',borderWidth:1,borderColor:'#33412C',borderRadius:16,padding:14,marginTop:18},privateText:{color:LIME,fontFamily:'LeagueSpartan_800ExtraBold',fontSize:8,letterSpacing:1.2},privateBody:{color:'#929A8E',fontSize:11,lineHeight:17,marginTop:5},options:{gap:10,marginTop:30},option:{minHeight:60,borderRadius:17,borderWidth:1,borderColor:'#303330',backgroundColor:CARD,paddingHorizontal:16,flexDirection:'row',alignItems:'center',gap:13},optionSelected:{borderColor:LIME,backgroundColor:'#182014'},mark:{width:25,height:25,borderRadius:8,borderWidth:1,borderColor:'#4A4F4A',alignItems:'center',justifyContent:'center'},markSelected:{backgroundColor:LIME,borderColor:LIME},check:{color:BLACK,fontWeight:'900'},optionText:{color:'#D7DAD6',fontSize:15,fontWeight:'700',flex:1},optionTextSelected:{color:'#fff'},input:{minHeight:62,borderRadius:17,borderWidth:1,borderColor:'#303330',backgroundColor:CARD,color:'#fff',fontSize:16,paddingHorizontal:17,marginTop:30},footer:{padding:24,paddingTop:12},footerDesktop:{paddingTop:18,paddingBottom:28},button:{minHeight:60,borderRadius:17,backgroundColor:LIME,paddingHorizontal:19,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},disabled:{backgroundColor:'#1B201A',borderWidth:1,borderColor:'#303630'},buttonText:{color:BLACK,fontFamily:'LeagueSpartan_800ExtraBold',fontSize:16},buttonArrow:{color:BLACK,fontSize:24},buttonTextDisabled:{color:'#697069'},buttonArrowDisabled:{color:'#697069'},error:{color:'#FF8A8A',fontSize:12,textAlign:'center',marginTop:10},validation:{color:'#FF8A8A',fontSize:12,marginTop:8},note:{color:'#626762',fontSize:10,textAlign:'center',marginTop:10}});
