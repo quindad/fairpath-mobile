@@ -4,7 +4,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
-import { loadJob, loadJobApplicationAutofill, submitJobApplication, type Job, type JobApplicationAutofill } from '@/core/opportunities/opportunity-service';
+import { loadJob, loadJobApplicationAutofill, saveJobApplicationProfile, submitJobApplication, type Job, type JobApplicationAutofill } from '@/core/opportunities/opportunity-service';
 
 const EMPTY:JobApplicationAutofill={first_name:'',last_name:'',email:'',phone:'',address:'',date_of_birth:'',education:'',skills:'',certifications:'',desired_roles:'',resume_ready:''};
 
@@ -45,6 +45,7 @@ export default function JobApply(){
   if(!ready){Alert.alert('Application not ready','Complete the required fields before submitting.');return}
   setSubmitting(true);
   try{
+   await saveJobApplicationProfile(form);
    await submitJobApplication(id,{profile:form,employer_questions:extra,reviewed_by_user:true,reviewed_at:new Date().toISOString()});
    Alert.alert('Application sent','Your FairPath Easy Apply application was submitted.',[{text:'Done',onPress:()=>router.replace(('/job/'+id) as never)}]);
   }catch(e){
@@ -68,7 +69,7 @@ export default function JobApply(){
 
    <View style={s.notice}>
     <Lucide name="wand-sparkles" color={C.lime} size={17}/>
-    <View style={s.noticeCopy}><Text style={s.noticeTitle}>Autofilled from your FairPath profile</Text><Text style={s.noticeBody}>Review every field before submitting. FairPath does not auto-answer criminal-history questions.</Text></View>
+    <View style={s.noticeCopy}><Text style={s.noticeTitle}>Autofilled from your FairPath profile</Text><Text style={s.noticeBody}>Review every field before submitting. Reusable details you update here are saved to your FairPath profile for future Easy Apply applications. FairPath does not auto-answer criminal-history questions.</Text></View>
    </View>
 
    <Text style={s.sectionLabel}>CONTACT</Text>
