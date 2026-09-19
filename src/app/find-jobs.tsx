@@ -189,7 +189,7 @@ export default function FindJobs(){
 
    {!loading&&jobs.length>0&&viewMode==='map'?<JobMap jobs={jobs} onOpenJob={openJob}/>:null}
 
-   {viewMode==='list'?jobs.map(j=><Pressable key={j.id} style={s.card} onPress={()=>openJob(j)>
+   {viewMode==='list'?jobs.map(j=><Pressable key={j.id} style={s.card} onPress={()=>openJob(j)}>
     <View style={s.cardTop}>
      <View style={s.companyMark}><Text style={s.companyMarkText}>{j.company_name.slice(0,1).toUpperCase()}</Text></View>
      <View style={s.cardTopCopy}>
