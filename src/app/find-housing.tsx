@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ScreenFrame, PageHeader, FilterStrip, SharpChip, InlineBadge } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L, FairPathRadius as R } from '@/constants/fairpath';
 import { loadHousing, saveHousing, type HousingListing } from '@/core/opportunities/opportunity-service';
@@ -16,7 +16,7 @@ export default function Housing(){
  useEffect(()=>{let active=true;loadProfileAnswers().then(a=>{if(!active)return;const v=a['identity.current_location'];if(typeof v==='string')setLocation(v);}).finally(()=>{if(active)loadHousing().then(setRows).catch(()=>setError('Housing could not load.')).finally(()=>setLoading(false));});return()=>{active=false};},[]);
  const visible=useMemo(()=>rows.filter(h=>(lane!=='fast'||h.fasttrack_enabled)&&(!tourOnly||!!h.virtual_tour_url)&&(!twoPlus||(h.bedrooms??0)>=2)),[rows,lane,tourOnly,twoPlus]);
  return <ScreenFrame>
-  <PageHeader eyebrow="FAIRPATH HOUSING" title="Find housing"/>
+  <PageHeader eyebrow="FAIRPATH HOUSING" title="Find housing" backTo="/find-jobs"/>
   <View style={s.searchBlock}>
    <View style={s.searchRow}><Text style={s.fieldLabel}>WHAT</Text><TextInput value={query} onChangeText={setQuery} style={s.input} placeholder="Apartment, townhome, amenity" placeholderTextColor={C.muted}/></View>
    <View style={s.searchRow}><Text style={s.fieldLabel}>WHERE</Text><TextInput value={location} onChangeText={setLocation} style={s.input} placeholder="City, state or ZIP" placeholderTextColor={C.muted}/><Pressable style={s.mapBtn} onPress={()=>openGoogleMaps((location||'Columbus, OH')+' apartments')}><Text style={s.mapBtnText}>MAP</Text></Pressable></View>
@@ -33,7 +33,7 @@ export default function Housing(){
    {error?<Text style={s.error}>{error}</Text>:null}
    {!loading&&visible.length===0?<View style={s.empty}><Text style={s.emptyTitle}>No homes match these filters.</Text><Text style={s.emptyBody}>Try a wider area or remove one of the filters.</Text></View>:null}
    {visible.map((h,index)=>{const photo=h.housing_media?.filter(m=>m.media_type==='photo').sort((a,b)=>a.sort_order-b.sort_order)[0]?.url || demoHousingImage(index);return <Pressable key={h.id} style={s.card} onPress={()=>router.push(('/housing/'+h.id) as never)}>
-    <View style={s.media}>{photo?<Image source={{uri:photo}} style={s.photo}/>:<View style={s.noPhoto}><Text style={s.noPhotoText}>NO PHOTO</Text></View>}<Pressable style={s.saveBtn} onPress={(e)=>{e.stopPropagation?.();void saveHousing(h.id)}}><Text style={s.saveText}>SAVE</Text></Pressable></View>
+    <View style={s.media}>{photo?<Image source={{uri:photo}} style={s.photo}/>:<View style={s.noPhoto}><Text style={s.noPhotoText}>NO PHOTO</Text></View>}<Pressable style={s.saveBtn} onPress={(e)=>{e.stopPropagation?.();saveHousing(h.id).then(()=>Alert.alert('Saved','Home saved to your FairPath.')).catch(err=>{if(err instanceof Error&&err.message==='SIGNED_OUT'){router.push('/sign-in?returnTo=/find-housing' as never);return}Alert.alert('Could not save','Please try again.');})}}><Text style={s.saveText}>SAVE</Text></Pressable></View>
     <View style={s.body}><View style={s.priceRow}><Text style={s.price}>{'$'+Number(h.rent_monthly).toLocaleString()}</Text><Text style={s.per}> / month</Text></View><Text style={s.homeTitle}>{h.title}</Text>
     <Text style={s.meta}>{[h.bedrooms!=null?h.bedrooms+' bd':null,h.bathrooms!=null?h.bathrooms+' ba':null,h.square_feet?h.square_feet.toLocaleString()+' sq ft':null].filter(Boolean).join('  ·  ')}</Text>
     <Text style={s.location}>{[h.city,h.state,h.postal_code].filter(Boolean).join(', ')}</Text>
