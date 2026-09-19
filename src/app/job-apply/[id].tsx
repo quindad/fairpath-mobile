@@ -5,6 +5,7 @@ import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { loadJob, loadJobApplicationAutofill, saveJobApplicationProfile, submitJobApplication, type Job, type JobApplicationAutofill } from '@/core/opportunities/opportunity-service';
+import { loadFairPathReadiness } from '@/core/profile/profile-service';
 
 const EMPTY:JobApplicationAutofill={first_name:'',last_name:'',email:'',phone:'',address:'',date_of_birth:'',education:'',skills:'',certifications:'',desired_roles:'',resume_ready:''};
 
@@ -17,7 +18,7 @@ export default function JobApply(){
  const [submitting,setSubmitting]=useState(false);
  const [error,setError]=useState('');
 
- useEffect(()=>{if(!id)return;Promise.all([loadJob(id),loadJobApplicationAutofill()]).then(([j,a])=>{setJob(j);setForm(a)}).catch(e=>{if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace(('/sign-in?returnTo='+encodeURIComponent('/job-apply/'+id)) as never);return}setError('Application could not load.')}).finally(()=>setLoading(false))},[id]);
+ useEffect(()=>{if(!id)return;Promise.all([loadJob(id),loadJobApplicationAutofill(),loadFairPathReadiness()]).then(([j,a,r])=>{if(r.readiness.overallPercentage!==100){router.replace('/complete-profile' as never);return}setJob(j);setForm(a)}).catch(e=>{if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace(('/sign-in?returnTo='+encodeURIComponent('/job-apply/'+id)) as never);return}setError('Application could not load.')}).finally(()=>setLoading(false))},[id]);
 
  const requiredKeys:(keyof JobApplicationAutofill)[]=['first_name','last_name','email','phone','address'];
  const validRequired=(key:keyof JobApplicationAutofill,value:string)=>{
