@@ -17,7 +17,7 @@ export default function JobApply(){
  const [submitting,setSubmitting]=useState(false);
  const [error,setError]=useState('');
 
- useEffect(()=>{if(!id)return;Promise.all([loadJob(id),loadJobApplicationAutofill()]).then(([j,a])=>{setJob(j);setForm(a)}).catch(e=>{if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace('/sign-in' as never);return}setError('Application could not load.')}).finally(()=>setLoading(false))},[id]);
+ useEffect(()=>{if(!id)return;Promise.all([loadJob(id),loadJobApplicationAutofill()]).then(([j,a])=>{setJob(j);setForm(a)}).catch(e=>{if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace(('/sign-in?returnTo='+encodeURIComponent('/job-apply/'+id)) as never);return}setError('Application could not load.')}).finally(()=>setLoading(false))},[id]);
 
  const requiredKeys:(keyof JobApplicationAutofill)[]=['first_name','last_name','email','phone','address'];
  const completion=useMemo(()=>Math.round(requiredKeys.filter(k=>form[k].trim()).length/requiredKeys.length*100),[form]);
