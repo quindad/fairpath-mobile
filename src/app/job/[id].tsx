@@ -6,6 +6,7 @@ import { JobMap } from '@/components/JobMap';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { isJobSaved, loadJob, loadMyJobApplicationForJob, saveJob, unsaveJob, type Job, type JobApplicationStatus } from '@/core/opportunities/opportunity-service';
 import { loadFairPathReadiness } from '@/core/profile/profile-service';
+import { supabase } from '@/lib/supabase';
 
 const DEMO_JOBS:Record<string,Job>={
  'demo-warehouse':{
@@ -79,6 +80,11 @@ export default function JobDetail(){
 
  async function apply(){
   if(!job)return;
+  const {data:{user}}=await supabase.auth.getUser();
+  if(!user){
+   router.push(('/sign-in?returnTo='+encodeURIComponent('/job/'+job.id)) as never);
+   return;
+  }
   if(applicationStatus){router.push((applicationId?'/job-application/'+applicationId:'/job-applications') as never);return;}
   const expiredByTime=Boolean(job.expires_at&&new Date(job.expires_at).getTime()<=Date.now());
   if(expiredByTime||job.status==='expired'||job.status==='closed'||job.status==='filled'){
