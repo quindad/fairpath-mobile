@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -14,6 +14,8 @@ const MUTED = '#909690';
 const ERROR = '#FF8A8A';
 
 export default function SignInScreen() {
+  const params=useLocalSearchParams<{returnTo?:string}>();
+  const returnTo=typeof params.returnTo==='string'&&params.returnTo.startsWith('/')?params.returnTo:null;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -54,6 +56,7 @@ export default function SignInScreen() {
         return;
       }
 
+      if(returnTo&&profile?.onboarding_completed){router.replace(returnTo as never);return;}
       router.replace(profile?.onboarding_completed ? '/home' : '/onboarding');
     } catch {
       setErrorMessage('We could not sign you in right now. Check your connection and try again.');
@@ -122,7 +125,7 @@ export default function SignInScreen() {
 
           <View style={styles.signupRow}>
             <Text style={styles.signupMuted}>New to FairPath?</Text>
-            <Pressable onPress={() => router.replace('/sign-up')}>
+            <Pressable onPress={() => router.replace(returnTo?('/sign-up?returnTo='+encodeURIComponent(returnTo)) as never:'/sign-up')}>
               <Text style={styles.signupLink}> Create account</Text>
             </Pressable>
           </View>
