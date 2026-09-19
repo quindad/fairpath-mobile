@@ -4,7 +4,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
-import { loadJob, loadJobApplicationAutofill, saveJobApplicationProfile, submitJobApplication, type Job, type JobApplicationAutofill } from '@/core/opportunities/opportunity-service';
+import { loadJob, loadJobApplicationAutofill, loadMyJobApplicationForJob, saveJobApplicationProfile, submitJobApplication, type Job, type JobApplicationAutofill } from '@/core/opportunities/opportunity-service';
 import { loadFairPathReadiness } from '@/core/profile/profile-service';
 
 const EMPTY:JobApplicationAutofill={first_name:'',last_name:'',email:'',phone:'',address:'',date_of_birth:'',education:'',skills:'',certifications:'',desired_roles:'',resume_ready:''};
@@ -18,7 +18,7 @@ export default function JobApply(){
  const [submitting,setSubmitting]=useState(false);
  const [error,setError]=useState('');
 
- useEffect(()=>{if(!id)return;Promise.all([loadJob(id),loadJobApplicationAutofill(),loadFairPathReadiness()]).then(([j,a,r])=>{if(r.readiness.overallPercentage!==100){router.replace('/complete-profile' as never);return}setJob(j);setForm(a)}).catch(e=>{if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace(('/sign-in?returnTo='+encodeURIComponent('/job-apply/'+id)) as never);return}setError('Application could not load.')}).finally(()=>setLoading(false))},[id]);
+ useEffect(()=>{if(!id)return;Promise.all([loadJob(id),loadJobApplicationAutofill(),loadFairPathReadiness(),loadMyJobApplicationForJob(id)]).then(([j,a,r,existing])=>{if(existing){router.replace('/job-applications' as never);return}if(r.readiness.overallPercentage!==100){router.replace('/complete-profile' as never);return}setJob(j);setForm(a)}).catch(e=>{if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace(('/sign-in?returnTo='+encodeURIComponent('/job-apply/'+id)) as never);return}setError('Application could not load.')}).finally(()=>setLoading(false))},[id]);
 
  const requiredKeys:(keyof JobApplicationAutofill)[]=['first_name','last_name','email','phone','address'];
  const validRequired=(key:keyof JobApplicationAutofill,value:string)=>{
@@ -51,6 +51,7 @@ export default function JobApply(){
    Alert.alert('Application sent','Your FairPath Easy Apply application was submitted.',[{text:'Done',onPress:()=>router.replace(('/job/'+id) as never)}]);
   }catch(e){
    if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace('/sign-in' as never);return}
+   if(e instanceof Error&&e.message==='ALREADY_APPLIED'){Alert.alert('Already applied','You already submitted an application for this job.',[{text:'View application',onPress:()=>router.replace('/job-applications' as never)}]);return}
    Alert.alert('Could not submit','Please try again.');
   }finally{setSubmitting(false)}
  }
