@@ -73,6 +73,27 @@ export async function loadJobApplicationAutofill():Promise<JobApplicationAutofil
  const text=(id:string)=>{const v=answers[id];return Array.isArray(v)?v.join(', '):v==null?'':String(v)};
  return {first_name:profile?.first_name??'',last_name:profile?.last_name??'',email:user.email??'',phone:text('identity.phone'),address:text('identity.address')||text('identity.current_location'),date_of_birth:text('identity.date_of_birth'),education:text('employment.education_level'),skills:text('employment.skills'),certifications:text('employment.licenses_certifications'),desired_roles:text('employment.desired_roles'),resume_ready:answers['documents.resume']===true?'Yes':answers['documents.resume']===false?'No':''};
 }
+export async function saveJobApplicationProfile(form:JobApplicationAutofill){
+ const user=await currentUser();
+ const {error:profileError}=await supabase.from('profiles').update({first_name:form.first_name.trim(),last_name:form.last_name.trim(),updated_at:new Date().toISOString()}).eq('id',user.id);
+ if(profileError)throw profileError;
+ const list=(value:string)=>value.split(',').map(x=>x.trim()).filter(Boolean);
+ const rows=[
+  ['identity.phone',form.phone.trim()],
+  ['identity.address',form.address.trim()],
+  ['identity.date_of_birth',form.date_of_birth.trim()],
+  ['employment.education_level',form.education.trim()],
+  ['employment.skills',list(form.skills)],
+  ['employment.licenses_certifications',list(form.certifications)],
+  ['employment.desired_roles',list(form.desired_roles)],
+  ['documents.resume',form.resume_ready.trim().toLowerCase()==='yes'?true:form.resume_ready.trim().toLowerCase()==='no'?false:null]
+ ].filter(([,answer])=>answer!==''&&answer!==null&&(!Array.isArray(answer)||answer.length));
+ if(rows.length){
+  const payload=rows.map(([question_id,answer])=>({user_id:user.id,question_id,answer,source:'user',verification_state:'self_reported',updated_at:new Date().toISOString()}));
+  const {error}=await supabase.from('profile_answers').upsert(payload,{onConflict:'user_id,question_id'});
+  if(error)throw error;
+ }
+}
 export async function submitJobApplication(jobId:string,answers:Record<string,unknown>={}){const user=await currentUser();const {error}=await supabase.from('job_applications').upsert({user_id:user.id,job_id:jobId,status:'submitted',answers,submitted_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:'user_id,job_id'});if(error)throw error;}
 export async function submitHousingApplication(listingId:string,fastTrack=false){const user=await currentUser();const {error}=await supabase.from('housing_applications').upsert({user_id:user.id,listing_id:listingId,application_type:fastTrack?'fasttrack':'standard',status:'submitted',submitted_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:'user_id,listing_id'});if(error)throw error;}
 export async function claimMarketplaceItem(itemId:string){const user=await currentUser();const {data:existing,error:findError}=await supabase.from('marketplace_claims').select('id,status').eq('item_id',itemId).eq('claimant_id',user.id).in('status',['requested','approved','ready']).maybeSingle();if(findError)throw findError;if(existing)return existing;const {data,error}=await supabase.from('marketplace_claims').insert({item_id:itemId,claimant_id:user.id,status:'requested',pickup_deadline:new Date(Date.now()+48*60*60*1000).toISOString()}).select('id,status').single();if(error)throw error;return data;}
