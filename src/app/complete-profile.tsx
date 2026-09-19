@@ -67,6 +67,18 @@ export default function CompleteProfile(){
  const hasValue=Array.isArray(value)?value.length>0:String(value).trim().length>0;
  const canContinue=hasValue&&!validation;
 
+ function goToPreviousQuestion(){
+  if(!question){router.back();return;}
+  const required=getRequiredVisibleQuestions(answers);
+  const index=required.findIndex(q=>q.id===question.id);
+  const previous=index>0?required[index-1]:null;
+  if(!previous){router.back();return;}
+  setError('');
+  setQuestion(previous);
+  setValue(decodeValue(previous,answers[previous.id]));
+  setPercent(calculateFairPathReadiness(answers).overallPercentage);
+ }
+
  function selectOption(option:string){
   if(!question)return;
   if(multi){
@@ -93,7 +105,7 @@ export default function CompleteProfile(){
  if(loading||!question)return <View style={s.screen}><StatusBar style="light"/><SafeAreaView style={s.center}><Text style={s.loading}>{error||'Loading your FairPath…'}</Text></SafeAreaView></View>;
 
  return <View style={s.screen}><StatusBar style="light"/><SafeAreaView style={s.safe}>
-  <View style={s.top}><Pressable style={s.back} onPress={()=>router.back()}><Text style={s.backText}>←</Text></Pressable><Text style={s.percent}>{percent}% READY</Text></View>
+  <View style={s.top}><Pressable style={s.back} onPress={goToPreviousQuestion}><Text style={s.backText}>←</Text></Pressable><Text style={s.percent}>{percent}% READY</Text></View>
   <View style={s.track}><View style={[s.fill,{width:`${percent}%`}]}/></View>
   <ScrollView contentContainerStyle={[s.content,desktop&&s.contentDesktop,compact&&s.contentCompact]} keyboardShouldPersistTaps="handled">
    <Text style={s.kicker}>{areaNames[question.area]}</Text>
