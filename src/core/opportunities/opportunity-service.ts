@@ -57,7 +57,23 @@ export async function loadMarketplaceItem(id:string){
  if(error)throw error;return data as MarketplaceItem;
 }
 async function currentUser(){const {data:{user}}=await supabase.auth.getUser();if(!user)throw new Error('SIGNED_OUT');return user;}
-export async function saveJob(jobId:string){const user=await currentUser();const {error}=await supabase.from('saved_jobs').upsert({user_id:user.id,job_id:jobId});if(error)throw error;}
+export async function saveJob(jobId:string){
+ const user=await currentUser();
+ const {error}=await supabase.from('saved_jobs').insert({user_id:user.id,job_id:jobId});
+ if(error&&error.code!=='23505')throw error;
+}
+export async function isJobSaved(jobId:string){
+ const user=await currentUser();
+ const {data,error}=await supabase.from('saved_jobs').select('job_id').eq('user_id',user.id).eq('job_id',jobId).maybeSingle();
+ if(error)throw error;
+ return Boolean(data);
+}
+export async function loadSavedJobIds():Promise<string[]>{
+ const user=await currentUser();
+ const {data,error}=await supabase.from('saved_jobs').select('job_id').eq('user_id',user.id);
+ if(error)throw error;
+ return (data??[]).map(row=>row.job_id as string);
+}
 export async function unsaveJob(jobId:string){const user=await currentUser();const {error}=await supabase.from('saved_jobs').delete().eq('user_id',user.id).eq('job_id',jobId);if(error)throw error;}
 export async function loadSavedJobs():Promise<Job[]>{
  const user=await currentUser();
