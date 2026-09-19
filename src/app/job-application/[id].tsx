@@ -32,11 +32,16 @@ function profileLabel(key:string){
  return labels[key]??key.replace(/_/g,' ').toUpperCase();
 }
 function profileValue(key:string,value:unknown){
+ const raw=String(value??'');
  if(key==='date_of_birth'){
-  const raw=String(value??'').replace(/\D/g,'');
-  if(raw.length===8)return raw.slice(0,2)+'/'+raw.slice(2,4)+'/'+raw.slice(4);
+  const digits=raw.replace(/\D/g,'');
+  if(digits.length===8)return digits.slice(0,2)+'/'+digits.slice(2,4)+'/'+digits.slice(4);
  }
- return Array.isArray(value)?value.join(', '):String(value);
+ if(key==='phone'){
+  const digits=raw.replace(/\D/g,'');
+  if(digits.length===10)return digits.slice(0,3)+'-'+digits.slice(3,6)+'-'+digits.slice(6);
+ }
+ return Array.isArray(value)?value.join(', '):raw;
 }
 
 export default function JobApplicationDetail(){
