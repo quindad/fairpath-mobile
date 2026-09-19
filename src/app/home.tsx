@@ -43,7 +43,7 @@ export default function Home(){
    </Pressable>
 
    <Pressable style={s.aiPanel} onPress={()=>router.push('/fairpath-ai' as never)}>
-    <View style={s.aiTop}><View><Text style={s.label}>FAIRPATH AI</Text><Text style={s.aiTitle}>Need help with the next move?</Text></View><View style={s.aiIconWrap}><Lucide name="sparkles" color={C.lime} size={18}/></View></View>
+    <View style={s.aiTop}><View><Text style={s.label}>FAIRPATH AI</Text><Text style={s.aiTitle}>Need help with the next move?</Text></View><View style={s.aiIconWrap}><Lucide name="bot" color={C.lime} size={18}/></View></View>
     <Text style={s.aiBody}>Applications, résumés, interview prep, housing questions and your reentry plan.</Text>
     <View style={s.aiFooter}><View style={s.aiRule}/><View style={s.aiAction}><Text style={s.aiActionText}>OPEN FAIRPATH AI</Text><Lucide name="arrow-right" color={C.lime} size={15}/></View></View>
    </Pressable>
