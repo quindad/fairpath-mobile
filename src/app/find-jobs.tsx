@@ -7,7 +7,6 @@ import { JobMap } from '@/components/JobMap';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { loadJobs, saveJob, type Job } from '@/core/opportunities/opportunity-service';
 import { loadProfileAnswers } from '@/core/profile/profile-service';
-import { openGoogleMaps } from '@/core/location/maps';
 
 type Lane='all'|'second';
 
@@ -131,7 +130,7 @@ export default function FindJobs(){
      <Text style={s.fieldLabel}>WHERE</Text>
      <TextInput value={location} onChangeText={setLocation} style={s.input} placeholder="City, state or ZIP" placeholderTextColor={C.muted}/>
     </View>
-    <Pressable accessibilityRole="button" accessibilityLabel="Open jobs in map" style={s.mapBtn} onPress={()=>openGoogleMaps((location||'Columbus, OH')+' jobs')}>
+    <Pressable accessibilityRole="button" accessibilityLabel="Show jobs on map" style={s.mapBtn} onPress={()=>setViewMode('map')}>
      <Lucide name="map" color={C.lime} size={15}/>
      <Text style={s.mapBtnText}>MAP</Text>
     </Pressable>
@@ -214,6 +213,7 @@ export default function FindJobs(){
 
     <View style={s.badgeRow}>
      <InlineBadge tone={j.eligibility_rules?.second_chance_evidence==='explicit'?'lime':'default'}>{matchLabel(j)}</InlineBadge>
+     {j.easy_apply_enabled?<InlineBadge tone="lime">EASY APPLY</InlineBadge>:null}
      <InlineBadge>{j.employment_type.replace('_',' ').toUpperCase()}</InlineBadge>
     </View>
 
