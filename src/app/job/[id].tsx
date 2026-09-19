@@ -4,7 +4,7 @@ import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'r
 import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome';
 import { JobMap } from '@/components/JobMap';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
-import { loadJob, saveJob, type Job } from '@/core/opportunities/opportunity-service';
+import { loadJob, loadMyJobApplicationForJob, saveJob, type Job, type JobApplicationStatus } from '@/core/opportunities/opportunity-service';
 import { loadFairPathReadiness } from '@/core/profile/profile-service';
 
 const DEMO_JOBS:Record<string,Job>={
@@ -38,10 +38,12 @@ export default function JobDetail(){
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
  const [readiness,setReadiness]=useState<number|null>(null);
+ const [applicationStatus,setApplicationStatus]=useState<JobApplicationStatus|null>(null);
 
  useEffect(()=>{
   if(!id)return;
   loadFairPathReadiness().then(({readiness})=>setReadiness(readiness.overallPercentage)).catch(()=>setReadiness(0));
+  loadMyJobApplicationForJob(id).then(x=>setApplicationStatus(x?.status??null)).catch(()=>setApplicationStatus(null));
   if(DEMO_JOBS[id]){setJob(DEMO_JOBS[id]);setLoading(false);return}
   loadJob(id).then(setJob).catch(()=>setError('This job could not be loaded.')).finally(()=>setLoading(false));
  },[id]);
@@ -67,6 +69,7 @@ export default function JobDetail(){
 
  async function apply(){
   if(!job)return;
+  if(applicationStatus){router.push('/job-applications' as never);return;}
   const expiredByTime=Boolean(job.expires_at&&new Date(job.expires_at).getTime()<=Date.now());
   if(expiredByTime||job.status==='expired'||job.status==='closed'||job.status==='filled'){
    Alert.alert('Job unavailable',job.status==='filled'?'This position has been filled.':expiredByTime||job.status==='expired'?'This job posting has expired.':'This job is no longer accepting applications.');
@@ -96,6 +99,7 @@ export default function JobDetail(){
  const inactive=expiredByTime||job.status==='expired'||job.status==='closed'||job.status==='filled';
  const daysLeft=job.expires_at&&!inactive?Math.max(0,Math.ceil((new Date(job.expires_at).getTime()-Date.now())/86400000)):null;
  const lifecycleLabel=job.status==='filled'?'POSITION FILLED':expiredByTime||job.status==='expired'?'JOB EXPIRED':job.status==='closed'?'JOB CLOSED':daysLeft!=null?daysLeft+' DAYS LEFT':null;
+ const applied=Boolean(applicationStatus);
 
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH JOBS" title="Job details" trailing={<Pressable style={s.save} onPress={save}><Text style={s.saveText}>SAVE</Text></Pressable>}/>
@@ -141,9 +145,9 @@ export default function JobDetail(){
   </ScrollView>
 
   <View style={s.bottom}>
-   <Pressable style={[s.apply,inactive&&s.applyDisabled]} onPress={apply}>
-    <Text style={[s.applyText,inactive&&s.applyTextDisabled]}>{inactive?(job.status==='filled'?'POSITION FILLED':expiredByTime||job.status==='expired'?'JOB EXPIRED':'JOB CLOSED'):job.application_method==='demo'?'PREVIEW LISTING':job.application_method==='external'?'CONTINUE TO APPLY':job.easy_apply_enabled&&readiness!==100?'COMPLETE PROFILE TO UNLOCK':job.easy_apply_enabled?'EASY APPLY WITH FAIRPATH':'APPLY WITH FAIRPATH'}</Text>
-    <Text style={[s.applyText,inactive&&s.applyTextDisabled]}>{inactive?'—':'→'}</Text>
+   <Pressable style={[s.apply,(inactive||applied)&&s.applyDisabled]} onPress={apply}>
+    <Text style={[s.applyText,(inactive||applied)&&s.applyTextDisabled]}>{applied?'VIEW APPLICATION':inactive?(job.status==='filled'?'POSITION FILLED':expiredByTime||job.status==='expired'?'JOB EXPIRED':'JOB CLOSED'):job.application_method==='demo'?'PREVIEW LISTING':job.application_method==='external'?'CONTINUE TO APPLY':job.easy_apply_enabled&&readiness!==100?'COMPLETE PROFILE TO UNLOCK':job.easy_apply_enabled?'EASY APPLY WITH FAIRPATH':'APPLY WITH FAIRPATH'}</Text>
+    <Text style={[s.applyText,(inactive||applied)&&s.applyTextDisabled]}>{applied?'→':inactive?'—':'→'}</Text>
    </Pressable>
   </View>
  </ScreenFrame>;
