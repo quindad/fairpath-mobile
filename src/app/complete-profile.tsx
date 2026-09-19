@@ -83,11 +83,11 @@ export default function CompleteProfile(){
  const canContinue=hasValue&&!validation;
 
  function goToPreviousQuestion(){
-  if(!question){router.back();return;}
+  if(!question){router.replace((returnTo??'/profile-readiness') as never);return;}
   const required=getRequiredVisibleQuestions(answers);
   const index=required.findIndex(q=>q.id===question.id);
   const previous=index>0?required[index-1]:null;
-  if(!previous){router.back();return;}
+  if(!previous){router.replace((returnTo??'/profile-readiness') as never);return;}
   setError('');
   setQuestion(previous);
   setValue(decodeValue(previous,answers[previous.id]));
