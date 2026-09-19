@@ -67,6 +67,11 @@ export default function JobDetail(){
 
  async function apply(){
   if(!job)return;
+  const expiredByTime=Boolean(job.expires_at&&new Date(job.expires_at).getTime()<=Date.now());
+  if(expiredByTime||job.status==='expired'||job.status==='closed'||job.status==='filled'){
+   Alert.alert('Job unavailable',job.status==='filled'?'This position has been filled.':expiredByTime||job.status==='expired'?'This job posting has expired.':'This job is no longer accepting applications.');
+   return;
+  }
   if(job.application_method==='demo'){
    Alert.alert('Preview job','This is sample data for the FairPath preview. Live jobs can use FairPath Easy Apply.');
    return;
@@ -87,6 +92,10 @@ export default function JobDetail(){
 
  const location=job.location_text||[job.city,job.state,job.postal_code].filter(Boolean).join(', ');
  const second=job.eligibility_rules?.second_chance_evidence==='explicit';
+ const expiredByTime=Boolean(job.expires_at&&new Date(job.expires_at).getTime()<=Date.now());
+ const inactive=expiredByTime||job.status==='expired'||job.status==='closed'||job.status==='filled';
+ const daysLeft=job.expires_at&&!inactive?Math.max(0,Math.ceil((new Date(job.expires_at).getTime()-Date.now())/86400000)):null;
+ const lifecycleLabel=job.status==='filled'?'POSITION FILLED':expiredByTime||job.status==='expired'?'JOB EXPIRED':job.status==='closed'?'JOB CLOSED':daysLeft!=null?daysLeft+' DAYS LEFT':null;
 
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH JOBS" title="Job details" trailing={<Pressable style={s.save} onPress={save}><Text style={s.saveText}>SAVE</Text></Pressable>}/>
@@ -105,6 +114,7 @@ export default function JobDetail(){
    </Pressable>:null}
 
    <View style={s.badges}>
+    {lifecycleLabel?<InlineBadge tone={inactive?'default':'lime'}>{lifecycleLabel}</InlineBadge>:null}
     <InlineBadge tone={second?'lime':'default'}>{second?'VERIFIED SECOND-CHANCE':'POLICY REVIEW NEEDED'}</InlineBadge>
     {job.easy_apply_enabled?<InlineBadge tone="lime">EASY APPLY</InlineBadge>:null}
     <InlineBadge>{job.workplace_type.toUpperCase()}</InlineBadge>
@@ -131,9 +141,9 @@ export default function JobDetail(){
   </ScrollView>
 
   <View style={s.bottom}>
-   <Pressable style={s.apply} onPress={apply}>
-    <Text style={s.applyText}>{job.application_method==='demo'?'PREVIEW LISTING':job.application_method==='external'?'CONTINUE TO APPLY':job.easy_apply_enabled&&readiness!==100?'COMPLETE PROFILE TO UNLOCK':job.easy_apply_enabled?'EASY APPLY WITH FAIRPATH':'APPLY WITH FAIRPATH'}</Text>
-    <Text style={s.applyText}>→</Text>
+   <Pressable style={[s.apply,inactive&&s.applyDisabled]} onPress={apply}>
+    <Text style={[s.applyText,inactive&&s.applyTextDisabled]}>{inactive?(job.status==='filled'?'POSITION FILLED':expiredByTime||job.status==='expired'?'JOB EXPIRED':'JOB CLOSED'):job.application_method==='demo'?'PREVIEW LISTING':job.application_method==='external'?'CONTINUE TO APPLY':job.easy_apply_enabled&&readiness!==100?'COMPLETE PROFILE TO UNLOCK':job.easy_apply_enabled?'EASY APPLY WITH FAIRPATH':'APPLY WITH FAIRPATH'}</Text>
+    <Text style={[s.applyText,inactive&&s.applyTextDisabled]}>{inactive?'—':'→'}</Text>
    </Pressable>
   </View>
  </ScreenFrame>;
@@ -158,6 +168,6 @@ const s=StyleSheet.create({
  body:{color:C.mutedStrong,fontSize:13,lineHeight:20},line:{color:C.mutedStrong,fontSize:13,lineHeight:21},
  source:{paddingVertical:16},sourceLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:8,letterSpacing:1},sourceText:{color:C.mutedStrong,fontSize:11,marginTop:4},
  bottom:{position:'absolute',left:0,right:0,bottom:0,paddingHorizontal:L.mobileGutter,paddingTop:10,paddingBottom:14,backgroundColor:C.black,borderTopWidth:1,borderTopColor:C.border},
- apply:{height:48,backgroundColor:C.lime,paddingHorizontal:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
- applyText:{color:C.black,fontFamily:F.extraBold,fontSize:10,letterSpacing:.8}
+ apply:{height:48,backgroundColor:C.lime,paddingHorizontal:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},applyDisabled:{backgroundColor:'#1A2114',borderWidth:1,borderColor:'#2C3823'},
+ applyText:{color:C.black,fontFamily:F.extraBold,fontSize:10,letterSpacing:.8},applyTextDisabled:{color:C.mutedStrong}
 });
