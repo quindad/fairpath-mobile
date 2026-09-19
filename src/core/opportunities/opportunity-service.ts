@@ -94,7 +94,15 @@ export async function saveJobApplicationProfile(form:JobApplicationAutofill){
   if(error)throw error;
  }
 }
-export async function submitJobApplication(jobId:string,answers:Record<string,unknown>={}){const user=await currentUser();const {error}=await supabase.from('job_applications').upsert({user_id:user.id,job_id:jobId,status:'submitted',answers,submitted_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:'user_id,job_id'});if(error)throw error;}
+export async function submitJobApplication(jobId:string,answers:Record<string,unknown>={}){
+ const user=await currentUser();
+ const now=new Date().toISOString();
+ const {error}=await supabase.from('job_applications').insert({user_id:user.id,job_id:jobId,status:'submitted',answers,submitted_at:now,updated_at:now});
+ if(error){
+  if(error.code==='23505')throw new Error('ALREADY_APPLIED');
+  throw error;
+ }
+}
 export type JobApplicationStatus='started'|'submitted'|'viewed'|'interview'|'offer'|'hired'|'withdrawn'|'rejected';
 export type MyJobApplication={
  id:string;
@@ -127,3 +135,32 @@ export async function loadMyJobApplicationForJob(jobId:string):Promise<{status:J
 }
 export async function submitHousingApplication(listingId:string,fastTrack=false){const user=await currentUser();const {error}=await supabase.from('housing_applications').upsert({user_id:user.id,listing_id:listingId,application_type:fastTrack?'fasttrack':'standard',status:'submitted',submitted_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:'user_id,listing_id'});if(error)throw error;}
 export async function claimMarketplaceItem(itemId:string){const user=await currentUser();const {data:existing,error:findError}=await supabase.from('marketplace_claims').select('id,status').eq('item_id',itemId).eq('claimant_id',user.id).in('status',['requested','approved','ready']).maybeSingle();if(findError)throw findError;if(existing)return existing;const {data,error}=await supabase.from('marketplace_claims').insert({item_id:itemId,claimant_id:user.id,status:'requested',pickup_deadline:new Date(Date.now()+48*60*60*1000).toISOString()}).select('id,status').single();if(error)throw error;return data;}
+
+export type EmployerApplicationStatus='viewed'|'interview'|'offer'|'hired'|'rejected';
+export type EmployerJobApplication={
+ id:string;
+ user_id:string;
+ job_id:string;
+ status:JobApplicationStatus;
+ answers:Record<string,unknown>;
+ submitted_at:string|null;
+ updated_at:string;
+};
+export async function loadEmployerJobApplications(jobId:string):Promise<EmployerJobApplication[]>{
+ await currentUser();
+ const {data,error}=await supabase
+  .from('job_applications')
+  .select('id,user_id,job_id,status,answers,submitted_at,updated_at')
+  .eq('job_id',jobId)
+  .order('submitted_at',{ascending:false});
+ if(error)throw error;
+ return (data??[]) as EmployerJobApplication[];
+}
+export async function updateEmployerJobApplicationStatus(applicationId:string,status:EmployerApplicationStatus){
+ await currentUser();
+ const {error}=await supabase
+  .from('job_applications')
+  .update({status,updated_at:new Date().toISOString()})
+  .eq('id',applicationId);
+ if(error)throw error;
+}
