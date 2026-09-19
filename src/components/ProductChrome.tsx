@@ -18,7 +18,7 @@ export function FilterStrip({children}:{children:React.ReactNode}){return <Scrol
 export function BottomNav(){
  const pathname=usePathname();
  const items:[string,string,string][]=[['house','Home','/home'],['search','Find','/find'],['sparkles','AI','/fairpath-ai'],['store','Market','/marketplace'],['user','Me','/me']];
- return <View style={s.nav}>{items.map(([icon,label,route])=>{const active=pathname===route||(route==='/find'&&(pathname.includes('job')||pathname.includes('housing')))||(route==='/fairpath-ai'&&(pathname.includes('fairpath-ai')||pathname.includes('credit-tools')))||(route==='/marketplace'&&pathname.includes('market'));return <Pressable key={label} style={s.navItem} onPress={()=>router.replace(route as never)}><Lucide name={icon as any} color={active?C.lime:C.mutedStrong} size={17}/><Text style={[s.navText,active&&s.navActive]}>{label}</Text></Pressable>})}</View>
+ return <View style={s.nav}>{items.map(([icon,label,route])=>{const active=pathname===route||(route==='/find'&&(pathname.includes('job')||pathname.includes('housing')))||(route==='/fairpath-ai'&&(pathname.includes('fairpath-ai')||pathname.includes('credit-tools')))||(route==='/marketplace'&&pathname.includes('market'));return <Pressable key={label} style={s.navItem} onPress={()=>router.replace(route as never)}><View style={[s.navIconWrap,active&&s.navIconWrapActive]}><Lucide name={icon as any} color={active?C.black:C.mutedStrong} size={17}/></View><Text style={[s.navText,active&&s.navActive]}>{label}</Text>{active?<View style={s.navIndicator}/>:null}</Pressable>})}</View>
 }
 export function Divider(){return <View style={s.divider}/>}
 export function InlineBadge({children,tone='default'}:{children:React.ReactNode;tone?:'default'|'lime'}){
@@ -33,8 +33,8 @@ const s=StyleSheet.create({
  chip:{height:34,borderRadius:R.sm,borderWidth:1,borderColor:C.border,paddingHorizontal:12,alignItems:'center',justifyContent:'center',backgroundColor:C.black},
  chipActive:{backgroundColor:C.white,borderColor:C.white},chipText:{color:C.mutedStrong,fontFamily:F.bold,fontSize:11},chipTextActive:{color:C.black},
  filterStrip:{gap:7,paddingHorizontal:L.mobileGutter,paddingVertical:11},
- nav:{height:L.bottomNavHeight,backgroundColor:C.surface,borderTopWidth:1,borderTopColor:C.border,flexDirection:'row'},
- navItem:{flex:1,alignItems:'center',justifyContent:'center',gap:3},navText:{color:C.mutedStrong,fontFamily:F.semiBold,fontSize:8},navActive:{color:C.lime},
+ nav:{height:68,backgroundColor:'#090B09',borderTopWidth:1,borderTopColor:C.borderStrong,flexDirection:'row',paddingHorizontal:6},
+ navItem:{flex:1,alignItems:'center',justifyContent:'center',gap:3,position:'relative'},navIconWrap:{width:30,height:30,borderRadius:3,alignItems:'center',justifyContent:'center'},navIconWrapActive:{backgroundColor:C.lime},navText:{color:C.mutedStrong,fontFamily:F.semiBold,fontSize:8,letterSpacing:.2},navActive:{color:C.lime,fontFamily:F.extraBold},navIndicator:{position:'absolute',top:0,width:18,height:2,backgroundColor:C.lime},
  divider:{height:1,backgroundColor:C.border},
  badge:{alignSelf:'flex-start',borderRadius:R.xs,borderWidth:1,borderColor:C.borderStrong,paddingHorizontal:7,paddingVertical:4},
  badgeLime:{borderColor:'#526F2B',backgroundColor:'#11170D'},badgeText:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8,letterSpacing:.6},badgeTextLime:{color:C.lime}
