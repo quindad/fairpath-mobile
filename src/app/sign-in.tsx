@@ -57,7 +57,7 @@ export default function SignInScreen() {
       }
 
       if(returnTo&&profile?.onboarding_completed){router.replace(returnTo as never);return;}
-      router.replace(profile?.onboarding_completed ? '/home' : '/onboarding');
+      router.replace(profile?.onboarding_completed ? '/find-jobs' : '/onboarding');
     } catch {
       setErrorMessage('We could not sign you in right now. Check your connection and try again.');
     } finally {
