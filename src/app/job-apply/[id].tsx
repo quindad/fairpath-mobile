@@ -20,11 +20,20 @@ export default function JobApply(){
  useEffect(()=>{if(!id)return;Promise.all([loadJob(id),loadJobApplicationAutofill()]).then(([j,a])=>{setJob(j);setForm(a)}).catch(e=>{if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace(('/sign-in?returnTo='+encodeURIComponent('/job-apply/'+id)) as never);return}setError('Application could not load.')}).finally(()=>setLoading(false))},[id]);
 
  const requiredKeys:(keyof JobApplicationAutofill)[]=['first_name','last_name','email','phone','address'];
- const completedRequired=useMemo(()=>requiredKeys.filter(k=>form[k].trim()).length,[form]);
+ const validRequired=(key:keyof JobApplicationAutofill,value:string)=>{
+  const v=value.trim();
+  if(!v)return false;
+  if(key==='first_name'||key==='last_name')return v.length>=2;
+  if(key==='email')return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  if(key==='phone')return v.replace(/\D/g,'').length===10;
+  if(key==='address')return v.length>=10&&/\d/.test(v)&&/[A-Za-z]/.test(v);
+  return true;
+ };
+ const completedRequired=useMemo(()=>requiredKeys.filter(k=>validRequired(k,form[k])).length,[form]);
  const completion=useMemo(()=>Math.round(completedRequired/requiredKeys.length*100),[completedRequired]);
  const questions=job?.application_questions??[];
  const requiredExtras=questions.filter(q=>q.required);
- const missingRequiredFields=requiredKeys.filter(k=>!form[k].trim());
+ const missingRequiredFields=requiredKeys.filter(k=>!validRequired(k,form[k]));
  const missingExtraCount=requiredExtras.filter(q=>!String(extra[q.id]??'').trim()).length;
  const missingCount=missingRequiredFields.length+missingExtraCount;
  const ready=missingCount===0;
@@ -63,11 +72,11 @@ export default function JobApply(){
    </View>
 
    <Text style={s.sectionLabel}>CONTACT</Text>
-   <Field label="FIRST NAME" value={form.first_name} onChangeText={v=>set('first_name',v)} required />
-   <Field label="LAST NAME" value={form.last_name} onChangeText={v=>set('last_name',v)} required />
-   <Field label="EMAIL" value={form.email} onChangeText={v=>set('email',v)} keyboardType="email-address" required />
-   <Field label="PHONE" value={form.phone} onChangeText={v=>set('phone',v)} keyboardType="phone-pad" required />
-   <Field label="ADDRESS / LOCATION" value={form.address} onChangeText={v=>set('address',v)} required />
+   <Field label="FIRST NAME" value={form.first_name} onChangeText={v=>set('first_name',v)} required valid={validRequired('first_name',form.first_name)} invalidHint="Enter your full first name" />
+   <Field label="LAST NAME" value={form.last_name} onChangeText={v=>set('last_name',v)} required valid={validRequired('last_name',form.last_name)} invalidHint="Enter your full last name" />
+   <Field label="EMAIL" value={form.email} onChangeText={v=>set('email',v)} keyboardType="email-address" required valid={validRequired('email',form.email)} invalidHint="Enter a valid email address" />
+   <Field label="PHONE" value={form.phone} onChangeText={v=>set('phone',v)} keyboardType="phone-pad" required valid={validRequired('phone',form.phone)} invalidHint="Enter a 10-digit phone number" />
+   <Field label="HOME ADDRESS" value={form.address} onChangeText={v=>set('address',v)} required valid={validRequired('address',form.address)} invalidHint="Enter your full street address" />
 
    <Text style={s.sectionLabel}>PROFILE</Text>
    <Field label="DATE OF BIRTH" value={form.date_of_birth} onChangeText={v=>set('date_of_birth',v)} />
@@ -95,9 +104,13 @@ export default function JobApply(){
  </ScreenFrame>;
 }
 
-function Field({label,value,onChangeText,multiline=false,keyboardType,required=false}:{label:string;value:string;onChangeText:(v:string)=>void;multiline?:boolean;keyboardType?:'default'|'email-address'|'phone-pad';required?:boolean}){
- const missing=required&&!value.trim();
- return <View style={[s.field,missing&&s.fieldMissing]}><View style={s.fieldHead}><Text style={s.fieldLabel}>{label}</Text>{required?<Text style={s.requiredTag}>REQUIRED</Text>:null}</View><TextInput value={value} onChangeText={onChangeText} style={[s.input,multiline&&s.multiline]} placeholder={missing?"Required information":"Add information"} placeholderTextColor={missing?C.lime:C.muted} multiline={multiline} keyboardType={keyboardType}/></View>
+function Field({label,value,onChangeText,multiline=false,keyboardType,required=false,valid=true,invalidHint='Complete this field'}:{label:string;value:string;onChangeText:(v:string)=>void;multiline?:boolean;keyboardType?:'default'|'email-address'|'phone-pad';required?:boolean;valid?:boolean;invalidHint?:string}){
+ const invalid=required&&!valid;
+ return <View style={[s.field,invalid&&s.fieldMissing]}>
+  <View style={s.fieldHead}><Text style={s.fieldLabel}>{label}</Text>{required?<Text style={s.requiredTag}>REQUIRED</Text>:null}</View>
+  <TextInput value={value} onChangeText={onChangeText} style={[s.input,multiline&&s.multiline]} placeholder={invalid?"Required information":"Add information"} placeholderTextColor={invalid?C.lime:C.muted} multiline={multiline} keyboardType={keyboardType}/>
+  {invalid&&value.trim()?<Text style={s.validationText}>{invalidHint}</Text>:null}
+ </View>
 }
 function Choice({label,active,onPress}:{label:string;active:boolean;onPress:()=>void}){return <Pressable style={[s.choice,active&&s.choiceActive]} onPress={onPress}><Text style={[s.choiceText,active&&s.choiceTextActive]}>{label}</Text></Pressable>}
 
@@ -106,7 +119,7 @@ const s=StyleSheet.create({
  hero:{paddingBottom:18,borderBottomWidth:1,borderBottomColor:C.borderStrong},company:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.1},title:{color:C.white,fontFamily:F.extraBold,fontSize:24,lineHeight:27,marginTop:5},readyRow:{flexDirection:'row',justifyContent:'space-between',marginTop:16},readyLabel:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8,letterSpacing:1},readyPct:{color:C.lime,fontFamily:F.extraBold,fontSize:13},track:{height:2,backgroundColor:C.borderStrong,marginTop:7},fill:{height:2,backgroundColor:C.lime},
  notice:{flexDirection:'row',gap:10,paddingVertical:15,borderBottomWidth:1,borderBottomColor:C.borderStrong},noticeCopy:{flex:1},noticeTitle:{color:C.white,fontFamily:F.bold,fontSize:11},noticeBody:{color:C.muted,fontSize:9,lineHeight:14,marginTop:3},
  sectionLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.2,marginTop:20,marginBottom:7},
- field:{borderTopWidth:1,borderTopColor:C.border,paddingVertical:11,paddingLeft:0},fieldMissing:{borderLeftWidth:2,borderLeftColor:C.lime,paddingLeft:10},fieldHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},fieldLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},requiredTag:{color:C.lime,fontFamily:F.extraBold,fontSize:6,letterSpacing:.9},input:{color:C.white,fontFamily:F.medium,fontSize:12,paddingVertical:6,paddingHorizontal:0},multiline:{minHeight:58,textAlignVertical:'top'},
+ field:{borderTopWidth:1,borderTopColor:C.border,paddingVertical:11,paddingLeft:0},fieldMissing:{borderLeftWidth:2,borderLeftColor:C.lime,paddingLeft:10},fieldHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},fieldLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},requiredTag:{color:C.lime,fontFamily:F.extraBold,fontSize:6,letterSpacing:.9},validationText:{color:C.lime,fontFamily:F.medium,fontSize:8,marginTop:2},input:{color:C.white,fontFamily:F.medium,fontSize:12,paddingVertical:6,paddingHorizontal:0},multiline:{minHeight:58,textAlignVertical:'top'},
  question:{borderTopWidth:1,borderTopColor:C.border,paddingVertical:12},questionHead:{flexDirection:'row',alignItems:'flex-start',justifyContent:'space-between',gap:12},questionLabel:{color:C.white,fontFamily:F.bold,fontSize:11,lineHeight:16,flex:1},yesNo:{flexDirection:'row',gap:8,marginTop:9},choice:{flex:1,height:38,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center'},choiceActive:{borderColor:C.lime,backgroundColor:'#10150C'},choiceText:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8},choiceTextActive:{color:C.lime},
  review:{flexDirection:'row',gap:9,paddingVertical:16,borderTopWidth:1,borderTopColor:C.borderStrong,marginTop:18},reviewText:{flex:1,color:C.mutedStrong,fontSize:9,lineHeight:14},
  submit:{height:48,backgroundColor:C.lime,paddingHorizontal:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},submitDisabled:{backgroundColor:'#1A2114',borderWidth:1,borderColor:'#2C3823',opacity:1},submitText:{color:C.black,fontFamily:F.extraBold,fontSize:9,letterSpacing:.9}
