@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ScreenFrame, PageHeader, FilterStrip, SharpChip, InlineBadge } from '@/components/ProductChrome';
@@ -9,7 +9,9 @@ import { openGoogleMaps } from '@/core/location/maps';
 
 type Lane='all'|'match'|'second';
 export default function FindJobs(){
- const [query,setQuery]=useState(''); const [location,setLocation]=useState(''); const [jobs,setJobs]=useState<Job[]>([]);
+ const params=useLocalSearchParams<{search?:string}>();
+ const initialSearch=typeof params.search==='string'?params.search:'';
+ const [query,setQuery]=useState(initialSearch); const [location,setLocation]=useState(''); const [jobs,setJobs]=useState<Job[]>([]);
  const [lane,setLane]=useState<Lane>('all'); const [remote,setRemote]=useState(false); const [fullTime,setFullTime]=useState(false); const [partTime,setPartTime]=useState(false);
  const [loading,setLoading]=useState(true); const [error,setError]=useState('');
  async function run(next={remote,fullTime,partTime,lane}){
@@ -18,7 +20,7 @@ export default function FindJobs(){
   catch{setError('Jobs could not load. Check your connection and try again.');}
   finally{setLoading(false);}
  }
- useEffect(()=>{let active=true;loadProfileAnswers().then(a=>{if(!active)return;const v=a['identity.current_location'];if(typeof v==='string')setLocation(v);}).finally(()=>{if(active)loadJobs().then(setJobs).catch(()=>setError('Jobs could not load.')).finally(()=>setLoading(false));});return()=>{active=false};},[]);
+ useEffect(()=>{let active=true;loadProfileAnswers().then(a=>{if(!active)return;const v=a['identity.current_location'];if(typeof v==='string')setLocation(v);}).finally(()=>{if(active)loadJobs(initialSearch).then(setJobs).catch(()=>setError('Jobs could not load.')).finally(()=>setLoading(false));});return()=>{active=false};},[initialSearch]);
  const counts=useMemo(()=>({all:jobs.length,second:jobs.filter(j=>j.eligibility_rules?.second_chance_evidence==='explicit').length}),[jobs]);
  function openJob(j:Job){router.push(('/job/'+j.id) as never)}
  function matchLabel(j:Job){return j.eligibility_rules?.second_chance_evidence==='explicit'?'VERIFIED SECOND-CHANCE':'POLICY REVIEW NEEDED'}
@@ -32,7 +34,7 @@ export default function FindJobs(){
   <View style={s.searchBlock}>
    <View style={s.searchRow}><Text style={s.fieldLabel}>WHAT</Text><TextInput value={query} onChangeText={setQuery} style={s.input} placeholder="Job title, skill or company" placeholderTextColor={C.muted}/></View>
    <View style={s.searchRow}><Text style={s.fieldLabel}>WHERE</Text><TextInput value={location} onChangeText={setLocation} style={s.input} placeholder="City, state or ZIP" placeholderTextColor={C.muted}/><Pressable style={s.mapBtn} onPress={()=>openGoogleMaps((location||'Columbus, OH')+' jobs')}><Text style={s.mapBtnText}>MAP</Text></Pressable></View>
-   <Pressable style={s.primary} onPress={run}><Text style={s.primaryText}>Search jobs</Text><Text style={s.primaryText}>→</Text></Pressable>
+   <Pressable style={s.primary} onPress={()=>void run()}><Text style={s.primaryText}>Search jobs</Text><Text style={s.primaryText}>→</Text></Pressable>
   </View>
   <View style={s.lanes}>
    <Pressable style={[s.lane,lane==='all'&&s.laneActive]} onPress={()=>chooseLane('all')}><Text style={[s.laneText,lane==='all'&&s.laneTextActive]}>ALL JOBS</Text><Text style={[s.laneCount,lane==='all'&&s.laneTextActive]}>{counts.all}</Text></Pressable>
