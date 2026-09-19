@@ -9,7 +9,7 @@ const copy={identity:['Identity','Contact and basic information'],employment:['E
 export default function ProfileReadiness(){
  const [r,setR]=useState<FairPathReadiness|null>(null);useEffect(()=>{let a=true;loadFairPathReadiness().then(x=>{if(a)setR(x.readiness)}).catch(()=>{});return()=>{a=false}},[]);
  const areas=useMemo(()=>r?.areas.map(x=>[x.area,copy[x.area][0],copy[x.area][1],x.percentage] as const)??[],[r]);const overall=r?.overallPercentage??0;
- return <ScreenFrame><PageHeader eyebrow="FAIRPATH READINESS" title="Your profile"/>
+ return <ScreenFrame><PageHeader eyebrow="FAIRPATH READINESS" title="Your profile" backTo="/me"/>
  <ScrollView contentContainerStyle={s.content}>
   <View style={s.score}><View><Text style={s.scoreLabel}>OVERALL READINESS</Text><Text style={s.scoreSub}>Complete information once. Reuse it across FairPath.</Text></View><Text style={s.scoreNumber}>{overall}%</Text></View>
   <View style={s.track}><View style={[s.fill,{width:overall+'%'}]}/></View>
