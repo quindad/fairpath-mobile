@@ -7,8 +7,12 @@ import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L, FairPathR
 export function ScreenFrame({children,showNav=false}:{children:React.ReactNode;showNav?:boolean}){
   return <View style={s.screen}><SafeAreaView style={s.safe}>{children}{showNav?<BottomNav/>:null}</SafeAreaView></View>;
 }
-export function PageHeader({eyebrow,title,onBack=true,trailing}:{eyebrow:string;title:string;onBack?:boolean;trailing?:React.ReactNode}){
-  return <View style={s.header}>{onBack?<Pressable style={s.back} onPress={()=>router.back()}><Text style={s.backText}>←</Text></Pressable>:null}<View style={s.headerCopy}><Text style={s.eyebrow}>{eyebrow}</Text><Text style={s.title}>{title}</Text></View>{trailing?<View style={s.trailing}>{trailing}</View>:null}</View>;
+export function safeBack(fallback='/home'){
+  if(router.canGoBack())router.back();
+  else router.replace(fallback as never);
+}
+export function PageHeader({eyebrow,title,onBack=true,backTo='/home',trailing}:{eyebrow:string;title:string;onBack?:boolean;backTo?:string;trailing?:React.ReactNode}){
+  return <View style={s.header}>{onBack?<Pressable accessibilityRole="button" accessibilityLabel="Go back" style={s.back} onPress={()=>safeBack(backTo)}><Text style={s.backText}>←</Text></Pressable>:null}<View style={s.headerCopy}><Text style={s.eyebrow}>{eyebrow}</Text><Text style={s.title}>{title}</Text></View>{trailing?<View style={s.trailing}>{trailing}</View>:null}</View>;
 }
 export function SectionTitle({children}:{children:React.ReactNode}){return <Text style={s.section}>{children}</Text>}
 export function SharpChip({label,active,onPress}:{label:string;active?:boolean;onPress?:()=>void}){
