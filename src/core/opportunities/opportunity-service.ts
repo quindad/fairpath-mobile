@@ -58,6 +58,17 @@ export async function loadMarketplaceItem(id:string){
 }
 async function currentUser(){const {data:{user}}=await supabase.auth.getUser();if(!user)throw new Error('SIGNED_OUT');return user;}
 export async function saveJob(jobId:string){const user=await currentUser();const {error}=await supabase.from('saved_jobs').upsert({user_id:user.id,job_id:jobId});if(error)throw error;}
+export async function unsaveJob(jobId:string){const user=await currentUser();const {error}=await supabase.from('saved_jobs').delete().eq('user_id',user.id).eq('job_id',jobId);if(error)throw error;}
+export async function loadSavedJobs():Promise<Job[]>{
+ const user=await currentUser();
+ const {data,error}=await supabase
+  .from('saved_jobs')
+  .select('job:jobs(id,title,company_name,description,location_text,city,state,postal_code,workplace_type,employment_type,pay_min,pay_max,pay_period,benefits,skills,requirements,background_policy_summary,eligibility_rules,application_method,external_apply_url,company_website_url,source_label,source_url,featured,created_at,status,published_at,expires_at,closed_at,latitude,longitude,location_precision,easy_apply_enabled,application_questions)')
+  .eq('user_id',user.id)
+  .order('created_at',{ascending:false});
+ if(error)throw error;
+ return (data??[]).map((row:any)=>row.job).filter(Boolean) as Job[];
+}
 export async function saveHousing(listingId:string){const user=await currentUser();const {error}=await supabase.from('saved_housing').upsert({user_id:user.id,listing_id:listingId});if(error)throw error;}
 export async function saveMarketplace(itemId:string){const user=await currentUser();const {error}=await supabase.from('marketplace_saves').upsert({user_id:user.id,item_id:itemId});if(error)throw error;}
 export type JobApplicationAutofill={first_name:string;last_name:string;email:string;phone:string;address:string;date_of_birth:string;education:string;skills:string;certifications:string;desired_roles:string;resume_ready:string};
