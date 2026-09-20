@@ -191,7 +191,7 @@ export async function startHousingApplication(listingId:string,fastTrack=false){
 export type HousingApplicationDetail=MyHousingApplication & {listing:{id:string;title:string;city:string;state:string;rent_monthly:number;bedrooms:number|null;bathrooms:number|null;fasttrack_enabled:boolean}|null};
 export async function loadMyHousingApplicationDetail(applicationId:string):Promise<HousingApplicationDetail>{
  const user=await currentUser();
- const {data,error}=await supabase.from('housing_applications').select('id,listing_id,status,application_type,created_at,updated_at,listing:housing_listings(id,title,city,state,rent_monthly,bedrooms,bathrooms,fasttrack_enabled)').eq('id',applicationId).eq('user_id',user.id).single();
+ const {data,error}=await supabase.from('housing_applications').select('id,listing_id,status,application_type,updated_at,listing:housing_listings(id,title,city,state,rent_monthly,bedrooms,bathrooms,fasttrack_enabled)').eq('id',applicationId).eq('user_id',user.id).single();
  if(error)throw error;return data as unknown as HousingApplicationDetail;
 }
 export async function withdrawMyHousingApplication(applicationId:string){
