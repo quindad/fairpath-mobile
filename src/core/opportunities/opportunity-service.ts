@@ -60,6 +60,11 @@ export async function loadMarketplaceItem(id:string){
  if(error)throw error;return data as MarketplaceItem;
 }
 async function currentUser(){const {data:{user}}=await supabase.auth.getUser();if(!user)throw new Error('SIGNED_OUT');return user;}
+export async function trackProductEvent(eventName:string,surface:string,entityId?:string|null,properties:Record<string,unknown>={}){
+ const {data:{user}}=await supabase.auth.getUser();
+ const {error}=await supabase.from('product_events').insert({user_id:user?.id??null,event_name:eventName,surface,entity_id:entityId??null,properties});
+ if(error)throw error;
+}
 export async function saveJob(jobId:string){
  const user=await currentUser();
  const {error}=await supabase.from('saved_jobs').insert({user_id:user.id,job_id:jobId});
@@ -97,7 +102,7 @@ export type HousingTourRequest={id:string;listing_id:string;preferred_date:strin
 export async function createHousingTourRequest(input:{listingId:string;preferredDate:string;preferredWindow:HousingTourRequest['preferred_window'];note?:string}){
  const user=await currentUser();
  const {data,error}=await supabase.from('housing_tour_requests').insert({user_id:user.id,listing_id:input.listingId,preferred_date:input.preferredDate,preferred_window:input.preferredWindow,note:input.note?.trim()||null}).select('id,listing_id,preferred_date,preferred_window,note,status,confirmed_date,confirmed_window,partner_note,created_at,updated_at').single();
- if(error)throw error;return data as HousingTourRequest;
+ if(error)throw error;void trackProductEvent('housing_tour_requested','housing',input.listingId,{request_id:data?.id}).catch(()=>{});return data as HousingTourRequest;
 }
 export async function loadMyHousingTours():Promise<HousingTourRequest[]>{
  const user=await currentUser();
@@ -116,12 +121,12 @@ export async function loadMyHousingInquiries():Promise<HousingInquiry[]>{
 export async function createHousingInquiry(input:{listingId:string;subject?:string;message:string}){
  const user=await currentUser();
  const {data,error}=await supabase.from('housing_inquiries').insert({user_id:user.id,listing_id:input.listingId,subject:input.subject?.trim()||'Question about this home',message:input.message.trim()}).select('id,status,created_at').single();
- if(error)throw error;return data as {id:string;status:string;created_at:string};
+ if(error)throw error;void trackProductEvent('housing_inquiry_sent','housing',input.listingId,{inquiry_id:data?.id}).catch(()=>{});return data as {id:string;status:string;created_at:string};
 }
 export async function createHousingReport(input:{listingId:string;reason:'incorrect_info'|'suspected_scam'|'unavailable'|'discrimination_concern'|'safety_concern'|'other';details?:string}){
  const user=await currentUser();
  const {data,error}=await supabase.from('housing_reports').insert({user_id:user.id,listing_id:input.listingId,reason:input.reason,details:input.details?.trim()||null}).select('id,status,created_at').single();
- if(error)throw error;return data as {id:string;status:string;created_at:string};
+ if(error)throw error;void trackProductEvent('housing_listing_reported','housing',input.listingId,{report_id:data?.id,reason:input.reason}).catch(()=>{});return data as {id:string;status:string;created_at:string};
 }
 
 export async function loadSavedHousing():Promise<HousingListing[]>{
