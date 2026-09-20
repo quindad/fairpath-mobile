@@ -74,6 +74,7 @@
 - Correct code completes pickup.
 - No-show before deadline blocks.
 - No-show after deadline succeeds and item returns available.
+- Scheduled expiration worker is active every 15 minutes and automatically releases stale approved/ready pickups.
 - Donor pickup messages only send while claim is APPROVED/READY.
 - Claimant cannot send Marketplace messages to donor.
 - Donor message appears read-only in claimant workspace.
