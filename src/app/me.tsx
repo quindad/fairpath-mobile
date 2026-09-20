@@ -9,6 +9,7 @@ const rows=[
  ["Saved jobs","Jobs you bookmarked for later","/saved-jobs"],
  ["Job applications","Track your FairPath job applications","/job-applications"],
  ["Saved homes","Your saved FairPath housing","/saved-homes"],
+ ["Saved housing searches","Rerun housing searches with your filters","/saved-housing-searches"],
  ["Housing applications","Track standard and FastTrack applications","/housing-applications"],
  ["Privacy","Control your account and information","/profile-readiness"]
 ] as const;
