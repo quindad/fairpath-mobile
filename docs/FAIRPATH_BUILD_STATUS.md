@@ -3,108 +3,129 @@
 Last updated: 2026-09-20
 
 ## Source of truth
-This file is the handoff checkpoint for FairPath Mobile. Before starting a new build chat, read this file and the latest commits on `main`.
+Read this file and the latest commits on `main` before starting a new build chat. The repository is authoritative; chat memory is secondary.
 
 ## Current lane
-**Mobile → Housing**
+**FairPath Mobile → close Housing renter MVP**
 
-Do not restart Jobs. Do not jump into FairPath Partner/Admin unless the mobile flow requires a small supporting model.
+Do not restart Jobs. Do not begin Partner/Admin until the Housing exit checklist below is cleared or explicitly deferred as a cross-product dependency.
 
-## Completed / verified on main
-- Public Find Housing browse flow
-- Dedicated Housing Filters screen
-- Housing Filters remain public for guest browsing
-- Housing detail screen
-- Saved-home behavior wired to `saved_housing`
-- Housing application lifecycle foundation wired to `housing_applications`
-- FastTrack-aware application start state
-- Swipeable multi-photo housing gallery
-- Thumbnail controls for the main gallery photo
-- Demo housing galleries used only when a listing has no real housing media
-- Housing feed/detail already consume `housing_media` ordered by `sort_order`
+## Mobile architecture
+- **FairPath Mobile** — renter/job-seeker/consumer experience.
+- **FairPath Partner** — employers and property owners/managers.
+- **FairPath Admin** — FairPath staff controls, moderation, support and operations.
+- **FairPath Core** — shared data contracts, services, status logic and policy rules.
+- **Supabase** — shared auth/database/storage backend.
 
-Recent checkpoint commits:
-- `7906e7e7` Keep housing filters public for guest browsing
-- `8d97ce28` Make housing gallery thumbnails control main photo
-- `8528673d` Add swipeable multi-photo housing gallery
-- `52f38731` Connect dedicated filters to Find Housing
-- `9bf364d5` Add dedicated housing filters screen
-- `674eb34f` Add multi-photo demo galleries for housing
-- `95284e8f` Rebuild housing detail with honest save and application states
-- `3abdabb7` Rebuild Find Housing as premium public browse flow
+## Completed — core mobile shell
+- Auth: sign up, sign in, password reset/callback flows.
+- Home / Find / Me navigation shell.
+- FairPath profile + readiness foundation.
+- Notifications screen foundation.
+- FairPath AI, Record Relief, Forms/Filing, Credit Tools, Resources and Marketplace foundations.
+- Jobs browse/detail/save/apply/application-tracking flows substantially built.
+- Saved Jobs + Job Applications available from Me.
+- Shared FairPath visual system: dark UI, lime `#A8F32C`, sharp product styling.
+- Shared US phone + MM/DD/YYYY input formatting.
+- Context-aware back navigation cleanup.
+- GitHub automatic failing app-check workflow disabled; manual-only until green.
 
-## Important correction from chat recovery
-The repository is authoritative. The current repo does **not** yet contain separate mobile screens for Saved Homes, My Housing Applications, or a full FastTrack readiness workspace. Those were discussed/planned, but should not be treated as completed until code exists on `main`.
+## Completed — Housing browse and discovery
+- Public guest housing browsing.
+- Search by keyword + stronger city/state/ZIP parsing.
+- Advanced dedicated Filters screen.
+- Bedrooms: Studio / 1+ / 2+ / 3+ / 4+ / 5+ while preserving exact listing bedroom counts.
+- Bathrooms through 4+ including half-bath thresholds.
+- Property types: apartment, townhome, house, duplex, condo, room.
+- Rent, square footage, FastTrack, pets, accessibility, garage, parking, furnished, basement, yard, balcony/patio, laundry, central air, move-in-ready filters.
+- Walk Score threshold model.
+- Sorting: Featured, Price Low, Price High, Newest.
+- Saved Housing Searches stored in Supabase and rerunnable.
+- Saved Homes stored in Supabase with visual saved-home cards.
+- Housing feed uses ordered `housing_media` cover photo data.
+- Swipeable multi-photo gallery with thumbnail navigation.
+- Demo galleries only when real listing media is absent.
 
-## Completed in advanced Housing pass
-- Bedrooms expanded to Studio / 1+ / 2+ / 3+ / 4+ / 5+ while preserving exact bedroom counts (including 8+ bedroom homes)
-- Bathrooms expanded through 4+ with half-bath thresholds
-- Property types expanded to apartment, townhome, house, duplex, condo, room
-- Advanced Home filters: minimum square feet, garage, off-street parking, furnished, basement, yard/outdoor space, balcony/patio, laundry, central air, move-in ready
-- Verified Walk Score threshold support added to filtering
-- Supabase housing schema expanded for garage, parking types, home features, pet types, move-in state, Walk/Transit/Bike scores and provider freshness timestamps
-- Housing detail now exposes real home features and verified mobility score surfaces when data exists
-- No fake FairPath neighborhood score: neighborhood dimensions remain source-backed and separate
-- Walk Score integration target confirmed for Walk / Transit / Bike data
-- GreatSchools NearbySchools integration target confirmed for nearby K-12 school data; API key/provider setup still required before live school cards can ship
+## Completed — Housing listing detail
+- Price, location, beds, baths, square footage, deposit, application fee, availability.
+- Description, screening summary, lease terms, amenities, utilities, pet policy, parking and accessibility.
+- Expanded home attributes: garage spaces, parking types, furnished, basement, yard, balcony/patio, laundry and central air.
+- Property media: virtual tour, floor plan and video links.
+- Source labeling / original listing link support.
+- Verified Walk / Transit / Bike score surfaces when provider data exists.
+- Source-backed schema and UI support for nearby schools and nearby grocery / parks / transit / healthcare / pharmacy.
+- No fabricated FairPath neighborhood or school scores.
+- Renter actions: Request Tour, Ask a Question, Report Listing / Safety Concern.
+- Housing Activity center for tour requests and property questions.
 
-## Housing production pass — 2026-09-20
-- GitHub automatic app-check emails stopped: workflow is manual-only until the suite is green.
-- Root CI failure was TypeScript, not Expo: missing JobMap module, strict width typing, stale style/type issues and Node version mismatch were identified; known failures were repaired without re-enabling automatic email-producing runs.
-- Shared input formatters added for US phone numbers and MM/DD/YYYY dates.
-- Standard and FastTrack applications are now distinct user choices on FastTrack-enabled properties.
-- Standard applications start clean; FastTrack can prefill available FairPath profile information.
-- Housing application form rebuilt as a 5-step production flow: Applicant → Income → Household → History → Review.
-- Required field validation now blocks forward progress and blocks final submission.
-- Final submission requires explicit accuracy + submit consent; FastTrack also requires a FastTrack acknowledgment.
-- Submission now must be confirmed by Supabase before the UI reports success.
-- Draft applications can be permanently deleted and restarted; submitted applications have a separate withdrawal state.
-- Application workspace now shows real draft progress or submitted/review/tour/decision lifecycle.
-- Housing Applications dashboard now shows draft progress, Standard/FastTrack type, submitted date and status.
-- Saved Homes upgraded to visual cards with media and quick unsave.
-- Saved Housing Searches added with Supabase persistence and rerun support.
-- Find Housing now supports saved searches, price/newest/featured sorting and stronger city/state/ZIP parsing.
-- Home Details now lets the renter choose Standard vs FastTrack, shows a transparent cost snapshot, and can render source-backed schools and nearby places when provider data exists.
-- Housing area-intelligence schema added for schools and nearby grocery/parks/transit/healthcare/pharmacy; no fake neighborhood or school data is displayed.
+## Completed — Housing applications
+- Standard and FastTrack are distinct application choices on eligible properties.
+- Standard starts clean; FastTrack can reuse available FairPath profile data.
+- 5-step application: Applicant → Income → Household → Housing History → Review.
+- Phone and date formatting.
+- Field-level validation and step gating.
+- Explicit final accuracy / submission consent.
+- FastTrack acknowledgment before submit.
+- Draft persistence + current-step persistence.
+- Draft deletion and restart.
+- Application workspace shows draft progress.
+- Housing Applications dashboard shows Standard/FastTrack, progress, submission dates and status.
+- Submitted lifecycle model: Submitted → Under Review → Tour / Next Step → Approved / Not Approved / Withdrawn.
+- Submission service requires Supabase to return an actual submitted row before UI success.
 
-## Next build
-### Property-owner photo system
-This belongs primarily in **FairPath Partner** later, because owners/landlords manage listings there. Mobile should consume the resulting media cleanly.
+## Submission bug status
+The database accepts the application transition from `started` to `submitted` with `submitted_at` and consent data. A transaction test succeeded and was rolled back. The remaining failure was the Expo Web multi-button `Alert.alert` confirmation path: the final Submit callback was not reliably firing. The mobile form now submits directly after the on-screen consent checkboxes, then routes to the application workspace only after Supabase confirms success.
 
-Backend/data contract to preserve:
+## Housing backend contracts added
+- `housing_listings`
 - `housing_media`
-- up to 20 photos per listing
-- stable `sort_order`
-- cover photo = first ordered photo
-- replace/delete/reorder support
-- gallery order must drive both Find Housing card cover and Housing Detail gallery
+- `saved_housing`
+- `saved_housing_searches`
+- `housing_applications`
+- `housing_schools`
+- `housing_nearby_places`
+- `housing_tour_requests`
+- `housing_inquiries`
+- `housing_reports`
 
-### Mobile work immediately after media contract
-1. Saved Homes screen
-2. My Housing Applications screen
-3. Housing application detail/workspace
-4. FastTrack readiness checklist and honest locked/unlocked states
-5. Wire Me screen links into those housing destinations
-6. Continue Housing polish and error/empty/loading states
+## Housing integrations still external / not live
+- Walk Score API credentials + production ingestion.
+- GreatSchools API credentials + production ingestion / attribution.
+- Nearby-place provider selection and ingestion.
+- Real payment processor for FastTrack fees / FairPath+ discounts.
+- Push/email delivery for saved-search alerts and application-status notifications.
+- File storage + document upload workflow for income/identity/application documents.
 
-## Build principles
-- Never fake live coverage, approval, submission, payment, eligibility, or protection.
-- Guest browsing stays public where intended.
-- Auth is requested only for actions that require an account.
-- FairPath Mobile = user-facing experience.
-- FairPath Partner = employer/property-owner operations.
-- FairPath Admin = FairPath staff controls.
-- FairPath Core = shared rules/models/services.
-- Keep UI premium, dark, sharp, and consistent with FairPath lime `#A8F32C`.
+## Housing exit checklist before Partner/Admin
+These are the remaining mobile-Housing items to clear or explicitly defer:
+1. Confirm Standard submission works end-to-end on Expo Web after commit `157001e0`.
+2. Confirm FastTrack submission works end-to-end with required fields and acknowledgments.
+3. Add application submission receipt / clear post-submit status UX if needed after visual QA.
+4. Add document-upload/storage workflow or explicitly defer uploads to the Partner sprint with a locked “Documents coming next” state.
+5. Decide FastTrack payment processor and implement payment handoff before charging real users.
+6. Connect notification delivery for application status / tour response / inquiry response / saved-search alerts.
+7. Connect real neighborhood + school providers when credentials are available.
+8. Run one final Housing regression pass: guest browse → auth → save → filters → saved search → listing → tour/inquiry/report → Standard apply → FastTrack apply → application dashboard.
+9. Re-enable CI only after the manual typecheck/navigation suite is green; never re-enable noisy failing push emails.
+
+## Partner handoff contracts already prepared
+Partner will consume the existing shared tables for:
+- Housing listing creation/editing.
+- Media upload, reorder, cover selection, delete/replace (up to 20 photos).
+- Applications and status updates.
+- Tour requests.
+- Renter inquiries.
+- Listing reports routed to Admin.
+- Schools / neighborhood data attribution.
+- FastTrack availability flag.
 
 ## Git workflow
-ChatGPT changes `main` only after inspecting current code and avoiding stale overwrites.
-User workflow after a pushed build:
-1. GitHub Desktop → **Fetch origin**
-2. **Pull origin**
-3. Expo → reload (`r`)
-4. Test the exact flow requested
-5. Report screenshots/errors; continue from this file + latest commit
+1. ChatGPT inspects current `main`.
+2. ChatGPT makes coherent changes and pushes.
+3. User: GitHub Desktop → **Fetch origin** → **Pull origin**.
+4. Expo → reload (`r`).
+5. User does visual/device QA only where needed.
+6. Bugs are fixed against repo + Supabase state, not chat guesses.
 
-## Architecture parked for later
-Protection + Incentives remains documented in `docs/FAIRPATH_PROTECTION_AND_INCENTIVES_BLUEPRINT.md`. Keep it in the architecture, but do not let it interrupt the current Mobile → Housing lane.
+## Parked architecture
+Protection + Incentives remains documented in `docs/FAIRPATH_PROTECTION_AND_INCENTIVES_BLUEPRINT.md`. Preserve it, but do not let it block the 5-week launch path.
