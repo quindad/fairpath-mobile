@@ -98,6 +98,17 @@ export async function loadSavedHousing():Promise<HousingListing[]>{
  const {data,error}=await supabase.from('saved_housing').select('listing:housing_listings(id,title,description,property_type,address_line1,address_line2,city,state,postal_code,created_at,bedrooms,bathrooms,square_feet,rent_monthly,deposit_amount,application_fee,available_date,lease_terms,amenities,utilities_included,pet_policy,parking,accessibility_features,screening_summary,eligibility_rules,virtual_tour_url,floor_plan_url,video_url,fasttrack_enabled,featured,source_label,source_url,latitude,longitude,garage_spaces,parking_types,furnished,has_basement,has_yard,has_balcony_patio,laundry_type,has_central_air,pet_types,move_in_ready,walk_score,transit_score,bike_score,housing_media(url,media_type,sort_order))').eq('user_id',user.id).order('created_at',{ascending:false});
  if(error)throw error;return (data??[]).map((row:any)=>row.listing).filter(Boolean) as HousingListing[];
 }
+export type SavedHousingSearch={id:string;name:string;query:string;location:string;filters:Record<string,string|boolean|number>;created_at:string;updated_at:string};
+export async function saveHousingSearch(input:{name?:string;query:string;location:string;filters:Record<string,string|boolean|number>}){
+ const user=await currentUser();const now=new Date().toISOString();
+ const {data,error}=await supabase.from('saved_housing_searches').insert({user_id:user.id,name:input.name?.trim()||'Housing search',query:input.query.trim(),location:input.location.trim(),filters:input.filters,updated_at:now}).select('id,name,query,location,filters,created_at,updated_at').single();
+ if(error)throw error;return data as SavedHousingSearch;
+}
+export async function loadSavedHousingSearches():Promise<SavedHousingSearch[]>{
+ const user=await currentUser();const {data,error}=await supabase.from('saved_housing_searches').select('id,name,query,location,filters,created_at,updated_at').eq('user_id',user.id).order('updated_at',{ascending:false});if(error)throw error;return (data??[]) as SavedHousingSearch[];
+}
+export async function deleteSavedHousingSearch(id:string){const user=await currentUser();const {error}=await supabase.from('saved_housing_searches').delete().eq('id',id).eq('user_id',user.id);if(error)throw error;}
+
 export type MyHousingApplication={id:string;listing_id:string;status:HousingApplicationStatus;application_type:'standard'|'fasttrack';current_step:number;submitted_at:string|null;updated_at:string;listing:{id:string;title:string;city:string;state:string;rent_monthly:number;bedrooms:number|null;bathrooms:number|null;fasttrack_enabled:boolean}|null};
 export async function loadMyHousingApplications():Promise<MyHousingApplication[]>{
  const user=await currentUser();
