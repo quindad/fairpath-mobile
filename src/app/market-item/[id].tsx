@@ -16,7 +16,6 @@ export default function MarketItem(){
  const [claim,setClaim]=useState<{id:string;status:string;pickup_deadline:string|null}|null>(null);
  const [isOwner,setIsOwner]=useState(false);
  const [saved,setSaved]=useState(false);
- const [message,setMessage]=useState('');
  const [loading,setLoading]=useState(true);
  const [claiming,setClaiming]=useState(false);
  const [error,setError]=useState('');
@@ -44,7 +43,7 @@ export default function MarketItem(){
   if(!item||claiming)return;
   setClaiming(true);
   try{
-   const created=await requestMarketplaceClaim(item.id,message);
+   const created=await requestMarketplaceClaim(item.id);
    setClaim(created as any);
    const nextQuota=await loadMarketplaceViewerState(item.id);setQuota(nextQuota.quota);
    Alert.alert('Claim requested','Your request is in. The donor sees an anonymous claim—not your name, race, or profile photo. If selected, you will get private pickup details and a 48-hour pickup window.',[
@@ -105,8 +104,6 @@ export default function MarketItem(){
    :unavailable?<View style={s.unavailable}><Text style={s.unavailableTitle}>NOT ACCEPTING CLAIMS</Text><Text style={s.unavailableBody}>This item is currently reserved, claimed, or removed.</Text></View>
    :<View style={s.claimForm}>
     <View style={s.claimTop}><View><Text style={s.claimLabel}>REQUEST THIS ITEM</Text><Text style={s.claimQuota}>{quota?quota.remaining+' of '+quota.monthly_limit+' claims left this month':'Sign in to request'}</Text></View><Lucide name="gift" color={C.lime} size={22}/></View>
-    <Text style={s.messageLabel}>OPTIONAL NOTE TO DONOR</Text>
-    <TextInput value={message} onChangeText={setMessage} style={s.message} multiline maxLength={500} textAlignVertical="top" placeholder="Keep it short. Do not include sensitive personal information." placeholderTextColor={C.muted}/>
     <Pressable style={[s.primary,claiming&&s.disabled]} onPress={()=>void requestClaim()} disabled={claiming}><Text style={s.primaryText}>{claiming?'REQUESTING…':'REQUEST CLAIM'}</Text><Lucide name="arrow-right" color={C.black} size={15}/></Pressable>
    </View>}
 
@@ -126,7 +123,7 @@ const s=StyleSheet.create({
  section:{paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.border},sectionLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:7.5,letterSpacing:1.1,marginBottom:10},body:{color:C.mutedStrong,fontSize:11,lineHeight:18},
  infoRow:{flexDirection:'row',gap:10,paddingVertical:8},infoTitle:{color:C.white,fontFamily:F.extraBold,fontSize:10},infoBody:{color:C.muted,fontSize:9,lineHeight:14,marginTop:3},
  step:{flexDirection:'row',gap:10,paddingVertical:8},stepN:{width:24,height:24,borderWidth:1,borderColor:'#526F2B',alignItems:'center',justifyContent:'center'},stepNText:{color:C.lime,fontFamily:F.black,fontSize:9},stepTitle:{color:C.white,fontFamily:F.extraBold,fontSize:9,letterSpacing:.5},stepBody:{color:C.muted,fontSize:8.5,lineHeight:13,marginTop:3},
- claimForm:{paddingTop:18},claimTop:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},claimLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},claimQuota:{color:C.white,fontFamily:F.extraBold,fontSize:13,marginTop:5},messageLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:7,letterSpacing:.7,marginTop:16,marginBottom:6},message:{minHeight:100,borderWidth:1,borderColor:C.borderStrong,color:C.white,padding:11,fontSize:10},
+ claimForm:{paddingTop:18},claimTop:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},claimLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},claimQuota:{color:C.white,fontFamily:F.extraBold,fontSize:13,marginTop:5},
  primary:{height:48,backgroundColor:C.lime,flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:13,marginTop:12},primaryText:{color:C.black,fontFamily:F.extraBold,fontSize:8.5,letterSpacing:.8},disabled:{opacity:.55},
  claimBox:{borderWidth:1,borderColor:'#526F2B',backgroundColor:'#0F150B',padding:14,marginTop:18},claimTitle:{color:C.white,fontFamily:F.black,fontSize:19,marginTop:5},claimBody:{color:C.mutedStrong,fontSize:9,lineHeight:14,marginTop:6},ownerBox:{borderWidth:1,borderColor:C.lime,padding:14,marginTop:18},ownerLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},ownerTitle:{color:C.white,fontFamily:F.black,fontSize:18,marginTop:5},
  unavailable:{borderWidth:1,borderColor:C.borderStrong,padding:14,marginTop:18},unavailableTitle:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8},unavailableBody:{color:C.muted,fontSize:9,marginTop:5},
