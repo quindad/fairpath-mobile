@@ -218,7 +218,13 @@ export default function HousingApply(){
     <HousingApplicationDocuments applicationId={id!} requiredTypes={requiredDocs} onDocumentsChange={setDocuments}/>
     {missingRequiredDocs.length?<View style={s.documentWarning}><Lucide name="triangle-alert" color={C.lime} size={14}/><Text style={s.documentWarningText}>Upload the required property documents before submitting: {missingRequiredDocs.join(', ').replaceAll('_',' ')}.</Text></View>:null}
     {fast&&fastQuote?<View style={s.fastQuote}>
-     <View style={s.quoteTop}><Text style={s.quoteLabel}>FASTTRACK FEE</Text><Text style={s.quoteAmount}>{'
+     <View style={s.quoteTop}>
+      <Text style={s.quoteLabel}>FASTTRACK FEE</Text>
+      <Text style={s.quoteAmount}>{`$${(fastQuote.amount_due_cents/100).toFixed(2)}`}</Text>
+     </View>
+     {fastQuote.discount_cents>0?<Text style={s.quoteDiscount}>{`FairPath+ discount: -$${(fastQuote.discount_cents/100).toFixed(2)}`}</Text>:null}
+     <Text style={s.quoteBody}>FastTrack speeds up reuse and review of your information. It does not guarantee approval or replace property-specific screening.</Text>
+    </View>:null}
     <Consent checked={accuracy} onPress={()=>setAccuracy(v=>!v)} text="I confirm the information in this application is accurate to the best of my knowledge."/>
     <Consent checked={submitConsent} onPress={()=>setSubmitConsent(v=>!v)} text="I want FairPath to submit this completed application into the property application workflow."/>
     {fast?<Consent checked={fastAck} onPress={()=>setFastAck(v=>!v)} text="I understand FastTrack can speed up reuse and review of my information but does not guarantee approval or waive property-specific screening."/>:null}
