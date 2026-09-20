@@ -17,6 +17,7 @@ import {
 } from '@/core/opportunities/opportunity-service';
 import { digitsOnly, formatDateInput, formatUsPhone } from '@/core/forms/formatters';
 import { HousingApplicationDocuments } from '@/components/HousingApplicationDocuments';
+import { SimpleDatePicker } from '@/components/SimpleDatePicker';
 
 const EMPTY:HousingApplicationForm={
  first_name:'',last_name:'',email:'',phone:'',date_of_birth:'',current_address:'',
@@ -168,7 +169,7 @@ export default function HousingApply(){
     <Field label="LAST NAME" value={form.last_name} onChangeText={v=>update('last_name',v)} error={displayError('last_name')}/>
     <Field label="EMAIL" value={form.email} onChangeText={v=>update('email',v)} keyboardType="email-address" autoCapitalize="none" error={displayError('email')}/>
     <Field label="PHONE" value={formatUsPhone(form.phone)} onChangeText={v=>update('phone',formatUsPhone(v))} keyboardType="phone-pad" maxLength={14} placeholder="(555) 555-1234" error={displayError('phone')}/>
-    <Field label="DATE OF BIRTH" value={formatDateInput(form.date_of_birth)} onChangeText={v=>update('date_of_birth',formatDateInput(v))} keyboardType="number-pad" maxLength={10} placeholder="MM/DD/YYYY" error={displayError('date_of_birth')}/>
+    <SimpleDatePicker label="DATE OF BIRTH" value={formatDateInput(form.date_of_birth)} onChange={v=>update('date_of_birth',v)} maxDate={new Date()} error={displayError('date_of_birth')}/>
     <Field label="CURRENT ADDRESS / HOUSING SITUATION" value={form.current_address} onChangeText={v=>update('current_address',v)} placeholder="Street address or current housing situation" error={displayError('current_address')}/>
    </>:null}
 
@@ -182,7 +183,7 @@ export default function HousingApply(){
 
    {step===3?<>
     <SectionHead kicker="STEP 3 OF 5" title="Move-in & household"/>
-    <Field label="DESIRED MOVE-IN DATE" value={formatDateInput(form.move_in_date)} onChangeText={v=>update('move_in_date',formatDateInput(v))} keyboardType="number-pad" maxLength={10} placeholder="MM/DD/YYYY" error={displayError('move_in_date')}/>
+    <SimpleDatePicker label="DESIRED MOVE-IN DATE" value={formatDateInput(form.move_in_date)} onChange={v=>update('move_in_date',v)} minDate={new Date()} error={displayError('move_in_date')}/>
     <Field label="TOTAL OCCUPANTS" value={form.occupants} onChangeText={v=>update('occupants',digitsOnly(v,2))} keyboardType="number-pad" maxLength={2} placeholder="1" error={displayError('occupants')}/>
     <ChoiceField label="PETS" options={PETS} value={PETS.includes(form.pets)?form.pets:''} onChange={v=>update('pets',v)} error={displayError('pets')}/>
     {form.pets==='Other'?<Text style={s.help}>You can add specific pet details in Additional notes before submitting.</Text>:null}
