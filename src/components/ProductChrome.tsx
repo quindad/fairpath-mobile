@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L, FairPathRadius as R } from '@/constants/fairpath';
 
-export function ScreenFrame({children,showNav=false}:{children:React.ReactNode;showNav?:boolean}){
+export function ScreenFrame({children,showNav=true}:{children:React.ReactNode;showNav?:boolean}){
   return <View style={s.screen}><SafeAreaView style={s.safe}>{children}{showNav?<BottomNav/>:null}</SafeAreaView></View>;
 }
 export function safeBack(fallback='/home'){
