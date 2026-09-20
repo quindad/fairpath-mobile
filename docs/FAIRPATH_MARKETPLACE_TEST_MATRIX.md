@@ -14,9 +14,10 @@
 11. Approve the claim.
 12. Claimant opens claim and sees 48-hour deadline + private pickup details + pickup code.
 13. Donor marks ready.
-14. Claimant sends pickup message; donor receives it.
-15. Donor enters pickup code and verifies.
-16. Claim becomes PICKED UP; item becomes CLAIMED.
+14. Donor sends a pickup-logistics message; claimant receives it read-only.
+15. Confirm claimant has no message composer and cannot send through the RPC.
+16. Donor enters pickup code and verifies.
+17. Claim becomes PICKED UP; item becomes CLAIMED.
 
 ## Claim quota tests
 - Free user first monthly request succeeds.
@@ -54,6 +55,8 @@
 - Remove photo.
 - Pause listing → disappears from browse.
 - Relist → returns to browse.
+- New listing remains private while photos upload, then explicitly publishes.
+- Direct seller attempts to self-feature, bypass moderation, or force lifecycle status are ignored by DB guard.
 - Remove listing → disappears and active claims cancel.
 
 ## Safety tests
@@ -71,7 +74,9 @@
 - Correct code completes pickup.
 - No-show before deadline blocks.
 - No-show after deadline succeeds and item returns available.
-- Messages only send while claim is APPROVED/READY.
+- Donor pickup messages only send while claim is APPROVED/READY.
+- Claimant cannot send Marketplace messages to donor.
+- Donor message appears read-only in claimant workspace.
 
 ## Code checks
 Run:
