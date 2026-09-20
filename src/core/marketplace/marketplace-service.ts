@@ -70,6 +70,17 @@ export async function loadMarketplaceItem(id:string):Promise<MarketplaceItem>{
  if(error)throw error;return data as unknown as MarketplaceItem;
 }
 
+export async function loadMarketplaceViewerState(itemId:string):Promise<{signedIn:boolean;userId:string|null;isOwner:boolean;saved:boolean;claim:{id:string;status:MarketplaceClaimStatus;pickup_deadline:string|null}|null;quota:MarketplaceQuota|null}>{
+ const {data:{user}}=await supabase.auth.getUser();if(!user)return {signedIn:false,userId:null,isOwner:false,saved:false,claim:null,quota:null};
+ const [itemSave,claim,quota]=await Promise.all([
+  supabase.from('marketplace_saves').select('item_id').eq('user_id',user.id).eq('item_id',itemId).maybeSingle(),
+  supabase.from('marketplace_claims').select('id,status,pickup_deadline').eq('claimant_id',user.id).eq('item_id',itemId).maybeSingle(),
+  loadMarketplaceQuota().catch(()=>null)
+ ]);
+ const {data:item}=await supabase.from('marketplace_items').select('seller_id').eq('id',itemId).maybeSingle();
+ return {signedIn:true,userId:user.id,isOwner:item?.seller_id===user.id,saved:Boolean(itemSave.data),claim:claim.data as any,quota};
+}
+
 export async function loadMarketplaceQuota():Promise<MarketplaceQuota>{
  await currentUser();const {data,error}=await supabase.rpc('marketplace_claim_quota');if(error)throw error;
  const row=Array.isArray(data)?data[0]:data;if(!row)throw new Error('QUOTA_UNAVAILABLE');return row as MarketplaceQuota;
