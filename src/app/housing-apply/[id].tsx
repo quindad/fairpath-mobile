@@ -173,7 +173,7 @@ export default function HousingApply(){
     <Field label="DESIRED MOVE-IN DATE" value={formatDateInput(form.move_in_date)} onChangeText={v=>update('move_in_date',formatDateInput(v))} keyboardType="number-pad" maxLength={10} placeholder="MM/DD/YYYY" error={displayError('move_in_date')}/>
     <Field label="TOTAL OCCUPANTS" value={form.occupants} onChangeText={v=>update('occupants',digitsOnly(v,2))} keyboardType="number-pad" maxLength={2} placeholder="1" error={displayError('occupants')}/>
     <ChoiceField label="PETS" options={PETS} value={PETS.includes(form.pets)?form.pets:''} onChange={v=>update('pets',v)} error={displayError('pets')}/>
-    {form.pets==='Other'?<Field label="PET DETAILS" value={form.pets==='Other'?'':form.pets} onChangeText={v=>update('pets',v)} placeholder="Type, count, size, or other details" error={displayError('pets')}/>:null}
+    {form.pets==='Other'?<Text style={s.help}>You can add specific pet details in Additional notes before submitting.</Text>:null}
    </>:null}
 
    {step===4?<>
