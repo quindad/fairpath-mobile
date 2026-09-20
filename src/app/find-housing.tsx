@@ -4,7 +4,7 @@ import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View 
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, SharpChip, InlineBadge } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
-import { loadHousing, loadSavedHousingIds, saveHousing, saveHousingSearch, unsaveHousing, type HousingListing } from '@/core/opportunities/opportunity-service';
+import { loadHousing, loadSavedHousingIds, saveHousing, saveHousingSearch, trackProductEvent, unsaveHousing, type HousingListing } from '@/core/opportunities/opportunity-service';
 import { loadProfileAnswers } from '@/core/profile/profile-service';
 import { supabase } from '@/lib/supabase';
 import { HousingMap } from '@/components/HousingMap';
@@ -25,7 +25,7 @@ export default function Housing(){
 
  async function run(){
   setLoading(true);setError('');
-  try{setRows(await loadHousing(query,location))}
+  try{const results=await loadHousing(query,location);setRows(results);void trackProductEvent('housing_search','housing',null,{query:query.trim(),location:location.trim(),result_count:results.length}).catch(()=>{})}
   catch{setError('Housing could not load. Check your connection and try again.')}
   finally{setLoading(false)}
  }
@@ -109,7 +109,7 @@ export default function Housing(){
   const current=Boolean(saved[id]);
   try{
    if(current)await unsaveHousing(id);else await saveHousing(id);
-   setSaved(v=>({...v,[id]:!current}));
+   setSaved(v=>({...v,[id]:!current}));void trackProductEvent(current?'housing_unsaved':'housing_saved','housing',id).catch(()=>{});
   }catch(e){
    if(e instanceof Error&&e.message==='SIGNED_OUT'){
     router.push(('/sign-up?returnTo='+encodeURIComponent('/find-housing')) as never);
@@ -127,6 +127,7 @@ export default function Housing(){
   };
   try{
    await saveHousingSearch({name:[query.trim()||'Housing',location.trim()].filter(Boolean).join(' · ')||'Housing search',query,location,filters});
+   void trackProductEvent('housing_search_saved','housing',null,{query:query.trim(),location:location.trim(),filters}).catch(()=>{});
    Alert.alert('Search saved','You can reopen this search from Saved searches.');
   }catch{Alert.alert('Could not save search','Please try again.')}
  }
