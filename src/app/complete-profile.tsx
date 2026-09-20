@@ -8,6 +8,7 @@ import { getRequiredVisibleQuestions, type ProfileQuestion } from '@/core/models
 import { calculateFairPathReadiness } from '@/core/models/readiness-engine';
 import { loadProfileAnswers, saveProfileAnswer } from '@/core/profile/profile-service';
 import type { ReadinessArea } from '@/core/models/readiness';
+import { formatUsPhone } from '@/core/forms/formatters';
 
 const LIME=FairPathColors.lime,BLACK=FairPathColors.black,CARD=FairPathColors.card,MUTED=FairPathColors.muted;
 const YES_NO=['Yes','No'];
@@ -128,7 +129,7 @@ export default function CompleteProfile(){
    <Text style={s.help}>{question.helpText}</Text>
    {question.sensitive?<View style={s.private}><Text style={s.privateText}>PRIVATE PROFILE INFORMATION</Text><Text style={s.privateBody}>This answer is not automatically displayed as a general partner-visible profile field.</Text></View>:null}
    {options.length>0?<View style={s.options}>{options.map(o=>{const selected=Array.isArray(value)?value.includes(o):value===o;return <Pressable key={o} style={[s.option,selected&&s.optionSelected]} onPress={()=>selectOption(o)}><View style={[s.mark,selected&&s.markSelected]}><Text style={s.check}>{selected?'✓':''}</Text></View><Text style={[s.optionText,selected&&s.optionTextSelected]}>{o}</Text></Pressable>})}</View>:
-   <><TextInput value={String(value)} onChangeText={v=>{setValue(question.input==='date'?formatDateInput(v):v);if(error)setError('')}} style={s.input} placeholder={question.id==='identity.phone'?'(555) 555-1234':question.input==='date'?'MM/DD/YYYY':question.input==='number'?'Enter a number':'Type your answer'} placeholderTextColor="#666C66" keyboardType={question.id==='identity.phone'?'phone-pad':question.input==='date'||question.input==='number'?'numeric':'default'} maxLength={question.input==='date'?10:undefined} onSubmitEditing={saveAndContinue}/>{validation?<Text style={s.validation}>{validation}</Text>:null}</>}
+   <><TextInput value={String(value)} onChangeText={v=>{setValue(question.id==='identity.phone'?formatUsPhone(v):question.input==='date'?formatDateInput(v):v);if(error)setError('')}} style={s.input} placeholder={question.id==='identity.phone'?'(555) 555-1234':question.input==='date'?'MM/DD/YYYY':question.input==='number'?'Enter a number':'Type your answer'} placeholderTextColor="#666C66" keyboardType={question.id==='identity.phone'?'phone-pad':question.input==='date'||question.input==='number'?'numeric':'default'} maxLength={question.input==='date'?10:undefined} onSubmitEditing={saveAndContinue}/>{validation?<Text style={s.validation}>{validation}</Text>:null}</>}
   </ScrollView>
   <View style={[s.footer,desktop&&s.footerDesktop]}><Pressable disabled={!canContinue||saving} style={[s.button,(!canContinue||saving)&&s.disabled]} onPress={saveAndContinue}><Text style={[s.buttonText,(!canContinue||saving)&&s.buttonTextDisabled]}>{saving?'Saving…':'Save & continue'}</Text><Text style={[s.buttonArrow,(!canContinue||saving)&&s.buttonArrowDisabled]}>→</Text></Pressable>{error?<Text style={s.error}>{error}</Text>:null}<Text style={s.note}>{demoMode?'Preview mode · answers stay in this session until you sign in.':'Saved to your FairPath so you can pick up where you left off.'}</Text></View>
  </SafeAreaView></View>
