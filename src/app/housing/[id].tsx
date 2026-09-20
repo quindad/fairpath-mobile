@@ -18,7 +18,7 @@ export default function HousingDetail(){
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
  const [saved,setSaved]=useState(false);
- const [applicationStatus,setApplicationStatus]=useState<HousingApplicationStatus|null>(null);
+ const [application,setApplication]=useState<{id:string;status:HousingApplicationStatus;application_type:'standard'|'fasttrack';current_step:number}|null>(null);
  const [starting,setStarting]=useState(false);
  const [galleryIndex,setGalleryIndex]=useState(0);
  const [galleryWidth,setGalleryWidth]=useState(0);
@@ -33,7 +33,7 @@ export default function HousingDetail(){
   if(!id)return;
   let active=true;
   isHousingSaved(id).then(v=>{if(active)setSaved(v)}).catch(()=>{});
-  loadMyHousingApplication(id).then(v=>{if(active)setApplicationStatus(v?.status??null)}).catch(()=>{});
+  loadMyHousingApplication(id).then(v=>{if(active)setApplication(v)}).catch(()=>{});
   return()=>{active=false};
  },[id]));
 
@@ -48,16 +48,16 @@ export default function HousingDetail(){
   }
  }
 
- async function startApplication(){
+ async function startApplication(mode:'standard'|'fasttrack'){
   if(!item||starting)return;
   const {data:{user}}=await supabase.auth.getUser();
   if(!user){router.push(('/sign-up?returnTo='+encodeURIComponent('/housing/'+item.id)) as never);return}
-  if(applicationStatus){Alert.alert('Application already started','This home is already in your housing application history.');return}
+  if(application){router.push(('/housing-application/'+application.id) as never);return}
   setStarting(true);
   try{
-   const application=await startHousingApplication(item.id,item.fasttrack_enabled);
-   setApplicationStatus(application.status);
-   router.push(('/housing-application/'+application.id) as never);
+   const created=await startHousingApplication(item.id,mode==='fasttrack');
+   setApplication(created);
+   router.push(('/housing-application/'+created.id) as never);
   }catch{Alert.alert('Could not start application','Please try again.')}
   finally{setStarting(false)}
  }
@@ -106,7 +106,7 @@ export default function HousingDetail(){
     <View style={s.locationRow}><Lucide name="map-pin" color={C.muted} size={13}/><Text style={s.location}>{location}</Text></View>
     <View style={s.badges}>
      {item.fasttrack_enabled?<InlineBadge tone="lime">FASTTRACK AVAILABLE</InlineBadge>:null}
-     {applicationStatus?<InlineBadge tone="lime">{STATUS_LABEL[applicationStatus]}</InlineBadge>:null}
+     {application?<InlineBadge tone="lime">{STATUS_LABEL[application.status]}</InlineBadge>:null}
      <InlineBadge>{item.property_type.toUpperCase()}</InlineBadge>
     </View>
    </View>
@@ -151,13 +151,22 @@ export default function HousingDetail(){
 
    <View style={s.notice}>
     <Lucide name="shield-check" color={C.lime} size={16}/>
-    <Text style={s.noticeText}>{item.fasttrack_enabled?'Starting FastTrack creates your application workspace only. Payment and final submission require a separate confirmation step.':'Starting an application does not submit anything to a property owner until you complete and confirm it.'}</Text>
+    <Text style={s.noticeText}>{application?'Your application is saved in FairPath. Open it to continue or review status.':item.fasttrack_enabled?'Choose Standard or FastTrack. Neither option submits anything until you complete the full application and confirm submission.':'Starting an application creates a private draft. Nothing is submitted until you complete and confirm it.'}</Text>
    </View>
 
-   <Pressable style={[s.primary,starting&&s.primaryMuted]} onPress={()=>applicationStatus?router.push('/housing-applications' as never):void startApplication()} disabled={starting}>
-    <Text style={s.primaryText}>{starting?'STARTING…':applicationStatus?'OPEN APPLICATION':item.fasttrack_enabled?'START FASTTRACK APPLICATION':'START APPLICATION'}</Text>
-    <Lucide name="arrow-right" color={C.black} size={16}/>
-   </Pressable>
+   {application?<Pressable style={s.primary} onPress={()=>router.push(('/housing-application/'+application.id) as never)}>
+    <Text style={s.primaryText}>OPEN {application.application_type==='fasttrack'?'FASTTRACK':'STANDARD'} APPLICATION</Text><Lucide name="arrow-right" color={C.black} size={16}/>
+   </Pressable>:item.fasttrack_enabled?<View style={s.applyChoices}>
+    <Text style={s.applyChoiceLabel}>CHOOSE APPLICATION TYPE</Text>
+    <Pressable style={s.fastTrackButton} onPress={()=>void startApplication('fasttrack')} disabled={starting}>
+     <View><Text style={s.fastTrackButtonTitle}>{starting?'STARTING…':'FASTTRACK APPLICATION'}</Text><Text style={s.fastTrackButtonBody}>Reuse available FairPath profile information and move through the application faster.</Text></View><Lucide name="zap" color={C.black} size={16}/>
+    </Pressable>
+    <Pressable style={s.standardButton} onPress={()=>void startApplication('standard')} disabled={starting}>
+     <View><Text style={s.standardButtonTitle}>STANDARD APPLICATION</Text><Text style={s.standardButtonBody}>Start a clean application and enter each section manually.</Text></View><Lucide name="arrow-right" color={C.lime} size={16}/>
+    </Pressable>
+   </View>:<Pressable style={[s.primary,starting&&s.primaryMuted]} onPress={()=>void startApplication('standard')} disabled={starting}>
+    <Text style={s.primaryText}>{starting?'STARTING…':'START STANDARD APPLICATION'}</Text><Lucide name="arrow-right" color={C.black} size={16}/>
+   </Pressable>}
   </ScrollView>
  </ScreenFrame>;
 }
@@ -176,5 +185,5 @@ const s=StyleSheet.create({
  links:{paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.border},linkRow:{height:42,borderTopWidth:1,borderTopColor:C.border,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},linkText:{color:C.white,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8},
  source:{paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.border},sourceLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},sourceText:{color:C.mutedStrong,fontSize:11,marginTop:4},sourceLink:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8,marginTop:9},
  notice:{flexDirection:'row',gap:9,paddingVertical:16},noticeText:{flex:1,color:C.mutedStrong,fontSize:9,lineHeight:14},
- primary:{height:50,backgroundColor:C.lime,paddingHorizontal:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},primaryMuted:{backgroundColor:'#1A2114',borderWidth:1,borderColor:'#2C3823'},primaryText:{color:C.black,fontFamily:F.extraBold,fontSize:9,letterSpacing:.9},primaryTextMuted:{color:C.mutedStrong}
+ applyChoices:{marginTop:2},applyChoiceLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:7,letterSpacing:1,marginBottom:8},fastTrackButton:{minHeight:64,backgroundColor:C.lime,paddingHorizontal:14,paddingVertical:11,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12},fastTrackButtonTitle:{color:C.black,fontFamily:F.extraBold,fontSize:9,letterSpacing:.8},fastTrackButtonBody:{color:'#263015',fontSize:8,lineHeight:12,marginTop:3,maxWidth:280},standardButton:{minHeight:64,borderWidth:1,borderColor:C.borderStrong,paddingHorizontal:14,paddingVertical:11,marginTop:8,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12},standardButtonTitle:{color:C.white,fontFamily:F.extraBold,fontSize:9,letterSpacing:.8},standardButtonBody:{color:C.mutedStrong,fontSize:8,lineHeight:12,marginTop:3,maxWidth:280},primary:{height:50,backgroundColor:C.lime,paddingHorizontal:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},primaryMuted:{backgroundColor:'#1A2114',borderWidth:1,borderColor:'#2C3823'},primaryText:{color:C.black,fontFamily:F.extraBold,fontSize:9,letterSpacing:.9},primaryTextMuted:{color:C.mutedStrong}
 });
