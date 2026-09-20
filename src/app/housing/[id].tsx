@@ -5,7 +5,7 @@ import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { isHousingSaved, loadHousingListing, loadMyHousingApplication, saveHousing, startHousingApplication, unsaveHousing, type HousingApplicationStatus, type HousingListing } from '@/core/opportunities/opportunity-service';
-import { demoHousingImage } from '@/core/demo/demo-media';
+import { demoHousingGallery } from '@/core/demo/demo-media';
 import { supabase } from '@/lib/supabase';
 
 const STATUS_LABEL:Record<HousingApplicationStatus,string>={
@@ -20,6 +20,8 @@ export default function HousingDetail(){
  const [saved,setSaved]=useState(false);
  const [applicationStatus,setApplicationStatus]=useState<HousingApplicationStatus|null>(null);
  const [starting,setStarting]=useState(false);
+ const [galleryIndex,setGalleryIndex]=useState(0);
+ const [galleryWidth,setGalleryWidth]=useState(0);
 
  useEffect(()=>{
   if(!id)return;
@@ -67,7 +69,10 @@ export default function HousingDetail(){
  if(loading)return <ScreenFrame><PageHeader eyebrow="FAIRPATH HOUSING" title="Home details" backTo="/find-housing" alwaysBackTo/><View style={s.state}><Text style={s.muted}>Loading home…</Text></View></ScreenFrame>;
  if(error||!item)return <ScreenFrame><PageHeader eyebrow="FAIRPATH HOUSING" title="Home details" backTo="/find-housing" alwaysBackTo/><View style={s.state}><Text style={s.error}>{error||'Home not found.'}</Text></View></ScreenFrame>;
 
- const photo=item.housing_media?.filter(m=>m.media_type==='photo').sort((a,b)=>a.sort_order-b.sort_order)[0]?.url||demoHousingImage(0);
+ const realPhotos=item.housing_media?.filter(m=>m.media_type==='photo').sort((a,b)=>a.sort_order-b.sort_order).map(m=>m.url).filter(Boolean)??[];
+ const demoIndex=[...item.id].reduce((sum,ch)=>sum+ch.charCodeAt(0),0)%3;
+ const photos=realPhotos.length?realPhotos:demoHousingGallery(demoIndex);
+ const usingDemoPhotos=realPhotos.length===0;
  const location=[item.address_line1,item.city,item.state,item.postal_code].filter(Boolean).join(', ');
  const availability=item.available_date?new Date(item.available_date+'T00:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}):null;
 
@@ -78,7 +83,19 @@ export default function HousingDetail(){
    </Pressable>
   }/>
   <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-   <Image source={{uri:photo}} style={s.hero}/>
+   <View style={s.gallery} onLayout={e=>setGalleryWidth(e.nativeEvent.layout.width)}>
+    {galleryWidth>0?<ScrollView
+     horizontal pagingEnabled showsHorizontalScrollIndicator={false}
+     onMomentumScrollEnd={e=>setGalleryIndex(Math.round(e.nativeEvent.contentOffset.x/galleryWidth))}
+    >
+     {photos.map((url,index)=><Image key={url+index} source={{uri:url}} style={[s.hero,{width:galleryWidth}]}/>)}
+    </ScrollView>:null}
+    <View style={s.photoCount}><Lucide name="images" color={C.white} size={12}/><Text style={s.photoCountText}>{galleryIndex+1} / {photos.length}</Text></View>
+    {usingDemoPhotos?<View style={s.demoFlag}><Text style={s.demoFlagText}>DEMO GALLERY</Text></View>:null}
+   </View>
+   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.thumbs}>
+    {photos.map((url,index)=><Pressable key={'thumb-'+url+index} onPress={()=>setGalleryIndex(index)} style={[s.thumbWrap,galleryIndex===index&&s.thumbActive]}><Image source={{uri:url}} style={s.thumb}/></Pressable>)}
+   </ScrollView>
 
    <View style={s.intro}>
     <Text style={s.price}>{'$'+Number(item.rent_monthly).toLocaleString()} <Text style={s.month}>/ month</Text></Text>
@@ -136,7 +153,7 @@ function LinkRow({label,onPress}:{label:string;onPress:()=>void}){return <Pressa
 const s=StyleSheet.create({
  content:{paddingHorizontal:L.mobileGutter,paddingTop:16,paddingBottom:36},state:{padding:L.mobileGutter},muted:{color:C.muted},error:{color:C.danger},
  save:{height:34,borderWidth:1,borderColor:C.borderStrong,paddingHorizontal:9,flexDirection:'row',gap:6,alignItems:'center',justifyContent:'center'},saveActive:{backgroundColor:C.lime,borderColor:C.lime},saveText:{color:C.white,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},saveTextActive:{color:C.black},
- hero:{height:230,width:'100%',backgroundColor:'#0A0C0A',borderWidth:1,borderColor:C.borderStrong},intro:{paddingVertical:17,borderBottomWidth:1,borderBottomColor:C.borderStrong},price:{color:C.white,fontFamily:F.black,fontSize:29},month:{color:C.mutedStrong,fontFamily:F.regular,fontSize:12},title:{color:C.white,fontFamily:F.extraBold,fontSize:23,lineHeight:26,marginTop:5},meta:{color:C.mutedStrong,fontSize:12,marginTop:8},locationRow:{flexDirection:'row',alignItems:'center',gap:6,marginTop:8},location:{color:C.muted,fontSize:11,flex:1},badges:{flexDirection:'row',gap:6,flexWrap:'wrap',marginTop:12},
+ gallery:{height:230,width:'100%',backgroundColor:'#0A0C0A',borderWidth:1,borderColor:C.borderStrong,position:'relative',overflow:'hidden'},hero:{height:228,backgroundColor:'#0A0C0A'},photoCount:{position:'absolute',right:9,bottom:9,height:27,paddingHorizontal:9,backgroundColor:'#090A09DD',borderWidth:1,borderColor:C.borderStrong,flexDirection:'row',gap:6,alignItems:'center'},photoCountText:{color:C.white,fontFamily:F.extraBold,fontSize:8,letterSpacing:.5},demoFlag:{position:'absolute',left:9,top:9,height:25,paddingHorizontal:8,backgroundColor:'#090A09DD',borderWidth:1,borderColor:'#526F2B',justifyContent:'center'},demoFlagText:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},thumbs:{gap:7,paddingVertical:9},thumbWrap:{width:64,height:48,borderWidth:1,borderColor:C.borderStrong,opacity:.65},thumbActive:{borderColor:C.lime,opacity:1},thumb:{width:'100%',height:'100%'},intro:{paddingVertical:17,borderBottomWidth:1,borderBottomColor:C.borderStrong},price:{color:C.white,fontFamily:F.black,fontSize:29},month:{color:C.mutedStrong,fontFamily:F.regular,fontSize:12},title:{color:C.white,fontFamily:F.extraBold,fontSize:23,lineHeight:26,marginTop:5},meta:{color:C.mutedStrong,fontSize:12,marginTop:8},locationRow:{flexDirection:'row',alignItems:'center',gap:6,marginTop:8},location:{color:C.muted,fontSize:11,flex:1},badges:{flexDirection:'row',gap:6,flexWrap:'wrap',marginTop:12},
  facts:{flexDirection:'row',borderBottomWidth:1,borderBottomColor:C.borderStrong},fact:{flex:1,paddingVertical:15,paddingRight:8},factLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},factValue:{color:C.white,fontFamily:F.extraBold,fontSize:12,marginTop:5},
  section:{paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.border},sectionLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.1,marginBottom:8},body:{color:C.mutedStrong,fontSize:13,lineHeight:20},
  links:{paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.border},linkRow:{height:42,borderTopWidth:1,borderTopColor:C.border,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},linkText:{color:C.white,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8},
