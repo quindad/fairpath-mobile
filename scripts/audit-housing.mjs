@@ -15,6 +15,7 @@ const required=[
  'src/app/housing-tour/[id].tsx',
  'src/app/housing-inquiry/[id].tsx',
  'src/app/housing-report/[id].tsx',
+ 'src/app/fasttrack-checkout/[id].tsx',
  'src/components/HousingMap.native.tsx',
  'src/components/HousingApplicationDocuments.tsx',
  'src/core/opportunities/opportunity-service.ts',
@@ -39,6 +40,7 @@ const saved=read('src/app/saved-homes.tsx');
 const apply=read('src/app/housing-apply/[id].tsx');
 const workflow=read('.github/workflows/app-checks.yml');
 const pkg=JSON.parse(read('package.json'));
+const lock=JSON.parse(read('package-lock.json'));
 
 for(const name of ['createHousingInquiry','createHousingTourRequest','createHousingReport','submitHousingApplication']){
  const count=(service.match(new RegExp('export async function '+name+'\\b','g'))||[]).length;
@@ -56,6 +58,7 @@ for(const [name,src] of [['find-housing',browse],['housing-detail',detail],['sav
 if(!detail.includes('NO PROPERTY PHOTOS'))failures.push('Housing detail must have an honest no-photo state.');
 if(!browse.includes("viewMode==='map'"))failures.push('Housing browse list/map toggle missing.');
 if(!pkg.dependencies?.['expo-document-picker'])failures.push('expo-document-picker dependency missing.');
+if(lock.packages?.['']?.dependencies?.['expo-document-picker']!==pkg.dependencies?.['expo-document-picker'])failures.push('package-lock is not synced for expo-document-picker.');
 if(!pkg.dependencies?.['react-native-maps'])failures.push('react-native-maps dependency missing.');
 if(/\bpush\s*:|pull_request\s*:/.test(workflow))failures.push('App checks must remain manual-only until the suite is intentionally re-enabled.');
 if(!workflow.includes('workflow_dispatch'))failures.push('Manual workflow dispatch is missing.');
