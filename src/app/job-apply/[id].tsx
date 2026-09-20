@@ -6,6 +6,7 @@ import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { loadJob, loadJobApplicationAutofill, loadMyJobApplicationForJob, saveJobApplicationProfile, submitJobApplication, type Job, type JobApplicationAutofill } from '@/core/opportunities/opportunity-service';
 import { loadFairPathReadiness } from '@/core/profile/profile-service';
+import { formatDateInput, formatUsPhone } from '@/core/forms/formatters';
 
 const EMPTY:JobApplicationAutofill={first_name:'',last_name:'',email:'',phone:'',address:'',date_of_birth:'',education:'',skills:'',certifications:'',desired_roles:'',resume_ready:''};
 
@@ -78,11 +79,11 @@ export default function JobApply(){
    <Field label="FIRST NAME" value={form.first_name} onChangeText={v=>set('first_name',v)} required valid={validRequired('first_name',form.first_name)} invalidHint="Enter your full first name" />
    <Field label="LAST NAME" value={form.last_name} onChangeText={v=>set('last_name',v)} required valid={validRequired('last_name',form.last_name)} invalidHint="Enter your full last name" />
    <Field label="EMAIL" value={form.email} onChangeText={v=>set('email',v)} keyboardType="email-address" required valid={validRequired('email',form.email)} invalidHint="Enter a valid email address" />
-   <Field label="PHONE" value={form.phone} onChangeText={v=>set('phone',v)} keyboardType="phone-pad" required valid={validRequired('phone',form.phone)} invalidHint="Enter a 10-digit phone number" />
+   <Field label="PHONE" value={formatUsPhone(form.phone)} onChangeText={v=>set('phone',formatUsPhone(v))} keyboardType="phone-pad" required valid={validRequired('phone',form.phone)} invalidHint="Enter a 10-digit phone number" />
    <Field label="HOME ADDRESS" value={form.address} onChangeText={v=>set('address',v)} required valid={validRequired('address',form.address)} invalidHint="Enter your full street address" />
 
    <Text style={s.sectionLabel}>PROFILE</Text>
-   <Field label="DATE OF BIRTH" value={form.date_of_birth} onChangeText={v=>set('date_of_birth',v)} />
+   <Field label="DATE OF BIRTH" value={formatDateInput(form.date_of_birth)} onChangeText={v=>set('date_of_birth',formatDateInput(v))} />
    <Field label="EDUCATION" value={form.education} onChangeText={v=>set('education',v)} />
    <Field label="SKILLS" value={form.skills} onChangeText={v=>set('skills',v)} multiline />
    <Field label="CERTIFICATIONS" value={form.certifications} onChangeText={v=>set('certifications',v)} multiline />
