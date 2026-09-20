@@ -24,13 +24,13 @@ export default function Welcome(){
  return <View style={s.screen}>
   <SafeAreaView style={s.safe}>
    <View style={s.brand}>
-    <FairPathLogo width={170}/>
+    <FairPathLogo width={220}/>
     <Text style={s.tag}>OPPORTUNITY HAS A PATH</Text>
    </View>
 
    <View style={s.hero}>
     <Text style={s.eyebrow}>WELCOME TO FAIRPATH</Text>
-    <Text style={s.title}>Reentry in{"\n"}the palm of{"\n"}your hand.</Text>
+    <Text style={s.title}>Your next move{"\n"}starts here.</Text>
     <Text style={s.body}>Jobs, housing, resources and tools built to help you move forward. Browse without an account. Create one when you’re ready to save, apply and track your progress.</Text>
    </View>
 
