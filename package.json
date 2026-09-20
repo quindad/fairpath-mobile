@@ -48,7 +48,8 @@
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "test:navigation": "node scripts/audit-navigation.mjs",
-    "test:housing": "node scripts/audit-housing.mjs"
+    "test:housing": "node scripts/audit-housing.mjs",
+    "test:marketplace": "node scripts/audit-marketplace.mjs"
   },
   "private": true
 }
