@@ -16,7 +16,7 @@ export default function SavedJobs(){
   setError('');
   try{setJobs(await loadSavedJobs())}
   catch(e){
-   if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace('/sign-in?returnTo=/saved-jobs' as never);return}
+   if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace('/sign-up?returnTo=/saved-jobs' as never);return}
    setError('Saved jobs could not be loaded.');
   }finally{setLoading(false);setRefreshing(false)}
  },[]);
