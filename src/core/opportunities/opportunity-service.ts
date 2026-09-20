@@ -311,12 +311,46 @@ export async function submitHousingApplication(applicationId:string,form:Housing
  const validation=validateHousingApplicationForm(form);
  if(Object.keys(validation).length)throw new Error('APPLICATION_INCOMPLETE');
  if(!consent.accuracy||!consent.submit)throw new Error('CONSENT_REQUIRED');
+ await currentUser();
+ const {data,error}=await supabase.rpc('submit_housing_application',{
+  p_application_id:applicationId,
+  p_answers:form,
+  p_consent:consent
+ });
+ if(error){
+  if(error.message?.includes('CONSENT_REQUIRED'))throw new Error('CONSENT_REQUIRED');
+  if(error.message?.includes('APPLICATION_NOT_SUBMITTABLE'))throw new Error('APPLICATION_NOT_SUBMITTABLE');
+  throw error;
+ }
+ const row=Array.isArray(data)?data[0]:data;
+ if(!row||row.status!=='submitted'||!row.submitted_at)throw new Error('SUBMIT_NOT_CONFIRMED');
+ return row as {id:string;status:'submitted';submitted_at:string};
+}
+export type HousingApplicationEvent={id:string;event_type:string;metadata:Record<string,unknown>;created_at:string};
+export async function loadHousingApplicationEvents(applicationId:string):Promise<HousingApplicationEvent[]>{
  const user=await currentUser();
- const now=new Date().toISOString();
- const {data,error}=await supabase.from('housing_applications').update({answers:form,current_step:5,status:'submitted',submitted_at:now,updated_at:now,applicant_snapshot:form,consent_snapshot:{...consent,confirmed_at:now}}).eq('id',applicationId).eq('user_id',user.id).eq('status','started').select('id,status,submitted_at').single();
+ const {data,error}=await supabase.from('housing_application_events').select('id,event_type,metadata,created_at').eq('application_id',applicationId).order('created_at',{ascending:true});
  if(error)throw error;
- if(!data||data.status!=='submitted'||!data.submitted_at)throw new Error('SUBMIT_NOT_CONFIRMED');
- return data;
+ return (data??[]) as HousingApplicationEvent[];
+}
+
+export async function createHousingInquiry(listingId:string,message:string,subject='Question about this home'){
+ const user=await currentUser();
+ const trimmed=message.trim();if(trimmed.length<5)throw new Error('MESSAGE_REQUIRED');
+ const {data,error}=await supabase.from('housing_inquiries').insert({user_id:user.id,listing_id:listingId,subject:subject.trim()||'Question about this home',message:trimmed,status:'open'}).select('id,status,created_at').single();
+ if(error)throw error;return data;
+}
+export async function createHousingTourRequest(listingId:string,preferredDate:string,preferredWindow:string,note=''){
+ const user=await currentUser();
+ const parts=preferredDate.match(/^(\\d{2})\\/(\\d{2})\\/(\\d{4})$/);if(!parts)throw new Error('DATE_REQUIRED');
+ const iso=parts[3]+'-'+parts[1]+'-'+parts[2];
+ const {data,error}=await supabase.from('housing_tour_requests').insert({user_id:user.id,listing_id:listingId,preferred_date:iso,preferred_window:preferredWindow,note:note.trim()||null,status:'requested'}).select('id,status,created_at').single();
+ if(error)throw error;return data;
+}
+export async function reportHousingListing(listingId:string,reason:string,details=''){
+ const user=await currentUser();
+ const {data,error}=await supabase.from('housing_reports').insert({user_id:user.id,listing_id:listingId,reason,details:details.trim()||null,status:'open'}).select('id,status,created_at').single();
+ if(error)throw error;return data;
 }
 export async function deleteHousingApplicationDraft(applicationId:string){
  const user=await currentUser();
