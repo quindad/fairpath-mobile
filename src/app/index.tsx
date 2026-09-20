@@ -24,7 +24,7 @@ export default function Welcome(){
  return <View style={s.screen}>
   <SafeAreaView style={s.safe}>
    <View style={s.brand}>
-    <FairPathLogo width={220}/>
+    <FairPathLogo width={300} style={s.logo}/>
     <Text style={s.tag}>OPPORTUNITY HAS A PATH</Text>
    </View>
 
@@ -53,7 +53,8 @@ export default function Welcome(){
 const s=StyleSheet.create({
  screen:{flex:1,backgroundColor:C.black},
  safe:{flex:1,width:'100%',maxWidth:620,alignSelf:'center',paddingHorizontal:22,paddingTop:18,paddingBottom:26},
- brand:{alignItems:'center'},
+ brand:{alignItems:'center',width:'100%'},
+ logo:{maxWidth:'100%'},
  tag:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8,letterSpacing:2.4,marginTop:4},
  hero:{flex:1,justifyContent:'center',paddingVertical:28},
  eyebrow:{color:C.lime,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.4,marginBottom:14},
