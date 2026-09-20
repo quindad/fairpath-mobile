@@ -89,6 +89,19 @@ export async function saveHousing(listingId:string){const user=await currentUser
 export async function unsaveHousing(listingId:string){const user=await currentUser();const {error}=await supabase.from('saved_housing').delete().eq('user_id',user.id).eq('listing_id',listingId);if(error)throw error;}
 export async function isHousingSaved(listingId:string){const user=await currentUser();const {data,error}=await supabase.from('saved_housing').select('listing_id').eq('user_id',user.id).eq('listing_id',listingId).maybeSingle();if(error)throw error;return Boolean(data);}
 export async function loadSavedHousingIds():Promise<string[]>{const user=await currentUser();const {data,error}=await supabase.from('saved_housing').select('listing_id').eq('user_id',user.id);if(error)throw error;return (data??[]).map(row=>row.listing_id as string);}
+
+export async function loadSavedHousing():Promise<HousingListing[]>{
+ const user=await currentUser();
+ const {data,error}=await supabase.from('saved_housing').select('listing:housing_listings(id,title,description,property_type,address_line1,address_line2,city,state,postal_code,bedrooms,bathrooms,square_feet,rent_monthly,deposit_amount,application_fee,available_date,lease_terms,amenities,utilities_included,pet_policy,parking,accessibility_features,screening_summary,eligibility_rules,virtual_tour_url,floor_plan_url,video_url,fasttrack_enabled,featured,source_label,source_url,latitude,longitude,garage_spaces,parking_types,furnished,has_basement,has_yard,has_balcony_patio,laundry_type,has_central_air,pet_types,move_in_ready,walk_score,transit_score,bike_score,housing_media(url,media_type,sort_order))').eq('user_id',user.id).order('created_at',{ascending:false});
+ if(error)throw error;return (data??[]).map((row:any)=>row.listing).filter(Boolean) as HousingListing[];
+}
+export type MyHousingApplication={id:string;listing_id:string;status:HousingApplicationStatus;application_type:'standard'|'fasttrack';created_at:string;updated_at:string;listing:{id:string;title:string;city:string;state:string;rent_monthly:number;bedrooms:number|null;bathrooms:number|null;fasttrack_enabled:boolean}|null};
+export async function loadMyHousingApplications():Promise<MyHousingApplication[]>{
+ const user=await currentUser();
+ const {data,error}=await supabase.from('housing_applications').select('id,listing_id,status,application_type,created_at,updated_at,listing:housing_listings(id,title,city,state,rent_monthly,bedrooms,bathrooms,fasttrack_enabled)').eq('user_id',user.id).order('updated_at',{ascending:false});
+ if(error)throw error;return (data??[]) as unknown as MyHousingApplication[];
+}
+
 export async function saveMarketplace(itemId:string){const user=await currentUser();const {error}=await supabase.from('marketplace_saves').upsert({user_id:user.id,item_id:itemId});if(error)throw error;}
 export type JobApplicationAutofill={first_name:string;last_name:string;email:string;phone:string;address:string;date_of_birth:string;education:string;skills:string;certifications:string;desired_roles:string;resume_ready:string};
 export async function loadJobApplicationAutofill():Promise<JobApplicationAutofill>{
