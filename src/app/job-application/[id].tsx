@@ -56,7 +56,7 @@ export default function JobApplicationDetail(){
   loadMyJobApplicationDetail(id)
    .then(setItem)
    .catch(e=>{
-    if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace(('/sign-in?returnTo='+encodeURIComponent('/job-application/'+id)) as never);return}
+    if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace(('/sign-up?returnTo='+encodeURIComponent('/job-application/'+id)) as never);return}
     setError('This application could not be loaded.');
    })
    .finally(()=>setLoading(false));
