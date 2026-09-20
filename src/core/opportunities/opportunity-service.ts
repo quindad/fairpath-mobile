@@ -263,12 +263,13 @@ export async function saveHousingApplicationDraft(applicationId:string,form:Hous
  if(error)throw error;
  return data;
 }
-export async function submitHousingApplication(applicationId:string,form:HousingApplicationForm){
+export async function submitHousingApplication(applicationId:string,form:HousingApplicationForm,consent:{accuracy:boolean;submit:boolean;fasttrack_ack?:boolean}){
  const validation=validateHousingApplicationForm(form);
  if(Object.keys(validation).length)throw new Error('APPLICATION_INCOMPLETE');
+ if(!consent.accuracy||!consent.submit)throw new Error('CONSENT_REQUIRED');
  const user=await currentUser();
  const now=new Date().toISOString();
- const {data,error}=await supabase.from('housing_applications').update({answers:form,current_step:5,status:'submitted',submitted_at:now,updated_at:now,applicant_snapshot:form,consent_snapshot:{confirmed:true,confirmed_at:now}}).eq('id',applicationId).eq('user_id',user.id).eq('status','started').select('id,status,submitted_at').single();
+ const {data,error}=await supabase.from('housing_applications').update({answers:form,current_step:5,status:'submitted',submitted_at:now,updated_at:now,applicant_snapshot:form,consent_snapshot:{...consent,confirmed_at:now}}).eq('id',applicationId).eq('user_id',user.id).eq('status','started').select('id,status,submitted_at').single();
  if(error)throw error;
  if(!data||data.status!=='submitted'||!data.submitted_at)throw new Error('SUBMIT_NOT_CONFIRMED');
  return data;
