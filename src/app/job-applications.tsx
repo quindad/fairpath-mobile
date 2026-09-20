@@ -42,7 +42,7 @@ export default function JobApplications(){
  useEffect(()=>{void load()},[load]);
 
  return <ScreenFrame>
-  <PageHeader eyebrow="FAIRPATH JOBS" title="My applications" backTo="/find-jobs" alwaysBackTo/>
+  <PageHeader eyebrow="FAIRPATH JOBS" title="My applications" backTo="/find-jobs"/>
   <ScrollView
    contentContainerStyle={s.content}
    showsVerticalScrollIndicator={false}
