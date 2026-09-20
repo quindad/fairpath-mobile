@@ -9,7 +9,7 @@ import { loadProfileAnswers } from '@/core/profile/profile-service';
 import { demoHousingImage } from '@/core/demo/demo-media';
 
 export default function Housing(){
- const params=useLocalSearchParams<{minRent?:string;maxRent?:string;beds?:string;baths?:string;types?:string;fastTrack?:string;pets?:string;accessible?:string}>();
+ const params=useLocalSearchParams<{minRent?:string;maxRent?:string;beds?:string;baths?:string;types?:string;fastTrack?:string;pets?:string;accessible?:string;garage?:string;parking?:string;furnished?:string;basement?:string;yard?:string;balcony?:string;laundry?:string;centralAir?:string;moveInReady?:string;minSqft?:string;minWalk?:string}>();
  const [query,setQuery]=useState('');
  const [location,setLocation]=useState('');
  const [rows,setRows]=useState<HousingListing[]>([]);
@@ -49,13 +49,13 @@ export default function Housing(){
    baths:params.baths??'ANY',
    types:typeList,
    pets:params.pets==='1',
-   accessible:params.accessible==='1'
+   accessible:params.accessible==='1',garage:params.garage==='1',parking:params.parking==='1',furnished:params.furnished==='1',basement:params.basement==='1',yard:params.yard==='1',balcony:params.balcony==='1',laundry:params.laundry==='1',centralAir:params.centralAir==='1',moveInReady:params.moveInReady==='1',minSqft:Number(params.minSqft||0),minWalk:Number(params.minWalk||0)
   };
- },[params.minRent,params.maxRent,params.beds,params.baths,params.types,params.pets,params.accessible]);
+ },[params.minRent,params.maxRent,params.beds,params.baths,params.types,params.pets,params.accessible,params.garage,params.parking,params.furnished,params.basement,params.yard,params.balcony,params.laundry,params.centralAir,params.moveInReady,params.minSqft,params.minWalk]);
 
  const filterCount=useMemo(()=>[
   activeFilters.minRent>0,activeFilters.maxRent>0,activeFilters.beds!=='ANY',activeFilters.baths!=='ANY',
-  activeFilters.types.length>0,fastTrack,activeFilters.pets,activeFilters.accessible
+  activeFilters.types.length>0,fastTrack,activeFilters.pets,activeFilters.accessible,activeFilters.garage,activeFilters.parking,activeFilters.furnished,activeFilters.basement,activeFilters.yard,activeFilters.balcony,activeFilters.laundry,activeFilters.centralAir,activeFilters.moveInReady,activeFilters.minSqft>0,activeFilters.minWalk>0
  ].filter(Boolean).length,[activeFilters,fastTrack]);
 
  const visible=useMemo(()=>rows.filter(h=>{
@@ -67,11 +67,23 @@ export default function Housing(){
   if(twoPlus&&beds<2)return false;
   if(activeFilters.minRent>0&&rent<activeFilters.minRent)return false;
   if(activeFilters.maxRent>0&&rent>activeFilters.maxRent)return false;
-  if(activeFilters.beds!=='ANY'&&beds<Number(activeFilters.beds.replace('+','')))return false;
+  if(activeFilters.beds==='STUDIO'&&beds!==0)return false;
+  if(activeFilters.beds!=='ANY'&&activeFilters.beds!=='STUDIO'&&beds<Number(activeFilters.beds.replace('+','')))return false;
   if(activeFilters.baths!=='ANY'&&baths<Number(activeFilters.baths.replace('+','')))return false;
   if(activeFilters.types.length&&!activeFilters.types.includes(h.property_type.toLowerCase()))return false;
   if(activeFilters.pets&&(!petText||petText.includes('no pets')||petText.includes('not allowed')))return false;
   if(activeFilters.accessible&&!(h.accessibility_features?.length))return false;
+  if(activeFilters.garage&&!(Number(h.garage_spaces||0)>0))return false;
+  if(activeFilters.parking&&!(h.parking_types?.length||(h.parking||'').trim()))return false;
+  if(activeFilters.furnished&&!h.furnished)return false;
+  if(activeFilters.basement&&!h.has_basement)return false;
+  if(activeFilters.yard&&!h.has_yard)return false;
+  if(activeFilters.balcony&&!h.has_balcony_patio)return false;
+  if(activeFilters.laundry&&!h.laundry_type)return false;
+  if(activeFilters.centralAir&&!h.has_central_air)return false;
+  if(activeFilters.moveInReady&&!h.move_in_ready)return false;
+  if(activeFilters.minSqft>0&&Number(h.square_feet||0)<activeFilters.minSqft)return false;
+  if(activeFilters.minWalk>0&&Number(h.walk_score||0)<activeFilters.minWalk)return false;
   return true;
  }),[rows,fastTrack,twoPlus,activeFilters]);
 
@@ -121,7 +133,10 @@ export default function Housing(){
     params.types?'types='+encodeURIComponent(params.types):'',
     fastTrack?'fastTrack=1':'',
     params.pets==='1'?'pets=1':'',
-    params.accessible==='1'?'accessible=1':''
+    params.accessible==='1'?'accessible=1':'',
+    params.garage==='1'?'garage=1':'',params.parking==='1'?'parking=1':'',params.furnished==='1'?'furnished=1':'',params.basement==='1'?'basement=1':'',
+    params.yard==='1'?'yard=1':'',params.balcony==='1'?'balcony=1':'',params.laundry==='1'?'laundry=1':'',params.centralAir==='1'?'centralAir=1':'',
+    params.moveInReady==='1'?'moveInReady=1':'',params.minSqft?'minSqft='+encodeURIComponent(params.minSqft):'',params.minWalk?'minWalk='+encodeURIComponent(params.minWalk):''
    ].filter(Boolean).join('&')) as never)}>
     <Lucide name="sliders-horizontal" color={C.lime} size={13}/>
     <Text style={s.allFiltersText}>FILTERS{filterCount?' · '+filterCount:''}</Text>
