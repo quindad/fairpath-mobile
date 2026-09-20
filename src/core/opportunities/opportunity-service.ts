@@ -251,6 +251,7 @@ export async function startHousingApplication(listingId:string,fastTrack=false){
  if(existing)return existing as {id:string;status:HousingApplicationStatus;application_type:HousingApplicationMode;current_step:number};
  const {data,error}=await supabase.from('housing_applications').insert({user_id:user.id,listing_id:listingId,application_type:fastTrack?'fasttrack':'standard',status:'started',current_step:1,updated_at:now}).select('id,status,application_type,current_step').single();
  if(error)throw error;
+ void trackProductEvent('housing_application_started','housing',listingId,{mode:fastTrack?'fasttrack':'standard',application_id:data?.id}).catch(()=>{});
  return data as {id:string;status:HousingApplicationStatus;application_type:HousingApplicationMode;current_step:number};
 }
 export type HousingApplicationDetail=MyHousingApplication & {listing:{id:string;title:string;city:string;state:string;rent_monthly:number;bedrooms:number|null;bathrooms:number|null;fasttrack_enabled:boolean}|null};
@@ -330,6 +331,7 @@ export async function submitHousingApplication(applicationId:string,form:Housing
  }
  const row=Array.isArray(data)?data[0]:data;
  if(!row||row.status!=='submitted'||!row.submitted_at)throw new Error('SUBMIT_NOT_CONFIRMED');
+ void trackProductEvent('housing_application_submitted','housing_application',applicationId).catch(()=>{});
  return row as {id:string;status:'submitted';submitted_at:string};
 }
 export type HousingApplicationEvent={id:string;event_type:string;metadata:Record<string,unknown>;created_at:string};
