@@ -11,6 +11,7 @@ const rows=[
  ["Saved homes","Your saved FairPath housing","/saved-homes"],
  ["Saved housing searches","Rerun housing searches with your filters","/saved-housing-searches"],
  ["Housing applications","Track standard and FastTrack applications","/housing-applications"],
+ ["Housing activity","Tour requests and property questions","/housing-activity"],
  ["Privacy","Control your account and information","/profile-readiness"]
 ] as const;
 
