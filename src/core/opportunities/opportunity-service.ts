@@ -107,6 +107,12 @@ export async function loadMyHousingTours():Promise<HousingTourRequest[]>{
 export async function cancelHousingTourRequest(id:string){
  const user=await currentUser();const {error}=await supabase.from('housing_tour_requests').update({status:'cancelled',updated_at:new Date().toISOString()}).eq('id',id).eq('user_id',user.id).eq('status','requested');if(error)throw error;
 }
+export type HousingInquiry={id:string;listing_id:string;subject:string;message:string;status:'open'|'responded'|'closed';created_at:string;updated_at:string;listing:{id:string;title:string;city:string;state:string}|null};
+export async function loadMyHousingInquiries():Promise<HousingInquiry[]>{
+ const user=await currentUser();
+ const {data,error}=await supabase.from('housing_inquiries').select('id,listing_id,subject,message,status,created_at,updated_at,listing:housing_listings(id,title,city,state)').eq('user_id',user.id).order('updated_at',{ascending:false});
+ if(error)throw error;return (data??[]) as unknown as HousingInquiry[];
+}
 export async function createHousingInquiry(input:{listingId:string;subject?:string;message:string}){
  const user=await currentUser();
  const {data,error}=await supabase.from('housing_inquiries').insert({user_id:user.id,listing_id:input.listingId,subject:input.subject?.trim()||'Question about this home',message:input.message.trim()}).select('id,status,created_at').single();
