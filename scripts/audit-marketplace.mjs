@@ -31,5 +31,13 @@ if(!detail.includes('ANONYMOUS SELECTION'))failures.push('Anonymous claim select
 if(!manage.includes('ANONYMOUS CLAIM SELECTION'))failures.push('Donor anonymous selection UI missing.');
 if(!service.includes("request_marketplace_claim"))failures.push('Claim request is not server-RPC backed.');
 if(!service.includes("verify_marketplace_pickup"))failures.push('Pickup verification is not server-RPC backed.');
+const claimDetail=read('src/app/marketplace-claim/[id].tsx');
+const donorManage=read('src/app/marketplace-manage/[id].tsx');
+if(claimDetail.includes('sendMarketplaceMessage')||claimDetail.includes('SEND MESSAGE'))failures.push('Claimant Marketplace workspace must not send donor messages.');
+if(!donorManage.includes('sendMarketplaceMessage')||!donorManage.includes('PICKUP LOGISTICS MESSAGE'))failures.push('Donor-only post-selection pickup messaging is missing.');
+if(!service.includes("send_marketplace_pickup_message"))failures.push('Donor pickup messaging is not RPC-backed.');
+if(!service.includes("status:'draft'"))failures.push('New Marketplace listings must start as private drafts before publish.');
+if(!read('src/app/marketplace-list-item.tsx').includes('setMarketplaceItemAvailability(itemId,true)'))failures.push('Listing create flow does not explicitly publish after media upload.');
+
 if(failures.length){console.error('Marketplace audit failed:\n- '+failures.join('\n- '));process.exit(1)}
 console.log('Marketplace audit passed: '+required.length+' critical files + Marketplace invariants checked.');
