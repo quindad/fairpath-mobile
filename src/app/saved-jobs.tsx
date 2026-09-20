@@ -31,7 +31,7 @@ export default function SavedJobs(){
  }
 
  return <ScreenFrame>
-  <PageHeader eyebrow="FAIRPATH JOBS" title="Saved jobs" backTo="/find-jobs"/>
+  <PageHeader eyebrow="FAIRPATH JOBS" title="Saved jobs" backTo="/find-jobs" alwaysBackTo/>
   <ScrollView
    contentContainerStyle={s.content}
    showsVerticalScrollIndicator={false}
