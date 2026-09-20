@@ -11,8 +11,8 @@ export function safeBack(fallback='/home'){
   if(router.canGoBack())router.back();
   else router.replace(fallback as never);
 }
-export function PageHeader({eyebrow,title,onBack=true,backTo='/home',alwaysBackTo=false,trailing}:{eyebrow:string;title:string;onBack?:boolean;backTo?:string;alwaysBackTo?:boolean;trailing?:React.ReactNode}){
-  const goBack=()=>alwaysBackTo?router.replace(backTo as never):safeBack(backTo);
+export function PageHeader({eyebrow,title,onBack=true,backTo='/home',alwaysBackTo=false,trailing}:{eyebrow:string;title:string;onBack?:boolean|(()=>void);backTo?:string;alwaysBackTo?:boolean;trailing?:React.ReactNode}){
+  const goBack=()=>typeof onBack==='function'?onBack():alwaysBackTo?router.replace(backTo as never):safeBack(backTo);
   return <View style={s.header}>{onBack?<Pressable accessibilityRole="button" accessibilityLabel="Go back" style={s.back} onPress={goBack}><Text style={s.backText}>←</Text></Pressable>:null}<View style={s.headerCopy}><Text style={s.eyebrow}>{eyebrow}</Text><Text style={s.title}>{title}</Text></View>{trailing?<View style={s.trailing}>{trailing}</View>:null}</View>;
 }
 export function SectionTitle({children}:{children:React.ReactNode}){return <Text style={s.section}>{children}</Text>}
