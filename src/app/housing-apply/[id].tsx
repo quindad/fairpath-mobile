@@ -6,6 +6,7 @@ import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import {
   FastTrackQuote,
+  HousingApplicationDocument,
   HousingApplicationForm,
   loadFastTrackQuote,
   loadHousingApplicationForm,
@@ -46,6 +47,8 @@ export default function HousingApply(){
  const [submitConsent,setSubmitConsent]=useState(false);
  const [fastAck,setFastAck]=useState(false);
  const [fastQuote,setFastQuote]=useState<FastTrackQuote|null>(null);
+ const [requiredDocs,setRequiredDocs]=useState<HousingApplicationDocument['document_type'][]>([]);
+ const [documents,setDocuments]=useState<HousingApplicationDocument[]>([]);
 
  useEffect(()=>{
   if(!id)return;
@@ -56,6 +59,7 @@ export default function HousingApply(){
     setStep(Math.max(1,Math.min(x.current_step,5)));
     setFast(a.application_type==='fasttrack');
     setTitle(a.listing?.title??'Housing application');
+    setRequiredDocs((a.listing?.required_application_documents??[]) as HousingApplicationDocument['document_type'][]);
    })
    .catch(()=>Alert.alert('Could not load application','Please try again.'))
    .finally(()=>setLoading(false));
@@ -66,6 +70,7 @@ export default function HousingApply(){
  const currentFields=STEP_FIELDS[step]??[];
  const currentErrors=currentFields.filter(k=>errors[k]&&!(k==='employer'&&form.employment_status==='Unemployed'));
  const allErrors=Object.keys(errors) as (keyof HousingApplicationForm)[];
+ const missingRequiredDocs=requiredDocs.filter(type=>!documents.some(doc=>doc.document_type===type&&doc.status!=='rejected'));
  const completion=useMemo(()=>{
   const required=(Object.values(STEP_FIELDS).flat() as (keyof HousingApplicationForm)[]).filter((k,i,a)=>a.indexOf(k)===i);
   const good=required.filter(k=>!errors[k]||(k==='employer'&&form.employment_status==='Unemployed')).length;
@@ -108,6 +113,10 @@ export default function HousingApply(){
   }
   if(!accuracy||!submitConsent||(fast&&!fastAck)){
    Alert.alert('Confirm before submitting','Review and accept the required confirmations at the bottom of the application.');
+   return;
+  }
+  if(missingRequiredDocs.length){
+   Alert.alert('Required documents missing','Upload every document required by this property before submitting.');
    return;
   }
   if(fast&&fastQuote?.payment_enforced&&!['paid','waived'].includes(fastQuote.status)){
@@ -206,7 +215,8 @@ export default function HousingApply(){
      <Text style={s.errorSummaryText}>{allErrors.length} required {allErrors.length===1?'item needs':'items need'} attention. TAP TO FIX.</Text>
     </Pressable>:null}
 
-    <HousingApplicationDocuments applicationId={id!}/>
+    <HousingApplicationDocuments applicationId={id!} requiredTypes={requiredDocs} onDocumentsChange={setDocuments}/>
+    {missingRequiredDocs.length?<View style={s.documentWarning}><Lucide name="triangle-alert" color={C.lime} size={14}/><Text style={s.documentWarningText}>Upload the required property documents before submitting: {missingRequiredDocs.join(', ').replaceAll('_',' ')}.</Text></View>:null}
     {fast&&fastQuote?<View style={s.fastQuote}><View style={s.quoteTop}><Text style={s.quoteLabel}>FASTTRACK FEE</Text><Text style={s.quoteAmount}>{'
     <Consent checked={accuracy} onPress={()=>setAccuracy(v=>!v)} text="I confirm the information in this application is accurate to the best of my knowledge."/>
     <Consent checked={submitConsent} onPress={()=>setSubmitConsent(v=>!v)} text="I want FairPath to submit this completed application into the property application workflow."/>
@@ -215,9 +225,9 @@ export default function HousingApply(){
     <View style={s.notice}><Text style={s.noticeTitle}>BEFORE YOU SUBMIT</Text><Text style={s.noticeBody}>Nothing is sent until you confirm below. Property screening, verification, fees, availability, and property-owner decisions can still apply.</Text></View>
    </>:null}
 
-   <Pressable style={[s.primary,(saving||(step===5&&(allErrors.length>0||!accuracy||!submitConsent||(fast&&!fastAck))))&&s.primaryDisabled]} disabled={saving} onPress={step===5?attemptSubmit:()=>void saveAndNext()}>
+   <Pressable style={[s.primary,(saving||(step===5&&(allErrors.length>0||missingRequiredDocs.length>0||!accuracy||!submitConsent||(fast&&!fastAck))))&&s.primaryDisabled]} disabled={saving} onPress={step===5?attemptSubmit:()=>void saveAndNext()}>
     <Text style={[s.primaryText,step===5&&(allErrors.length>0||!accuracy||!submitConsent||(fast&&!fastAck))&&s.primaryTextDisabled]}>{saving?'SAVING…':step===5?'CONFIRM & SUBMIT APPLICATION':'SAVE & CONTINUE'}</Text>
-    <Lucide name="arrow-right" color={step===5&&(allErrors.length>0||!accuracy||!submitConsent||(fast&&!fastAck))?C.mutedStrong:C.black} size={16}/>
+    <Lucide name="arrow-right" color={step===5&&(allErrors.length>0||missingRequiredDocs.length>0||!accuracy||!submitConsent||(fast&&!fastAck))?C.mutedStrong:C.black} size={16}/>
    </Pressable>
    {step>1?<Pressable style={s.secondary} onPress={()=>void previous()}><Text style={s.secondaryText}>← PREVIOUS STEP</Text></Pressable>:null}
   </ScrollView>
@@ -259,7 +269,7 @@ const s=StyleSheet.create({
  consent:{minHeight:52,borderTopWidth:1,borderTopColor:C.border,flexDirection:'row',alignItems:'center',gap:10,paddingVertical:10},
  checkBox:{width:22,height:22,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center'},checkBoxOn:{backgroundColor:C.lime,borderColor:C.lime},
  consentText:{color:C.mutedStrong,fontSize:10,lineHeight:15,flex:1},
- fastQuote:{borderWidth:1,borderColor:C.borderStrong,padding:13,marginTop:14},quoteTop:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},quoteLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},quoteAmount:{color:C.white,fontFamily:F.black,fontSize:20},quoteDiscount:{color:C.lime,fontSize:8.5,marginTop:5},quoteBody:{color:C.mutedStrong,fontSize:9,lineHeight:14,marginTop:7},notice:{borderWidth:1,borderColor:'#526F2B',padding:14,marginTop:18},noticeTitle:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:1},noticeBody:{color:C.mutedStrong,fontSize:10,lineHeight:16,marginTop:6},
+ documentWarning:{borderWidth:1,borderColor:C.lime,backgroundColor:'#10150C',padding:10,marginTop:8,flexDirection:'row',gap:8},documentWarningText:{color:C.lime,fontSize:8.5,lineHeight:13,flex:1},fastQuote:{borderWidth:1,borderColor:C.borderStrong,padding:13,marginTop:14},quoteTop:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},quoteLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},quoteAmount:{color:C.white,fontFamily:F.black,fontSize:20},quoteDiscount:{color:C.lime,fontSize:8.5,marginTop:5},quoteBody:{color:C.mutedStrong,fontSize:9,lineHeight:14,marginTop:7},notice:{borderWidth:1,borderColor:'#526F2B',padding:14,marginTop:18},noticeTitle:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:1},noticeBody:{color:C.mutedStrong,fontSize:10,lineHeight:16,marginTop:6},
  primary:{minHeight:50,backgroundColor:C.lime,flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:14,marginTop:14},primaryDisabled:{backgroundColor:'#1A2114',borderWidth:1,borderColor:'#2C3823'},primaryText:{color:C.black,fontFamily:F.extraBold,fontSize:8.5,letterSpacing:.8},primaryTextDisabled:{color:C.mutedStrong},
  secondary:{minHeight:44,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center',marginTop:8},secondaryText:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8}
 });
