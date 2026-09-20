@@ -8,6 +8,7 @@ import { loadHousing, loadSavedHousingIds, saveHousing, saveHousingSearch, unsav
 import { loadProfileAnswers } from '@/core/profile/profile-service';
 import { demoHousingImage } from '@/core/demo/demo-media';
 import { supabase } from '@/lib/supabase';
+import { HousingMap } from '@/components/HousingMap';
 
 export default function Housing(){
  const params=useLocalSearchParams<{search?:string;location?:string;sort?:string;minRent?:string;maxRent?:string;beds?:string;baths?:string;types?:string;fastTrack?:string;pets?:string;accessible?:string;garage?:string;parking?:string;furnished?:string;basement?:string;yard?:string;balcony?:string;laundry?:string;centralAir?:string;moveInReady?:string;minSqft?:string;minWalk?:string}>();
@@ -21,6 +22,7 @@ export default function Housing(){
  const [error,setError]=useState('');
  const [saved,setSaved]=useState<Record<string,boolean>>({});
  const [signedIn,setSignedIn]=useState(false);
+ const [viewMode,setViewMode]=useState<'list'|'map'>('list');
 
  async function run(){
   setLoading(true);setError('');
@@ -179,11 +181,12 @@ export default function Housing(){
    {signedIn?<Pressable style={s.searchAction} onPress={()=>router.push('/saved-housing-searches' as never)}><Lucide name="history" color={C.lime} size={13}/><Text style={s.searchActionText}>SAVED SEARCHES</Text></Pressable>:null}
   </View>
   <ScrollView contentContainerStyle={s.list} showsVerticalScrollIndicator={false}>
-   <View style={s.resultsTop}><Text style={s.results}>{loading?'SEARCHING':String(visible.length)+' RESULTS'}</Text><Pressable style={s.sortButton} onPress={cycleSort}><Lucide name="arrow-up-down" color={C.lime} size={11}/><Text style={s.sort}>{sortLabel}</Text></Pressable></View>
+   <View style={s.resultsTop}><Text style={s.results}>{loading?'SEARCHING':String(visible.length)+' RESULTS'}</Text><View style={s.resultControls}><Pressable style={s.viewToggle} onPress={()=>setViewMode(v=>v==='list'?'map':'list')}><Lucide name={viewMode==='list'?'map':'list'} color={C.lime} size={11}/><Text style={s.sort}>{viewMode==='list'?'MAP':'LIST'}</Text></Pressable><Pressable style={s.sortButton} onPress={cycleSort}><Lucide name="arrow-up-down" color={C.lime} size={11}/><Text style={s.sort}>{sortLabel}</Text></Pressable></View></View>
    {error?<Text style={s.error}>{error}</Text>:null}
    {!loading&&visible.length===0?<View style={s.empty}><Text style={s.emptyTitle}>No homes match this search.</Text><Text style={s.emptyBody}>Try a wider location, a different keyword, or remove a filter.</Text></View>:null}
+   {!loading&&viewMode==='map'?<HousingMap homes={visible} onOpen={h=>router.push(('/housing/'+h.id) as never)}/>:null}
 
-   {!loading?visible.map((h,index)=>{
+   {!loading&&viewMode==='list'?visible.map((h,index)=>{
     const photo=h.housing_media?.filter(m=>m.media_type==='photo').sort((a,b)=>a.sort_order-b.sort_order)[0]?.url||demoHousingImage(index);
     const isSaved=Boolean(saved[h.id]);
     return <Pressable key={h.id} style={s.card} onPress={()=>router.push(('/housing/'+h.id) as never)}>
@@ -216,7 +219,7 @@ const s=StyleSheet.create({
  filtersHead:{paddingHorizontal:L.mobileGutter,paddingTop:13,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},filtersLabel:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.1},filtersHint:{color:C.muted,fontFamily:F.medium,fontSize:9},
  filtersStrip:{height:52,paddingHorizontal:L.mobileGutter,paddingVertical:9,flexDirection:'row',gap:7},filterCell:{flex:1},allFilters:{flex:1.15,height:34,borderWidth:1,borderColor:'#526F2B',backgroundColor:'#10150C',flexDirection:'row',gap:6,alignItems:'center',justifyContent:'center'},allFiltersText:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:.7},
  searchActions:{paddingHorizontal:L.mobileGutter,paddingVertical:8,borderTopWidth:1,borderBottomWidth:1,borderColor:C.border,flexDirection:'row',gap:8},searchAction:{flex:1,minHeight:36,borderWidth:1,borderColor:C.borderStrong,flexDirection:'row',gap:6,alignItems:'center',justifyContent:'center'},searchActionText:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:.7},
- list:{paddingHorizontal:L.mobileGutter,paddingBottom:30},resultsTop:{height:46,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},results:{color:C.muted,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.1},sortButton:{flexDirection:'row',gap:5,alignItems:'center'},sort:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},
+ list:{paddingHorizontal:L.mobileGutter,paddingBottom:30},resultsTop:{height:46,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},results:{color:C.muted,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.1},resultControls:{flexDirection:'row',gap:12,alignItems:'center'},viewToggle:{flexDirection:'row',gap:5,alignItems:'center'},sortButton:{flexDirection:'row',gap:5,alignItems:'center'},sort:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},
  card:{borderTopWidth:1,borderTopColor:C.borderStrong,paddingVertical:18},media:{height:180,position:'relative',backgroundColor:'#0A0C0A',borderWidth:1,borderColor:C.borderStrong,overflow:'hidden'},photo:{width:'100%',height:'100%'},noPhoto:{flex:1,alignItems:'center',justifyContent:'center'},noPhotoText:{color:C.muted,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.2},
  saveBtn:{position:'absolute',right:8,top:8,width:34,height:34,borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#090A09DD',alignItems:'center',justifyContent:'center'},saveBtnActive:{backgroundColor:C.lime,borderColor:C.lime},
  body:{paddingTop:13},priceRow:{flexDirection:'row',alignItems:'baseline'},price:{color:C.white,fontFamily:F.black,fontSize:25},per:{color:C.muted,fontSize:11},homeTitle:{color:C.white,fontFamily:F.extraBold,fontSize:19,lineHeight:22,marginTop:4},meta:{color:C.mutedStrong,fontSize:12,marginTop:7},locationRow:{flexDirection:'row',alignItems:'center',gap:6,marginTop:7},location:{color:C.muted,fontSize:11},badges:{flexDirection:'row',gap:6,flexWrap:'wrap',marginTop:11},
