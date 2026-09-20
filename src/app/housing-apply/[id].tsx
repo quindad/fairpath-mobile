@@ -111,7 +111,10 @@ export default function HousingApply(){
    return;
   }
   if(fast&&fastQuote?.payment_enforced&&!['paid','waived'].includes(fastQuote.status)){
-   Alert.alert('FastTrack payment required','Complete FastTrack payment before submitting this application.');
+   Alert.alert('FastTrack payment required','Complete FastTrack payment before submitting this application.',[
+    {text:'Not now',style:'cancel'},
+    {text:'Open checkout',onPress:()=>router.push(('/fasttrack-checkout/'+id) as never)}
+   ]);
    return;
   }
   void doSubmit();
