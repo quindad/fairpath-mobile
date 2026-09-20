@@ -114,7 +114,12 @@ export default function HousingDetail(){
    </View>
 
    {(item.deposit_amount!=null||item.application_fee!=null)?<Section label="COST SNAPSHOT">
-    <View style={s.costRow}><Text style={s.costLabel}>Monthly rent</Text><Text style={s.costValue}>{'
+    <View style={s.costRow}><Text style={s.costLabel}>Monthly rent</Text><Text style={s.costValue}>{`$${Number(item.rent_monthly).toLocaleString()}`}</Text></View>
+    {item.deposit_amount!=null?<View style={s.costRow}><Text style={s.costLabel}>Listed deposit</Text><Text style={s.costValue}>{`$${Number(item.deposit_amount).toLocaleString()}`}</Text></View>:null}
+    {item.application_fee!=null?<View style={s.costRow}><Text style={s.costLabel}>Listed application fee</Text><Text style={s.costValue}>{`$${Number(item.application_fee).toLocaleString()}`}</Text></View>:null}
+    <View style={s.costTotal}><Text style={s.costTotalLabel}>ESTIMATED LISTED UPFRONT</Text><Text style={s.costTotalValue}>{`$${(Number(item.rent_monthly)+Number(item.deposit_amount||0)+Number(item.application_fee||0)).toLocaleString()}`}</Text></View>
+    <Text style={s.sourceNote}>Estimate includes first month rent, the listed deposit, and the listed application fee only. Proration, utilities, concessions, screening charges, or other property-specific costs may differ.</Text>
+   </Section>:null}
    {item.screening_summary?<Section label="SCREENING"><Text style={s.body}>{item.screening_summary}</Text></Section>:null}
    {item.lease_terms?.length?<Section label="LEASE TERMS"><Text style={s.body}>{item.lease_terms.join(' · ')}</Text></Section>:null}
    {item.amenities?.length?<Section label="AMENITIES"><Text style={s.body}>{item.amenities.join(' · ')}</Text></Section>:null}
