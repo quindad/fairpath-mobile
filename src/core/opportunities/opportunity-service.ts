@@ -93,24 +93,24 @@ export async function unsaveHousing(listingId:string){const user=await currentUs
 export async function isHousingSaved(listingId:string){const user=await currentUser();const {data,error}=await supabase.from('saved_housing').select('listing_id').eq('user_id',user.id).eq('listing_id',listingId).maybeSingle();if(error)throw error;return Boolean(data);}
 export async function loadSavedHousingIds():Promise<string[]>{const user=await currentUser();const {data,error}=await supabase.from('saved_housing').select('listing_id').eq('user_id',user.id);if(error)throw error;return (data??[]).map(row=>row.listing_id as string);}
 
-export type HousingTourRequest={id:string;listing_id:string;preferred_date:string;preferred_window:'morning'|'afternoon'|'evening'|'flexible';note:string|null;status:'requested'|'confirmed'|'declined'|'completed'|'cancelled';created_at:string;updated_at:string};
+export type HousingTourRequest={id:string;listing_id:string;preferred_date:string;preferred_window:'morning'|'afternoon'|'evening'|'flexible';note:string|null;status:'requested'|'confirmed'|'declined'|'completed'|'cancelled';confirmed_date:string|null;confirmed_window:string|null;partner_note:string|null;created_at:string;updated_at:string};
 export async function createHousingTourRequest(input:{listingId:string;preferredDate:string;preferredWindow:HousingTourRequest['preferred_window'];note?:string}){
  const user=await currentUser();
- const {data,error}=await supabase.from('housing_tour_requests').insert({user_id:user.id,listing_id:input.listingId,preferred_date:input.preferredDate,preferred_window:input.preferredWindow,note:input.note?.trim()||null}).select('id,listing_id,preferred_date,preferred_window,note,status,created_at,updated_at').single();
+ const {data,error}=await supabase.from('housing_tour_requests').insert({user_id:user.id,listing_id:input.listingId,preferred_date:input.preferredDate,preferred_window:input.preferredWindow,note:input.note?.trim()||null}).select('id,listing_id,preferred_date,preferred_window,note,status,confirmed_date,confirmed_window,partner_note,created_at,updated_at').single();
  if(error)throw error;return data as HousingTourRequest;
 }
 export async function loadMyHousingTours():Promise<HousingTourRequest[]>{
  const user=await currentUser();
- const {data,error}=await supabase.from('housing_tour_requests').select('id,listing_id,preferred_date,preferred_window,note,status,created_at,updated_at').eq('user_id',user.id).order('updated_at',{ascending:false});
+ const {data,error}=await supabase.from('housing_tour_requests').select('id,listing_id,preferred_date,preferred_window,note,status,confirmed_date,confirmed_window,partner_note,created_at,updated_at').eq('user_id',user.id).order('updated_at',{ascending:false});
  if(error)throw error;return (data??[]) as HousingTourRequest[];
 }
 export async function cancelHousingTourRequest(id:string){
  const user=await currentUser();const {error}=await supabase.from('housing_tour_requests').update({status:'cancelled',updated_at:new Date().toISOString()}).eq('id',id).eq('user_id',user.id).eq('status','requested');if(error)throw error;
 }
-export type HousingInquiry={id:string;listing_id:string;subject:string;message:string;status:'open'|'responded'|'closed';created_at:string;updated_at:string;listing:{id:string;title:string;city:string;state:string}|null};
+export type HousingInquiry={id:string;listing_id:string;subject:string;message:string;status:'open'|'responded'|'closed';response_message:string|null;responded_at:string|null;created_at:string;updated_at:string;listing:{id:string;title:string;city:string;state:string}|null};
 export async function loadMyHousingInquiries():Promise<HousingInquiry[]>{
  const user=await currentUser();
- const {data,error}=await supabase.from('housing_inquiries').select('id,listing_id,subject,message,status,created_at,updated_at,listing:housing_listings(id,title,city,state)').eq('user_id',user.id).order('updated_at',{ascending:false});
+ const {data,error}=await supabase.from('housing_inquiries').select('id,listing_id,subject,message,status,response_message,responded_at,created_at,updated_at,listing:housing_listings(id,title,city,state)').eq('user_id',user.id).order('updated_at',{ascending:false});
  if(error)throw error;return (data??[]) as unknown as HousingInquiry[];
 }
 export async function createHousingInquiry(input:{listingId:string;subject?:string;message:string}){
@@ -319,6 +319,7 @@ export async function submitHousingApplication(applicationId:string,form:Housing
  });
  if(error){
   if(error.message?.includes('CONSENT_REQUIRED'))throw new Error('CONSENT_REQUIRED');
+  if(error.message?.includes('PAYMENT_REQUIRED'))throw new Error('PAYMENT_REQUIRED');
   if(error.message?.includes('APPLICATION_NOT_SUBMITTABLE'))throw new Error('APPLICATION_NOT_SUBMITTABLE');
   throw error;
  }
@@ -333,6 +334,40 @@ export async function loadHousingApplicationEvents(applicationId:string):Promise
  if(error)throw error;
  return (data??[]) as HousingApplicationEvent[];
 }
+
+export type HousingApplicationDocument={id:string;application_id:string;document_type:'identity'|'income'|'employment'|'housing_history'|'other';file_name:string;storage_path:string;mime_type:string|null;size_bytes:number|null;status:'uploaded'|'reviewed'|'accepted'|'rejected';rejection_reason:string|null;created_at:string;updated_at:string};
+export async function loadHousingApplicationDocuments(applicationId:string):Promise<HousingApplicationDocument[]>{
+ const user=await currentUser();
+ const {data,error}=await supabase.from('housing_application_documents').select('id,application_id,document_type,file_name,storage_path,mime_type,size_bytes,status,rejection_reason,created_at,updated_at').eq('application_id',applicationId).eq('user_id',user.id).order('created_at',{ascending:false});
+ if(error)throw error;return (data??[]) as HousingApplicationDocument[];
+}
+export async function uploadHousingApplicationDocument(input:{applicationId:string;documentType:HousingApplicationDocument['document_type'];fileName:string;mimeType?:string|null;sizeBytes?:number|null;bytes:ArrayBuffer}){
+ const user=await currentUser();
+ const safeName=input.fileName.replace(/[^a-zA-Z0-9._-]/g,'_').slice(-120)||'document';
+ const storagePath=user.id+'/'+input.applicationId+'/'+Date.now()+'-'+safeName;
+ const {error:uploadError}=await supabase.storage.from('housing-application-documents').upload(storagePath,input.bytes,{contentType:input.mimeType??undefined,upsert:false});
+ if(uploadError)throw uploadError;
+ const {data,error}=await supabase.from('housing_application_documents').insert({application_id:input.applicationId,user_id:user.id,document_type:input.documentType,file_name:input.fileName,storage_path:storagePath,mime_type:input.mimeType??null,size_bytes:input.sizeBytes??null,status:'uploaded'}).select('id,application_id,document_type,file_name,storage_path,mime_type,size_bytes,status,rejection_reason,created_at,updated_at').single();
+ if(error){await supabase.storage.from('housing-application-documents').remove([storagePath]);throw error}
+ return data as HousingApplicationDocument;
+}
+export async function deleteHousingApplicationDocument(document:HousingApplicationDocument){
+ const user=await currentUser();
+ const {error:fileError}=await supabase.storage.from('housing-application-documents').remove([document.storage_path]);if(fileError)throw fileError;
+ const {error}=await supabase.from('housing_application_documents').delete().eq('id',document.id).eq('user_id',user.id).eq('status','uploaded');if(error)throw error;
+}
+export type FastTrackQuote={order_id:string;base_amount_cents:number;discount_cents:number;amount_due_cents:number;status:'requires_payment'|'paid'|'waived'|'refunded'|'cancelled';payment_enforced:boolean};
+export async function loadFastTrackQuote(applicationId:string):Promise<FastTrackQuote>{
+ await currentUser();
+ const {data,error}=await supabase.rpc('quote_housing_fasttrack',{p_application_id:applicationId});
+ if(error)throw error;const row=Array.isArray(data)?data[0]:data;if(!row)throw new Error('QUOTE_UNAVAILABLE');return row as FastTrackQuote;
+}
+export type UserNotification={id:string;category:string;title:string;body:string;route:string|null;metadata:Record<string,unknown>;read_at:string|null;created_at:string};
+export async function loadUserNotifications():Promise<UserNotification[]>{
+ const user=await currentUser();const {data,error}=await supabase.from('user_notifications').select('id,category,title,body,route,metadata,read_at,created_at').eq('user_id',user.id).order('created_at',{ascending:false}).limit(100);if(error)throw error;return (data??[]) as UserNotification[];
+}
+export async function markNotificationRead(id:string){const user=await currentUser();const {error}=await supabase.from('user_notifications').update({read_at:new Date().toISOString()}).eq('id',id).eq('user_id',user.id);if(error)throw error}
+export async function markAllNotificationsRead(){const user=await currentUser();const {error}=await supabase.from('user_notifications').update({read_at:new Date().toISOString()}).eq('user_id',user.id).is('read_at',null);if(error)throw error}
 
 export async function deleteHousingApplicationDraft(applicationId:string){
  const user=await currentUser();
