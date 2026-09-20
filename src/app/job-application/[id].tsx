@@ -81,8 +81,8 @@ export default function JobApplicationDetail(){
   }finally{setWithdrawing(false)}
  }
 
- if(loading)return <ScreenFrame><PageHeader eyebrow="FAIRPATH JOBS" title="Application" backTo="/job-applications" alwaysBackTo/><View style={s.state}><Text style={s.muted}>Loading application…</Text></View></ScreenFrame>;
- if(error||!item)return <ScreenFrame><PageHeader eyebrow="FAIRPATH JOBS" title="Application" backTo="/job-applications" alwaysBackTo/><View style={s.state}><Text style={s.error}>{error||'Application not found.'}</Text></View></ScreenFrame>;
+ if(loading)return <ScreenFrame><PageHeader eyebrow="FAIRPATH JOBS" title="Application" backTo="/job-applications"/><View style={s.state}><Text style={s.muted}>Loading application…</Text></View></ScreenFrame>;
+ if(error||!item)return <ScreenFrame><PageHeader eyebrow="FAIRPATH JOBS" title="Application" backTo="/job-applications"/><View style={s.state}><Text style={s.error}>{error||'Application not found.'}</Text></View></ScreenFrame>;
 
  const copy=STATUS[item.status]??STATUS.submitted;
  const profile=(item.answers?.profile??{}) as Record<string,unknown>;
@@ -91,7 +91,7 @@ export default function JobApplicationDetail(){
  const canWithdraw=['submitted','viewed','interview','offer'].includes(item.status);
 
  return <ScreenFrame>
-  <PageHeader eyebrow="FAIRPATH JOBS" title="Application" backTo="/job-applications" alwaysBackTo/>
+  <PageHeader eyebrow="FAIRPATH JOBS" title="Application" backTo="/job-applications"/>
   <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <View style={s.hero}>
     <View style={s.heroTop}>
