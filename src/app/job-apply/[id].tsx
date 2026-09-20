@@ -18,7 +18,7 @@ export default function JobApply(){
  const [submitting,setSubmitting]=useState(false);
  const [error,setError]=useState('');
 
- useEffect(()=>{if(!id)return;Promise.all([loadJob(id),loadJobApplicationAutofill(),loadFairPathReadiness(),loadMyJobApplicationForJob(id)]).then(([j,a,r,existing])=>{if(existing){router.replace('/job-applications' as never);return}if(r.readiness.overallPercentage!==100){router.replace('/complete-profile' as never);return}setJob(j);setForm(a)}).catch(e=>{if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace(('/sign-in?returnTo='+encodeURIComponent('/job-apply/'+id)) as never);return}setError('Application could not load.')}).finally(()=>setLoading(false))},[id]);
+ useEffect(()=>{if(!id)return;Promise.all([loadJob(id),loadJobApplicationAutofill(),loadFairPathReadiness(),loadMyJobApplicationForJob(id)]).then(([j,a,r,existing])=>{if(existing){router.replace(('/job-application/'+existing.id) as never);return}if(r.readiness.overallPercentage!==100){router.replace(('/complete-profile?returnTo='+encodeURIComponent('/job/'+id)) as never);return}setJob(j);setForm(a)}).catch(e=>{if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace(('/sign-up?returnTo='+encodeURIComponent('/job/'+id)) as never);return}setError('Application could not load.')}).finally(()=>setLoading(false))},[id]);
 
  const requiredKeys:(keyof JobApplicationAutofill)[]=['first_name','last_name','email','phone','address'];
  const validRequired=(key:keyof JobApplicationAutofill,value:string)=>{
@@ -47,20 +47,20 @@ export default function JobApply(){
   setSubmitting(true);
   try{
    await saveJobApplicationProfile(form);
-   await submitJobApplication(id,{profile:form,employer_questions:extra,reviewed_by_user:true,reviewed_at:new Date().toISOString()});
-   Alert.alert('Application sent','Your FairPath Easy Apply application was submitted.',[{text:'View application',onPress:()=>router.replace('/job-applications' as never)}]);
+   const applicationId=await submitJobApplication(id,{profile:form,employer_questions:extra,reviewed_by_user:true,reviewed_at:new Date().toISOString()});
+   Alert.alert('Application sent','Your FairPath Easy Apply application was submitted.',[{text:'View application',onPress:()=>router.replace(('/job-application/'+applicationId) as never)}]);
   }catch(e){
-   if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace('/sign-in' as never);return}
+   if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace(('/sign-up?returnTo='+encodeURIComponent('/job/'+id)) as never);return}
    if(e instanceof Error&&e.message==='ALREADY_APPLIED'){Alert.alert('Already applied','You already submitted an application for this job.',[{text:'View application',onPress:()=>router.replace('/job-applications' as never)}]);return}
    Alert.alert('Could not submit','Please try again.');
   }finally{setSubmitting(false)}
  }
 
- if(loading)return <ScreenFrame><PageHeader eyebrow="EASY APPLY" title="Application" backTo={id?'/job/'+id:'/find-jobs'}/><View style={s.state}><Text style={s.muted}>Preparing your application…</Text></View></ScreenFrame>;
- if(error||!job)return <ScreenFrame><PageHeader eyebrow="EASY APPLY" title="Application"/><View style={s.state}><Text style={s.error}>{error||'Job not found.'}</Text></View></ScreenFrame>;
+ if(loading)return <ScreenFrame><PageHeader eyebrow="EASY APPLY" title="Application" backTo={id?'/job/'+id:'/find-jobs'} alwaysBackTo/><View style={s.state}><Text style={s.muted}>Preparing your application…</Text></View></ScreenFrame>;
+ if(error||!job)return <ScreenFrame><PageHeader eyebrow="EASY APPLY" title="Application" backTo={id?'/job/'+id:'/find-jobs'} alwaysBackTo/><View style={s.state}><Text style={s.error}>{error||'Job not found.'}</Text></View></ScreenFrame>;
 
  return <ScreenFrame>
-  <PageHeader eyebrow="FAIRPATH EASY APPLY" title="Review application" backTo={id?'/job/'+id:'/find-jobs'}/>
+  <PageHeader eyebrow="FAIRPATH EASY APPLY" title="Review application" backTo={id?'/job/'+id:'/find-jobs'} alwaysBackTo/>
   <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <View style={s.hero}>
     <Text style={s.company}>{job.company_name.toUpperCase()}</Text>
