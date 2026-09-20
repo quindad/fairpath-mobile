@@ -12,7 +12,10 @@ const rows=[
  ["Saved housing searches","Rerun housing searches with your filters","/saved-housing-searches"],
  ["Housing applications","Track standard and FastTrack applications","/housing-applications"],
  ["Housing activity","Tour requests and property questions","/housing-activity"],
- ["Notifications","Housing, jobs and FairPath updates","/notifications"],
+ ["Marketplace claims","Track requests, pickup windows and codes","/marketplace-claims"],
+ ["Saved Marketplace","Free items you bookmarked","/saved-marketplace"],
+ ["My Marketplace listings","Manage items you are giving away","/marketplace-my-listings"],
+ ["Notifications","Housing, Marketplace, jobs and FairPath updates","/notifications"],
  ["Privacy","Control your account and information","/profile-readiness"]
 ] as const;
 
