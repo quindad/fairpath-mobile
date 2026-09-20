@@ -90,7 +90,7 @@ export default function SignUpScreen() {
       <StatusBar style="light" />
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Pressable onPress={() => router.replace('/find-jobs' as never)} style={styles.backButton}>
+          <Pressable onPress={() => router.replace((returnTo||'/find-jobs') as never)} style={styles.backButton}>
             <Text style={styles.backArrow}>←</Text>
           </Pressable>
 
