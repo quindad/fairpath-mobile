@@ -170,5 +170,9 @@ Protection + Incentives remains documented in `docs/FAIRPATH_PROTECTION_AND_INCE
 - Marketplace notifications + product-event analytics foundation.
 - Transaction tests passed for free quota, FairPath+ quota, anonymous claim flow, pickup verification, 48-hour expiration, and donor-only messaging.
 - Exact 4-digit donor phone access and QR scanning remain deliberate integrations rather than fake client-side implementations.
+- Marketplace claimant-to-donor message surface was removed at both schema and UI level; donor-only pickup logistics messaging remains after approval.
+- Marketplace 48-hour expiration is now scheduled in Supabase every 15 minutes.
+- Direct donor attempts to self-feature, bypass moderation, force price/status, or skip draft-first publishing are blocked/preserved by database guard logic.
+- Post-hardening transaction test passed end-to-end after these final controls.
 - Marketplace source of truth: `docs/FAIRPATH_MARKETPLACE_BUILD_STATUS.md`.
 - Marketplace regression matrix: `docs/FAIRPATH_MARKETPLACE_TEST_MATRIX.md`.
