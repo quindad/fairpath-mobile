@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { isValidDateText, isValidEmail } from '@/core/forms/formatters';
+import { formatDateInput, isValidDateText, isValidEmail } from '@/core/forms/formatters';
 
 export type Job = {
  id:string; title:string; company_name:string; description:string; location_text:string|null; city:string|null; state:string|null; postal_code:string|null;
@@ -128,7 +128,7 @@ export async function loadJobApplicationAutofill():Promise<JobApplicationAutofil
  const answers:Record<string,unknown>={};
  for(const row of rows??[])answers[row.question_id]=row.answer;
  const text=(id:string)=>{const v=answers[id];return Array.isArray(v)?v.join(', '):v==null?'':String(v)};
- return {first_name:profile?.first_name??'',last_name:profile?.last_name??'',email:user.email??'',phone:text('identity.phone'),address:text('identity.address')||text('identity.current_location'),date_of_birth:text('identity.date_of_birth'),education:text('employment.education_level'),skills:text('employment.skills'),certifications:text('employment.licenses_certifications'),desired_roles:text('employment.desired_roles'),resume_ready:answers['documents.resume']===true?'Yes':answers['documents.resume']===false?'No':''};
+ return {first_name:profile?.first_name??'',last_name:profile?.last_name??'',email:user.email??'',phone:text('identity.phone'),address:text('identity.address')||text('identity.current_location'),date_of_birth:formatDateInput(text('identity.date_of_birth')),education:text('employment.education_level'),skills:text('employment.skills'),certifications:text('employment.licenses_certifications'),desired_roles:text('employment.desired_roles'),resume_ready:answers['documents.resume']===true?'Yes':answers['documents.resume']===false?'No':''};
 }
 export async function saveJobApplicationProfile(form:JobApplicationAutofill){
  const user=await currentUser();
