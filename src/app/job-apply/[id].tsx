@@ -67,7 +67,7 @@ export default function JobApply(){
     <Text style={s.company}>{job.company_name.toUpperCase()}</Text>
     <Text style={s.title}>{job.title}</Text>
     <View style={s.readyRow}><Text style={s.readyLabel}>{ready?'READY TO SUBMIT':missingCount+' REQUIRED '+(missingCount===1?'ITEM':'ITEMS')+' LEFT'}</Text><Text style={s.readyPct}>{completion}%</Text></View>
-    <View style={s.track}><View style={[s.fill,{width:completion+'%'}]}/></View>
+    <View style={s.track}><View style={[s.fill,{width:(completion+'%') as any}]}/></View>
    </View>
 
    <View style={s.notice}>
@@ -126,5 +126,5 @@ const s=StyleSheet.create({
  field:{borderTopWidth:1,borderTopColor:C.border,paddingVertical:11,paddingLeft:0},fieldMissing:{borderLeftWidth:2,borderLeftColor:C.lime,paddingLeft:10},fieldHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},fieldLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},requiredTag:{color:C.lime,fontFamily:F.extraBold,fontSize:6,letterSpacing:.9},validationText:{color:C.lime,fontFamily:F.medium,fontSize:8,marginTop:2},input:{color:C.white,fontFamily:F.medium,fontSize:12,paddingVertical:6,paddingHorizontal:0},multiline:{minHeight:58,textAlignVertical:'top'},
  question:{borderTopWidth:1,borderTopColor:C.border,paddingVertical:12},questionHead:{flexDirection:'row',alignItems:'flex-start',justifyContent:'space-between',gap:12},questionLabel:{color:C.white,fontFamily:F.bold,fontSize:11,lineHeight:16,flex:1},yesNo:{flexDirection:'row',gap:8,marginTop:9},choice:{flex:1,height:38,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center'},choiceActive:{borderColor:C.lime,backgroundColor:'#10150C'},choiceText:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8},choiceTextActive:{color:C.lime},
  review:{flexDirection:'row',gap:9,paddingVertical:16,borderTopWidth:1,borderTopColor:C.borderStrong,marginTop:18},reviewText:{flex:1,color:C.mutedStrong,fontSize:9,lineHeight:14},
- submit:{height:48,backgroundColor:C.lime,paddingHorizontal:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},submitDisabled:{backgroundColor:'#1A2114',borderWidth:1,borderColor:'#2C3823',opacity:1},submitText:{color:C.black,fontFamily:F.extraBold,fontSize:9,letterSpacing:.9}
+ submit:{height:48,backgroundColor:C.lime,paddingHorizontal:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},submitDisabled:{backgroundColor:'#1A2114',borderWidth:1,borderColor:'#2C3823',opacity:1},submitText:{color:C.black,fontFamily:F.extraBold,fontSize:9,letterSpacing:.9},submitTextDisabled:{color:C.mutedStrong}
 });
