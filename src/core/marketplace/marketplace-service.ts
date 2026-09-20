@@ -96,8 +96,10 @@ export async function loadMyMarketplaceClaimForItem(itemId:string):Promise<{id:s
  const user=await currentUser();const {data,error}=await supabase.from('marketplace_claims').select('id,status,pickup_deadline').eq('item_id',itemId).eq('claimant_id',user.id).maybeSingle();if(error)throw error;return data as any;
 }
 
+export async function refreshExpiredMarketplacePickups(){await currentUser();const {error}=await supabase.rpc('expire_marketplace_pickups');if(error)throw error}
+
 export async function loadMyMarketplaceClaims():Promise<MarketplaceClaim[]>{
- const user=await currentUser();const {data,error}=await supabase.from('marketplace_claims').select('id,item_id,status,claimant_message,pickup_deadline,pickup_code,created_at,updated_at,item:marketplace_items(id,title,city,state,pickup_area,safe_pickup,status,marketplace_media(id,url,sort_order))').eq('claimant_id',user.id).order('created_at',{ascending:false});if(error)throw error;return (data??[]) as unknown as MarketplaceClaim[];
+ await refreshExpiredMarketplacePickups().catch(()=>{});const user=await currentUser();const {data,error}=await supabase.from('marketplace_claims').select('id,item_id,status,claimant_message,pickup_deadline,pickup_code,created_at,updated_at,item:marketplace_items(id,title,city,state,pickup_area,safe_pickup,status,marketplace_media(id,url,sort_order))').eq('claimant_id',user.id).order('created_at',{ascending:false});if(error)throw error;return (data??[]) as unknown as MarketplaceClaim[];
 }
 
 export async function loadMarketplaceClaimReceipt(claimId:string):Promise<MarketplaceClaimReceipt>{
@@ -111,7 +113,7 @@ export async function loadMarketplaceClaimEvents(claimId:string):Promise<Marketp
 export async function cancelMarketplaceClaim(claimId:string){await currentUser();const {error}=await supabase.rpc('cancel_marketplace_claim',{p_claim_id:claimId});if(error)throw error}
 
 export async function loadMarketplaceClaimCandidates(itemId:string):Promise<MarketplaceClaimCandidate[]>{
- await currentUser();const {data,error}=await supabase.rpc('marketplace_claim_candidates',{p_item_id:itemId});if(error)throw error;return (data??[]) as MarketplaceClaimCandidate[];
+ await refreshExpiredMarketplacePickups().catch(()=>{});await currentUser();const {data,error}=await supabase.rpc('marketplace_claim_candidates',{p_item_id:itemId});if(error)throw error;return (data??[]) as MarketplaceClaimCandidate[];
 }
 export async function approveMarketplaceClaim(claimId:string){await currentUser();const {data,error}=await supabase.rpc('approve_marketplace_claim',{p_claim_id:claimId});if(error)throw error;return Array.isArray(data)?data[0]:data}
 export async function declineMarketplaceClaim(claimId:string){await currentUser();const {error}=await supabase.rpc('decline_marketplace_claim',{p_claim_id:claimId});if(error)throw error}
@@ -126,7 +128,7 @@ export async function loadSavedMarketplaceIds():Promise<string[]>{const user=awa
 export async function loadSavedMarketplaceItems():Promise<MarketplaceItem[]>{const user=await currentUser();const {data,error}=await supabase.from('marketplace_saves').select(`item:marketplace_items(${ITEM_SELECT})`).eq('user_id',user.id).order('created_at',{ascending:false});if(error)throw error;return (data??[]).map((x:any)=>x.item).filter(Boolean) as MarketplaceItem[]}
 
 export async function loadMyMarketplaceListings():Promise<MarketplaceItem[]>{
- const user=await currentUser();const {data,error}=await supabase.from('marketplace_items').select(ITEM_SELECT).eq('seller_id',user.id).order('updated_at',{ascending:false});if(error)throw error;return (data??[]) as unknown as MarketplaceItem[];
+ await refreshExpiredMarketplacePickups().catch(()=>{});const user=await currentUser();const {data,error}=await supabase.from('marketplace_items').select(ITEM_SELECT).eq('seller_id',user.id).order('updated_at',{ascending:false});if(error)throw error;return (data??[]) as unknown as MarketplaceItem[];
 }
 
 export type CreateMarketplaceItemInput={
