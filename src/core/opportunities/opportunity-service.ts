@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { formatDateInput, isValidDateText, isValidEmail } from '@/core/forms/formatters';
+import { formatDateInput, isTodayOrFutureDateText, isValidDateText, isValidEmail } from '@/core/forms/formatters';
 
 export type Job = {
  id:string; title:string; company_name:string; description:string; location_text:string|null; city:string|null; state:string|null; postal_code:string|null;
@@ -275,7 +275,7 @@ export function validateHousingApplicationForm(form:HousingApplicationForm){
  if(form.employment_status!=='Unemployed'&&!form.employer.trim())errors.employer='Enter your employer or income source.';
  const income=Number(form.monthly_income.replace(/[^0-9.]/g,''));
  if(!form.monthly_income.trim()||Number.isNaN(income)||income<0)errors.monthly_income='Enter gross monthly income. Use 0 if none.';
- if(!isValidDateText(form.move_in_date,{allowFuture:true}))errors.move_in_date='Enter move-in date as MM/DD/YYYY.';
+ if(!isValidDateText(form.move_in_date,{allowFuture:true})||!isTodayOrFutureDateText(form.move_in_date))errors.move_in_date='Choose today or a future move-in date.';
  const occupants=Number(form.occupants);
  if(!Number.isInteger(occupants)||occupants<1)errors.occupants='Enter at least 1 occupant.';
  if(!form.pets.trim())errors.pets='Enter pet details or select None.';
