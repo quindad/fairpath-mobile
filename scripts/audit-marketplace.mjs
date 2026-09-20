@@ -34,6 +34,7 @@ if(!service.includes("verify_marketplace_pickup"))failures.push('Pickup verifica
 const claimDetail=read('src/app/marketplace-claim/[id].tsx');
 const donorManage=read('src/app/marketplace-manage/[id].tsx');
 if(claimDetail.includes('sendMarketplaceMessage')||claimDetail.includes('SEND MESSAGE'))failures.push('Claimant Marketplace workspace must not send donor messages.');
+if(service.includes('claimant_message')||donorManage.includes('claimant_message'))failures.push('Marketplace claimant-message surface must remain removed.');
 if(!donorManage.includes('sendMarketplaceMessage')||!donorManage.includes('PICKUP LOGISTICS MESSAGE'))failures.push('Donor-only post-selection pickup messaging is missing.');
 if(!service.includes("send_marketplace_pickup_message"))failures.push('Donor pickup messaging is not RPC-backed.');
 if(!service.includes("status:'draft'"))failures.push('New Marketplace listings must start as private drafts before publish.');
