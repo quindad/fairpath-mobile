@@ -6,9 +6,9 @@ Last updated: 2026-09-20
 Read this file and the latest commits on `main` before starting a new build chat. The repository is authoritative; chat memory is secondary.
 
 ## Current lane
-**FairPath Mobile → close Housing renter MVP**
+**FairPath Mobile → Housing closeout verification, then FairPath Partner**
 
-Do not restart Jobs. Do not begin Partner/Admin until the Housing exit checklist below is cleared or explicitly deferred as a cross-product dependency.
+Do not restart Jobs. Housing core is now built deeply enough to freeze after the real-client verification list is green. Then move primary engineering effort to FairPath Partner.
 
 ## Mobile architecture
 - **FairPath Mobile** — renter/job-seeker/consumer experience.
@@ -21,7 +21,7 @@ Do not restart Jobs. Do not begin Partner/Admin until the Housing exit checklist
 - Auth: sign up, sign in, password reset/callback flows.
 - Home / Find / Me navigation shell.
 - FairPath profile + readiness foundation.
-- Notifications screen foundation.
+- Live in-app Notifications inbox backed by Supabase.
 - FairPath AI, Record Relief, Forms/Filing, Credit Tools, Resources and Marketplace foundations.
 - Jobs browse/detail/save/apply/application-tracking flows substantially built.
 - Saved Jobs + Job Applications available from Me.
@@ -44,7 +44,8 @@ Do not restart Jobs. Do not begin Partner/Admin until the Housing exit checklist
 - Saved Homes stored in Supabase with visual saved-home cards.
 - Housing feed uses ordered `housing_media` cover photo data.
 - Swipeable multi-photo gallery with thumbnail navigation.
-- Demo galleries only when real listing media is absent.
+- Demo property-image fallbacks removed; missing media uses honest no-photo states.
+- List / native map modes.
 
 ## Completed — Housing listing detail
 - Price, location, beds, baths, square footage, deposit, application fee, availability.
@@ -88,25 +89,43 @@ The database accepts the application transition from `started` to `submitted` wi
 - `housing_inquiries`
 - `housing_reports`
 
+## Housing closeout additions — 2026-09-20
+- Server-side application validation now mirrors critical client requirements.
+- Private Housing application document storage + metadata + RLS.
+- Document picker/upload/delete UI.
+- Property-specific required-document contract and server submit gate.
+- FastTrack server quote/order contract: $75 base / $65 with active FairPath+.
+- Contract-ready FastTrack checkout/status screen.
+- FastTrack payment enforcement feature flag; OFF in development until a real provider is connected.
+- Server test proved unpaid FastTrack is blocked when enforcement is ON and paid/waived is accepted.
+- Live in-app notification inbox plus application/tour/inquiry notification triggers.
+- Housing product-event analytics foundation.
+- Security-definer trigger functions locked from direct API execution.
+- Supabase security advisor now has no Housing-code warning; remaining warning is account-level leaked-password protection.
+- Demo Housing image fallbacks removed.
+- Corrupted duplicate code discovered in Housing Detail/Apply was removed and the Housing audit now detects that class of regression.
+- Deep regression matrix: `docs/FAIRPATH_HOUSING_TEST_MATRIX.md`.
+- Closeout source of truth: `docs/FAIRPATH_HOUSING_CLOSEOUT.md`.
+
 ## Housing integrations still external / not live
-- Walk Score API credentials + production ingestion.
-- GreatSchools API credentials + production ingestion / attribution.
+- Walk/Transit/Bike credentials + production ingestion.
+- Schools API credentials + production ingestion / attribution.
 - Nearby-place provider selection and ingestion.
-- Real payment processor for FastTrack fees / FairPath+ discounts.
-- Push/email delivery for saved-search alerts and application-status notifications.
-- File storage + document upload workflow for income/identity/application documents.
+- Real payment processor/webhooks for FastTrack.
+- Remote push/email delivery.
+- Crash-reporting provider.
+- Saved-search match worker.
 
 ## Housing exit checklist before Partner/Admin
-These are the remaining mobile-Housing items to clear or explicitly defer:
-1. Confirm Standard submission works end-to-end on Expo Web after commit `157001e0`.
-2. Confirm FastTrack submission works end-to-end with required fields and acknowledgments.
-3. Add application submission receipt / clear post-submit status UX if needed after visual QA.
-4. Add document-upload/storage workflow or explicitly defer uploads to the Partner sprint with a locked “Documents coming next” state.
-5. Decide FastTrack payment processor and implement payment handoff before charging real users.
-6. Connect notification delivery for application status / tour response / inquiry response / saved-search alerts.
-7. Connect real neighborhood + school providers when credentials are available.
-8. Run one final Housing regression pass: guest browse → auth → save → filters → saved search → listing → tour/inquiry/report → Standard apply → FastTrack apply → application dashboard.
-9. Re-enable CI only after the manual typecheck/navigation suite is green; never re-enable noisy failing push emails.
+1. Pull/install the new document-picker dependency and reload Expo.
+2. Verify application document pick/upload/delete on Web + one real phone.
+3. Complete and submit one FastTrack application after this pass with payment enforcement OFF.
+4. Verify Notifications opens the backfilled submission event and routes correctly.
+5. Verify Tour + Inquiry → Housing Activity.
+6. Verify List ↔ Map on a phone.
+7. Run the manual GitHub `FairPath app checks` workflow and clear any remaining type/navigation failures.
+8. Enable Supabase leaked-password protection before production.
+9. Keep payment provider, push/email, school/neighborhood providers and crash reporting in the integrations sprint rather than faking them now.
 
 ## Partner handoff contracts already prepared
 Partner will consume the existing shared tables for:
