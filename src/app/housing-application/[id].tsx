@@ -21,7 +21,7 @@ const FORM_STEPS=['Applicant','Income','Household','History','Review'];
 const EVENT_LABEL:Record<string,string>={submitted:'APPLICATION SUBMITTED',reviewing:'PROPERTY REVIEW STARTED',tour:'TOUR / NEXT STEP',approved:'APPLICATION APPROVED',denied:'APPLICATION NOT APPROVED',withdrawn:'APPLICATION WITHDRAWN'};
 
 export default function HousingApplication(){
- const {id,submitted}=useLocalSearchParams<{id:string;submitted?:string}>();
+ const {id,submitted:submittedParam}=useLocalSearchParams<{id:string;submitted?:string}>();
  const [item,setItem]=useState<HousingApplicationDetail|null>(null);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
@@ -45,7 +45,7 @@ export default function HousingApplication(){
 
  const fast=item.application_type==='fasttrack';
  const draft=item.status==='started';
- const submitted=Boolean(item.submitted_at);
+ const isSubmitted=Boolean(item.submitted_at);
  const progress=draft?Math.max(0,Math.min(100,Math.round((Math.max(1,item.current_step)-1)/4*100))):100;
 
  function deleteDraft(){
@@ -81,7 +81,7 @@ export default function HousingApplication(){
     <Text style={s.status}>{LABEL[item.status]??item.status.toUpperCase()}</Text>
    </View>
 
-   {submitted==='1'&&item.status!=='started'?<View style={s.successBanner}><Lucide name="circle-check-big" color={C.lime} size={18}/><View style={{flex:1}}><Text style={s.successTitle}>APPLICATION SUBMITTED</Text><Text style={s.successBody}>FairPath confirmed the submission in the database. You can track every next step here.</Text></View></View>:null}
+   {submittedParam==='1'&&item.status!=='started'?<View style={s.successBanner}><Lucide name="circle-check-big" color={C.lime} size={18}/><View style={{flex:1}}><Text style={s.successTitle}>APPLICATION SUBMITTED</Text><Text style={s.successBody}>FairPath confirmed the submission in the database. You can track every next step here.</Text></View></View>:null}
 
    <Text style={s.title}>{item.listing?.title??'Housing application'}</Text>
    {item.listing?<><Text style={s.price}>{'$'+Number(item.listing.rent_monthly).toLocaleString()+' / month'}</Text><Text style={s.meta}>{[item.listing.bedrooms!=null?item.listing.bedrooms+' bd':null,item.listing.bathrooms!=null?item.listing.bathrooms+' ba':null,item.listing.city+', '+item.listing.state].filter(Boolean).join(' · ')}</Text></>:null}
@@ -96,7 +96,7 @@ export default function HousingApplication(){
    {!draft?<StatusTimeline status={item.status}/>:null}
    {events.length?<View style={s.activity}><Text style={s.section}>ACTIVITY</Text>{events.map(e=><View key={e.id} style={s.activityRow}><View style={s.activityDot}/><View style={{flex:1}}><Text style={s.activityTitle}>{EVENT_LABEL[e.event_type]??e.event_type.replaceAll('_',' ').toUpperCase()}</Text><Text style={s.activityDate}>{new Date(e.created_at).toLocaleString()}</Text></View></View>)}</View>:null}
 
-   {submitted?<View style={s.submittedCard}><Text style={s.smallLabel}>SUBMITTED</Text><Text style={s.submittedDate}>{new Date(item.submitted_at!).toLocaleString()}</Text><Text style={s.submittedBody}>Your application is now in the FairPath housing workflow. Property-owner review, screening, fees, availability, and final decisions can still apply.</Text></View>:null}
+   {isSubmitted?<View style={s.submittedCard}><Text style={s.smallLabel}>SUBMITTED</Text><Text style={s.submittedDate}>{new Date(item.submitted_at!).toLocaleString()}</Text><Text style={s.submittedBody}>Your application is now in the FairPath housing workflow. Property-owner review, screening, fees, availability, and final decisions can still apply.</Text></View>:null}
 
    {draft?<Pressable style={s.primary} onPress={()=>router.push(('/housing-apply/'+item.id) as never)}>
     <Text style={s.primaryText}>{fast?'CONTINUE FASTTRACK APPLICATION':'CONTINUE STANDARD APPLICATION'}</Text><Lucide name="arrow-right" color={C.black} size={16}/>
