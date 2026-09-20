@@ -48,7 +48,9 @@ export default function JobApply(){
   try{
    await saveJobApplicationProfile(form);
    const applicationId=await submitJobApplication(id,{profile:form,employer_questions:extra,reviewed_by_user:true,reviewed_at:new Date().toISOString()});
-   Alert.alert('Application sent','Your FairPath Easy Apply application was submitted.',[{text:'View application',onPress:()=>router.replace(('/job-application/'+applicationId) as never)}]);
+   Alert.alert('Application sent','Your FairPath Easy Apply application was submitted.',[
+    {text:'View application',onPress:()=>router.replace((applicationId?'/job-application/'+applicationId:'/job-applications') as never)}
+   ]);
   }catch(e){
    if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace(('/sign-up?returnTo='+encodeURIComponent('/job/'+id)) as never);return}
    if(e instanceof Error&&e.message==='ALREADY_APPLIED'){Alert.alert('Already applied','You already submitted an application for this job.',[{text:'View application',onPress:()=>router.replace('/job-applications' as never)}]);return}
