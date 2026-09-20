@@ -25,6 +25,13 @@ const failures=[];
 for(const file of required)if(!fs.existsSync(path.join(root,file)))failures.push('Missing required Housing file: '+file);
 
 function read(file){return fs.readFileSync(path.join(root,file),'utf8')}
+for(const file of required.filter(x=>/\.tsx?$/.test(x))){
+ if(!fs.existsSync(path.join(root,file)))continue;
+ const src=read(file);
+ if(/<<<<<<<|=======|>>>>>>>/.test(src))failures.push(file+' contains merge-conflict markers.');
+ const styleCount=(src.match(/const s=StyleSheet\.create/g)||[]).length;
+ if(file.endsWith('.tsx')&&styleCount>1)failures.push(file+' contains '+styleCount+' StyleSheet blocks; likely duplicated/corrupted code.');
+}
 const service=read('src/core/opportunities/opportunity-service.ts');
 const detail=read('src/app/housing/[id].tsx');
 const browse=read('src/app/find-housing.tsx');
