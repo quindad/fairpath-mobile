@@ -12,7 +12,7 @@ export type HousingListing = {
  bedrooms:number|null; bathrooms:number|null; square_feet:number|null; rent_monthly:number; deposit_amount:number|null; application_fee:number|null; available_date:string|null;
  lease_terms:string[]; amenities:string[]; utilities_included:string[]; pet_policy:string|null; parking:string|null; accessibility_features:string[]; screening_summary:string|null; eligibility_rules:Record<string,unknown>;
  virtual_tour_url:string|null; floor_plan_url:string|null; video_url:string|null; fasttrack_enabled:boolean; featured:boolean; source_label:string; source_url:string|null;
- latitude:number|null; longitude:number|null; housing_media?:{url:string;media_type:string;sort_order:number}[];
+ latitude:number|null; longitude:number|null; garage_spaces:number|null; parking_types:string[]; furnished:boolean; has_basement:boolean; has_yard:boolean; has_balcony_patio:boolean; laundry_type:string|null; has_central_air:boolean; pet_types:string[]; move_in_ready:boolean; walk_score:number|null; transit_score:number|null; bike_score:number|null; housing_media?:{url:string;media_type:string;sort_order:number}[];
 };
 export type MarketplaceItem = {
  id:string; title:string; description:string; category:string; condition:string|null; price:number; is_free:boolean; city:string; state:string; pickup_notes:string|null;
@@ -37,13 +37,13 @@ export async function loadJob(id:string){
  if(error)throw error;return data as Job;
 }
 export async function loadHousing(search='',location=''){
- let q=supabase.from('housing_listings').select('id,title,description,property_type,address_line1,address_line2,city,state,postal_code,bedrooms,bathrooms,square_feet,rent_monthly,deposit_amount,application_fee,available_date,lease_terms,amenities,utilities_included,pet_policy,parking,accessibility_features,screening_summary,eligibility_rules,virtual_tour_url,floor_plan_url,video_url,fasttrack_enabled,featured,source_label,source_url,latitude,longitude,housing_media(url,media_type,sort_order)').eq('status','published').order('featured',{ascending:false}).order('created_at',{ascending:false}).limit(100);
+ let q=supabase.from('housing_listings').select('id,title,description,property_type,address_line1,address_line2,city,state,postal_code,bedrooms,bathrooms,square_feet,rent_monthly,deposit_amount,application_fee,available_date,lease_terms,amenities,utilities_included,pet_policy,parking,accessibility_features,screening_summary,eligibility_rules,virtual_tour_url,floor_plan_url,video_url,fasttrack_enabled,featured,source_label,source_url,latitude,longitude,garage_spaces,parking_types,furnished,has_basement,has_yard,has_balcony_patio,laundry_type,has_central_air,pet_types,move_in_ready,walk_score,transit_score,bike_score,housing_media(url,media_type,sort_order)').eq('status','published').order('featured',{ascending:false}).order('created_at',{ascending:false}).limit(100);
  if(search.trim())q=q.or(`title.ilike.%${search.trim()}%,description.ilike.%${search.trim()}%`);
  if(location.trim())q=q.or(`city.ilike.%${location.trim()}%,state.ilike.%${location.trim()}%,postal_code.ilike.%${location.trim()}%`);
  const {data,error}=await q;if(error)throw error;return (data??[]) as HousingListing[];
 }
 export async function loadHousingListing(id:string){
- const {data,error}=await supabase.from('housing_listings').select('id,title,description,property_type,address_line1,address_line2,city,state,postal_code,bedrooms,bathrooms,square_feet,rent_monthly,deposit_amount,application_fee,available_date,lease_terms,amenities,utilities_included,pet_policy,parking,accessibility_features,screening_summary,eligibility_rules,virtual_tour_url,floor_plan_url,video_url,fasttrack_enabled,featured,source_label,source_url,latitude,longitude,housing_media(url,media_type,sort_order)').eq('id',id).single();
+ const {data,error}=await supabase.from('housing_listings').select('id,title,description,property_type,address_line1,address_line2,city,state,postal_code,bedrooms,bathrooms,square_feet,rent_monthly,deposit_amount,application_fee,available_date,lease_terms,amenities,utilities_included,pet_policy,parking,accessibility_features,screening_summary,eligibility_rules,virtual_tour_url,floor_plan_url,video_url,fasttrack_enabled,featured,source_label,source_url,latitude,longitude,garage_spaces,parking_types,furnished,has_basement,has_yard,has_balcony_patio,laundry_type,has_central_air,pet_types,move_in_ready,walk_score,transit_score,bike_score,housing_media(url,media_type,sort_order)').eq('id',id).single();
  if(error)throw error;return data as HousingListing;
 }
 export async function loadMarketplace(search='',category=''){
