@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 
 void SplashScreen.preventAutoHideAsync();
 
-const PUBLIC_BROWSE=(path:string)=>path==='/'||path==='/find-jobs'||path.startsWith('/job/')||path==='/find-housing'||path.startsWith('/housing/')||path==='/sign-in'||path==='/sign-up'||path==='/forgot-password'||path==='/reset-password';
+const PUBLIC_BROWSE=(path:string)=>path==='/'||path==='/find-jobs'||path.startsWith('/job/')||path==='/find-housing'||path==='/housing-filters'||path.startsWith('/housing/')||path==='/sign-in'||path==='/sign-up'||path==='/forgot-password'||path==='/reset-password';
 
 export default function RootLayout() {
   const pathname=usePathname();
