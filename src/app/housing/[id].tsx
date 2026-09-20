@@ -137,7 +137,22 @@ export default function HousingDetail(){
      {item.transit_score!=null?<Score label="TRANSIT" value={item.transit_score}/>:null}
      {item.bike_score!=null?<Score label="BIKE" value={item.bike_score}/>:null}
     </View>
-    <Text style={s.sourceNote}>Mobility scores are shown only when verified provider data is available.</Text>
+    <Text style={s.sourceNote}>Mobility scores are shown only when verified provider data is available.{item.neighborhood_data_provider?' Source: '+item.neighborhood_data_provider+'.':''}</Text>
+   </Section>:null}
+
+   {item.housing_schools?.length?<Section label="SCHOOLS NEARBY">
+    {item.housing_schools.slice().sort((a,b)=>a.sort_order-b.sort_order).map((school,index)=><Pressable key={school.provider+'-'+school.provider_school_id} style={[s.areaRow,index===0&&s.areaRowFirst]} onPress={()=>school.profile_url?void openUrl(school.profile_url):undefined}>
+     <View style={s.areaCopy}><Text style={s.areaTitle}>{school.name}</Text><Text style={s.areaMeta}>{[school.school_type,school.grades,school.distance_miles!=null?Number(school.distance_miles).toFixed(1)+' mi':null].filter(Boolean).join(' · ')}</Text><Text style={s.areaSource}>{school.provider.toUpperCase()}</Text></View>
+     {school.quality_label?<Text style={s.quality}>{school.quality_label}</Text>:null}
+     {school.profile_url?<Lucide name="external-link" color={C.lime} size={13}/>:null}
+    </Pressable>)}
+   </Section>:null}
+
+   {item.housing_nearby_places?.length?<Section label="NEARBY">
+    {item.housing_nearby_places.slice().sort((a,b)=>a.sort_order-b.sort_order).map((place,index)=><View key={place.provider+'-'+place.provider_place_id} style={[s.areaRow,index===0&&s.areaRowFirst]}>
+     <View style={s.areaIcon}><Lucide name={place.category==='park'?'trees':place.category==='transit'?'bus':place.category==='healthcare'?'heart-pulse':place.category==='pharmacy'?'pill':'shopping-basket'} color={C.lime} size={13}/></View>
+     <View style={s.areaCopy}><Text style={s.areaTitle}>{place.name}</Text><Text style={s.areaMeta}>{place.category.toUpperCase()}{place.distance_miles!=null?' · '+Number(place.distance_miles).toFixed(1)+' mi':''}</Text><Text style={s.areaSource}>{place.provider.toUpperCase()}</Text></View>
+    </View>)}
    </Section>:null}
 
    {item.virtual_tour_url||item.floor_plan_url||item.video_url?<View style={s.links}>
