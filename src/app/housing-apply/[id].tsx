@@ -226,7 +226,7 @@ export default function HousingApply(){
    </>:null}
 
    <Pressable style={[s.primary,(saving||(step===5&&(allErrors.length>0||missingRequiredDocs.length>0||!accuracy||!submitConsent||(fast&&!fastAck))))&&s.primaryDisabled]} disabled={saving} onPress={step===5?attemptSubmit:()=>void saveAndNext()}>
-    <Text style={[s.primaryText,step===5&&(allErrors.length>0||!accuracy||!submitConsent||(fast&&!fastAck))&&s.primaryTextDisabled]}>{saving?'SAVING…':step===5?'CONFIRM & SUBMIT APPLICATION':'SAVE & CONTINUE'}</Text>
+    <Text style={[s.primaryText,step===5&&(allErrors.length>0||missingRequiredDocs.length>0||!accuracy||!submitConsent||(fast&&!fastAck))&&s.primaryTextDisabled]}>{saving?'SAVING…':step===5?'CONFIRM & SUBMIT APPLICATION':'SAVE & CONTINUE'}</Text>
     <Lucide name="arrow-right" color={step===5&&(allErrors.length>0||missingRequiredDocs.length>0||!accuracy||!submitConsent||(fast&&!fastAck))?C.mutedStrong:C.black} size={16}/>
    </Pressable>
    {step>1?<Pressable style={s.secondary} onPress={()=>void previous()}><Text style={s.secondaryText}>← PREVIOUS STEP</Text></Pressable>:null}
