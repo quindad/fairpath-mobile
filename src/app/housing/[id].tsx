@@ -67,8 +67,8 @@ export default function HousingDetail(){
   try{await Linking.openURL(url)}catch{Alert.alert('Link unavailable','We could not open this link.')}
  }
 
- if(loading)return <ScreenFrame><PageHeader eyebrow="FAIRPATH HOUSING" title="Home details" backTo="/find-housing" alwaysBackTo/><View style={s.state}><Text style={s.muted}>Loading home…</Text></View></ScreenFrame>;
- if(error||!item)return <ScreenFrame><PageHeader eyebrow="FAIRPATH HOUSING" title="Home details" backTo="/find-housing" alwaysBackTo/><View style={s.state}><Text style={s.error}>{error||'Home not found.'}</Text></View></ScreenFrame>;
+ if(loading)return <ScreenFrame><PageHeader eyebrow="FAIRPATH HOUSING" title="Home details" backTo="/find-housing"/><View style={s.state}><Text style={s.muted}>Loading home…</Text></View></ScreenFrame>;
+ if(error||!item)return <ScreenFrame><PageHeader eyebrow="FAIRPATH HOUSING" title="Home details" backTo="/find-housing"/><View style={s.state}><Text style={s.error}>{error||'Home not found.'}</Text></View></ScreenFrame>;
 
  const realPhotos=item.housing_media?.filter(m=>m.media_type==='photo').sort((a,b)=>a.sort_order-b.sort_order).map(m=>m.url).filter(Boolean)??[];
  const demoIndex=[...item.id].reduce((sum,ch)=>sum+ch.charCodeAt(0),0)%3;
@@ -78,7 +78,7 @@ export default function HousingDetail(){
  const availability=item.available_date?new Date(item.available_date+'T00:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}):null;
 
  return <ScreenFrame>
-  <PageHeader eyebrow="FAIRPATH HOUSING" title="Home details" backTo="/find-housing" alwaysBackTo trailing={
+  <PageHeader eyebrow="FAIRPATH HOUSING" title="Home details" backTo="/find-housing" trailing={
    <Pressable style={[s.save,saved&&s.saveActive]} onPress={()=>void toggleSave()}>
     <Lucide name={saved?'bookmark-check':'bookmark'} color={saved?C.black:C.white} size={14}/><Text style={[s.saveText,saved&&s.saveTextActive]}>{saved?'SAVED':'SAVE'}</Text>
    </Pressable>
