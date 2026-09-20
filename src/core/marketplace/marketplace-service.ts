@@ -24,14 +24,14 @@ export type MarketplaceItem={
  featured:boolean;
  seller_type:'individual'|'organization';
  moderation_status:'approved'|'pending'|'hidden'|'rejected';
- status:'draft'|'available'|'pending_pickup'|'claimed'|'removed';
+ status:'draft'|'available'|'paused'|'pending_pickup'|'claimed'|'removed';
  created_at:string;
  updated_at:string;
  listed_at:string|null;
  marketplace_media?:MarketplaceMedia[];
 };
 
-export type MarketplaceMedia={id:string;url:string;sort_order:number};
+export type MarketplaceMedia={id:string;url:string;sort_order:number;storage_path:string|null;mime_type:string|null};
 export type MarketplaceQuota={plan:'free'|'fairpath_plus';monthly_limit:number;used:number;remaining:number;period_start:string;period_end:string};
 export type MarketplaceClaimStatus='requested'|'approved'|'ready'|'picked_up'|'cancelled'|'expired'|'declined'|'no_show';
 export type MarketplaceClaim={
@@ -50,7 +50,7 @@ export type MarketplaceMessage={id:string;claim_id:string;sender_id:string;body:
 
 async function currentUser(){const {data:{user}}=await supabase.auth.getUser();if(!user)throw new Error('SIGNED_OUT');return user}
 
-const ITEM_SELECT='id,seller_id,title,description,category,condition,price,is_free,city,state,postal_code,pickup_area,pickup_notes,safe_pickup,quantity,featured,seller_type,moderation_status,status,created_at,updated_at,listed_at,marketplace_media(id,url,sort_order)';
+const ITEM_SELECT='id,seller_id,title,description,category,condition,price,is_free,city,state,postal_code,pickup_area,pickup_notes,safe_pickup,quantity,featured,seller_type,moderation_status,status,created_at,updated_at,listed_at,marketplace_media(id,url,sort_order,storage_path,mime_type)';
 
 export async function loadMarketplace(input:{search?:string;category?:string;location?:string;safePickup?:boolean;condition?:string;sort?:'newest'|'oldest'}={}):Promise<MarketplaceItem[]>{
  let q=supabase.from('marketplace_items').select(ITEM_SELECT).eq('status','available').eq('moderation_status','approved').order('featured',{ascending:false}).order('created_at',{ascending:input.sort==='oldest'}).limit(100);
@@ -153,9 +153,35 @@ export async function uploadMarketplacePhoto(itemId:string,file:{name:string;mim
  const user=await currentUser();const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,'_').slice(-120)||'photo.jpg';const path=user.id+'/'+itemId+'/'+Date.now()+'-'+safe;
  const {error:up}=await supabase.storage.from('marketplace-media').upload(path,file.bytes,{contentType:file.mimeType??'image/jpeg',upsert:false});if(up)throw up;
  const {data:publicData}=supabase.storage.from('marketplace-media').getPublicUrl(path);
- const {error}=await supabase.from('marketplace_media').insert({item_id:itemId,url:publicData.publicUrl,sort_order:sortOrder});if(error){await supabase.storage.from('marketplace-media').remove([path]);throw error}
+ const {error}=await supabase.from('marketplace_media').insert({item_id:itemId,url:publicData.publicUrl,sort_order:sortOrder,storage_path:path,mime_type:file.mimeType??'image/jpeg'});if(error){await supabase.storage.from('marketplace-media').remove([path]);throw error}
  return publicData.publicUrl;
 }
+
+export type MarketplacePickupDetails={item_id:string;location_name:string|null;address_line1:string|null;address_line2:string|null;city:string;state:string;postal_code:string|null;instructions:string|null;contact_phone:string|null};
+export async function loadMarketplacePickupDetailsForSeller(itemId:string):Promise<MarketplacePickupDetails|null>{
+ const user=await currentUser();const {data,error}=await supabase.from('marketplace_pickup_details').select('item_id,location_name,address_line1,address_line2,city,state,postal_code,instructions,contact_phone').eq('item_id',itemId).eq('seller_id',user.id).maybeSingle();if(error)throw error;return data as MarketplacePickupDetails|null;
+}
+export async function updateMarketplaceItem(itemId:string,input:CreateMarketplaceItemInput){
+ const user=await currentUser();
+ const {error}=await supabase.from('marketplace_items').update({
+  title:input.title.trim(),description:input.description.trim(),category:input.category,condition:input.condition||null,
+  quantity:Math.max(1,Math.min(99,Number(input.quantity)||1)),city:input.city.trim(),state:input.state.trim().toUpperCase().slice(0,2),
+  postal_code:input.postal_code?.trim()||null,pickup_area:input.pickup_area?.trim()||null,safe_pickup:input.safe_pickup,seller_type:input.seller_type,updated_at:new Date().toISOString()
+ }).eq('id',itemId).eq('seller_id',user.id);if(error)throw error;
+ const {error:pickupError}=await supabase.from('marketplace_pickup_details').upsert({
+  item_id:itemId,seller_id:user.id,location_name:input.location_name?.trim()||null,address_line1:input.address_line1?.trim()||null,address_line2:input.address_line2?.trim()||null,
+  city:input.pickup_city.trim(),state:input.pickup_state.trim().toUpperCase().slice(0,2),postal_code:input.pickup_postal_code?.trim()||null,
+  instructions:input.instructions?.trim()||null,contact_phone:input.contact_phone?.trim()||null,updated_at:new Date().toISOString()
+ },{onConflict:'item_id'});if(pickupError)throw pickupError;
+}
+export async function removeMarketplacePhoto(media:MarketplaceMedia){
+ const user=await currentUser();if(media.storage_path){const {error:fileError}=await supabase.storage.from('marketplace-media').remove([media.storage_path]);if(fileError)throw fileError}
+ const {error}=await supabase.from('marketplace_media').delete().eq('id',media.id);if(error)throw error;
+}
+export async function reorderMarketplacePhotos(itemId:string,media:MarketplaceMedia[]){
+ await currentUser();for(let i=0;i<media.length;i++){const {error}=await supabase.from('marketplace_media').update({sort_order:i}).eq('id',media[i].id).eq('item_id',itemId);if(error)throw error}
+}
+export async function setMarketplaceItemAvailability(itemId:string,available:boolean){await currentUser();const {error}=await supabase.rpc('set_marketplace_item_availability',{p_item_id:itemId,p_available:available});if(error){if(error.message?.includes('STATUS_LOCKED'))throw new Error('STATUS_LOCKED');throw error}}
 
 export async function removeMarketplaceItem(itemId:string){await currentUser();const {error}=await supabase.rpc('remove_marketplace_item',{p_item_id:itemId});if(error)throw error}
 
