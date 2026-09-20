@@ -124,16 +124,21 @@ export async function saveJobApplicationProfile(form:JobApplicationAutofill){
 export async function submitJobApplication(jobId:string,answers:Record<string,unknown>={}){
  const user=await currentUser();
  const now=new Date().toISOString();
- const {data,error}=await supabase
+ const {error}=await supabase
   .from('job_applications')
-  .insert({user_id:user.id,job_id:jobId,status:'submitted',answers,submitted_at:now,updated_at:now})
-  .select('id')
-  .single();
+  .insert({user_id:user.id,job_id:jobId,status:'submitted',answers,submitted_at:now,updated_at:now});
  if(error){
   if(error.code==='23505')throw new Error('ALREADY_APPLIED');
   throw error;
  }
- return data.id as string;
+ const {data:created,error:createdError}=await supabase
+  .from('job_applications')
+  .select('id')
+  .eq('user_id',user.id)
+  .eq('job_id',jobId)
+  .single();
+ if(createdError)throw createdError;
+ return created.id as string;
 }
 export type JobApplicationStatus='started'|'submitted'|'viewed'|'interview'|'offer'|'hired'|'withdrawn'|'rejected';
 export type MyJobApplication={
