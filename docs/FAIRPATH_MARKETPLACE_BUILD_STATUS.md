@@ -51,7 +51,6 @@ FairPath Marketplace is a **free local-item exchange**, not a resale storefront.
 - Sellers cannot directly read raw Marketplace claim rows through normal RLS.
 - Sellers receive claim candidates through an RPC that returns anonymous claim IDs.
 - Seller UI does not request or display claimant name, race, or profile photo.
-- Optional claimant note warns against sharing sensitive information.
 - Donor selection UI explicitly explains the anonymous-selection rule.
 - Discriminatory behavior is a Marketplace report reason.
 
@@ -72,9 +71,11 @@ FairPath Marketplace is a **free local-item exchange**, not a resale storefront.
 - Public Marketplace item rows contain only city/state/ZIP/pickup-area level data.
 - Private pickup data is exposed to the approved claimant only through a restricted receipt RPC.
 - Safe Pickup flag and safety education exist throughout the UI.
-- Post-approval pickup messaging is restricted to claim participants.
+- Claimants cannot message donors in FairPath.
+- After approval, the donor can send pickup-logistics messages to the selected claimant; the claimant can read them but does not get a reply composer.
 
 ### Donor/listing tools
+- New listings start as private drafts, upload their media, then explicitly publish so partially-created listings never leak into browse.
 - List a free item.
 - Individual or organization donor type.
 - Condition / quantity / category / description.
@@ -131,6 +132,7 @@ FairPath Marketplace is a **free local-item exchange**, not a resale storefront.
 
 ## Still to close later
 - Visual QR rendering / camera scan for pickup passes. The secure pickup-code flow is live now; QR should wrap the same claim verification contract rather than create a second lifecycle.
+- Exact donor phone-number + 4-digit-code access. Native Supabase SMS OTP is not a 4-digit flow, so this must be implemented with a deliberate custom SMS/auth provider rather than faked inside the client.
 - Phone-OTP authentication if FairPath chooses to support phone-first account login.
 - Marketplace Admin moderation queue.
 - Automated stale-claim expiration worker / scheduled job.
@@ -140,3 +142,11 @@ FairPath Marketplace is a **free local-item exchange**, not a resale storefront.
 
 ## Handoff direction
 Marketplace Admin should review reports, hidden/rejected listings, donor abuse and claim history. Marketplace does not need a separate Partner product unless organizations later need high-volume donation inventory tooling.
+
+
+## Senior-engineering hardening notes
+- Owners cannot self-feature listings or bypass moderation by directly updating `featured` / `moderation_status`; a database trigger preserves those Admin-controlled fields.
+- Item creation is draft-first and publish-last.
+- Claimant-to-donor messaging is disabled by policy and by UI.
+- Donor pickup messaging is server-RPC backed and only available on approved/ready claims.
+- The 48-hour window is enforced server-side and refreshed by Marketplace workflows; an automatic scheduled invocation can be added in the integrations/Admin sprint.
