@@ -36,6 +36,18 @@ Recent checkpoint commits:
 ## Important correction from chat recovery
 The repository is authoritative. The current repo does **not** yet contain separate mobile screens for Saved Homes, My Housing Applications, or a full FastTrack readiness workspace. Those were discussed/planned, but should not be treated as completed until code exists on `main`.
 
+## Completed in advanced Housing pass
+- Bedrooms expanded to Studio / 1+ / 2+ / 3+ / 4+ / 5+ while preserving exact bedroom counts (including 8+ bedroom homes)
+- Bathrooms expanded through 4+ with half-bath thresholds
+- Property types expanded to apartment, townhome, house, duplex, condo, room
+- Advanced Home filters: minimum square feet, garage, off-street parking, furnished, basement, yard/outdoor space, balcony/patio, laundry, central air, move-in ready
+- Verified Walk Score threshold support added to filtering
+- Supabase housing schema expanded for garage, parking types, home features, pet types, move-in state, Walk/Transit/Bike scores and provider freshness timestamps
+- Housing detail now exposes real home features and verified mobility score surfaces when data exists
+- No fake FairPath neighborhood score: neighborhood dimensions remain source-backed and separate
+- Walk Score integration target confirmed for Walk / Transit / Bike data
+- GreatSchools NearbySchools integration target confirmed for nearby K-12 school data; API key/provider setup still required before live school cards can ship
+
 ## Next build
 ### Property-owner photo system
 This belongs primarily in **FairPath Partner** later, because owners/landlords manage listings there. Mobile should consume the resulting media cleanly.
