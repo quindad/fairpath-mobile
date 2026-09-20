@@ -29,8 +29,8 @@ export default function Welcome(){
    </View>
 
    <View style={s.hero}>
-    <Text style={s.eyebrow}>WELCOME TO YOUR FAIRPATH FORWARD</Text>
-    <Text style={s.title}>Your next move{"\n"}starts here.</Text>
+    <Text style={s.eyebrow}>WELCOME TO FAIRPATH</Text>
+    <Text style={s.title}>Your FairPath forward{"\n"}starts here.</Text>
     <Text style={s.body}>Jobs, housing, resources and tools built to help you move forward. Browse without an account. Create one when you’re ready to save, apply and track your progress.</Text>
    </View>
 
