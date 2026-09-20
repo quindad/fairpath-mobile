@@ -30,8 +30,8 @@ export default function Welcome(){
 
    <View style={s.hero}>
     <Text style={s.eyebrow}>WELCOME TO FAIRPATH</Text>
-    <Text style={s.title}>Look first.{"\n"}Move when{"\n"}you’re ready.</Text>
-    <Text style={s.body}>Browse jobs and housing without an account. Create one when you’re ready to save, apply, track progress or use FairPath tools.</Text>
+    <Text style={s.title}>Reentry in{"\n"}the palm of{"\n"}your hand.</Text>
+    <Text style={s.body}>Jobs, housing, resources and tools built to help you move forward. Browse without an account. Create one when you’re ready to save, apply and track your progress.</Text>
    </View>
 
    <View style={s.actions}>
