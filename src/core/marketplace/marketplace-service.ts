@@ -149,7 +149,7 @@ export async function createMarketplaceItem(input:CreateMarketplaceItemInput){
   seller_id:user.id,title:input.title.trim(),description:input.description.trim(),category:input.category,condition:input.condition||null,
   quantity:Math.max(1,Math.min(99,Number(input.quantity)||1)),price:0,is_free:true,city:input.city.trim(),state:input.state.trim().toUpperCase().slice(0,2),
   postal_code:input.postal_code?.trim()||null,pickup_area:input.pickup_area?.trim()||null,safe_pickup:input.safe_pickup,seller_type:input.seller_type,
-  status:'available',moderation_status:'approved',listed_at:now
+  status:'draft',moderation_status:'approved',listed_at:null
  }).select('id').single();if(error)throw error;
  const {error:pickupError}=await supabase.from('marketplace_pickup_details').insert({
   item_id:data.id,seller_id:user.id,location_name:input.location_name?.trim()||null,address_line1:input.address_line1?.trim()||null,address_line2:input.address_line2?.trim()||null,
