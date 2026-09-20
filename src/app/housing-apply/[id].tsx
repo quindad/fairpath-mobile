@@ -105,16 +105,7 @@ export default function HousingApply(){
    Alert.alert('Confirm before submitting','Review and accept the required confirmations at the bottom of the application.');
    return;
   }
-  Alert.alert(
-   'Submit application?',
-   fast
-    ?'This will submit your completed FastTrack application into the FairPath housing workflow. FastTrack does not guarantee approval.'
-    :'This will submit your completed housing application into the FairPath housing workflow. Approval is not guaranteed.',
-   [
-    {text:'Cancel',style:'cancel'},
-    {text:'Submit',onPress:()=>void doSubmit()}
-   ]
-  );
+  void doSubmit();
  }
 
  async function doSubmit(){
@@ -122,9 +113,7 @@ export default function HousingApply(){
   setSaving(true);
   try{
    await submitHousingApplication(id,form,{accuracy,submit:submitConsent,fasttrack_ack:fast?fastAck:undefined});
-   Alert.alert('Application submitted','Your application was submitted successfully.',[
-    {text:'View status',onPress:()=>router.replace(('/housing-application/'+id) as never)}
-   ]);
+   router.replace(('/housing-application/'+id+'?submitted=1') as never);
   }catch(e){
    const message=e instanceof Error&&e.message==='APPLICATION_INCOMPLETE'
     ?'Required information is still missing.'
