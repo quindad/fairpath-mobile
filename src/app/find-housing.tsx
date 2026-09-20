@@ -7,6 +7,7 @@ import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/
 import { loadHousing, loadSavedHousingIds, saveHousing, unsaveHousing, type HousingListing } from '@/core/opportunities/opportunity-service';
 import { loadProfileAnswers } from '@/core/profile/profile-service';
 import { demoHousingImage } from '@/core/demo/demo-media';
+import { supabase } from '@/lib/supabase';
 
 export default function Housing(){
  const params=useLocalSearchParams<{minRent?:string;maxRent?:string;beds?:string;baths?:string;types?:string;fastTrack?:string;pets?:string;accessible?:string;garage?:string;parking?:string;furnished?:string;basement?:string;yard?:string;balcony?:string;laundry?:string;centralAir?:string;moveInReady?:string;minSqft?:string;minWalk?:string}>();
@@ -18,6 +19,7 @@ export default function Housing(){
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
  const [saved,setSaved]=useState<Record<string,boolean>>({});
+ const [signedIn,setSignedIn]=useState(false);
 
  async function run(){
   setLoading(true);setError('');
@@ -28,6 +30,7 @@ export default function Housing(){
 
  useEffect(()=>{
   let active=true;
+  supabase.auth.getUser().then(({data})=>{if(active)setSignedIn(Boolean(data.user))});
   loadProfileAnswers()
    .then(a=>{if(active&&typeof a['identity.current_location']==='string')setLocation(a['identity.current_location'] as string)})
    .finally(()=>{if(active)loadHousing().then(setRows).catch(()=>setError('Housing could not load.')).finally(()=>setLoading(false))});
@@ -103,10 +106,8 @@ export default function Housing(){
   <PageHeader eyebrow="FAIRPATH HOUSING" title="Find housing" backTo="/" alwaysBackTo/>
 
   <View style={s.utilityRow}>
-   <Pressable style={s.utilityBtn} onPress={()=>router.replace('/find-jobs' as never)}>
-    <Lucide name="briefcase-business" color={C.lime} size={13}/><Text style={s.utilityText}>JOBS</Text>
-   </Pressable>
-   <View style={s.utilityInfo}><Lucide name="house" color={C.lime} size={13}/><Text style={s.utilityText}>BROWSE WITHOUT AN ACCOUNT</Text></View>
+   <Pressable style={s.utilityBtn} onPress={()=>router.replace('/find-jobs' as never)}><Lucide name="briefcase-business" color={C.lime} size={13}/><Text style={s.utilityText}>JOBS</Text></Pressable>
+   {signedIn?<><Pressable style={s.utilityBtn} onPress={()=>router.push('/saved-homes' as never)}><Lucide name="bookmark" color={C.lime} size={13}/><Text style={s.utilityText}>SAVED HOMES</Text></Pressable><Pressable style={s.utilityBtn} onPress={()=>router.push('/housing-applications' as never)}><Lucide name="file-check-2" color={C.lime} size={13}/><Text style={s.utilityText}>APPLICATIONS</Text></Pressable></>:<View style={s.utilityInfo}><Lucide name="house" color={C.lime} size={13}/><Text style={s.utilityText}>BROWSE WITHOUT AN ACCOUNT</Text></View>}
   </View>
 
   <View style={s.searchBlock}>
@@ -174,7 +175,7 @@ export default function Housing(){
 }
 
 const s=StyleSheet.create({
- utilityRow:{height:44,flexDirection:'row',borderBottomWidth:1,borderBottomColor:C.borderStrong},utilityBtn:{width:100,flexDirection:'row',gap:7,alignItems:'center',justifyContent:'center',borderRightWidth:1,borderRightColor:C.borderStrong},utilityInfo:{flex:1,flexDirection:'row',gap:7,alignItems:'center',justifyContent:'center'},utilityText:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},
+ utilityRow:{height:44,flexDirection:'row',borderBottomWidth:1,borderBottomColor:C.borderStrong},utilityBtn:{flex:1,flexDirection:'row',gap:7,alignItems:'center',justifyContent:'center',borderRightWidth:1,borderRightColor:C.borderStrong},utilityInfo:{flex:1,flexDirection:'row',gap:7,alignItems:'center',justifyContent:'center'},utilityText:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},
  searchBlock:{paddingHorizontal:L.mobileGutter,paddingTop:14,paddingBottom:14,borderBottomWidth:1,borderBottomColor:C.borderStrong},
  searchRow:{minHeight:58,flexDirection:'row',alignItems:'center',borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#0A0C0A',marginBottom:8},fieldIcon:{width:42,alignItems:'center',justifyContent:'center'},fieldCopy:{flex:1,minWidth:0,paddingVertical:9},fieldLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:1.25,marginBottom:2},input:{color:C.white,fontFamily:F.medium,fontSize:13,paddingVertical:2,paddingHorizontal:0},
  primary:{height:44,backgroundColor:C.lime,paddingHorizontal:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginTop:2},primaryText:{color:C.black,fontFamily:F.extraBold,fontSize:10,letterSpacing:1},
