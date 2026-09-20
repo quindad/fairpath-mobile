@@ -35,11 +35,11 @@ export type MarketplaceMedia={id:string;url:string;sort_order:number;storage_pat
 export type MarketplaceQuota={plan:'free'|'fairpath_plus';monthly_limit:number;used:number;remaining:number;period_start:string;period_end:string};
 export type MarketplaceClaimStatus='requested'|'approved'|'ready'|'picked_up'|'cancelled'|'expired'|'declined'|'no_show';
 export type MarketplaceClaim={
- id:string;item_id:string;status:MarketplaceClaimStatus;claimant_message:string|null;pickup_deadline:string|null;pickup_code:string|null;
+ id:string;item_id:string;status:MarketplaceClaimStatus;pickup_deadline:string|null;pickup_code:string|null;
  created_at:string;updated_at:string;
  item:{id:string;title:string;city:string;state:string;pickup_area:string|null;safe_pickup:boolean;status:string;marketplace_media?:MarketplaceMedia[]}|null;
 };
-export type MarketplaceClaimCandidate={id:string;status:MarketplaceClaimStatus;claimant_label:string;claimant_message:string|null;created_at:string;pickup_deadline:string|null};
+export type MarketplaceClaimCandidate={id:string;status:MarketplaceClaimStatus;claimant_label:string;created_at:string;pickup_deadline:string|null};
 export type MarketplaceClaimReceipt={
  id:string;status:MarketplaceClaimStatus;pickup_deadline:string|null;pickup_code:string|null;
  item_id:string;item_title:string;item_city:string;item_state:string;
@@ -107,7 +107,7 @@ export async function loadMyMarketplaceClaimForItem(itemId:string):Promise<{id:s
 export async function refreshExpiredMarketplacePickups(){await currentUser();const {error}=await supabase.rpc('expire_marketplace_pickups');if(error)throw error}
 
 export async function loadMyMarketplaceClaims():Promise<MarketplaceClaim[]>{
- await refreshExpiredMarketplacePickups().catch(()=>{});const user=await currentUser();const {data,error}=await supabase.from('marketplace_claims').select('id,item_id,status,claimant_message,pickup_deadline,pickup_code,created_at,updated_at,item:marketplace_items(id,title,city,state,pickup_area,safe_pickup,status,marketplace_media(id,url,sort_order))').eq('claimant_id',user.id).order('created_at',{ascending:false});if(error)throw error;return (data??[]) as unknown as MarketplaceClaim[];
+ await refreshExpiredMarketplacePickups().catch(()=>{});const user=await currentUser();const {data,error}=await supabase.from('marketplace_claims').select('id,item_id,status,pickup_deadline,pickup_code,created_at,updated_at,item:marketplace_items(id,title,city,state,pickup_area,safe_pickup,status,marketplace_media(id,url,sort_order))').eq('claimant_id',user.id).order('created_at',{ascending:false});if(error)throw error;return (data??[]) as unknown as MarketplaceClaim[];
 }
 
 export async function loadMarketplaceClaimReceipt(claimId:string):Promise<MarketplaceClaimReceipt>{
