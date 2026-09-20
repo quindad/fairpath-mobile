@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { isValidDateText, isValidEmail } from '@/core/forms/formatters';
 
 export type Job = {
  id:string; title:string; company_name:string; description:string; location_text:string|null; city:string|null; state:string|null; postal_code:string|null;
@@ -95,10 +96,10 @@ export async function loadSavedHousing():Promise<HousingListing[]>{
  const {data,error}=await supabase.from('saved_housing').select('listing:housing_listings(id,title,description,property_type,address_line1,address_line2,city,state,postal_code,bedrooms,bathrooms,square_feet,rent_monthly,deposit_amount,application_fee,available_date,lease_terms,amenities,utilities_included,pet_policy,parking,accessibility_features,screening_summary,eligibility_rules,virtual_tour_url,floor_plan_url,video_url,fasttrack_enabled,featured,source_label,source_url,latitude,longitude,garage_spaces,parking_types,furnished,has_basement,has_yard,has_balcony_patio,laundry_type,has_central_air,pet_types,move_in_ready,walk_score,transit_score,bike_score,housing_media(url,media_type,sort_order))').eq('user_id',user.id).order('created_at',{ascending:false});
  if(error)throw error;return (data??[]).map((row:any)=>row.listing).filter(Boolean) as HousingListing[];
 }
-export type MyHousingApplication={id:string;listing_id:string;status:HousingApplicationStatus;application_type:'standard'|'fasttrack';updated_at:string;listing:{id:string;title:string;city:string;state:string;rent_monthly:number;bedrooms:number|null;bathrooms:number|null;fasttrack_enabled:boolean}|null};
+export type MyHousingApplication={id:string;listing_id:string;status:HousingApplicationStatus;application_type:'standard'|'fasttrack';current_step:number;submitted_at:string|null;updated_at:string;listing:{id:string;title:string;city:string;state:string;rent_monthly:number;bedrooms:number|null;bathrooms:number|null;fasttrack_enabled:boolean}|null};
 export async function loadMyHousingApplications():Promise<MyHousingApplication[]>{
  const user=await currentUser();
- const {data,error}=await supabase.from('housing_applications').select('id,listing_id,status,application_type,updated_at,listing:housing_listings(id,title,city,state,rent_monthly,bedrooms,bathrooms,fasttrack_enabled)').eq('user_id',user.id).order('updated_at',{ascending:false});
+ const {data,error}=await supabase.from('housing_applications').select('id,listing_id,status,application_type,current_step,submitted_at,updated_at,listing:housing_listings(id,title,city,state,rent_monthly,bedrooms,bathrooms,fasttrack_enabled)').eq('user_id',user.id).order('updated_at',{ascending:false});
  if(error)throw error;return (data??[]) as unknown as MyHousingApplication[];
 }
 
@@ -186,24 +187,100 @@ export async function loadMyJobApplicationForJob(jobId:string):Promise<{id:strin
  return data as {id:string;status:JobApplicationStatus;submitted_at:string|null}|null;
 }
 export type HousingApplicationStatus='started'|'submitted'|'reviewing'|'tour'|'approved'|'denied'|'withdrawn';
-export async function loadMyHousingApplication(listingId:string):Promise<{id:string;status:HousingApplicationStatus;application_type:'standard'|'fasttrack'}|null>{const user=await currentUser();const {data,error}=await supabase.from('housing_applications').select('id,status,application_type').eq('user_id',user.id).eq('listing_id',listingId).maybeSingle();if(error)throw error;return data as {id:string;status:HousingApplicationStatus;application_type:'standard'|'fasttrack'}|null;}
-export async function startHousingApplication(listingId:string,fastTrack=false){const user=await currentUser();const now=new Date().toISOString();const {data:existing,error:existingError}=await supabase.from('housing_applications').select('id,status,application_type').eq('user_id',user.id).eq('listing_id',listingId).maybeSingle();if(existingError)throw existingError;if(existing)return existing;const {data,error}=await supabase.from('housing_applications').insert({user_id:user.id,listing_id:listingId,application_type:fastTrack?'fasttrack':'standard',status:'started',updated_at:now}).select('id,status,application_type').single();if(error)throw error;return data as {id:string;status:HousingApplicationStatus;application_type:'standard'|'fasttrack'};}
+export type HousingApplicationMode='standard'|'fasttrack';
+export async function loadMyHousingApplication(listingId:string):Promise<{id:string;status:HousingApplicationStatus;application_type:HousingApplicationMode;current_step:number}|null>{
+ const user=await currentUser();
+ const {data,error}=await supabase.from('housing_applications').select('id,status,application_type,current_step').eq('user_id',user.id).eq('listing_id',listingId).maybeSingle();
+ if(error)throw error;
+ return data as {id:string;status:HousingApplicationStatus;application_type:HousingApplicationMode;current_step:number}|null;
+}
+export async function startHousingApplication(listingId:string,fastTrack=false){
+ const user=await currentUser();
+ const now=new Date().toISOString();
+ const {data:existing,error:existingError}=await supabase.from('housing_applications').select('id,status,application_type,current_step').eq('user_id',user.id).eq('listing_id',listingId).maybeSingle();
+ if(existingError)throw existingError;
+ if(existing)return existing as {id:string;status:HousingApplicationStatus;application_type:HousingApplicationMode;current_step:number};
+ const {data,error}=await supabase.from('housing_applications').insert({user_id:user.id,listing_id:listingId,application_type:fastTrack?'fasttrack':'standard',status:'started',current_step:1,updated_at:now}).select('id,status,application_type,current_step').single();
+ if(error)throw error;
+ return data as {id:string;status:HousingApplicationStatus;application_type:HousingApplicationMode;current_step:number};
+}
 export type HousingApplicationDetail=MyHousingApplication & {listing:{id:string;title:string;city:string;state:string;rent_monthly:number;bedrooms:number|null;bathrooms:number|null;fasttrack_enabled:boolean}|null};
 export async function loadMyHousingApplicationDetail(applicationId:string):Promise<HousingApplicationDetail>{
  const user=await currentUser();
- const {data,error}=await supabase.from('housing_applications').select('id,listing_id,status,application_type,updated_at,listing:housing_listings(id,title,city,state,rent_monthly,bedrooms,bathrooms,fasttrack_enabled)').eq('id',applicationId).eq('user_id',user.id).single();
- if(error)throw error;return data as unknown as HousingApplicationDetail;
+ const {data,error}=await supabase.from('housing_applications').select('id,listing_id,status,application_type,current_step,submitted_at,updated_at,listing:housing_listings(id,title,city,state,rent_monthly,bedrooms,bathrooms,fasttrack_enabled)').eq('id',applicationId).eq('user_id',user.id).single();
+ if(error)throw error;
+ return data as unknown as HousingApplicationDetail;
 }
 export type HousingApplicationForm={first_name:string;last_name:string;email:string;phone:string;date_of_birth:string;current_address:string;monthly_income:string;employer:string;employment_status:string;move_in_date:string;occupants:string;pets:string;housing_history:string;references:string;additional_notes:string};
-export async function loadHousingApplicationForm(applicationId:string):Promise<{form:HousingApplicationForm;current_step:number}>{
- const user=await currentUser();const [{data:app,error},{data:profile},{data:rows}]=await Promise.all([supabase.from('housing_applications').select('answers,current_step').eq('id',applicationId).eq('user_id',user.id).single(),supabase.from('profiles').select('first_name,last_name').eq('id',user.id).maybeSingle(),supabase.from('profile_answers').select('question_id,answer').eq('user_id',user.id)]);if(error)throw error;const a:Record<string,unknown>={};for(const r of rows??[])a[r.question_id]=r.answer;const text=(id:string)=>{const v=a[id];return Array.isArray(v)?v.join(', '):v==null?'':String(v)};const saved=(app?.answers??{}) as Partial<HousingApplicationForm>;return {current_step:app?.current_step??1,form:{first_name:saved.first_name??profile?.first_name??'',last_name:saved.last_name??profile?.last_name??'',email:saved.email??user.email??'',phone:saved.phone??text('identity.phone'),date_of_birth:saved.date_of_birth??text('identity.date_of_birth'),current_address:saved.current_address??text('identity.address'),monthly_income:saved.monthly_income??'',employer:saved.employer??'',employment_status:saved.employment_status??'',move_in_date:saved.move_in_date??'',occupants:saved.occupants??'',pets:saved.pets??'',housing_history:saved.housing_history??'',references:saved.references??'',additional_notes:saved.additional_notes??''}};
+const EMPTY_HOUSING_FORM:HousingApplicationForm={first_name:'',last_name:'',email:'',phone:'',date_of_birth:'',current_address:'',monthly_income:'',employer:'',employment_status:'',move_in_date:'',occupants:'',pets:'',housing_history:'',references:'',additional_notes:''};
+export function validateHousingApplicationForm(form:HousingApplicationForm){
+ const errors:Partial<Record<keyof HousingApplicationForm,string>>={};
+ if(form.first_name.trim().length<2)errors.first_name='Enter your first name.';
+ if(form.last_name.trim().length<2)errors.last_name='Enter your last name.';
+ if(!isValidEmail(form.email))errors.email='Enter a valid email address.';
+ if(form.phone.replace(/\D/g,'').length!==10)errors.phone='Enter a 10-digit phone number.';
+ if(!isValidDateText(form.date_of_birth,{allowFuture:false}))errors.date_of_birth='Enter date of birth as MM/DD/YYYY.';
+ if(!form.current_address.trim())errors.current_address='Enter your current address or housing situation.';
+ if(!form.employment_status.trim())errors.employment_status='Select an employment status.';
+ if(form.employment_status!=='Unemployed'&&!form.employer.trim())errors.employer='Enter your employer or income source.';
+ const income=Number(form.monthly_income.replace(/[^0-9.]/g,''));
+ if(!form.monthly_income.trim()||Number.isNaN(income)||income<0)errors.monthly_income='Enter gross monthly income. Use 0 if none.';
+ if(!isValidDateText(form.move_in_date,{allowFuture:true}))errors.move_in_date='Enter move-in date as MM/DD/YYYY.';
+ const occupants=Number(form.occupants);
+ if(!Number.isInteger(occupants)||occupants<1)errors.occupants='Enter at least 1 occupant.';
+ if(!form.pets.trim())errors.pets='Enter pet details or select None.';
+ if(!form.housing_history.trim())errors.housing_history='Enter housing history or state that you have no prior rental history.';
+ if(!form.references.trim())errors.references='Enter a reference or state None available.';
+ return errors;
 }
-export async function saveHousingApplicationDraft(applicationId:string,form:HousingApplicationForm,currentStep:number){const user=await currentUser();const {error}=await supabase.from('housing_applications').update({answers:form,current_step:currentStep,updated_at:new Date().toISOString()}).eq('id',applicationId).eq('user_id',user.id).eq('status','started');if(error)throw error;}
-export async function submitHousingApplication(applicationId:string,form:HousingApplicationForm){const user=await currentUser();const now=new Date().toISOString();const {data,error}=await supabase.from('housing_applications').update({answers:form,current_step:5,status:'submitted',submitted_at:now,updated_at:now,applicant_snapshot:form,consent_snapshot:{confirmed:true,confirmed_at:now}}).eq('id',applicationId).eq('user_id',user.id).eq('status','started').select('id,status,submitted_at').single();if(error)throw error;if(!data||data.status!=='submitted')throw new Error('SUBMIT_NOT_CONFIRMED');return data;}
-
+export async function loadHousingApplicationForm(applicationId:string):Promise<{form:HousingApplicationForm;current_step:number;application_type:HousingApplicationMode}>{
+ const user=await currentUser();
+ const [{data:app,error},{data:profile},{data:rows}]=await Promise.all([
+  supabase.from('housing_applications').select('answers,current_step,application_type').eq('id',applicationId).eq('user_id',user.id).single(),
+  supabase.from('profiles').select('first_name,last_name').eq('id',user.id).maybeSingle(),
+  supabase.from('profile_answers').select('question_id,answer,verification_state').eq('user_id',user.id)
+ ]);
+ if(error)throw error;
+ const answers:Record<string,unknown>={}; for(const row of rows??[])answers[row.question_id]=row.answer;
+ const text=(id:string)=>{const v=answers[id];return Array.isArray(v)?v.join(', '):v==null?'':String(v)};
+ const saved=(app?.answers??{}) as Partial<HousingApplicationForm>;
+ const fast=app?.application_type==='fasttrack';
+ const prefill:HousingApplicationForm=fast?{
+  ...EMPTY_HOUSING_FORM,
+  first_name:profile?.first_name??'',
+  last_name:profile?.last_name??'',
+  email:user.email??'',
+  phone:text('identity.phone'),
+  date_of_birth:text('identity.date_of_birth'),
+  current_address:text('identity.address')||text('identity.current_location'),
+  occupants:text('housing.household_size')
+ }:{...EMPTY_HOUSING_FORM};
+ return {current_step:app?.current_step??1,application_type:(app?.application_type??'standard') as HousingApplicationMode,form:{...prefill,...saved}};
+}
+export async function saveHousingApplicationDraft(applicationId:string,form:HousingApplicationForm,currentStep:number){
+ const user=await currentUser();
+ const {data,error}=await supabase.from('housing_applications').update({answers:form,current_step:Math.max(1,Math.min(5,currentStep)),updated_at:new Date().toISOString()}).eq('id',applicationId).eq('user_id',user.id).eq('status','started').select('id,current_step').single();
+ if(error)throw error;
+ return data;
+}
+export async function submitHousingApplication(applicationId:string,form:HousingApplicationForm){
+ const validation=validateHousingApplicationForm(form);
+ if(Object.keys(validation).length)throw new Error('APPLICATION_INCOMPLETE');
+ const user=await currentUser();
+ const now=new Date().toISOString();
+ const {data,error}=await supabase.from('housing_applications').update({answers:form,current_step:5,status:'submitted',submitted_at:now,updated_at:now,applicant_snapshot:form,consent_snapshot:{confirmed:true,confirmed_at:now}}).eq('id',applicationId).eq('user_id',user.id).eq('status','started').select('id,status,submitted_at').single();
+ if(error)throw error;
+ if(!data||data.status!=='submitted'||!data.submitted_at)throw new Error('SUBMIT_NOT_CONFIRMED');
+ return data;
+}
+export async function deleteHousingApplicationDraft(applicationId:string){
+ const user=await currentUser();
+ const {error}=await supabase.from('housing_applications').delete().eq('id',applicationId).eq('user_id',user.id).eq('status','started');
+ if(error)throw error;
+}
 export async function withdrawMyHousingApplication(applicationId:string){
  const user=await currentUser();
- const {error}=await supabase.from('housing_applications').update({status:'withdrawn',updated_at:new Date().toISOString()}).eq('id',applicationId).eq('user_id',user.id).eq('status','started');
+ const {error}=await supabase.from('housing_applications').update({status:'withdrawn',updated_at:new Date().toISOString()}).eq('id',applicationId).eq('user_id',user.id).in('status',['submitted','reviewing','tour']);
  if(error)throw error;
 }
 
