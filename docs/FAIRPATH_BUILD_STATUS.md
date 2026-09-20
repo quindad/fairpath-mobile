@@ -1,6 +1,6 @@
 # FairPath Mobile — Build Status
 
-Last updated: 2026-09-19
+Last updated: 2026-09-20
 
 ## Source of truth
 This file is the handoff checkpoint for FairPath Mobile. Before starting a new build chat, read this file and the latest commits on `main`.
@@ -47,6 +47,25 @@ The repository is authoritative. The current repo does **not** yet contain separ
 - No fake FairPath neighborhood score: neighborhood dimensions remain source-backed and separate
 - Walk Score integration target confirmed for Walk / Transit / Bike data
 - GreatSchools NearbySchools integration target confirmed for nearby K-12 school data; API key/provider setup still required before live school cards can ship
+
+## Housing production pass — 2026-09-20
+- GitHub automatic app-check emails stopped: workflow is manual-only until the suite is green.
+- Root CI failure was TypeScript, not Expo: missing JobMap module, strict width typing, stale style/type issues and Node version mismatch were identified; known failures were repaired without re-enabling automatic email-producing runs.
+- Shared input formatters added for US phone numbers and MM/DD/YYYY dates.
+- Standard and FastTrack applications are now distinct user choices on FastTrack-enabled properties.
+- Standard applications start clean; FastTrack can prefill available FairPath profile information.
+- Housing application form rebuilt as a 5-step production flow: Applicant → Income → Household → History → Review.
+- Required field validation now blocks forward progress and blocks final submission.
+- Final submission requires explicit accuracy + submit consent; FastTrack also requires a FastTrack acknowledgment.
+- Submission now must be confirmed by Supabase before the UI reports success.
+- Draft applications can be permanently deleted and restarted; submitted applications have a separate withdrawal state.
+- Application workspace now shows real draft progress or submitted/review/tour/decision lifecycle.
+- Housing Applications dashboard now shows draft progress, Standard/FastTrack type, submitted date and status.
+- Saved Homes upgraded to visual cards with media and quick unsave.
+- Saved Housing Searches added with Supabase persistence and rerun support.
+- Find Housing now supports saved searches, price/newest/featured sorting and stronger city/state/ZIP parsing.
+- Home Details now lets the renter choose Standard vs FastTrack, shows a transparent cost snapshot, and can render source-backed schools and nearby places when provider data exists.
+- Housing area-intelligence schema added for schools and nearby grocery/parks/transit/healthcare/pharmacy; no fake neighborhood or school data is displayed.
 
 ## Next build
 ### Property-owner photo system
