@@ -6,9 +6,9 @@ Last updated: 2026-09-20
 Read this file and the latest commits on `main` before starting a new build chat. The repository is authoritative; chat memory is secondary.
 
 ## Current lane
-**FairPath Mobile → Housing closeout verification, then FairPath Partner**
+**FairPath Mobile → Marketplace major build + Housing verification, then FairPath Partner**
 
-Do not restart Jobs. Housing core is now built deeply enough to freeze after the real-client verification list is green. Then move primary engineering effort to FairPath Partner.
+Do not restart Jobs. Housing core is waiting on its short real-client verification. Marketplace is now a major active lane with its server-side claim/pickup model built. After Marketplace smoke testing + Housing verification, move primary engineering effort to FairPath Partner.
 
 ## Mobile architecture
 - **FairPath Mobile** — renter/job-seeker/consumer experience.
@@ -148,3 +148,27 @@ Partner will consume the existing shared tables for:
 
 ## Parked architecture
 Protection + Incentives remains documented in `docs/FAIRPATH_PROTECTION_AND_INCENTIVES_BLUEPRINT.md`. Preserve it, but do not let it block the 5-week launch path.
+
+
+## Marketplace major build — 2026-09-20
+- Free-item-only Marketplace enforced in database.
+- Free plan = 1 claim/month; active FairPath+ = 7/month, server-authoritative.
+- Search by keyword + city/state/ZIP, categories, condition, Safe Pickup, sorting.
+- Saved Marketplace, My Claims, My Listings and donor listing management.
+- Anonymous donor selection: seller Claim Manager receives claim IDs, not claimant identity/race/photo.
+- Claimants cannot message donors. Selected donors may send pickup-logistics messages after approval.
+- Approval starts a 48-hour pickup window and generates a secure pickup code.
+- Exact pickup details remain private until approval.
+- Correct pickup code completes claim + item handoff.
+- No-show after deadline reopens item and remains counted against claimant quota.
+- Donor-declined / pre-approval cancelled claims restore quota.
+- Safe pickup + reporting/moderation contracts.
+- Individual/organization donors.
+- Up to 20 listing photos, cover/reorder/delete, edit, pause/relist/remove.
+- Listing creation is draft-first, publish-last to prevent partially-created public inventory.
+- Owner cannot self-feature or bypass Admin moderation fields.
+- Marketplace notifications + product-event analytics foundation.
+- Transaction tests passed for free quota, FairPath+ quota, anonymous claim flow, pickup verification, 48-hour expiration, and donor-only messaging.
+- Exact 4-digit donor phone access and QR scanning remain deliberate integrations rather than fake client-side implementations.
+- Marketplace source of truth: `docs/FAIRPATH_MARKETPLACE_BUILD_STATUS.md`.
+- Marketplace regression matrix: `docs/FAIRPATH_MARKETPLACE_TEST_MATRIX.md`.
