@@ -34,7 +34,7 @@ export default function JobApplications(){
   setError('');
   try{setItems(await loadMyJobApplications())}
   catch(e){
-   if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace('/sign-in?returnTo=/job-applications' as never);return}
+   if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace('/sign-up?returnTo=/job-applications' as never);return}
    setError('Your applications could not be loaded.');
   }finally{setLoading(false);setRefreshing(false)}
  },[]);
