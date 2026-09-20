@@ -156,7 +156,7 @@ export async function createMarketplaceItem(input:CreateMarketplaceItemInput){
   city:input.pickup_city.trim(),state:input.pickup_state.trim().toUpperCase().slice(0,2),postal_code:input.pickup_postal_code?.trim()||null,
   instructions:input.instructions?.trim()||null,contact_phone:input.contact_phone?.trim()||null
  });if(pickupError){await supabase.from('marketplace_items').delete().eq('id',data.id);throw pickupError}
- void trackMarketplaceEvent('marketplace_item_published',data.id,{category:input.category,seller_type:input.seller_type,safe_pickup:input.safe_pickup}).catch(()=>{});return data.id as string;
+ void trackMarketplaceEvent('marketplace_item_created',data.id,{category:input.category,seller_type:input.seller_type,safe_pickup:input.safe_pickup}).catch(()=>{});return data.id as string;
 }
 
 export async function uploadMarketplacePhoto(itemId:string,file:{name:string;mimeType?:string|null;bytes:ArrayBuffer},sortOrder:number){
@@ -191,7 +191,7 @@ export async function removeMarketplacePhoto(media:MarketplaceMedia){
 export async function reorderMarketplacePhotos(itemId:string,media:MarketplaceMedia[]){
  await currentUser();for(let i=0;i<media.length;i++){const {error}=await supabase.from('marketplace_media').update({sort_order:i}).eq('id',media[i].id).eq('item_id',itemId);if(error)throw error}
 }
-export async function setMarketplaceItemAvailability(itemId:string,available:boolean){await currentUser();const {error}=await supabase.rpc('set_marketplace_item_availability',{p_item_id:itemId,p_available:available});if(error){if(error.message?.includes('STATUS_LOCKED'))throw new Error('STATUS_LOCKED');throw error}}
+export async function setMarketplaceItemAvailability(itemId:string,available:boolean){await currentUser();const {error}=await supabase.rpc('set_marketplace_item_availability',{p_item_id:itemId,p_available:available});if(error){if(error.message?.includes('STATUS_LOCKED'))throw new Error('STATUS_LOCKED');throw error}void trackMarketplaceEvent(available?'marketplace_item_published':'marketplace_item_paused',itemId).catch(()=>{})}
 
 export async function removeMarketplaceItem(itemId:string){await currentUser();const {error}=await supabase.rpc('remove_marketplace_item',{p_item_id:itemId});if(error)throw error}
 
