@@ -1,5 +1,5 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome';
@@ -22,6 +22,7 @@ export default function HousingDetail(){
  const [starting,setStarting]=useState(false);
  const [galleryIndex,setGalleryIndex]=useState(0);
  const [galleryWidth,setGalleryWidth]=useState(0);
+ const galleryRef=useRef<ScrollView|null>(null);
 
  useEffect(()=>{
   if(!id)return;
@@ -85,6 +86,7 @@ export default function HousingDetail(){
   <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <View style={s.gallery} onLayout={e=>setGalleryWidth(e.nativeEvent.layout.width)}>
     {galleryWidth>0?<ScrollView
+     ref={galleryRef}
      horizontal pagingEnabled showsHorizontalScrollIndicator={false}
      onMomentumScrollEnd={e=>setGalleryIndex(Math.round(e.nativeEvent.contentOffset.x/galleryWidth))}
     >
@@ -94,7 +96,7 @@ export default function HousingDetail(){
     {usingDemoPhotos?<View style={s.demoFlag}><Text style={s.demoFlagText}>DEMO GALLERY</Text></View>:null}
    </View>
    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.thumbs}>
-    {photos.map((url,index)=><Pressable key={'thumb-'+url+index} onPress={()=>setGalleryIndex(index)} style={[s.thumbWrap,galleryIndex===index&&s.thumbActive]}><Image source={{uri:url}} style={s.thumb}/></Pressable>)}
+    {photos.map((url,index)=><Pressable key={'thumb-'+url+index} onPress={()=>{setGalleryIndex(index);galleryRef.current?.scrollTo({x:index*galleryWidth,animated:true})}} style={[s.thumbWrap,galleryIndex===index&&s.thumbActive]}><Image source={{uri:url}} style={s.thumb}/></Pressable>)}
    </ScrollView>
 
    <View style={s.intro}>
