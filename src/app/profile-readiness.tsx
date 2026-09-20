@@ -12,9 +12,9 @@ export default function ProfileReadiness(){
  return <ScreenFrame><PageHeader eyebrow="FAIRPATH READINESS" title="Your profile" backTo="/me"/>
  <ScrollView contentContainerStyle={s.content}>
   <View style={s.score}><View><Text style={s.scoreLabel}>OVERALL READINESS</Text><Text style={s.scoreSub}>Complete information once. Reuse it across FairPath.</Text></View><Text style={s.scoreNumber}>{overall}%</Text></View>
-  <View style={s.track}><View style={[s.fill,{width:overall+'%'}]}/></View>
+  <View style={s.track}><View style={[s.fill,{width:(overall+'%') as any}]}/></View>
   <Text style={s.section}>PROFILE SECTIONS</Text>
-  {areas.map(([area,title,body,pct])=><Pressable key={area} style={s.row} onPress={()=>router.push({pathname:'/complete-profile',params:{area}} as never)}><View style={s.copy}><View style={s.titleLine}><Text style={s.title}>{title}</Text><Text style={s.pct}>{pct}%</Text></View><Text style={s.body}>{body}</Text><View style={s.miniTrack}><View style={[s.miniFill,{width:pct+'%'}]}/></View></View><Text style={s.arrow}>→</Text></Pressable>)}
+  {areas.map(([area,title,body,pct])=><Pressable key={area} style={s.row} onPress={()=>router.push({pathname:'/complete-profile',params:{area}} as never)}><View style={s.copy}><View style={s.titleLine}><Text style={s.title}>{title}</Text><Text style={s.pct}>{pct}%</Text></View><Text style={s.body}>{body}</Text><View style={s.miniTrack}><View style={[s.miniFill,{width:(pct+'%') as any}]}/></View></View><Text style={s.arrow}>→</Text></Pressable>)}
   <View style={s.privacy}><Text style={s.privacyTitle}>PRIVATE BY DESIGN</Text><Text style={s.privacyBody}>Sensitive justice-history information supports permitted screening and matching. It is not automatically displayed as a general partner-visible profile field.</Text></View>
  </ScrollView></ScreenFrame>
 }
