@@ -6,6 +6,7 @@ import { ScreenFrame, PageHeader, FilterStrip, SharpChip, InlineBadge } from '@/
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import {
   MARKETPLACE_CATEGORIES,
+  MARKETPLACE_CONDITIONS,
   MarketplaceItem,
   MarketplaceQuota,
   isMarketplaceItemSaved,
@@ -21,6 +22,7 @@ export default function Marketplace(){
  const [location,setLocation]=useState('');
  const [category,setCategory]=useState('');
  const [safeOnly,setSafeOnly]=useState(false);
+ const [condition,setCondition]=useState('');
  const [sort,setSort]=useState<'newest'|'oldest'>('newest');
  const [items,setItems]=useState<MarketplaceItem[]>([]);
  const [saved,setSaved]=useState<Record<string,boolean>>({});
@@ -31,13 +33,13 @@ export default function Marketplace(){
  const run=useCallback(async(nextCategory=category)=>{
   setLoading(true);setError('');
   try{
-   const rows=await loadMarketplace({search:query,category:nextCategory,location,safePickup:safeOnly,sort});
+   const rows=await loadMarketplace({search:query,category:nextCategory,location,safePickup:safeOnly,condition,sort});
    setItems(rows);
    try{const ids=await loadSavedMarketplaceIds();setSaved(Object.fromEntries(ids.map(id=>[id,true])))}catch{}
    try{setQuota(await loadMarketplaceQuota())}catch{setQuota(null)}
   }catch{setError('Marketplace could not load. Check your connection and try again.')}
   finally{setLoading(false)}
- },[query,location,category,safeOnly,sort]);
+ },[query,location,category,safeOnly,condition,sort]);
 
  useFocusEffect(useCallback(()=>{void run()},[run]));
  const visible=useMemo(()=>items,[items]);
@@ -84,6 +86,11 @@ export default function Marketplace(){
     <SharpChip label="All" active={!category} onPress={()=>{setCategory('');void run('')}}/>
     {MARKETPLACE_CATEGORIES.map(x=><SharpChip key={x} label={x} active={category===x} onPress={()=>{setCategory(x);void run(x)}}/>)}
    </FilterStrip>
+   <View style={s.conditionHead}><Text style={s.conditionLabel}>CONDITION</Text></View>
+   <FilterStrip>
+    <SharpChip label="Any" active={!condition} onPress={()=>setCondition('')}/>
+    {MARKETPLACE_CONDITIONS.map(x=><SharpChip key={x} label={x} active={condition===x} onPress={()=>setCondition(x)}/>)}
+   </FilterStrip>
 
    <View style={s.resultsHead}><View><Text style={s.results}>{loading?'LOADING':visible.length+' AVAILABLE'}</Text><Text style={s.resultsSub}>Free items only · local pickup · claim required</Text></View></View>
    {error?<Text style={s.error}>{error}</Text>:null}
@@ -121,7 +128,7 @@ const s=StyleSheet.create({
  quota:{minHeight:70,borderBottomWidth:1,borderBottomColor:C.borderStrong,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},quotaLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},quotaTitle:{color:C.white,fontFamily:F.extraBold,fontSize:15,marginTop:5},quotaCount:{flexDirection:'row',alignItems:'baseline'},quotaBig:{color:C.white,fontFamily:F.black,fontSize:27},quotaOf:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:10},quotaGuest:{minHeight:72,borderBottomWidth:1,borderBottomColor:C.borderStrong,justifyContent:'center',paddingRight:28,position:'relative'},quotaGuestText:{color:C.white,fontFamily:F.extraBold,fontSize:12,marginTop:5},
  searchCard:{paddingVertical:14,borderBottomWidth:1,borderBottomColor:C.borderStrong},searchRow:{height:46,borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#0A0C0A',flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:11,marginBottom:7},input:{flex:1,color:C.white,fontSize:11,paddingVertical:0},searchBtn:{height:46,backgroundColor:C.lime,flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:13},searchBtnText:{color:C.black,fontFamily:F.extraBold,fontSize:8,letterSpacing:.9},
  quickLinks:{flexDirection:'row',flexWrap:'wrap',gap:7,paddingVertical:12},quick:{minHeight:36,borderWidth:1,borderColor:C.borderStrong,paddingHorizontal:10,flexDirection:'row',alignItems:'center',gap:6},quickText:{color:C.white,fontFamily:F.extraBold,fontSize:7,letterSpacing:.7},quickTextOn:{color:C.black},
- resultsHead:{paddingVertical:13,borderBottomWidth:1,borderBottomColor:C.border},results:{color:C.white,fontFamily:F.extraBold,fontSize:10,letterSpacing:.8},resultsSub:{color:C.muted,fontSize:8.5,marginTop:3},error:{color:C.danger,fontSize:10,paddingVertical:12},
+ conditionHead:{paddingTop:10},conditionLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:6.5,letterSpacing:.9},resultsHead:{paddingVertical:13,borderBottomWidth:1,borderBottomColor:C.border},results:{color:C.white,fontFamily:F.extraBold,fontSize:10,letterSpacing:.8},resultsSub:{color:C.muted,fontSize:8.5,marginTop:3},error:{color:C.danger,fontSize:10,paddingVertical:12},
  empty:{paddingVertical:34,alignItems:'flex-start'},emptyTitle:{color:C.white,fontFamily:F.black,fontSize:19,marginTop:10},emptyBody:{color:C.muted,fontSize:10,lineHeight:16,marginTop:5,maxWidth:320},
  grid:{flexDirection:'row',flexWrap:'wrap',marginHorizontal:-5,paddingTop:10},card:{width:'50%',paddingHorizontal:5,paddingBottom:18},media:{aspectRatio:1.08,backgroundColor:'#0A0C0A',borderWidth:1,borderColor:C.borderStrong,position:'relative',overflow:'hidden'},photo:{width:'100%',height:'100%'},noPhoto:{flex:1,alignItems:'center',justifyContent:'center'},noPhotoText:{color:C.muted,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8,marginTop:6},saveBtn:{position:'absolute',right:7,top:7,width:31,height:31,borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#080A08DD',alignItems:'center',justifyContent:'center'},saveBtnOn:{backgroundColor:C.lime,borderColor:C.lime},featured:{position:'absolute',left:0,bottom:0,backgroundColor:C.lime,paddingHorizontal:7,paddingVertical:4},featuredText:{color:C.black,fontFamily:F.extraBold,fontSize:6,letterSpacing:.7},
  cardBody:{paddingTop:8},topline:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:5},free:{color:C.lime,fontFamily:F.black,fontSize:15},itemTitle:{color:C.white,fontFamily:F.extraBold,fontSize:13,lineHeight:16,marginTop:4},location:{color:C.mutedStrong,fontSize:9,marginTop:5},condition:{color:C.muted,fontSize:8,marginTop:4},
