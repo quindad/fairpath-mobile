@@ -6,7 +6,6 @@ import { ScreenFrame, PageHeader, SharpChip, InlineBadge } from '@/components/Pr
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { loadHousing, loadSavedHousingIds, saveHousing, saveHousingSearch, unsaveHousing, type HousingListing } from '@/core/opportunities/opportunity-service';
 import { loadProfileAnswers } from '@/core/profile/profile-service';
-import { demoHousingImage } from '@/core/demo/demo-media';
 import { supabase } from '@/lib/supabase';
 import { HousingMap } from '@/components/HousingMap';
 
@@ -186,8 +185,8 @@ export default function Housing(){
    {!loading&&visible.length===0?<View style={s.empty}><Text style={s.emptyTitle}>No homes match this search.</Text><Text style={s.emptyBody}>Try a wider location, a different keyword, or remove a filter.</Text></View>:null}
    {!loading&&viewMode==='map'?<HousingMap homes={visible} onOpen={h=>router.push(('/housing/'+h.id) as never)}/>:null}
 
-   {!loading&&viewMode==='list'?visible.map((h,index)=>{
-    const photo=h.housing_media?.filter(m=>m.media_type==='photo').sort((a,b)=>a.sort_order-b.sort_order)[0]?.url||demoHousingImage(index);
+   {!loading&&viewMode==='list'?visible.map((h)=>{
+    const photo=h.housing_media?.filter(m=>m.media_type==='photo').sort((a,b)=>a.sort_order-b.sort_order)[0]?.url??'';
     const isSaved=Boolean(saved[h.id]);
     return <Pressable key={h.id} style={s.card} onPress={()=>router.push(('/housing/'+h.id) as never)}>
      <View style={s.media}>
