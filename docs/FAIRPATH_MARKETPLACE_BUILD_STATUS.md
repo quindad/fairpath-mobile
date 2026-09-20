@@ -44,6 +44,7 @@ FairPath Marketplace is a **free local-item exchange**, not a resale storefront.
 - A request cancelled before donor approval does not consume quota.
 - Cancellation after approval still counts because the donor reserved the item.
 - No-show remains counted.
+- Supabase pg_cron runs the pickup-expiration worker every 15 minutes, so stale approved/ready claims are released without waiting for a user to open the app.
 - Donor-removal cancellation restores quota.
 - Re-requesting an item after a cancelled/declined/expired request is supported when quota and item availability permit it.
 
@@ -132,10 +133,9 @@ FairPath Marketplace is a **free local-item exchange**, not a resale storefront.
 
 ## Still to close later
 - Visual QR rendering / camera scan for pickup passes. The secure pickup-code flow is live now; QR should wrap the same claim verification contract rather than create a second lifecycle.
-- Exact donor phone-number + 4-digit-code access. Native Supabase SMS OTP is not a 4-digit flow, so this must be implemented with a deliberate custom SMS/auth provider rather than faked inside the client.
+- Exact donor phone-number + 4-digit-code access. Native Supabase SMS OTP is not a 4-digit flow, so this must be implemented with a deliberate custom SMS/auth provider rather than faked inside the client. Architecture/options are locked in `docs/FAIRPATH_MARKETPLACE_DONOR_ACCESS.md`.
 - Phone-OTP authentication if FairPath chooses to support phone-first account login.
 - Marketplace Admin moderation queue.
-- Automated stale-claim expiration worker / scheduled job.
 - Push/email delivery on top of in-app notifications.
 - Marketplace analytics dashboard.
 - Optional distance/radius search once location/geocoding provider is connected.
