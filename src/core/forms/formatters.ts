@@ -21,3 +21,6 @@ export function isValidDateText(text:string,{allowFuture=true}:{allowFuture?:boo
 }
 export function isValidEmail(text:string){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text.trim())}
 export function digitsOnly(raw:string,max=12){return raw.replace(/\D/g,'').slice(0,max)}
+
+export function dateTextToLocalDate(text:string){const m=text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);if(!m)return null;const d=new Date(Number(m[3]),Number(m[1])-1,Number(m[2]));return Number.isNaN(d.getTime())?null:d}
+export function isTodayOrFutureDateText(text:string){const d=dateTextToLocalDate(text);if(!d)return false;const today=new Date();today.setHours(0,0,0,0);d.setHours(0,0,0,0);return d.getTime()>=today.getTime()}
