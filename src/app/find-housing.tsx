@@ -144,10 +144,6 @@ export default function Housing(){
 
   <View style={s.searchBlock}>
    <View style={s.searchRow}>
-    <View style={s.fieldIcon}><Lucide name="home" color={C.lime} size={15}/></View>
-    <View style={s.fieldCopy}><Text style={s.fieldLabel}>WHAT</Text><TextInput value={query} onChangeText={setQuery} style={s.input} placeholder="Apartment, townhome, amenity" placeholderTextColor={C.muted}/></View>
-   </View>
-   <View style={s.searchRow}>
     <View style={s.fieldIcon}><Lucide name="map-pin" color={C.lime} size={15}/></View>
     <View style={s.fieldCopy}><Text style={s.fieldLabel}>WHERE</Text><TextInput value={location} onChangeText={setLocation} style={s.input} placeholder="City, state or ZIP" placeholderTextColor={C.muted}/></View>
    </View>
