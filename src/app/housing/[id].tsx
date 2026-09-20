@@ -1,3 +1,146 @@
-import { router, useLocalSearchParams } from 'expo-router';import { useEffect,useState } from 'react';import { Alert,Image,Pressable,ScrollView,StyleSheet,Text } from 'react-native';import { ScreenFrame,PageHeader } from '@/components/ProductChrome';import { FairPathColors as C,FairPathFonts as F,FairPathLayout as L } from '@/constants/fairpath';import { loadHousingListing,saveHousing,submitHousingApplication,type HousingListing } from '@/core/opportunities/opportunity-service';import { demoHousingImage } from '@/core/demo/demo-media';
-export default function Screen(){const {id}=useLocalSearchParams<{id:string}>();const [item,setItem]=useState<HousingListing|null>(null);useEffect(()=>{if(id)loadHousingListing(id).then(setItem).catch(()=>{})},[id]);if(!item)return <ScreenFrame><PageHeader eyebrow="FAIRPATH HOUSING" title="Home details"/><Text style={s.state}>Loading home…</Text></ScreenFrame>;const photo=item.housing_media?.find(m=>m.media_type==='photo')?.url||demoHousingImage(0);const apply=async()=>{try{await submitHousingApplication(item.id,item.fasttrack_enabled);Alert.alert('Application started','Your housing application was saved.')}catch(e){if(e instanceof Error&&e.message==='SIGNED_OUT'){router.push(('/sign-in?returnTo='+encodeURIComponent('/housing/'+item.id)) as never);return}Alert.alert('Could not start application','Please try again.')}};return <ScreenFrame><PageHeader eyebrow="HOUSING DETAILS" title={item.title}/><ScrollView contentContainerStyle={s.content}><Image source={{uri:photo}} style={s.hero}/><Text style={s.price}>{'$'+Number(item.rent_monthly).toLocaleString()} <Text style={s.month}>/ month</Text></Text><Text style={s.meta}>{[item.bedrooms!=null?item.bedrooms+' bd':null,item.bathrooms!=null?item.bathrooms+' ba':null,item.square_feet?item.square_feet.toLocaleString()+' sq ft':null].filter(Boolean).join(' · ')}</Text><Text style={s.loc}>{[item.address_line1,item.city,item.state,item.postal_code].filter(Boolean).join(', ')}</Text><Text style={s.section}>ABOUT THIS HOME</Text><Text style={s.body}>{item.description}</Text>{item.screening_summary?<><Text style={s.section}>SCREENING</Text><Text style={s.body}>{item.screening_summary}</Text></>:null}<Pressable style={s.primary} onPress={apply}><Text style={s.primaryText}>{item.fasttrack_enabled?'START FASTTRACK APPLICATION':'START APPLICATION'} →</Text></Pressable><Pressable style={s.secondary} onPress={()=>saveHousing(item.id).then(()=>Alert.alert('Saved','Home saved.')).catch(e=>{if(e instanceof Error&&e.message==='SIGNED_OUT'){router.push(('/sign-in?returnTo='+encodeURIComponent('/housing/'+item.id)) as never);return}Alert.alert('Could not save','Please try again.')})}><Text style={s.secondaryText}>SAVE HOME</Text></Pressable></ScrollView></ScreenFrame>}
-const s=StyleSheet.create({content:{paddingHorizontal:L.mobileGutter,paddingBottom:36},state:{color:C.mutedStrong,padding:20},hero:{height:220,width:'100%',borderRadius:16,marginTop:16},price:{color:C.white,fontFamily:F.extraBold,fontSize:28,marginTop:16},month:{color:C.mutedStrong,fontFamily:F.regular,fontSize:12},meta:{color:C.white,fontFamily:F.semiBold,fontSize:12,marginTop:7},loc:{color:C.muted,fontSize:11,marginTop:5},section:{color:C.lime,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.2,marginTop:22},body:{color:C.mutedStrong,fontSize:12,lineHeight:19,marginTop:7},primary:{height:48,borderRadius:24,backgroundColor:C.lime,alignItems:'center',justifyContent:'center',marginTop:24},primaryText:{color:C.black,fontFamily:F.extraBold,fontSize:10},secondary:{height:46,borderRadius:23,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center',marginTop:9},secondaryText:{color:C.white,fontFamily:F.bold,fontSize:10}});
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Lucide } from '@react-native-vector-icons/lucide';
+import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome';
+import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
+import { isHousingSaved, loadHousingListing, loadMyHousingApplication, saveHousing, startHousingApplication, unsaveHousing, type HousingApplicationStatus, type HousingListing } from '@/core/opportunities/opportunity-service';
+import { demoHousingImage } from '@/core/demo/demo-media';
+import { supabase } from '@/lib/supabase';
+
+const STATUS_LABEL:Record<HousingApplicationStatus,string>={
+ started:'APPLICATION STARTED',submitted:'SUBMITTED',reviewing:'UNDER REVIEW',tour:'TOUR',approved:'APPROVED',denied:'NOT APPROVED',withdrawn:'WITHDRAWN'
+};
+
+export default function HousingDetail(){
+ const {id}=useLocalSearchParams<{id:string}>();
+ const [item,setItem]=useState<HousingListing|null>(null);
+ const [loading,setLoading]=useState(true);
+ const [error,setError]=useState('');
+ const [saved,setSaved]=useState(false);
+ const [applicationStatus,setApplicationStatus]=useState<HousingApplicationStatus|null>(null);
+ const [starting,setStarting]=useState(false);
+
+ useEffect(()=>{
+  if(!id)return;
+  loadHousingListing(id).then(setItem).catch(()=>setError('This home could not be loaded.')).finally(()=>setLoading(false));
+ },[id]);
+
+ useFocusEffect(useCallback(()=>{
+  if(!id)return;
+  let active=true;
+  isHousingSaved(id).then(v=>{if(active)setSaved(v)}).catch(()=>{});
+  loadMyHousingApplication(id).then(v=>{if(active)setApplicationStatus(v?.status??null)}).catch(()=>{});
+  return()=>{active=false};
+ },[id]));
+
+ async function toggleSave(){
+  if(!item)return;
+  try{
+   if(saved){await unsaveHousing(item.id);setSaved(false)}
+   else{await saveHousing(item.id);setSaved(true)}
+  }catch(e){
+   if(e instanceof Error&&e.message==='SIGNED_OUT'){router.push(('/sign-up?returnTo='+encodeURIComponent('/housing/'+item.id)) as never);return}
+   Alert.alert('Could not update saved home','Please try again.');
+  }
+ }
+
+ async function startApplication(){
+  if(!item||starting)return;
+  const {data:{user}}=await supabase.auth.getUser();
+  if(!user){router.push(('/sign-up?returnTo='+encodeURIComponent('/housing/'+item.id)) as never);return}
+  if(applicationStatus){Alert.alert('Application already started','This home is already in your housing application history.');return}
+  setStarting(true);
+  try{
+   const application=await startHousingApplication(item.id,item.fasttrack_enabled);
+   setApplicationStatus(application.status);
+   Alert.alert('Application started',item.fasttrack_enabled?'Your FastTrack application workspace is started. Nothing has been submitted or charged yet.':'Your housing application workspace is started. Nothing has been submitted yet.');
+  }catch{Alert.alert('Could not start application','Please try again.')}
+  finally{setStarting(false)}
+ }
+
+ async function openUrl(url:string|null){
+  if(!url)return;
+  try{await Linking.openURL(url)}catch{Alert.alert('Link unavailable','We could not open this link.')}
+ }
+
+ if(loading)return <ScreenFrame><PageHeader eyebrow="FAIRPATH HOUSING" title="Home details" backTo="/find-housing" alwaysBackTo/><View style={s.state}><Text style={s.muted}>Loading home…</Text></View></ScreenFrame>;
+ if(error||!item)return <ScreenFrame><PageHeader eyebrow="FAIRPATH HOUSING" title="Home details" backTo="/find-housing" alwaysBackTo/><View style={s.state}><Text style={s.error}>{error||'Home not found.'}</Text></View></ScreenFrame>;
+
+ const photo=item.housing_media?.filter(m=>m.media_type==='photo').sort((a,b)=>a.sort_order-b.sort_order)[0]?.url||demoHousingImage(0);
+ const location=[item.address_line1,item.city,item.state,item.postal_code].filter(Boolean).join(', ');
+ const availability=item.available_date?new Date(item.available_date+'T00:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}):null;
+
+ return <ScreenFrame>
+  <PageHeader eyebrow="FAIRPATH HOUSING" title="Home details" backTo="/find-housing" alwaysBackTo trailing={
+   <Pressable style={[s.save,saved&&s.saveActive]} onPress={()=>void toggleSave()}>
+    <Lucide name={saved?'bookmark-check':'bookmark'} color={saved?C.black:C.white} size={14}/><Text style={[s.saveText,saved&&s.saveTextActive]}>{saved?'SAVED':'SAVE'}</Text>
+   </Pressable>
+  }/>
+  <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+   <Image source={{uri:photo}} style={s.hero}/>
+
+   <View style={s.intro}>
+    <Text style={s.price}>{'$'+Number(item.rent_monthly).toLocaleString()} <Text style={s.month}>/ month</Text></Text>
+    <Text style={s.title}>{item.title}</Text>
+    <Text style={s.meta}>{[item.bedrooms!=null?item.bedrooms+' bd':null,item.bathrooms!=null?item.bathrooms+' ba':null,item.square_feet?item.square_feet.toLocaleString()+' sq ft':null].filter(Boolean).join(' · ')}</Text>
+    <View style={s.locationRow}><Lucide name="map-pin" color={C.muted} size={13}/><Text style={s.location}>{location}</Text></View>
+    <View style={s.badges}>
+     {item.fasttrack_enabled?<InlineBadge tone="lime">FASTTRACK AVAILABLE</InlineBadge>:null}
+     {applicationStatus?<InlineBadge tone="lime">{STATUS_LABEL[applicationStatus]}</InlineBadge>:null}
+     <InlineBadge>{item.property_type.toUpperCase()}</InlineBadge>
+    </View>
+   </View>
+
+   <View style={s.facts}>
+    {item.deposit_amount!=null?<Fact label="DEPOSIT" value={'$'+Number(item.deposit_amount).toLocaleString()}/>:null}
+    {item.application_fee!=null?<Fact label="APPLICATION FEE" value={'$'+Number(item.application_fee).toLocaleString()}/>:null}
+    {availability?<Fact label="AVAILABLE" value={availability}/>:null}
+   </View>
+
+   <Section label="ABOUT THIS HOME"><Text style={s.body}>{item.description}</Text></Section>
+   {item.screening_summary?<Section label="SCREENING"><Text style={s.body}>{item.screening_summary}</Text></Section>:null}
+   {item.lease_terms?.length?<Section label="LEASE TERMS"><Text style={s.body}>{item.lease_terms.join(' · ')}</Text></Section>:null}
+   {item.amenities?.length?<Section label="AMENITIES"><Text style={s.body}>{item.amenities.join(' · ')}</Text></Section>:null}
+   {item.utilities_included?.length?<Section label="UTILITIES INCLUDED"><Text style={s.body}>{item.utilities_included.join(' · ')}</Text></Section>:null}
+   {item.pet_policy?<Section label="PET POLICY"><Text style={s.body}>{item.pet_policy}</Text></Section>:null}
+   {item.parking?<Section label="PARKING"><Text style={s.body}>{item.parking}</Text></Section>:null}
+   {item.accessibility_features?.length?<Section label="ACCESSIBILITY"><Text style={s.body}>{item.accessibility_features.join(' · ')}</Text></Section>:null}
+
+   {item.virtual_tour_url||item.floor_plan_url||item.video_url?<View style={s.links}>
+    <Text style={s.sectionLabel}>PROPERTY MEDIA</Text>
+    {item.virtual_tour_url?<LinkRow label="VIRTUAL TOUR" onPress={()=>void openUrl(item.virtual_tour_url)}/>:null}
+    {item.floor_plan_url?<LinkRow label="FLOOR PLAN" onPress={()=>void openUrl(item.floor_plan_url)}/>:null}
+    {item.video_url?<LinkRow label="VIDEO" onPress={()=>void openUrl(item.video_url)}/>:null}
+   </View>:null}
+
+   <View style={s.source}><Text style={s.sourceLabel}>SOURCE</Text><Text style={s.sourceText}>{item.source_label||'FairPath'}</Text>{item.source_url?<Pressable onPress={()=>void openUrl(item.source_url)}><Text style={s.sourceLink}>VIEW ORIGINAL LISTING ↗</Text></Pressable>:null}</View>
+
+   <View style={s.notice}>
+    <Lucide name="shield-check" color={C.lime} size={16}/>
+    <Text style={s.noticeText}>{item.fasttrack_enabled?'Starting FastTrack creates your application workspace only. Payment and final submission require a separate confirmation step.':'Starting an application does not submit anything to a property owner until you complete and confirm it.'}</Text>
+   </View>
+
+   <Pressable style={[s.primary,(starting||Boolean(applicationStatus))&&s.primaryMuted]} onPress={()=>void startApplication()} disabled={starting}>
+    <Text style={[s.primaryText,applicationStatus&&s.primaryTextMuted]}>{starting?'STARTING…':applicationStatus?STATUS_LABEL[applicationStatus]:item.fasttrack_enabled?'START FASTTRACK APPLICATION':'START APPLICATION'}</Text>
+    <Lucide name={applicationStatus?'check':'arrow-right'} color={applicationStatus?C.mutedStrong:C.black} size={16}/>
+   </Pressable>
+  </ScrollView>
+ </ScreenFrame>;
+}
+
+function Fact({label,value}:{label:string;value:string}){return <View style={s.fact}><Text style={s.factLabel}>{label}</Text><Text style={s.factValue}>{value}</Text></View>}
+function Section({label,children}:{label:string;children:React.ReactNode}){return <View style={s.section}><Text style={s.sectionLabel}>{label}</Text>{children}</View>}
+function LinkRow({label,onPress}:{label:string;onPress:()=>void}){return <Pressable style={s.linkRow} onPress={onPress}><Text style={s.linkText}>{label}</Text><Lucide name="external-link" color={C.lime} size={14}/></Pressable>}
+
+const s=StyleSheet.create({
+ content:{paddingHorizontal:L.mobileGutter,paddingTop:16,paddingBottom:36},state:{padding:L.mobileGutter},muted:{color:C.muted},error:{color:C.danger},
+ save:{height:34,borderWidth:1,borderColor:C.borderStrong,paddingHorizontal:9,flexDirection:'row',gap:6,alignItems:'center',justifyContent:'center'},saveActive:{backgroundColor:C.lime,borderColor:C.lime},saveText:{color:C.white,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},saveTextActive:{color:C.black},
+ hero:{height:230,width:'100%',backgroundColor:'#0A0C0A',borderWidth:1,borderColor:C.borderStrong},intro:{paddingVertical:17,borderBottomWidth:1,borderBottomColor:C.borderStrong},price:{color:C.white,fontFamily:F.black,fontSize:29},month:{color:C.mutedStrong,fontFamily:F.regular,fontSize:12},title:{color:C.white,fontFamily:F.extraBold,fontSize:23,lineHeight:26,marginTop:5},meta:{color:C.mutedStrong,fontSize:12,marginTop:8},locationRow:{flexDirection:'row',alignItems:'center',gap:6,marginTop:8},location:{color:C.muted,fontSize:11,flex:1},badges:{flexDirection:'row',gap:6,flexWrap:'wrap',marginTop:12},
+ facts:{flexDirection:'row',borderBottomWidth:1,borderBottomColor:C.borderStrong},fact:{flex:1,paddingVertical:15,paddingRight:8},factLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},factValue:{color:C.white,fontFamily:F.extraBold,fontSize:12,marginTop:5},
+ section:{paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.border},sectionLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.1,marginBottom:8},body:{color:C.mutedStrong,fontSize:13,lineHeight:20},
+ links:{paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.border},linkRow:{height:42,borderTopWidth:1,borderTopColor:C.border,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},linkText:{color:C.white,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8},
+ source:{paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.border},sourceLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},sourceText:{color:C.mutedStrong,fontSize:11,marginTop:4},sourceLink:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8,marginTop:9},
+ notice:{flexDirection:'row',gap:9,paddingVertical:16},noticeText:{flex:1,color:C.mutedStrong,fontSize:9,lineHeight:14},
+ primary:{height:50,backgroundColor:C.lime,paddingHorizontal:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},primaryMuted:{backgroundColor:'#1A2114',borderWidth:1,borderColor:'#2C3823'},primaryText:{color:C.black,fontFamily:F.extraBold,fontSize:9,letterSpacing:.9},primaryTextMuted:{color:C.mutedStrong}
+});
