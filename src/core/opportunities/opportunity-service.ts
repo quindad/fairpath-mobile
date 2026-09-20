@@ -188,6 +188,18 @@ export async function loadMyJobApplicationForJob(jobId:string):Promise<{id:strin
 export type HousingApplicationStatus='started'|'submitted'|'reviewing'|'tour'|'approved'|'denied'|'withdrawn';
 export async function loadMyHousingApplication(listingId:string):Promise<{id:string;status:HousingApplicationStatus;application_type:'standard'|'fasttrack'}|null>{const user=await currentUser();const {data,error}=await supabase.from('housing_applications').select('id,status,application_type').eq('user_id',user.id).eq('listing_id',listingId).maybeSingle();if(error)throw error;return data as {id:string;status:HousingApplicationStatus;application_type:'standard'|'fasttrack'}|null;}
 export async function startHousingApplication(listingId:string,fastTrack=false){const user=await currentUser();const now=new Date().toISOString();const {data:existing,error:existingError}=await supabase.from('housing_applications').select('id,status,application_type').eq('user_id',user.id).eq('listing_id',listingId).maybeSingle();if(existingError)throw existingError;if(existing)return existing;const {data,error}=await supabase.from('housing_applications').insert({user_id:user.id,listing_id:listingId,application_type:fastTrack?'fasttrack':'standard',status:'started',updated_at:now}).select('id,status,application_type').single();if(error)throw error;return data as {id:string;status:HousingApplicationStatus;application_type:'standard'|'fasttrack'};}
+export type HousingApplicationDetail=MyHousingApplication & {listing:{id:string;title:string;city:string;state:string;rent_monthly:number;bedrooms:number|null;bathrooms:number|null;fasttrack_enabled:boolean}|null};
+export async function loadMyHousingApplicationDetail(applicationId:string):Promise<HousingApplicationDetail>{
+ const user=await currentUser();
+ const {data,error}=await supabase.from('housing_applications').select('id,listing_id,status,application_type,created_at,updated_at,listing:housing_listings(id,title,city,state,rent_monthly,bedrooms,bathrooms,fasttrack_enabled)').eq('id',applicationId).eq('user_id',user.id).single();
+ if(error)throw error;return data as unknown as HousingApplicationDetail;
+}
+export async function withdrawMyHousingApplication(applicationId:string){
+ const user=await currentUser();
+ const {error}=await supabase.from('housing_applications').update({status:'withdrawn',updated_at:new Date().toISOString()}).eq('id',applicationId).eq('user_id',user.id).eq('status','started');
+ if(error)throw error;
+}
+
 export async function claimMarketplaceItem(itemId:string){const user=await currentUser();const {data:existing,error:findError}=await supabase.from('marketplace_claims').select('id,status').eq('item_id',itemId).eq('claimant_id',user.id).in('status',['requested','approved','ready']).maybeSingle();if(findError)throw findError;if(existing)return existing;const {data,error}=await supabase.from('marketplace_claims').insert({item_id:itemId,claimant_id:user.id,status:'requested',pickup_deadline:new Date(Date.now()+48*60*60*1000).toISOString()}).select('id,status').single();if(error)throw error;return data;}
 
 export type EmployerApplicationStatus='viewed'|'interview'|'offer'|'hired'|'rejected';
