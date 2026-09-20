@@ -131,14 +131,13 @@ export async function submitJobApplication(jobId:string,answers:Record<string,un
   if(error.code==='23505')throw new Error('ALREADY_APPLIED');
   throw error;
  }
- const {data:created,error:createdError}=await supabase
+ const {data:created}=await supabase
   .from('job_applications')
   .select('id')
   .eq('user_id',user.id)
   .eq('job_id',jobId)
-  .single();
- if(createdError)throw createdError;
- return created.id as string;
+  .maybeSingle();
+ return (created?.id as string|undefined)??null;
 }
 export type JobApplicationStatus='started'|'submitted'|'viewed'|'interview'|'offer'|'hired'|'withdrawn'|'rejected';
 export type MyJobApplication={
