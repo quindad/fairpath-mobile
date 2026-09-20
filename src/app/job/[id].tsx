@@ -106,8 +106,8 @@ export default function JobDetail(){
   router.push(('/job-apply/'+job.id) as never);
  }
 
- if(loading)return <ScreenFrame><PageHeader eyebrow="FAIRPATH JOBS" title="Job" backTo="/find-jobs" alwaysBackTo/><View style={s.state}><Text style={s.stateText}>Loading job…</Text></View></ScreenFrame>;
- if(error||!job)return <ScreenFrame><PageHeader eyebrow="FAIRPATH JOBS" title="Job" backTo="/find-jobs" alwaysBackTo/><View style={s.state}><Text style={s.error}>{error||'Job not found.'}</Text></View></ScreenFrame>;
+ if(loading)return <ScreenFrame><PageHeader eyebrow="FAIRPATH JOBS" title="Job" backTo="/find-jobs"/><View style={s.state}><Text style={s.stateText}>Loading job…</Text></View></ScreenFrame>;
+ if(error||!job)return <ScreenFrame><PageHeader eyebrow="FAIRPATH JOBS" title="Job" backTo="/find-jobs"/><View style={s.state}><Text style={s.error}>{error||'Job not found.'}</Text></View></ScreenFrame>;
 
  const location=job.location_text||[job.city,job.state,job.postal_code].filter(Boolean).join(', ');
  const second=job.eligibility_rules?.second_chance_evidence==='explicit';
@@ -118,7 +118,7 @@ export default function JobDetail(){
  const applied=Boolean(applicationStatus);
 
  return <ScreenFrame>
-  <PageHeader eyebrow="FAIRPATH JOBS" title="Job details" backTo="/find-jobs" alwaysBackTo trailing={<Pressable style={[s.save,saved&&s.saveActive]} onPress={()=>void save()}><Text style={[s.saveText,saved&&s.saveTextActive]}>{saved?'SAVED':'SAVE'}</Text></Pressable>}/>
+  <PageHeader eyebrow="FAIRPATH JOBS" title="Job details" backTo="/find-jobs" trailing={<Pressable style={[s.save,saved&&s.saveActive]} onPress={()=>void save()}><Text style={[s.saveText,saved&&s.saveTextActive]}>{saved?'SAVED':'SAVE'}</Text></Pressable>}/>
   <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <Text style={s.company}>{job.company_name.toUpperCase()}</Text>
    <Text style={s.title}>{job.title}</Text>
