@@ -52,15 +52,18 @@ async function currentUser(){const {data:{user}}=await supabase.auth.getUser();i
 
 const ITEM_SELECT='id,seller_id,title,description,category,condition,price,is_free,city,state,postal_code,pickup_area,pickup_notes,safe_pickup,quantity,featured,seller_type,moderation_status,status,created_at,updated_at,listed_at,marketplace_media(id,url,sort_order,storage_path,mime_type)';
 
+const MARKET_STATE_CODES:Record<string,string>={ohio:'OH',maryland:'MD',michigan:'MI',pennsylvania:'PA',indiana:'IN',kentucky:'KY','west virginia':'WV',virginia:'VA','new york':'NY','new jersey':'NJ',delaware:'DE','district of columbia':'DC'};
+function parseMarketplaceLocation(raw:string){const text=raw.trim().replace(/\s+/g,' ');if(!text)return null;if(/^\d{5}$/.test(text))return {postal:text};const comma=text.split(',').map(x=>x.trim()).filter(Boolean);if(comma.length>=2){const stateRaw=comma[comma.length-1].toLowerCase();return {city:comma[0],state:stateRaw.length===2?stateRaw.toUpperCase():MARKET_STATE_CODES[stateRaw]}}const parts=text.split(' ');const last=parts[parts.length-1].toLowerCase();const state=last.length===2?last.toUpperCase():MARKET_STATE_CODES[last];if(state&&parts.length>1)return {city:parts.slice(0,-1).join(' '),state};for(const [name,code] of Object.entries(MARKET_STATE_CODES)){if(text.toLowerCase().endsWith(' '+name))return {city:text.slice(0,-name.length).trim(),state:code}}return {free:text}}
 export async function loadMarketplace(input:{search?:string;category?:string;location?:string;safePickup?:boolean;condition?:string;sort?:'newest'|'oldest'}={}):Promise<MarketplaceItem[]>{
  let q=supabase.from('marketplace_items').select(ITEM_SELECT).eq('status','available').eq('moderation_status','approved').order('featured',{ascending:false}).order('created_at',{ascending:input.sort==='oldest'}).limit(100);
  const search=input.search?.trim();if(search)q=q.or(`title.ilike.%${search}%,description.ilike.%${search}%,category.ilike.%${search}%`);
  if(input.category)q=q.eq('category',input.category);
  if(input.condition)q=q.eq('condition',input.condition);
  if(input.safePickup)q=q.eq('safe_pickup',true);
- const loc=input.location?.trim();if(loc){
-  if(/^\d{5}$/.test(loc))q=q.eq('postal_code',loc);
-  else {const bits=loc.split(',').map(x=>x.trim()).filter(Boolean);if(bits[0])q=q.ilike('city','%'+bits[0]+'%');if(bits[1])q=q.ilike('state',bits[1].slice(0,2));}
+ const loc=parseMarketplaceLocation(input.location??'');if(loc){
+  if('postal' in loc&&loc.postal)q=q.eq('postal_code',loc.postal);
+  else if('city' in loc&&loc.city){q=q.ilike('city','%'+loc.city+'%');if(loc.state)q=q.eq('state',loc.state)}
+  else if('free' in loc&&loc.free)q=q.or(`city.ilike.%${loc.free}%,state.ilike.%${loc.free}%,postal_code.ilike.%${loc.free}%,pickup_area.ilike.%${loc.free}%`);
  }
  const {data,error}=await q;if(error)throw error;return (data??[]) as unknown as MarketplaceItem[];
 }
