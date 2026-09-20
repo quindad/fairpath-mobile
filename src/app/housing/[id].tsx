@@ -125,6 +125,20 @@ export default function HousingDetail(){
    {item.pet_policy?<Section label="PET POLICY"><Text style={s.body}>{item.pet_policy}</Text></Section>:null}
    {item.parking?<Section label="PARKING"><Text style={s.body}>{item.parking}</Text></Section>:null}
    {item.accessibility_features?.length?<Section label="ACCESSIBILITY"><Text style={s.body}>{item.accessibility_features.join(' · ')}</Text></Section>:null}
+   {(item.garage_spaces||item.parking_types?.length||item.furnished||item.has_basement||item.has_yard||item.has_balcony_patio||item.laundry_type||item.has_central_air)?<Section label="HOME DETAILS"><Text style={s.body}>{[
+    item.garage_spaces?item.garage_spaces+'-car garage':null,
+    item.parking_types?.length?item.parking_types.join(', '):null,
+    item.furnished?'Furnished':null,item.has_basement?'Basement':null,item.has_yard?'Yard / outdoor space':null,item.has_balcony_patio?'Balcony / patio':null,
+    item.laundry_type?'Laundry: '+item.laundry_type:null,item.has_central_air?'Central air':null
+   ].filter(Boolean).join(' · ')}</Text></Section>:null}
+   {(item.walk_score!=null||item.transit_score!=null||item.bike_score!=null)?<Section label="AROUND THIS HOME">
+    <View style={s.scoreRow}>
+     {item.walk_score!=null?<Score label="WALK" value={item.walk_score}/>:null}
+     {item.transit_score!=null?<Score label="TRANSIT" value={item.transit_score}/>:null}
+     {item.bike_score!=null?<Score label="BIKE" value={item.bike_score}/>:null}
+    </View>
+    <Text style={s.sourceNote}>Mobility scores are shown only when verified provider data is available.</Text>
+   </Section>:null}
 
    {item.virtual_tour_url||item.floor_plan_url||item.video_url?<View style={s.links}>
     <Text style={s.sectionLabel}>PROPERTY MEDIA</Text>
@@ -150,12 +164,13 @@ export default function HousingDetail(){
 
 function Fact({label,value}:{label:string;value:string}){return <View style={s.fact}><Text style={s.factLabel}>{label}</Text><Text style={s.factValue}>{value}</Text></View>}
 function Section({label,children}:{label:string;children:React.ReactNode}){return <View style={s.section}><Text style={s.sectionLabel}>{label}</Text>{children}</View>}
+function Score({label,value}:{label:string;value:number}){return <View style={s.score}><Text style={s.scoreValue}>{value}</Text><Text style={s.scoreLabel}>{label}</Text></View>}
 function LinkRow({label,onPress}:{label:string;onPress:()=>void}){return <Pressable style={s.linkRow} onPress={onPress}><Text style={s.linkText}>{label}</Text><Lucide name="external-link" color={C.lime} size={14}/></Pressable>}
 
 const s=StyleSheet.create({
  content:{paddingHorizontal:L.mobileGutter,paddingTop:16,paddingBottom:36},state:{padding:L.mobileGutter},muted:{color:C.muted},error:{color:C.danger},
  save:{height:34,borderWidth:1,borderColor:C.borderStrong,paddingHorizontal:9,flexDirection:'row',gap:6,alignItems:'center',justifyContent:'center'},saveActive:{backgroundColor:C.lime,borderColor:C.lime},saveText:{color:C.white,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},saveTextActive:{color:C.black},
- gallery:{height:230,width:'100%',backgroundColor:'#0A0C0A',borderWidth:1,borderColor:C.borderStrong,position:'relative',overflow:'hidden'},hero:{height:228,backgroundColor:'#0A0C0A'},photoCount:{position:'absolute',right:9,bottom:9,height:27,paddingHorizontal:9,backgroundColor:'#090A09DD',borderWidth:1,borderColor:C.borderStrong,flexDirection:'row',gap:6,alignItems:'center'},photoCountText:{color:C.white,fontFamily:F.extraBold,fontSize:8,letterSpacing:.5},demoFlag:{position:'absolute',left:9,top:9,height:25,paddingHorizontal:8,backgroundColor:'#090A09DD',borderWidth:1,borderColor:'#526F2B',justifyContent:'center'},demoFlagText:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},thumbs:{gap:7,paddingVertical:9},thumbWrap:{width:64,height:48,borderWidth:1,borderColor:C.borderStrong,opacity:.65},thumbActive:{borderColor:C.lime,opacity:1},thumb:{width:'100%',height:'100%'},intro:{paddingVertical:17,borderBottomWidth:1,borderBottomColor:C.borderStrong},price:{color:C.white,fontFamily:F.black,fontSize:29},month:{color:C.mutedStrong,fontFamily:F.regular,fontSize:12},title:{color:C.white,fontFamily:F.extraBold,fontSize:23,lineHeight:26,marginTop:5},meta:{color:C.mutedStrong,fontSize:12,marginTop:8},locationRow:{flexDirection:'row',alignItems:'center',gap:6,marginTop:8},location:{color:C.muted,fontSize:11,flex:1},badges:{flexDirection:'row',gap:6,flexWrap:'wrap',marginTop:12},
+ scoreRow:{flexDirection:'row',gap:8},score:{flex:1,borderWidth:1,borderColor:C.borderStrong,paddingVertical:12,alignItems:'center'},scoreValue:{color:C.white,fontFamily:F.black,fontSize:23},scoreLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:1,marginTop:2},sourceNote:{color:C.muted,fontSize:9,lineHeight:14,marginTop:8},gallery:{height:230,width:'100%',backgroundColor:'#0A0C0A',borderWidth:1,borderColor:C.borderStrong,position:'relative',overflow:'hidden'},hero:{height:228,backgroundColor:'#0A0C0A'},photoCount:{position:'absolute',right:9,bottom:9,height:27,paddingHorizontal:9,backgroundColor:'#090A09DD',borderWidth:1,borderColor:C.borderStrong,flexDirection:'row',gap:6,alignItems:'center'},photoCountText:{color:C.white,fontFamily:F.extraBold,fontSize:8,letterSpacing:.5},demoFlag:{position:'absolute',left:9,top:9,height:25,paddingHorizontal:8,backgroundColor:'#090A09DD',borderWidth:1,borderColor:'#526F2B',justifyContent:'center'},demoFlagText:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},thumbs:{gap:7,paddingVertical:9},thumbWrap:{width:64,height:48,borderWidth:1,borderColor:C.borderStrong,opacity:.65},thumbActive:{borderColor:C.lime,opacity:1},thumb:{width:'100%',height:'100%'},intro:{paddingVertical:17,borderBottomWidth:1,borderBottomColor:C.borderStrong},price:{color:C.white,fontFamily:F.black,fontSize:29},month:{color:C.mutedStrong,fontFamily:F.regular,fontSize:12},title:{color:C.white,fontFamily:F.extraBold,fontSize:23,lineHeight:26,marginTop:5},meta:{color:C.mutedStrong,fontSize:12,marginTop:8},locationRow:{flexDirection:'row',alignItems:'center',gap:6,marginTop:8},location:{color:C.muted,fontSize:11,flex:1},badges:{flexDirection:'row',gap:6,flexWrap:'wrap',marginTop:12},
  facts:{flexDirection:'row',borderBottomWidth:1,borderBottomColor:C.borderStrong},fact:{flex:1,paddingVertical:15,paddingRight:8},factLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},factValue:{color:C.white,fontFamily:F.extraBold,fontSize:12,marginTop:5},
  section:{paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.border},sectionLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.1,marginBottom:8},body:{color:C.mutedStrong,fontSize:13,lineHeight:20},
  links:{paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.border},linkRow:{height:42,borderTopWidth:1,borderTopColor:C.border,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},linkText:{color:C.white,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8},
