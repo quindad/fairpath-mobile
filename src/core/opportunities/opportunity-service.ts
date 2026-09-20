@@ -93,6 +93,31 @@ export async function unsaveHousing(listingId:string){const user=await currentUs
 export async function isHousingSaved(listingId:string){const user=await currentUser();const {data,error}=await supabase.from('saved_housing').select('listing_id').eq('user_id',user.id).eq('listing_id',listingId).maybeSingle();if(error)throw error;return Boolean(data);}
 export async function loadSavedHousingIds():Promise<string[]>{const user=await currentUser();const {data,error}=await supabase.from('saved_housing').select('listing_id').eq('user_id',user.id);if(error)throw error;return (data??[]).map(row=>row.listing_id as string);}
 
+export type HousingTourRequest={id:string;listing_id:string;preferred_date:string;preferred_window:'morning'|'afternoon'|'evening'|'flexible';note:string|null;status:'requested'|'confirmed'|'declined'|'completed'|'cancelled';created_at:string;updated_at:string};
+export async function createHousingTourRequest(input:{listingId:string;preferredDate:string;preferredWindow:HousingTourRequest['preferred_window'];note?:string}){
+ const user=await currentUser();
+ const {data,error}=await supabase.from('housing_tour_requests').insert({user_id:user.id,listing_id:input.listingId,preferred_date:input.preferredDate,preferred_window:input.preferredWindow,note:input.note?.trim()||null}).select('id,listing_id,preferred_date,preferred_window,note,status,created_at,updated_at').single();
+ if(error)throw error;return data as HousingTourRequest;
+}
+export async function loadMyHousingTours():Promise<HousingTourRequest[]>{
+ const user=await currentUser();
+ const {data,error}=await supabase.from('housing_tour_requests').select('id,listing_id,preferred_date,preferred_window,note,status,created_at,updated_at').eq('user_id',user.id).order('updated_at',{ascending:false});
+ if(error)throw error;return (data??[]) as HousingTourRequest[];
+}
+export async function cancelHousingTourRequest(id:string){
+ const user=await currentUser();const {error}=await supabase.from('housing_tour_requests').update({status:'cancelled',updated_at:new Date().toISOString()}).eq('id',id).eq('user_id',user.id).eq('status','requested');if(error)throw error;
+}
+export async function createHousingInquiry(input:{listingId:string;subject?:string;message:string}){
+ const user=await currentUser();
+ const {data,error}=await supabase.from('housing_inquiries').insert({user_id:user.id,listing_id:input.listingId,subject:input.subject?.trim()||'Question about this home',message:input.message.trim()}).select('id,status,created_at').single();
+ if(error)throw error;return data as {id:string;status:string;created_at:string};
+}
+export async function createHousingReport(input:{listingId:string;reason:'incorrect_info'|'suspected_scam'|'unavailable'|'discrimination_concern'|'safety_concern'|'other';details?:string}){
+ const user=await currentUser();
+ const {data,error}=await supabase.from('housing_reports').insert({user_id:user.id,listing_id:input.listingId,reason:input.reason,details:input.details?.trim()||null}).select('id,status,created_at').single();
+ if(error)throw error;return data as {id:string;status:string;created_at:string};
+}
+
 export async function loadSavedHousing():Promise<HousingListing[]>{
  const user=await currentUser();
  const {data,error}=await supabase.from('saved_housing').select('listing:housing_listings(id,title,description,property_type,address_line1,address_line2,city,state,postal_code,created_at,bedrooms,bathrooms,square_feet,rent_monthly,deposit_amount,application_fee,available_date,lease_terms,amenities,utilities_included,pet_policy,parking,accessibility_features,screening_summary,eligibility_rules,virtual_tour_url,floor_plan_url,video_url,fasttrack_enabled,featured,source_label,source_url,latitude,longitude,garage_spaces,parking_types,furnished,has_basement,has_yard,has_balcony_patio,laundry_type,has_central_air,pet_types,move_in_ready,walk_score,transit_score,bike_score,neighborhood_data_provider,housing_media(url,media_type,sort_order),housing_schools(provider,provider_school_id,name,school_type,grades,distance_miles,quality_label,profile_url,sort_order),housing_nearby_places(provider,provider_place_id,category,name,distance_miles,sort_order))').eq('user_id',user.id).order('created_at',{ascending:false});
