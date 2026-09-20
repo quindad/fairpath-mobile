@@ -1,18 +1,19 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, SharpChip, InlineBadge } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
-import { loadHousing, loadSavedHousingIds, saveHousing, unsaveHousing, type HousingListing } from '@/core/opportunities/opportunity-service';
+import { loadHousing, loadSavedHousingIds, saveHousing, saveHousingSearch, unsaveHousing, type HousingListing } from '@/core/opportunities/opportunity-service';
 import { loadProfileAnswers } from '@/core/profile/profile-service';
 import { demoHousingImage } from '@/core/demo/demo-media';
 import { supabase } from '@/lib/supabase';
 
 export default function Housing(){
- const params=useLocalSearchParams<{minRent?:string;maxRent?:string;beds?:string;baths?:string;types?:string;fastTrack?:string;pets?:string;accessible?:string;garage?:string;parking?:string;furnished?:string;basement?:string;yard?:string;balcony?:string;laundry?:string;centralAir?:string;moveInReady?:string;minSqft?:string;minWalk?:string}>();
- const [query,setQuery]=useState('');
- const [location,setLocation]=useState('');
+ const params=useLocalSearchParams<{search?:string;location?:string;sort?:string;minRent?:string;maxRent?:string;beds?:string;baths?:string;types?:string;fastTrack?:string;pets?:string;accessible?:string;garage?:string;parking?:string;furnished?:string;basement?:string;yard?:string;balcony?:string;laundry?:string;centralAir?:string;moveInReady?:string;minSqft?:string;minWalk?:string}>();
+ const [query,setQuery]=useState(params.search??'');
+ const [location,setLocation]=useState(params.location??'');
+ const [sort,setSort]=useState<'featured'|'price_low'|'price_high'|'newest'>((['featured','price_low','price_high','newest'].includes(params.sort??'')?params.sort:'featured') as any);
  const [rows,setRows]=useState<HousingListing[]>([]);
  const [fastTrack,setFastTrack]=useState(params.fastTrack==='1');
  const [twoPlus,setTwoPlus]=useState(params.beds==='2+');
@@ -31,11 +32,18 @@ export default function Housing(){
  useEffect(()=>{
   let active=true;
   supabase.auth.getUser().then(({data})=>{if(active)setSignedIn(Boolean(data.user))});
-  loadProfileAnswers()
-   .then(a=>{if(active&&typeof a['identity.current_location']==='string')setLocation(a['identity.current_location'] as string)})
-   .finally(()=>{if(active)loadHousing().then(setRows).catch(()=>setError('Housing could not load.')).finally(()=>setLoading(false))});
+  const requestedQuery=params.search??'';
+  const requestedLocation=params.location??'';
+  if(requestedQuery||requestedLocation){
+   setQuery(requestedQuery);setLocation(requestedLocation);
+   loadHousing(requestedQuery,requestedLocation).then(x=>{if(active)setRows(x)}).catch(()=>{if(active)setError('Housing could not load.')}).finally(()=>{if(active)setLoading(false)});
+  }else{
+   loadProfileAnswers()
+    .then(a=>{if(active&&typeof a['identity.current_location']==='string')setLocation(a['identity.current_location'] as string)})
+    .finally(()=>{if(active)loadHousing().then(setRows).catch(()=>setError('Housing could not load.')).finally(()=>setLoading(false))});
+  }
   return()=>{active=false};
- },[]);
+ },[params.search,params.location]);
 
  useFocusEffect(useCallback(()=>{
   let active=true;
@@ -88,7 +96,13 @@ export default function Housing(){
   if(activeFilters.minSqft>0&&Number(h.square_feet||0)<activeFilters.minSqft)return false;
   if(activeFilters.minWalk>0&&Number(h.walk_score||0)<activeFilters.minWalk)return false;
   return true;
- }),[rows,fastTrack,twoPlus,activeFilters]);
+ }).sort((a,b)=>{
+  if(sort==='price_low')return Number(a.rent_monthly)-Number(b.rent_monthly);
+  if(sort==='price_high')return Number(b.rent_monthly)-Number(a.rent_monthly);
+  if(sort==='newest')return new Date(b.created_at).getTime()-new Date(a.created_at).getTime();
+  if(a.featured!==b.featured)return a.featured?-1:1;
+  return new Date(b.created_at).getTime()-new Date(a.created_at).getTime();
+ }),[rows,fastTrack,twoPlus,activeFilters,sort]);
 
  async function toggleSave(id:string){
   const current=Boolean(saved[id]);
@@ -101,6 +115,22 @@ export default function Housing(){
    }
   }
  }
+
+ async function saveCurrentSearch(){
+  if(!signedIn){router.push('/sign-up?returnTo=/find-housing' as never);return}
+  const filters:Record<string,string|boolean|number>={
+   minRent:params.minRent??'',maxRent:params.maxRent??'',beds:twoPlus?'2+':params.beds??'ANY',baths:params.baths??'ANY',types:params.types??'',
+   fastTrack,pets:params.pets==='1',accessible:params.accessible==='1',garage:params.garage==='1',parking:params.parking==='1',furnished:params.furnished==='1',
+   basement:params.basement==='1',yard:params.yard==='1',balcony:params.balcony==='1',laundry:params.laundry==='1',centralAir:params.centralAir==='1',
+   moveInReady:params.moveInReady==='1',minSqft:params.minSqft??'',minWalk:params.minWalk??'',sort
+  };
+  try{
+   await saveHousingSearch({name:[query.trim()||'Housing',location.trim()].filter(Boolean).join(' · ')||'Housing search',query,location,filters});
+   Alert.alert('Search saved','You can reopen this search from Saved searches.');
+  }catch{Alert.alert('Could not save search','Please try again.')}
+ }
+ function cycleSort(){setSort(v=>v==='featured'?'price_low':v==='price_low'?'price_high':v==='price_high'?'newest':'featured')}
+ const sortLabel=sort==='featured'?'FEATURED':sort==='price_low'?'PRICE: LOW':sort==='price_high'?'PRICE: HIGH':'NEWEST';
 
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH HOUSING" title="Find housing" backTo="/" alwaysBackTo/>
@@ -144,8 +174,12 @@ export default function Housing(){
    </Pressable>
   </View>
 
+  <View style={s.searchActions}>
+   <Pressable style={s.searchAction} onPress={()=>void saveCurrentSearch()}><Lucide name="bookmark-plus" color={C.lime} size={13}/><Text style={s.searchActionText}>SAVE SEARCH</Text></Pressable>
+   {signedIn?<Pressable style={s.searchAction} onPress={()=>router.push('/saved-housing-searches' as never)}><Lucide name="history" color={C.lime} size={13}/><Text style={s.searchActionText}>SAVED SEARCHES</Text></Pressable>:null}
+  </View>
   <ScrollView contentContainerStyle={s.list} showsVerticalScrollIndicator={false}>
-   <View style={s.resultsTop}><Text style={s.results}>{loading?'SEARCHING':String(visible.length)+' RESULTS'}</Text><Text style={s.sort}>FEATURED FIRST</Text></View>
+   <View style={s.resultsTop}><Text style={s.results}>{loading?'SEARCHING':String(visible.length)+' RESULTS'}</Text><Pressable style={s.sortButton} onPress={cycleSort}><Lucide name="arrow-up-down" color={C.lime} size={11}/><Text style={s.sort}>{sortLabel}</Text></Pressable></View>
    {error?<Text style={s.error}>{error}</Text>:null}
    {!loading&&visible.length===0?<View style={s.empty}><Text style={s.emptyTitle}>No homes match this search.</Text><Text style={s.emptyBody}>Try a wider location, a different keyword, or remove a filter.</Text></View>:null}
 
@@ -181,7 +215,8 @@ const s=StyleSheet.create({
  primary:{height:44,backgroundColor:C.lime,paddingHorizontal:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginTop:2},primaryText:{color:C.black,fontFamily:F.extraBold,fontSize:10,letterSpacing:1},
  filtersHead:{paddingHorizontal:L.mobileGutter,paddingTop:13,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},filtersLabel:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.1},filtersHint:{color:C.muted,fontFamily:F.medium,fontSize:9},
  filtersStrip:{height:52,paddingHorizontal:L.mobileGutter,paddingVertical:9,flexDirection:'row',gap:7},filterCell:{flex:1},allFilters:{flex:1.15,height:34,borderWidth:1,borderColor:'#526F2B',backgroundColor:'#10150C',flexDirection:'row',gap:6,alignItems:'center',justifyContent:'center'},allFiltersText:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:.7},
- list:{paddingHorizontal:L.mobileGutter,paddingBottom:30},resultsTop:{height:46,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},results:{color:C.muted,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.1},sort:{color:C.muted,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},
+ searchActions:{paddingHorizontal:L.mobileGutter,paddingVertical:8,borderTopWidth:1,borderBottomWidth:1,borderColor:C.border,flexDirection:'row',gap:8},searchAction:{flex:1,minHeight:36,borderWidth:1,borderColor:C.borderStrong,flexDirection:'row',gap:6,alignItems:'center',justifyContent:'center'},searchActionText:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:.7},
+ list:{paddingHorizontal:L.mobileGutter,paddingBottom:30},resultsTop:{height:46,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},results:{color:C.muted,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.1},sortButton:{flexDirection:'row',gap:5,alignItems:'center'},sort:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},
  card:{borderTopWidth:1,borderTopColor:C.borderStrong,paddingVertical:18},media:{height:180,position:'relative',backgroundColor:'#0A0C0A',borderWidth:1,borderColor:C.borderStrong,overflow:'hidden'},photo:{width:'100%',height:'100%'},noPhoto:{flex:1,alignItems:'center',justifyContent:'center'},noPhotoText:{color:C.muted,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.2},
  saveBtn:{position:'absolute',right:8,top:8,width:34,height:34,borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#090A09DD',alignItems:'center',justifyContent:'center'},saveBtnActive:{backgroundColor:C.lime,borderColor:C.lime},
  body:{paddingTop:13},priceRow:{flexDirection:'row',alignItems:'baseline'},price:{color:C.white,fontFamily:F.black,fontSize:25},per:{color:C.muted,fontSize:11},homeTitle:{color:C.white,fontFamily:F.extraBold,fontSize:19,lineHeight:22,marginTop:4},meta:{color:C.mutedStrong,fontSize:12,marginTop:7},locationRow:{flexDirection:'row',alignItems:'center',gap:6,marginTop:7},location:{color:C.muted,fontSize:11},badges:{flexDirection:'row',gap:6,flexWrap:'wrap',marginTop:11},
