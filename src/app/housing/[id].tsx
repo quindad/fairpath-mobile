@@ -57,7 +57,7 @@ export default function HousingDetail(){
   try{
    const application=await startHousingApplication(item.id,item.fasttrack_enabled);
    setApplicationStatus(application.status);
-   Alert.alert('Application started',item.fasttrack_enabled?'Your FastTrack application workspace is started. Nothing has been submitted or charged yet.':'Your housing application workspace is started. Nothing has been submitted yet.');
+   router.push(('/housing-application/'+application.id) as never);
   }catch{Alert.alert('Could not start application','Please try again.')}
   finally{setStarting(false)}
  }
@@ -154,9 +154,9 @@ export default function HousingDetail(){
     <Text style={s.noticeText}>{item.fasttrack_enabled?'Starting FastTrack creates your application workspace only. Payment and final submission require a separate confirmation step.':'Starting an application does not submit anything to a property owner until you complete and confirm it.'}</Text>
    </View>
 
-   <Pressable style={[s.primary,(starting||Boolean(applicationStatus))&&s.primaryMuted]} onPress={()=>void startApplication()} disabled={starting}>
-    <Text style={[s.primaryText,applicationStatus&&s.primaryTextMuted]}>{starting?'STARTING…':applicationStatus?STATUS_LABEL[applicationStatus]:item.fasttrack_enabled?'START FASTTRACK APPLICATION':'START APPLICATION'}</Text>
-    <Lucide name={applicationStatus?'check':'arrow-right'} color={applicationStatus?C.mutedStrong:C.black} size={16}/>
+   <Pressable style={[s.primary,starting&&s.primaryMuted]} onPress={()=>applicationStatus?router.push('/housing-applications' as never):void startApplication()} disabled={starting}>
+    <Text style={s.primaryText}>{starting?'STARTING…':applicationStatus?'OPEN APPLICATION':item.fasttrack_enabled?'START FASTTRACK APPLICATION':'START APPLICATION'}</Text>
+    <Lucide name="arrow-right" color={C.black} size={16}/>
    </Pressable>
   </ScrollView>
  </ScreenFrame>;
