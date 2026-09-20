@@ -1,4 +1,4 @@
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Lucide } from '@react-native-vector-icons/lucide';
@@ -9,11 +9,12 @@ import { loadProfileAnswers } from '@/core/profile/profile-service';
 import { demoHousingImage } from '@/core/demo/demo-media';
 
 export default function Housing(){
+ const params=useLocalSearchParams<{minRent?:string;maxRent?:string;beds?:string;baths?:string;types?:string;fastTrack?:string;pets?:string;accessible?:string}>();
  const [query,setQuery]=useState('');
  const [location,setLocation]=useState('');
  const [rows,setRows]=useState<HousingListing[]>([]);
- const [fastTrack,setFastTrack]=useState(false);
- const [twoPlus,setTwoPlus]=useState(false);
+ const [fastTrack,setFastTrack]=useState(params.fastTrack==='1');
+ const [twoPlus,setTwoPlus]=useState(params.beds==='2+');
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
  const [saved,setSaved]=useState<Record<string,boolean>>({});
@@ -39,7 +40,40 @@ export default function Housing(){
   return()=>{active=false};
  },[]));
 
- const visible=useMemo(()=>rows.filter(h=>(!fastTrack||h.fasttrack_enabled)&&(!twoPlus||(h.bedrooms??0)>=2)),[rows,fastTrack,twoPlus]);
+ const activeFilters=useMemo(()=>{
+  const typeList=(params.types??'').split(',').filter(Boolean);
+  return {
+   minRent:Number(params.minRent||0),
+   maxRent:Number(params.maxRent||0),
+   beds:params.beds??'ANY',
+   baths:params.baths??'ANY',
+   types:typeList,
+   pets:params.pets==='1',
+   accessible:params.accessible==='1'
+  };
+ },[params.minRent,params.maxRent,params.beds,params.baths,params.types,params.pets,params.accessible]);
+
+ const filterCount=useMemo(()=>[
+  activeFilters.minRent>0,activeFilters.maxRent>0,activeFilters.beds!=='ANY',activeFilters.baths!=='ANY',
+  activeFilters.types.length>0,fastTrack,activeFilters.pets,activeFilters.accessible
+ ].filter(Boolean).length,[activeFilters,fastTrack]);
+
+ const visible=useMemo(()=>rows.filter(h=>{
+  const rent=Number(h.rent_monthly||0);
+  const beds=Number(h.bedrooms||0);
+  const baths=Number(h.bathrooms||0);
+  const petText=(h.pet_policy||'').toLowerCase();
+  if(fastTrack&&!h.fasttrack_enabled)return false;
+  if(twoPlus&&beds<2)return false;
+  if(activeFilters.minRent>0&&rent<activeFilters.minRent)return false;
+  if(activeFilters.maxRent>0&&rent>activeFilters.maxRent)return false;
+  if(activeFilters.beds!=='ANY'&&beds<Number(activeFilters.beds.replace('+','')))return false;
+  if(activeFilters.baths!=='ANY'&&baths<Number(activeFilters.baths.replace('+','')))return false;
+  if(activeFilters.types.length&&!activeFilters.types.includes(h.property_type.toLowerCase()))return false;
+  if(activeFilters.pets&&(!petText||petText.includes('no pets')||petText.includes('not allowed')))return false;
+  if(activeFilters.accessible&&!(h.accessibility_features?.length))return false;
+  return true;
+ }),[rows,fastTrack,twoPlus,activeFilters]);
 
  async function toggleSave(id:string){
   const current=Boolean(saved[id]);
@@ -75,10 +109,23 @@ export default function Housing(){
    <Pressable style={s.primary} onPress={()=>void run()}><Text style={s.primaryText}>SEARCH HOUSING</Text><Lucide name="arrow-right" color={C.black} size={16}/></Pressable>
   </View>
 
-  <View style={s.filtersHead}><Text style={s.filtersLabel}>FILTERS</Text><Text style={s.filtersHint}>Only working filters are shown</Text></View>
+  <View style={s.filtersHead}><Text style={s.filtersLabel}>QUICK FILTERS</Text><Text style={s.filtersHint}>{filterCount?filterCount+' ACTIVE':'Refine your search'}</Text></View>
   <View style={s.filtersStrip}>
    <View style={s.filterCell}><SharpChip label="2+ beds" active={twoPlus} onPress={()=>setTwoPlus(v=>!v)}/></View>
    <View style={s.filterCell}><SharpChip label="FastTrack" active={fastTrack} onPress={()=>setFastTrack(v=>!v)}/></View>
+   <Pressable style={s.allFilters} onPress={()=>router.push(('/housing-filters?'+[
+    params.minRent?'minRent='+encodeURIComponent(params.minRent):'',
+    params.maxRent?'maxRent='+encodeURIComponent(params.maxRent):'',
+    (twoPlus?'beds=2+':params.beds)?'beds='+encodeURIComponent(twoPlus?'2+':params.beds!):'',
+    params.baths?'baths='+encodeURIComponent(params.baths):'',
+    params.types?'types='+encodeURIComponent(params.types):'',
+    fastTrack?'fastTrack=1':'',
+    params.pets==='1'?'pets=1':'',
+    params.accessible==='1'?'accessible=1':''
+   ].filter(Boolean).join('&')) as never)}>
+    <Lucide name="sliders-horizontal" color={C.lime} size={13}/>
+    <Text style={s.allFiltersText}>FILTERS{filterCount?' · '+filterCount:''}</Text>
+   </Pressable>
   </View>
 
   <ScrollView contentContainerStyle={s.list} showsVerticalScrollIndicator={false}>
@@ -117,7 +164,7 @@ const s=StyleSheet.create({
  searchRow:{minHeight:58,flexDirection:'row',alignItems:'center',borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#0A0C0A',marginBottom:8},fieldIcon:{width:42,alignItems:'center',justifyContent:'center'},fieldCopy:{flex:1,minWidth:0,paddingVertical:9},fieldLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:1.25,marginBottom:2},input:{color:C.white,fontFamily:F.medium,fontSize:13,paddingVertical:2,paddingHorizontal:0},
  primary:{height:44,backgroundColor:C.lime,paddingHorizontal:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginTop:2},primaryText:{color:C.black,fontFamily:F.extraBold,fontSize:10,letterSpacing:1},
  filtersHead:{paddingHorizontal:L.mobileGutter,paddingTop:13,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},filtersLabel:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.1},filtersHint:{color:C.muted,fontFamily:F.medium,fontSize:9},
- filtersStrip:{height:52,paddingHorizontal:L.mobileGutter,paddingVertical:9,flexDirection:'row',gap:7},filterCell:{flex:1},
+ filtersStrip:{height:52,paddingHorizontal:L.mobileGutter,paddingVertical:9,flexDirection:'row',gap:7},filterCell:{flex:1},allFilters:{flex:1.15,height:34,borderWidth:1,borderColor:'#526F2B',backgroundColor:'#10150C',flexDirection:'row',gap:6,alignItems:'center',justifyContent:'center'},allFiltersText:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:.7},
  list:{paddingHorizontal:L.mobileGutter,paddingBottom:30},resultsTop:{height:46,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},results:{color:C.muted,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.1},sort:{color:C.muted,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},
  card:{borderTopWidth:1,borderTopColor:C.borderStrong,paddingVertical:18},media:{height:180,position:'relative',backgroundColor:'#0A0C0A',borderWidth:1,borderColor:C.borderStrong,overflow:'hidden'},photo:{width:'100%',height:'100%'},noPhoto:{flex:1,alignItems:'center',justifyContent:'center'},noPhotoText:{color:C.muted,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.2},
  saveBtn:{position:'absolute',right:8,top:8,width:34,height:34,borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#090A09DD',alignItems:'center',justifyContent:'center'},saveBtnActive:{backgroundColor:C.lime,borderColor:C.lime},
