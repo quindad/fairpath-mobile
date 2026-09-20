@@ -334,24 +334,6 @@ export async function loadHousingApplicationEvents(applicationId:string):Promise
  return (data??[]) as HousingApplicationEvent[];
 }
 
-export async function createHousingInquiry(listingId:string,message:string,subject='Question about this home'){
- const user=await currentUser();
- const trimmed=message.trim();if(trimmed.length<5)throw new Error('MESSAGE_REQUIRED');
- const {data,error}=await supabase.from('housing_inquiries').insert({user_id:user.id,listing_id:listingId,subject:subject.trim()||'Question about this home',message:trimmed,status:'open'}).select('id,status,created_at').single();
- if(error)throw error;return data;
-}
-export async function createHousingTourRequest(listingId:string,preferredDate:string,preferredWindow:string,note=''){
- const user=await currentUser();
- const parts=preferredDate.match(/^(\\d{2})\\/(\\d{2})\\/(\\d{4})$/);if(!parts)throw new Error('DATE_REQUIRED');
- const iso=parts[3]+'-'+parts[1]+'-'+parts[2];
- const {data,error}=await supabase.from('housing_tour_requests').insert({user_id:user.id,listing_id:listingId,preferred_date:iso,preferred_window:preferredWindow,note:note.trim()||null,status:'requested'}).select('id,status,created_at').single();
- if(error)throw error;return data;
-}
-export async function reportHousingListing(listingId:string,reason:string,details=''){
- const user=await currentUser();
- const {data,error}=await supabase.from('housing_reports').insert({user_id:user.id,listing_id:listingId,reason,details:details.trim()||null,status:'open'}).select('id,status,created_at').single();
- if(error)throw error;return data;
-}
 export async function deleteHousingApplicationDraft(applicationId:string){
  const user=await currentUser();
  const {error}=await supabase.from('housing_applications').delete().eq('id',applicationId).eq('user_id',user.id).eq('status','started');
