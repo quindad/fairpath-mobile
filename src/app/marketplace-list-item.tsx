@@ -5,7 +5,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
-import { MARKETPLACE_CATEGORIES, MARKETPLACE_CONDITIONS, createMarketplaceItem, uploadMarketplacePhoto } from '@/core/marketplace/marketplace-service';
+import { MARKETPLACE_CATEGORIES, MARKETPLACE_CONDITIONS, createMarketplaceItem, setMarketplaceItemAvailability, uploadMarketplacePhoto } from '@/core/marketplace/marketplace-service';
 import { formatUsPhone } from '@/core/forms/formatters';
 
 type Picked={name:string;uri:string;mimeType?:string|null;size?:number|null};
@@ -66,6 +66,7 @@ export default function MarketplaceListItem(){
    for(let i=0;i<photos.length;i++){
     try{const response=await fetch(photos[i].uri);const bytes=await response.arrayBuffer();await uploadMarketplacePhoto(itemId,{name:photos[i].name,mimeType:photos[i].mimeType,bytes},i);uploaded++}catch{}
    }
+   await setMarketplaceItemAvailability(itemId,true);
    Alert.alert('Item listed','Your free item is now available in FairPath Marketplace.'+(photos.length&&uploaded<photos.length?' '+uploaded+' of '+photos.length+' photos uploaded.':''),[
     {text:'View listing',onPress:()=>router.replace(('/market-item/'+itemId) as never)}
    ]);
