@@ -66,7 +66,7 @@ export default function JobDetail(){
    if(saved){await unsaveJob(job.id);setSaved(false)}
    else{await saveJob(job.id);setSaved(true)}
   }catch(e){
-   if(e instanceof Error&&e.message==='SIGNED_OUT'){router.push(('/sign-in?returnTo='+encodeURIComponent('/job/'+job.id)) as never);return}
+   if(e instanceof Error&&e.message==='SIGNED_OUT'){router.push(('/sign-up?returnTo='+encodeURIComponent('/job/'+job.id)) as never);return}
    Alert.alert('Could not update saved job','Please try again.');
   }
  }
@@ -82,7 +82,7 @@ export default function JobDetail(){
   if(!job)return;
   const {data:{user}}=await supabase.auth.getUser();
   if(!user){
-   router.push(('/sign-in?returnTo='+encodeURIComponent('/job/'+job.id)) as never);
+   router.push(('/sign-up?returnTo='+encodeURIComponent('/job/'+job.id)) as never);
    return;
   }
   if(applicationStatus){router.push((applicationId?'/job-application/'+applicationId:'/job-applications') as never);return;}
@@ -106,8 +106,8 @@ export default function JobDetail(){
   router.push(('/job-apply/'+job.id) as never);
  }
 
- if(loading)return <ScreenFrame><PageHeader eyebrow="FAIRPATH JOBS" title="Job"/><View style={s.state}><Text style={s.stateText}>Loading job…</Text></View></ScreenFrame>;
- if(error||!job)return <ScreenFrame><PageHeader eyebrow="FAIRPATH JOBS" title="Job"/><View style={s.state}><Text style={s.error}>{error||'Job not found.'}</Text></View></ScreenFrame>;
+ if(loading)return <ScreenFrame><PageHeader eyebrow="FAIRPATH JOBS" title="Job" backTo="/find-jobs" alwaysBackTo/><View style={s.state}><Text style={s.stateText}>Loading job…</Text></View></ScreenFrame>;
+ if(error||!job)return <ScreenFrame><PageHeader eyebrow="FAIRPATH JOBS" title="Job" backTo="/find-jobs" alwaysBackTo/><View style={s.state}><Text style={s.error}>{error||'Job not found.'}</Text></View></ScreenFrame>;
 
  const location=job.location_text||[job.city,job.state,job.postal_code].filter(Boolean).join(', ');
  const second=job.eligibility_rules?.second_chance_evidence==='explicit';
@@ -118,7 +118,7 @@ export default function JobDetail(){
  const applied=Boolean(applicationStatus);
 
  return <ScreenFrame>
-  <PageHeader eyebrow="FAIRPATH JOBS" title="Job details" backTo="/find-jobs" trailing={<Pressable style={[s.save,saved&&s.saveActive]} onPress={()=>void save()}><Text style={[s.saveText,saved&&s.saveTextActive]}>{saved?'SAVED':'SAVE'}</Text></Pressable>}/>
+  <PageHeader eyebrow="FAIRPATH JOBS" title="Job details" backTo="/find-jobs" alwaysBackTo trailing={<Pressable style={[s.save,saved&&s.saveActive]} onPress={()=>void save()}><Text style={[s.saveText,saved&&s.saveTextActive]}>{saved?'SAVED':'SAVE'}</Text></Pressable>}/>
   <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <Text style={s.company}>{job.company_name.toUpperCase()}</Text>
    <Text style={s.title}>{job.title}</Text>
