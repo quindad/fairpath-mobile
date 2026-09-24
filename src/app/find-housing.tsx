@@ -1,6 +1,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, SharpChip, InlineBadge } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
@@ -128,8 +129,8 @@ export default function Housing(){
   try{
    await saveHousingSearch({name:[query.trim()||'Housing',location.trim()].filter(Boolean).join(' · ')||'Housing search',query,location,filters});
    void trackProductEvent('housing_search_saved','housing',null,{query:query.trim(),location:location.trim(),filters}).catch(()=>{});
-   Alert.alert('Search saved','You can reopen this search from Saved searches.');
-  }catch{Alert.alert('Could not save search','Please try again.')}
+   notify('Search saved','You can reopen this search from Saved searches.');
+  }catch{notify('Could not save search','Please try again.')}
  }
  function cycleSort(){setSort(v=>v==='featured'?'price_low':v==='price_low'?'price_high':v==='price_high'?'newest':'featured')}
  const sortLabel=sort==='featured'?'FEATURED':sort==='price_low'?'PRICE: LOW':sort==='price_high'?'PRICE: HIGH':'NEWEST';

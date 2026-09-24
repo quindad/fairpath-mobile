@@ -1,6 +1,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
@@ -11,7 +12,7 @@ export default function MarketplaceClaimDetail(){
  const {id}=useLocalSearchParams<{id:string}>();const [claim,setClaim]=useState<MarketplaceClaimReceipt|null>(null);const [events,setEvents]=useState<MarketplaceClaimEvent[]>([]);const [messages,setMessages]=useState<MarketplaceMessage[]>([]);const [loading,setLoading]=useState(true);const [error,setError]=useState('');
  const load=useCallback(()=>{if(!id)return;setLoading(true);setError('');Promise.all([loadMarketplaceClaimReceipt(id),loadMarketplaceClaimEvents(id),loadMarketplaceMessages(id).catch(()=>[])]).then(([a,b,c])=>{setClaim(a);setEvents(b);setMessages(c)}).catch(e=>setError(e?.message==='SIGNED_OUT'?'Sign in to open your claim.':'Claim could not be loaded.')).finally(()=>setLoading(false))},[id]);
  useFocusEffect(useCallback(()=>{load()},[load]));
- async function cancel(){if(!id)return;Alert.alert('Cancel claim?','If you cancel before selection, it will not count against your monthly limit. Cancelling after approval still counts because the item was reserved for you.',[{text:'Keep claim',style:'cancel'},{text:'Cancel claim',style:'destructive',onPress:async()=>{try{await cancelMarketplaceClaim(id);await load()}catch{Alert.alert('Could not cancel','Please try again.')}}}])}
+ async function cancel(){if(!id)return;notify('Cancel claim?','If you cancel before selection, it will not count against your monthly limit. Cancelling after approval still counts because the item was reserved for you.',[{text:'Keep claim',style:'cancel'},{text:'Cancel claim',style:'destructive',onPress:async()=>{try{await cancelMarketplaceClaim(id);await load()}catch{notify('Could not cancel','Please try again.')}}}])}
 
  return <ScreenFrame><PageHeader eyebrow="FAIRPATH MARKETPLACE" title="Claim" backTo="/marketplace-claims"/><ScrollView contentContainerStyle={s.content}>
   {loading?<Text style={s.state}>Loading claim…</Text>:error?<Text style={s.error}>{error}</Text>:claim?<><View style={s.head}><InlineBadge tone={['approved','ready'].includes(claim.status)?'lime':undefined}>{LABEL[claim.status]??claim.status.toUpperCase()}</InlineBadge><Text style={s.title}>{claim.item_title}</Text><Text style={s.meta}>{claim.item_city}, {claim.item_state}</Text></View>

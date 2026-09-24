@@ -77,7 +77,7 @@ export default function SignUpScreen() {
         return;
       }
 
-      router.replace('/check-email?email=' + encodeURIComponent(cleanEmail));
+      router.replace(('/check-email?email=' + encodeURIComponent(cleanEmail)) as never);
     } catch {
       setErrorMessage('We could not create your account right now. Check your connection and try again.');
     } finally {

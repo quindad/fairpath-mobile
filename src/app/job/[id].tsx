@@ -1,6 +1,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { notify } from '@/core/ui/notify';
 import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome';
 import { JobMap } from '@/components/JobMap';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
@@ -61,13 +62,13 @@ export default function JobDetail(){
 
  async function save(){
   if(!job)return;
-  if(job.application_method==='demo'){Alert.alert('Preview job','Sample jobs are not saved to your account.');return}
+  if(job.application_method==='demo'){notify('Preview job','Sample jobs are not saved to your account.');return}
   try{
    if(saved){await unsaveJob(job.id);setSaved(false)}
    else{await saveJob(job.id);setSaved(true)}
   }catch(e){
    if(e instanceof Error&&e.message==='SIGNED_OUT'){router.push(('/sign-up?returnTo='+encodeURIComponent('/job/'+job.id)) as never);return}
-   Alert.alert('Could not update saved job','Please try again.');
+   notify('Could not update saved job','Please try again.');
   }
  }
 
@@ -75,7 +76,7 @@ export default function JobDetail(){
   if(!job?.company_website_url)return;
   const raw=job.company_website_url.trim();
   const url=/^https?:\/\//i.test(raw)?raw:'https://'+raw;
-  try{await Linking.openURL(url)}catch{Alert.alert('Website unavailable','We could not open this company website.')}
+  try{await Linking.openURL(url)}catch{notify('Website unavailable','We could not open this company website.')}
  }
 
  async function apply(){
@@ -88,11 +89,11 @@ export default function JobDetail(){
   if(applicationStatus){router.push((applicationId?'/job-application/'+applicationId:'/job-applications') as never);return;}
   const expiredByTime=Boolean(job.expires_at&&new Date(job.expires_at).getTime()<=Date.now());
   if(expiredByTime||job.status==='expired'||job.status==='closed'||job.status==='filled'){
-   Alert.alert('Job unavailable',job.status==='filled'?'This position has been filled.':expiredByTime||job.status==='expired'?'This job posting has expired.':'This job is no longer accepting applications.');
+   notify('Job unavailable',job.status==='filled'?'This position has been filled.':expiredByTime||job.status==='expired'?'This job posting has expired.':'This job is no longer accepting applications.');
    return;
   }
   if(job.application_method==='demo'){
-   Alert.alert('Preview job','This is sample data for the FairPath preview. Live jobs can use FairPath Easy Apply.');
+   notify('Preview job','This is sample data for the FairPath preview. Live jobs can use FairPath Easy Apply.');
    return;
   }
   if(job.application_method==='external'&&job.external_apply_url){

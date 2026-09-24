@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
@@ -11,7 +12,7 @@ import { SimpleDatePicker } from '@/components/SimpleDatePicker';
 const WINDOWS=['morning','afternoon','evening','flexible'] as const;
 export default function HousingTour(){
  const {id}=useLocalSearchParams<{id:string}>(); const [date,setDate]=useState(''); const [window,setWindow]=useState<(typeof WINDOWS)[number]>('flexible'); const [note,setNote]=useState(''); const [saving,setSaving]=useState(false);
- async function submit(){if(!id||saving)return;if(!isValidDateText(date,{allowFuture:true})||!isTodayOrFutureDateText(date)){Alert.alert('Choose a future date','Tour requests must be for today or a future date.');return}const [m,d,y]=date.split('/');setSaving(true);try{await createHousingTourRequest({listingId:id,preferredDate:`${y}-${m}-${d}`,preferredWindow:window,note});Alert.alert('Tour request sent','Your request is saved in FairPath. A property partner can confirm or decline it when Partner tools are live.');router.back()}catch(e){if(e instanceof Error&&e.message==='SIGNED_OUT'){router.push(('/sign-up?returnTo='+encodeURIComponent('/housing-tour/'+id)) as never);return}Alert.alert('Could not request tour','Please try again.')}finally{setSaving(false)}}
+ async function submit(){if(!id||saving)return;if(!isValidDateText(date,{allowFuture:true})||!isTodayOrFutureDateText(date)){notify('Choose a future date','Tour requests must be for today or a future date.');return}const [m,d,y]=date.split('/');setSaving(true);try{await createHousingTourRequest({listingId:id,preferredDate:`${y}-${m}-${d}`,preferredWindow:window,note});notify('Tour request sent','Your request is saved in FairPath. A property partner can confirm or decline it when Partner tools are live.');router.back()}catch(e){if(e instanceof Error&&e.message==='SIGNED_OUT'){router.push(('/sign-up?returnTo='+encodeURIComponent('/housing-tour/'+id)) as never);return}notify('Could not request tour','Please try again.')}finally{setSaving(false)}}
  return <ScreenFrame><PageHeader eyebrow="FAIRPATH HOUSING" title="Request a tour" backTo={id?'/housing/'+id:'/find-housing'}/><ScrollView contentContainerStyle={s.content}>
   <Text style={s.intro}>Choose a preferred date and time window. This is a request, not a confirmed appointment.</Text>
   <SimpleDatePicker label="PREFERRED DATE" value={date} onChange={setDate} minDate={new Date()}/>

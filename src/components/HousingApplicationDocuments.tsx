@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { notify } from '@/core/ui/notify';
 import * as DocumentPicker from 'expo-document-picker';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { FairPathColors as C, FairPathFonts as F } from '@/constants/fairpath';
@@ -34,21 +35,21 @@ export function HousingApplicationDocuments({applicationId,readOnly=false,requir
   const result=await DocumentPicker.getDocumentAsync({multiple:false,copyToCacheDirectory:true,type:['application/pdf','image/jpeg','image/png','image/heic','image/heif']});
   if(result.canceled)return;
   const asset=result.assets[0];
-  if((asset.size??0)>10*1024*1024){Alert.alert('File too large','Use a file smaller than 10 MB.');return}
+  if((asset.size??0)>10*1024*1024){notify('File too large','Use a file smaller than 10 MB.');return}
   setUploading(true);
   try{
    const response=await fetch(asset.uri);
    const bytes=await response.arrayBuffer();
    const doc=await uploadHousingApplicationDocument({applicationId,documentType:kind,fileName:asset.name,mimeType:asset.mimeType,sizeBytes:asset.size,bytes});
    applyRows([doc,...rows]);
-  }catch{Alert.alert('Upload failed','The document was not added. Please try again.')}
+  }catch{notify('Upload failed','The document was not added. Please try again.')}
   finally{setUploading(false)}
  }
 
  async function remove(doc:HousingApplicationDocument){
-  Alert.alert('Remove document?','This removes the uploaded file from this application.',[
+  notify('Remove document?','This removes the uploaded file from this application.',[
    {text:'Keep',style:'cancel'},
-   {text:'Remove',style:'destructive',onPress:async()=>{try{await deleteHousingApplicationDocument(doc);applyRows(rows.filter(x=>x.id!==doc.id))}catch{Alert.alert('Could not remove','Please try again.')}}}
+   {text:'Remove',style:'destructive',onPress:async()=>{try{await deleteHousingApplicationDocument(doc);applyRows(rows.filter(x=>x.id!==doc.id))}catch{notify('Could not remove','Please try again.')}}}
   ]);
  }
 

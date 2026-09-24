@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { notify } from '@/core/ui/notify';
 import * as DocumentPicker from 'expo-document-picker';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
@@ -40,7 +41,7 @@ export default function MarketplaceListItem(){
   const next=result.assets.slice(0,remaining).filter(x=>(x.size??0)<=12*1024*1024).map(x=>({name:x.name,uri:x.uri,mimeType:x.mimeType,size:x.size}));
   setPhotos(v=>[...v,...next].slice(0,20));
   const rejected=result.assets.filter(x=>(x.size??0)>12*1024*1024).length;
-  if(rejected)Alert.alert('Some photos were skipped','Marketplace photos must be 12 MB or smaller.');
+  if(rejected)notify('Some photos were skipped','Marketplace photos must be 12 MB or smaller.');
  }
 
  function validate(){
@@ -55,7 +56,7 @@ export default function MarketplaceListItem(){
 
  async function publish(){
   if(saving)return;
-  const problem=validate();if(problem){Alert.alert('Finish the listing',problem);return}
+  const problem=validate();if(problem){notify('Finish the listing',problem);return}
   setSaving(true);
   try{
    const itemId=await createMarketplaceItem({
@@ -67,12 +68,12 @@ export default function MarketplaceListItem(){
     try{const response=await fetch(photos[i].uri);const bytes=await response.arrayBuffer();await uploadMarketplacePhoto(itemId,{name:photos[i].name,mimeType:photos[i].mimeType,bytes},i);uploaded++}catch{}
    }
    await setMarketplaceItemAvailability(itemId,true);
-   Alert.alert('Item listed','Your free item is now available in FairPath Marketplace.'+(photos.length&&uploaded<photos.length?' '+uploaded+' of '+photos.length+' photos uploaded.':''),[
+   notify('Item listed','Your free item is now available in FairPath Marketplace.'+(photos.length&&uploaded<photos.length?' '+uploaded+' of '+photos.length+' photos uploaded.':''),[
     {text:'View listing',onPress:()=>router.replace(('/market-item/'+itemId) as never)}
    ]);
   }catch(e){
    if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace(('/sign-up?returnTo='+encodeURIComponent('/marketplace-list-item')) as never);return}
-   Alert.alert('Could not list item','Please review the listing and try again.');
+   notify('Could not list item','Please review the listing and try again.');
   }finally{setSaving(false)}
  }
 

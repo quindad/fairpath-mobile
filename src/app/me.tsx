@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { notify } from '@/core/ui/notify';
 import { ScreenFrame, PageHeader, BottomNav } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { supabase } from '@/lib/supabase';
@@ -23,7 +24,7 @@ export default function Screen(){
  async function signOut(){
   router.replace('/find-jobs' as never);
   const {error}=await supabase.auth.signOut();
-  if(error){Alert.alert('Could not sign out','Please try again.');}
+  if(error){notify('Could not sign out','Please try again.');}
  }
 
  return <ScreenFrame>

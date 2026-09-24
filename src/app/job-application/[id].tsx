@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
@@ -64,7 +65,7 @@ export default function JobApplicationDetail(){
 
  function confirmWithdraw(){
   if(!item||!['submitted','viewed','interview','offer'].includes(item.status))return;
-  Alert.alert('Withdraw application','This removes you from consideration for this job. You can still keep the application in your history.',[
+  notify('Withdraw application','This removes you from consideration for this job. You can still keep the application in your history.',[
    {text:'Cancel',style:'cancel'},
    {text:'Withdraw',style:'destructive',onPress:()=>void withdraw()}
   ]);
@@ -77,7 +78,7 @@ export default function JobApplicationDetail(){
    await withdrawMyJobApplication(item.id);
    setItem({...item,status:'withdrawn',updated_at:new Date().toISOString()});
   }catch{
-   Alert.alert('Could not withdraw','Please try again.');
+   notify('Could not withdraw','Please try again.');
   }finally{setWithdrawing(false)}
  }
 

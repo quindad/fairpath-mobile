@@ -1,6 +1,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
@@ -50,7 +51,8 @@ export default function HousingApplication(){
  const progress=draft?Math.max(0,Math.min(100,Math.round((Math.max(1,item.current_step)-1)/4*100))):100;
 
  function deleteDraft(){
-  Alert.alert(
+  if(!item)return;
+  notify(
    'Delete draft application?',
    'This permanently deletes this unfinished draft. You can start a new Standard or FastTrack application for this home afterward.',
    [
@@ -59,17 +61,18 @@ export default function HousingApplication(){
      try{
       await deleteHousingApplicationDraft(item.id);
       router.replace(item.listing?('/housing/'+item.listing.id) as never:'/housing-applications' as never);
-     }catch{Alert.alert('Could not delete draft','Please try again.')}
+     }catch{notify('Could not delete draft','Please try again.')}
     }}
    ]
   );
  }
  function withdrawSubmitted(){
-  Alert.alert('Withdraw submitted application?','This changes the FairPath application status to withdrawn. It cannot undo actions already taken outside FairPath.',[
+  if(!item)return;
+  notify('Withdraw submitted application?','This changes the FairPath application status to withdrawn. It cannot undo actions already taken outside FairPath.',[
    {text:'Cancel',style:'cancel'},
    {text:'Withdraw',style:'destructive',onPress:async()=>{
     try{await withdrawMyHousingApplication(item.id);await load()}
-    catch{Alert.alert('Could not withdraw','Please try again.')}
+    catch{notify('Could not withdraw','Please try again.')}
    }}
   ]);
  }
