@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { currentUser } from '@/core/supabase/current-user';
 
 export type OffenseCatalogItem={
  id:string;
@@ -22,17 +23,30 @@ export type OffenseCatalogItem={
  last_verified_at:string|null;
 };
 
-export type UserConviction={
+/**
+ * Canonical conviction record (supabase/migrations/20260924_0005_convictions.sql).
+ * Supersedes the old user_convictions table, which is kept (read-only,
+ * migrated into `convictions`) rather than dropped — see
+ * supabase/migrations/20260924_0010_backfill_canonical_profile.sql.
+ *
+ * share_with_employers is deliberately NOT present (Sterling decision
+ * #3: retired). Employers/property owners never receive raw conviction
+ * records through FairPath matching — only an eligibility/match result
+ * from a security-definer RPC (planned Step 2).
+ */
+export type Conviction={
  id:string;
  user_id:string;
  offense_catalog_id:string|null;
- jurisdiction_type:'federal'|'state'|'territory'|'local';
+ taxonomy_category_id:string|null;
+ origin:'manual'|'questionnaire'|'document_extraction';
+ jurisdiction_type:'federal'|'state'|'territory'|'local'|null;
  state_code:string|null;
  county:string|null;
  court_name:string|null;
  case_number:string|null;
  offense_code:string|null;
- offense_title:string;
+ offense_title:string|null;
  offense_level:string|null;
  offense_degree:string|null;
  offense_class:string|null;
@@ -42,20 +56,17 @@ export type UserConviction={
  sentence_summary:string|null;
  release_date:string|null;
  supervision_status:string|null;
+ is_violent:boolean|null;
+ is_sexual:boolean|null;
  source_type:'self_reported'|'document'|'official_record'|'partner_verified';
- verification_state:'self_reported'|'user_confirmed'|'document_verified'|'official_record_verified'|'needs_review';
+ verification_state:'self_reported'|'user_confirmed'|'needs_review'|'document_verified'|'official_record_verified';
  source_reference:string|null;
- share_with_employers:boolean;
  user_notes:string|null;
  created_at:string;
  updated_at:string;
 };
 
-async function currentUser(){
- const {data:{user},error}=await supabase.auth.getUser();
- if(error||!user)throw new Error('SIGNED_OUT');
- return user;
-}
+const CONVICTION_COLUMNS='id,user_id,offense_catalog_id,taxonomy_category_id,origin,jurisdiction_type,state_code,county,court_name,case_number,offense_code,offense_title,offense_level,offense_degree,offense_class,disposition,conviction_date,sentence_date,sentence_summary,release_date,supervision_status,is_violent,is_sexual,source_type,verification_state,source_reference,user_notes,created_at,updated_at';
 
 export async function searchOffenseCatalog(query:string,stateCode?:string){
  const term=query.trim();
@@ -73,17 +84,18 @@ export async function searchOffenseCatalog(query:string,stateCode?:string){
 
 export async function loadMyConvictions(){
  const user=await currentUser();
- const {data,error}=await supabase.from('user_convictions')
-  .select('*')
+ const {data,error}=await supabase.from('convictions')
+  .select(CONVICTION_COLUMNS)
   .eq('user_id',user.id)
   .order('conviction_date',{ascending:false});
  if(error)throw error;
- return (data??[]) as UserConviction[];
+ return (data??[]) as Conviction[];
 }
 
 export type SaveConvictionInput={
  id?:string;
  offense_catalog_id?:string|null;
+ taxonomy_category_id?:string|null;
  jurisdiction_type:'federal'|'state'|'territory'|'local';
  state_code?:string|null;
  county?:string|null;
@@ -101,17 +113,25 @@ export type SaveConvictionInput={
  release_date?:string|null;
  supervision_status?:string|null;
  source_type?:'self_reported'|'document'|'official_record'|'partner_verified';
- verification_state?:'self_reported'|'user_confirmed'|'document_verified'|'official_record_verified'|'needs_review';
+ verification_state?:'self_reported'|'user_confirmed'|'needs_review'|'document_verified'|'official_record_verified';
  source_reference?:string|null;
- share_with_employers?:boolean;
  user_notes?:string|null;
 };
 
+/**
+ * Manual full conviction-history editor entry point — always writes
+ * origin='manual', distinct from the single origin='questionnaire' row
+ * the progressive profile questionnaire owns (see
+ * src/core/profile/profile-service.ts). Not yet wired to any screen in
+ * Step 1; kept ready for a future fuller collection UI.
+ */
 export async function saveMyConviction(input:SaveConvictionInput){
  const user=await currentUser();
  const payload={
   user_id:user.id,
   offense_catalog_id:input.offense_catalog_id??null,
+  taxonomy_category_id:input.taxonomy_category_id??null,
+  origin:'manual' as const,
   jurisdiction_type:input.jurisdiction_type,
   state_code:input.state_code??null,
   county:input.county??null,
@@ -131,16 +151,15 @@ export async function saveMyConviction(input:SaveConvictionInput){
   source_type:input.source_type??'self_reported',
   verification_state:input.verification_state??'self_reported',
   source_reference:input.source_reference??null,
-  share_with_employers:input.share_with_employers??false,
   user_notes:input.user_notes??null,
   updated_at:new Date().toISOString()
  };
  if(input.id){
-  const {data,error}=await supabase.from('user_convictions').update(payload).eq('id',input.id).eq('user_id',user.id).select('*').single();
+  const {data,error}=await supabase.from('convictions').update(payload).eq('id',input.id).eq('user_id',user.id).select(CONVICTION_COLUMNS).single();
   if(error)throw error;
-  return data as UserConviction;
+  return data as Conviction;
  }
- const {data,error}=await supabase.from('user_convictions').insert(payload).select('*').single();
+ const {data,error}=await supabase.from('convictions').insert(payload).select(CONVICTION_COLUMNS).single();
  if(error)throw error;
- return data as UserConviction;
+ return data as Conviction;
 }

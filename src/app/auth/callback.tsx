@@ -4,6 +4,7 @@ import { Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { supabase } from '../../lib/supabase';
+import { recordSignUpConsent } from '@/core/profile/consent-service';
 
 const LIME = '#A8F32C';
 const BLACK = '#090A09';
@@ -56,6 +57,13 @@ export default function AuthCallbackScreen() {
             return;
           }
 
+          // First point the user is authenticated after email
+          // verification — this is where sign-up consent actually
+          // completes for accounts that required confirmation. Fail-soft:
+          // consent_events may not exist yet until Step 1's migrations
+          // are applied to the live project.
+          void recordSignUpConsent().catch(() => {});
+
           setState('success');
           setMessage('Email verified. Your FairPath account is ready.');
           return;
@@ -73,6 +81,7 @@ export default function AuthCallbackScreen() {
       }
 
       if (data.session) {
+        void recordSignUpConsent().catch(() => {});
         setState('success');
         setMessage('Email verified. Your FairPath account is ready.');
         return;

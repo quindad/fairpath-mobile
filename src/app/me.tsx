@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 
 const rows=[
  ["Profile readiness","Review and complete your FairPath profile","/profile-readiness"],
+ ["Your location","ZIP code and search radius for Jobs and Housing","/location-setup"],
  ["Saved jobs","Jobs you bookmarked for later","/saved-jobs"],
  ["Job applications","Track your FairPath job applications","/job-applications"],
  ["Saved homes","Your saved FairPath housing","/saved-homes"],

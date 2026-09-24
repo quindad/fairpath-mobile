@@ -50,6 +50,7 @@
     "test:navigation": "node scripts/audit-navigation.mjs",
     "test:housing": "node scripts/audit-housing.mjs",
     "test:marketplace": "node scripts/audit-marketplace.mjs",
+    "test:canonical-profile": "node scripts/audit-canonical-profile.mjs",
     "db:pull": "supabase db pull",
     "db:types": "supabase gen types typescript --linked > src/core/supabase/database.types.ts"
   },

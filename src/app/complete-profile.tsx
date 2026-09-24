@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FairPathColors } from '@/constants/fairpath';
 import { getRequiredVisibleQuestions, type ProfileQuestion } from '@/core/models/profile-questions';
 import { calculateFairPathReadiness } from '@/core/models/readiness-engine';
-import { loadProfileAnswers, saveProfileAnswer } from '@/core/profile/profile-service';
+import { loadProfileAnswers, saveProfileAnswer, hasUnconvertedLegacyJusticeSignal } from '@/core/profile/profile-service';
 import type { ReadinessArea } from '@/core/models/readiness';
 import { formatUsPhone } from '@/core/forms/formatters';
 
@@ -77,6 +77,7 @@ export default function CompleteProfile(){
 
  useEffect(()=>{let active=true;loadProfileAnswers().then(a=>{if(active){setAnswers(a);chooseNext(a);}}).catch(()=>{if(active){setDemoMode(true);setError('Preview mode: sign in to save this profile permanently.');chooseNext({});}}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;};},[]);
 
+ const showLegacyJusticeBanner=question?.id==='convictions.has_felony'&&hasUnconvertedLegacyJusticeSignal(answers);
  const options=useMemo(()=>question?.input==='yes_no'?YES_NO:question?.options??[],[question]);
  const multi=question?.input==='multi_select';
  const validation=validationMessage(question,value);
@@ -128,6 +129,7 @@ export default function CompleteProfile(){
    <Text style={s.title}>{question.label}</Text>
    <Text style={s.help}>{question.helpText}</Text>
    {question.sensitive?<View style={s.private}><Text style={s.privateText}>PRIVATE PROFILE INFORMATION</Text><Text style={s.privateBody}>This answer is not automatically displayed as a general partner-visible profile field.</Text></View>:null}
+   {showLegacyJusticeBanner?<View style={s.private}><Text style={s.privateText}>CONFIRM YOUR RECORD DETAILS</Text><Text style={s.privateBody}>You previously told FairPath you have a justice record. We need this specific answer to build your structured profile — it wasn't carried over automatically.</Text></View>:null}
    {options.length>0?<View style={s.options}>{options.map(o=>{const selected=Array.isArray(value)?value.includes(o):value===o;return <Pressable key={o} style={[s.option,selected&&s.optionSelected]} onPress={()=>selectOption(o)}><View style={[s.mark,selected&&s.markSelected]}><Text style={s.check}>{selected?'✓':''}</Text></View><Text style={[s.optionText,selected&&s.optionTextSelected]}>{o}</Text></Pressable>})}</View>:
    <><TextInput value={String(value)} onChangeText={v=>{setValue(question.id==='identity.phone'?formatUsPhone(v):question.input==='date'?formatDateInput(v):v);if(error)setError('')}} style={s.input} placeholder={question.id==='identity.phone'?'(555) 555-1234':question.input==='date'?'MM/DD/YYYY':question.input==='number'?'Enter a number':'Type your answer'} placeholderTextColor="#666C66" keyboardType={question.id==='identity.phone'?'phone-pad':question.input==='date'||question.input==='number'?'numeric':'default'} maxLength={question.input==='date'?10:undefined} onSubmitEditing={saveAndContinue}/>{validation?<Text style={s.validation}>{validation}</Text>:null}</>}
   </ScrollView>

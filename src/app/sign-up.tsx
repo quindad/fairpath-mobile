@@ -5,6 +5,7 @@ import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { supabase } from '../lib/supabase';
+import { recordSignUpConsent } from '@/core/profile/consent-service';
 
 const LIME = '#A8F32C';
 const BLACK = '#090A09';
@@ -22,6 +23,7 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   async function createAccount() {
     if (loading) return;
@@ -32,6 +34,11 @@ export default function SignUpScreen() {
 
     if (!cleanFirstName || !cleanLastName || !cleanEmail || !password) {
       setErrorMessage('Complete every field to create your FairPath account.');
+      return;
+    }
+
+    if (!agreedToTerms) {
+      setErrorMessage("Agree to FairPath's Terms and Privacy Policy to continue.");
       return;
     }
 
@@ -73,6 +80,11 @@ export default function SignUpScreen() {
       }
 
       if (data.session) {
+        // Session exists immediately (email confirmation disabled) — the
+        // user is authenticated now, so consent can be recorded right
+        // away. Fail-soft: the consent_events table may not exist yet
+        // on the live project until the Step 1 migrations are applied.
+        void recordSignUpConsent().catch(() => {});
         router.replace('/auth/callback');
         return;
       }
@@ -159,6 +171,21 @@ export default function SignUpScreen() {
             {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
             <Pressable
+              style={styles.consentRow}
+              onPress={() => setAgreedToTerms((v) => !v)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: agreedToTerms }}
+              accessibilityLabel="Agree to FairPath's Terms and Privacy Policy"
+            >
+              <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>
+                {agreedToTerms ? <Text style={styles.checkboxMark}>✓</Text> : null}
+              </View>
+              <Text style={styles.terms}>
+                I agree to FairPath's Terms and Privacy Policy.
+              </Text>
+            </Pressable>
+
+            <Pressable
               style={[styles.primaryButton, loading && styles.primaryButtonDisabled]}
               onPress={createAccount}
               disabled={loading}
@@ -166,10 +193,6 @@ export default function SignUpScreen() {
               <Text style={styles.primaryButtonText}>{loading ? 'Creating account…' : 'Create account'}</Text>
               <Text style={styles.arrow}>{loading ? '•' : '→'}</Text>
             </Pressable>
-
-            <Text style={styles.terms}>
-              By continuing, you agree to FairPath's Terms and Privacy Policy.
-            </Text>
           </View>
 
           <View style={styles.loginRow}>
@@ -229,7 +252,11 @@ const styles = StyleSheet.create({
   primaryButtonDisabled: { opacity: 0.65 },
   primaryButtonText: { color: BLACK, fontSize: 17, fontWeight: '800' },
   arrow: { color: BLACK, fontSize: 25 },
-  terms: { color: '#6F756F', fontSize: 11, lineHeight: 16, textAlign: 'center', marginTop: 4 },
+  consentRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 6, paddingVertical: 4 },
+  checkbox: { width: 20, height: 20, borderRadius: 6, borderWidth: 1, borderColor: BORDER, alignItems: 'center', justifyContent: 'center' },
+  checkboxChecked: { backgroundColor: LIME, borderColor: LIME },
+  checkboxMark: { color: BLACK, fontSize: 12, fontWeight: '900' },
+  terms: { color: '#6F756F', fontSize: 11, lineHeight: 16, flex: 1 },
   loginRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 'auto', paddingTop: 38 },
   loginMuted: { color: '#777D77', fontSize: 13 },
   loginLink: { color: LIME, fontSize: 13, fontWeight: '800' },
