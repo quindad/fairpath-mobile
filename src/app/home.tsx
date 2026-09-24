@@ -1,6 +1,7 @@
 import { router, usePathname } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { notify } from '@/core/ui/notify';
 import { FairPathLogo } from '@/components/FairPathLogo';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { BottomNav } from '@/components/ProductChrome';
@@ -28,7 +29,7 @@ export default function Home(){
    <View style={s.sectionHead}><View><Text style={s.featuredTitle}>Featured Opportunities</Text><Text style={s.featuredSub}>Featured across FairPath</Text></View><Pressable style={s.seeAllButton} onPress={()=>router.push('/find-jobs')}><Text style={s.seeAll}>See all</Text><Text style={s.seeAllArrow}>→</Text></Pressable></View>
    <View style={s.featuredList}>{featured.map((j,index)=>{const saved=!!savedJobs[j.id];return <Pressable key={j.id} style={s.jobCard} onPress={()=>router.push(('/job/'+j.id) as never)}>
     <View style={s.jobThumb}><Image source={{uri:Object.values(DEMO_MEDIA.jobs)[index%Object.values(DEMO_MEDIA.jobs).length]}} style={s.jobThumbImage}/><View style={s.featuredFlag}><Text style={s.featuredFlagText}>FEATURED</Text></View></View>
-    <View style={s.jobCopy}><View style={s.jobTopRow}><Text style={s.jobTitle} numberOfLines={1}>{j.title}</Text><Pressable accessibilityLabel={saved?'Remove saved job':'Save job'} hitSlop={10} style={[s.saveButton,saved&&s.saveButtonActive]} onPress={(e)=>{e.stopPropagation?.();if(j.id.startsWith('demo-')){Alert.alert('Preview job','Sample jobs are not saved to your account.');return;}const action=saved?unsaveJob(j.id):saveJob(j.id);action.then(()=>setSavedJobs(prev=>({...prev,[j.id]:!saved}))).catch((err)=>{if(err instanceof Error&&err.message==='SIGNED_OUT'){router.push('/sign-in?returnTo=/home' as never);return}Alert.alert('Could not update saved job','Please try again.');});}}><Lucide name={saved?'bookmark-check':'bookmark'} color={saved?C.black:C.white} size={15}/></Pressable></View>
+    <View style={s.jobCopy}><View style={s.jobTopRow}><Text style={s.jobTitle} numberOfLines={1}>{j.title}</Text><Pressable accessibilityLabel={saved?'Remove saved job':'Save job'} hitSlop={10} style={[s.saveButton,saved&&s.saveButtonActive]} onPress={(e)=>{e.stopPropagation?.();if(j.id.startsWith('demo-')){notify('Preview job','Sample jobs are not saved to your account.');return;}const action=saved?unsaveJob(j.id):saveJob(j.id);action.then(()=>setSavedJobs(prev=>({...prev,[j.id]:!saved}))).catch((err)=>{if(err instanceof Error&&err.message==='SIGNED_OUT'){router.push('/sign-in?returnTo=/home' as never);return}notify('Could not update saved job','Please try again.');});}}><Lucide name={saved?'bookmark-check':'bookmark'} color={saved?C.black:C.white} size={15}/></Pressable></View>
     <Text style={s.jobCompany}>{j.company_name}</Text><Text style={s.jobMeta}>{j.location_text||[j.city,j.state].filter(Boolean).join(', ')}</Text>
     {j.pay_min!=null?<Text style={s.jobPay}>{'$'+Number(j.pay_min).toLocaleString()+(j.pay_max?' – $'+Number(j.pay_max).toLocaleString():'')+' / '+(j.pay_period||'period')}</Text>:null}
     <View style={s.jobBadges}><Text style={s.jobBadge}>{j.employment_type.replace('_',' ')}</Text>{j.workplace_type?<Text style={s.jobBadge}>{j.workplace_type}</Text>:null}{j.eligibility_rules?.second_chance_evidence==='explicit'?<Text style={[s.jobBadge,s.secondChanceBadge]}>Second Chance</Text>:null}</View></View>

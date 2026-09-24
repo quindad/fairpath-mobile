@@ -19,6 +19,8 @@ const required=[
  'src/components/HousingMap.native.tsx',
  'src/components/HousingApplicationDocuments.tsx',
  'src/core/opportunities/opportunity-service.ts',
+ 'src/core/housing/housing-service.ts',
+ 'src/core/notifications/notifications-service.ts',
  'docs/FAIRPATH_HOUSING_CLOSEOUT.md'
 ];
 
@@ -33,7 +35,12 @@ for(const file of required.filter(x=>/\.tsx?$/.test(x))){
  const styleCount=(src.match(/const s=StyleSheet\.create/g)||[]).length;
  if(file.endsWith('.tsx')&&styleCount>1)failures.push(file+' contains '+styleCount+' StyleSheet blocks; likely duplicated/corrupted code.');
 }
-const service=read('src/core/opportunities/opportunity-service.ts');
+// Housing's real implementation lives in core/housing/housing-service.ts
+// (split out of the old opportunity-service.ts god-file during Step 0
+// Foundation; opportunity-service.ts is now a re-export barrel kept for
+// backward-compatible imports). Notifications moved to their own module too.
+const service=read('src/core/housing/housing-service.ts');
+const notifications=read('src/core/notifications/notifications-service.ts');
 const detail=read('src/app/housing/[id].tsx');
 const browse=read('src/app/find-housing.tsx');
 const saved=read('src/app/saved-homes.tsx');
@@ -48,7 +55,7 @@ for(const name of ['createHousingInquiry','createHousingTourRequest','createHous
 }
 if(!service.includes("supabase.rpc('submit_housing_application'"))failures.push('Housing submit must use transactional submit_housing_application RPC.');
 if(!service.includes("from('housing_application_documents')"))failures.push('Housing documents service is missing.');
-if(!service.includes("from('user_notifications')"))failures.push('Live notification service is missing.');
+if(!notifications.includes("from('user_notifications')"))failures.push('Live notification service is missing.');
 if(!apply.includes('HousingApplicationDocuments'))failures.push('Application review does not expose document manager.');
 if(!apply.includes('loadFastTrackQuote'))failures.push('FastTrack pricing contract is not surfaced in application review.');
 

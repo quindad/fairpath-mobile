@@ -1,6 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
@@ -10,7 +11,7 @@ export default function MarketplaceMyListings(){
  const [rows,setRows]=useState<MarketplaceItem[]>([]);const [loading,setLoading]=useState(true);const [error,setError]=useState('');
  const load=useCallback(()=>{setLoading(true);setError('');loadMyMarketplaceListings().then(setRows).catch(e=>setError(e?.message==='SIGNED_OUT'?'Sign in to manage Marketplace listings.':'Listings could not be loaded.')).finally(()=>setLoading(false))},[]);
  useFocusEffect(useCallback(()=>{load()},[load]));
- function remove(item:MarketplaceItem){Alert.alert('Remove listing?','Active claims will be cancelled and released from quota where appropriate.',[{text:'Keep',style:'cancel'},{text:'Remove',style:'destructive',onPress:async()=>{try{await removeMarketplaceItem(item.id);await load()}catch{Alert.alert('Could not remove listing','Please try again.')}}}])}
+ function remove(item:MarketplaceItem){notify('Remove listing?','Active claims will be cancelled and released from quota where appropriate.',[{text:'Keep',style:'cancel'},{text:'Remove',style:'destructive',onPress:async()=>{try{await removeMarketplaceItem(item.id);await load()}catch{notify('Could not remove listing','Please try again.')}}}])}
  return <ScreenFrame><PageHeader eyebrow="FAIRPATH MARKETPLACE" title="My listings" backTo="/marketplace" trailing={<Pressable style={s.add} onPress={()=>router.push('/marketplace-list-item' as never)}><Lucide name="plus" color={C.black} size={15}/></Pressable>}/><ScrollView contentContainerStyle={s.content}>
   {loading?<Text style={s.state}>Loading listings…</Text>:error?<Text style={s.error}>{error}</Text>:rows.length===0?<View style={s.empty}><Lucide name="package-plus" color={C.mutedStrong} size={28}/><Text style={s.emptyTitle}>Nothing listed yet.</Text><Text style={s.emptyBody}>Give useful items forward through FairPath Marketplace.</Text><Pressable style={s.primary} onPress={()=>router.push('/marketplace-list-item' as never)}><Text style={s.primaryText}>LIST A FREE ITEM</Text></Pressable></View>:rows.map(item=>{const photo=item.marketplace_media?.slice().sort((a,b)=>a.sort_order-b.sort_order)[0]?.url??'';return <View key={item.id} style={s.card}>
    <Pressable style={s.cardMain} onPress={()=>router.push(('/marketplace-manage/'+item.id) as never)}><View style={s.media}>{photo?<Image source={{uri:photo}} style={s.photo}/>:<View style={s.noPhoto}><Lucide name="image-off" color={C.mutedStrong} size={18}/></View>}</View><View style={s.copy}><View style={s.badges}><InlineBadge tone={item.status==='available'?'lime':undefined}>{item.status.replaceAll('_',' ').toUpperCase()}</InlineBadge></View><Text style={s.title}>{item.title}</Text><Text style={s.meta}>{item.pickup_area||item.city+', '+item.state}</Text><Text style={s.meta}>{item.marketplace_media?.length??0} photo{(item.marketplace_media?.length??0)===1?'':'s'}</Text></View><Lucide name="arrow-right" color={C.lime} size={15}/></Pressable>

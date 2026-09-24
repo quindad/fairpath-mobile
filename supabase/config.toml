@@ -1,0 +1,18 @@
+# Supabase CLI project config.
+#
+# This file is scaffolding only. It has NOT been linked to the live
+# FairPath Supabase project in this environment (no CLI login / project
+# ref / access token were available). Before this becomes usable:
+#
+#   1. supabase login
+#   2. supabase link --project-ref <the live project ref>
+#   3. supabase db pull        # writes the REAL schema as a migration
+#   4. supabase gen types typescript --linked > src/core/supabase/database.types.ts
+#
+# See supabase/README.md for the full explanation of why this could not
+# be done as part of this change.
+
+project_id = "fairpath-mobile"
+
+[db]
+major_version = 15

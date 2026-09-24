@@ -1,6 +1,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
@@ -46,18 +47,18 @@ export default function MarketItem(){
    const created=await requestMarketplaceClaim(item.id);
    setClaim(created as any);
    const nextQuota=await loadMarketplaceViewerState(item.id);setQuota(nextQuota.quota);
-   Alert.alert('Claim requested','Your request is in. The donor sees an anonymous claim—not your name, race, or profile photo. If selected, you will get private pickup details and a 48-hour pickup window.',[
+   notify('Claim requested','Your request is in. The donor sees an anonymous claim—not your name, race, or profile photo. If selected, you will get private pickup details and a 48-hour pickup window.',[
     {text:'View claim',onPress:()=>router.push(('/marketplace-claim/'+created.id) as never)}
    ]);
   }catch(e){
    const code=e instanceof Error?e.message:'';
    if(code==='SIGNED_OUT'){router.push(('/sign-up?returnTo='+encodeURIComponent('/market-item/'+item.id)) as never)}
-   else if(code==='CLAIM_LIMIT_REACHED')Alert.alert('Monthly claim limit reached',quota?.plan==='fairpath_plus'?'You have used all 7 FairPath+ Marketplace claims this month.':'Free members get 1 Marketplace claim each month. FairPath+ includes 7.',[
+   else if(code==='CLAIM_LIMIT_REACHED')notify('Monthly claim limit reached',quota?.plan==='fairpath_plus'?'You have used all 7 FairPath+ Marketplace claims this month.':'Free members get 1 Marketplace claim each month. FairPath+ includes 7.',[
     {text:'Not now',style:'cancel'},{text:'View FairPath+',onPress:()=>router.push('/plus' as never)}
    ]);
-   else if(code==='OWN_ITEM')Alert.alert('This is your listing','You cannot claim your own item.');
-   else if(code==='ITEM_UNAVAILABLE')Alert.alert('Item unavailable','This item is no longer accepting new claims.');
-   else Alert.alert('Could not request claim','Please try again.');
+   else if(code==='OWN_ITEM')notify('This is your listing','You cannot claim your own item.');
+   else if(code==='ITEM_UNAVAILABLE')notify('Item unavailable','This item is no longer accepting new claims.');
+   else notify('Could not request claim','Please try again.');
   }finally{setClaiming(false)}
  }
 

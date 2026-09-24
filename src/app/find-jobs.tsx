@@ -1,6 +1,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, SharpChip, InlineBadge } from '@/components/ProductChrome';
 import { JobMap } from '@/components/JobMap';
@@ -102,14 +103,14 @@ export default function FindJobs(){
    setSavedJobs(prev=>({...prev,[id]:!currentlySaved}));
   }catch(e){
    if(e instanceof Error&&e.message==='SIGNED_OUT'){
-    Alert.alert('Sign in to save','Create an account or sign in to save jobs.',[
+    notify('Sign in to save','Create an account or sign in to save jobs.',[
      {text:'Not now',style:'cancel'},
      {text:'Sign in',onPress:()=>router.push('/sign-in?returnTo=/find-jobs' as never)},
      {text:'Create account',onPress:()=>router.push('/sign-up?returnTo=/find-jobs' as never)}
     ]);
     return;
    }
-   Alert.alert('Could not update saved job','Please try again.');
+   notify('Could not update saved job','Please try again.');
   }
  }
 

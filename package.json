@@ -49,7 +49,9 @@
     "typecheck": "tsc --noEmit",
     "test:navigation": "node scripts/audit-navigation.mjs",
     "test:housing": "node scripts/audit-housing.mjs",
-    "test:marketplace": "node scripts/audit-marketplace.mjs"
+    "test:marketplace": "node scripts/audit-marketplace.mjs",
+    "db:pull": "supabase db pull",
+    "db:types": "supabase gen types typescript --linked > src/core/supabase/database.types.ts"
   },
   "private": true
 }

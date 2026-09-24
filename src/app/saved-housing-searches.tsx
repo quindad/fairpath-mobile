@@ -1,6 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
@@ -19,7 +20,7 @@ export default function SavedHousingSearches(){
   Object.entries(x.filters??{}).forEach(([k,v])=>{if(v!==''&&v!==false&&v!=null)q.set(k,String(v))});
   router.push(('/find-housing?'+q.toString()) as never);
  }
- function remove(x:SavedHousingSearch){Alert.alert('Delete saved search?','This removes the saved search from your account.',[{text:'Cancel',style:'cancel'},{text:'Delete',style:'destructive',onPress:async()=>{try{await deleteSavedHousingSearch(x.id);setRows(v=>v.filter(r=>r.id!==x.id))}catch{Alert.alert('Could not delete','Please try again.')}}}])}
+ function remove(x:SavedHousingSearch){notify('Delete saved search?','This removes the saved search from your account.',[{text:'Cancel',style:'cancel'},{text:'Delete',style:'destructive',onPress:async()=>{try{await deleteSavedHousingSearch(x.id);setRows(v=>v.filter(r=>r.id!==x.id))}catch{notify('Could not delete','Please try again.')}}}])}
  return <ScreenFrame><PageHeader eyebrow="FAIRPATH HOUSING" title="Saved searches" backTo="/find-housing"/>
   <ScrollView contentContainerStyle={s.content}>
    <Text style={s.intro}>Save searches you want to return to. Alert delivery is not turned on until FairPath notification delivery is connected.</Text>

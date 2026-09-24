@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
@@ -62,7 +63,7 @@ export default function HousingApply(){
     setTitle(a.listing?.title??'Housing application');
     setRequiredDocs((a.listing?.required_application_documents??[]) as HousingApplicationDocument['document_type'][]);
    })
-   .catch(()=>Alert.alert('Could not load application','Please try again.'))
+   .catch(()=>notify('Could not load application','Please try again.'))
    .finally(()=>setLoading(false));
  },[id]);
  useEffect(()=>{if(!id||!fast)return;loadFastTrackQuote(id).then(setFastQuote).catch(()=>setFastQuote(null))},[id,fast]);
@@ -86,7 +87,7 @@ export default function HousingApply(){
   if(!id||saving)return;
   markStep();
   if(currentErrors.length){
-   Alert.alert('Complete this step',currentErrors.length===1?'One required item still needs attention.':currentErrors.length+' required items still need attention.');
+   notify('Complete this step',currentErrors.length===1?'One required item still needs attention.':currentErrors.length+' required items still need attention.');
    return;
   }
   setSaving(true);
@@ -95,7 +96,7 @@ export default function HousingApply(){
    await saveHousingApplicationDraft(id,form,next);
    setStep(next);
    setTouched({});
-  }catch{Alert.alert('Could not save','Your application stayed on this step. Please try again.')}
+  }catch{notify('Could not save','Your application stayed on this step. Please try again.')}
   finally{setSaving(false)}
  }
 
@@ -109,19 +110,19 @@ export default function HousingApply(){
  function attemptSubmit(){
   setTouched(Object.fromEntries((Object.keys(form) as (keyof HousingApplicationForm)[]).map(k=>[k,true])));
   if(allErrors.length){
-   Alert.alert('Application incomplete',allErrors.length===1?'Fix the required item before submitting.':'Fix '+allErrors.length+' required items before submitting.');
+   notify('Application incomplete',allErrors.length===1?'Fix the required item before submitting.':'Fix '+allErrors.length+' required items before submitting.');
    return;
   }
   if(!accuracy||!submitConsent||(fast&&!fastAck)){
-   Alert.alert('Confirm before submitting','Review and accept the required confirmations at the bottom of the application.');
+   notify('Confirm before submitting','Review and accept the required confirmations at the bottom of the application.');
    return;
   }
   if(missingRequiredDocs.length){
-   Alert.alert('Required documents missing','Upload every document required by this property before submitting.');
+   notify('Required documents missing','Upload every document required by this property before submitting.');
    return;
   }
   if(fast&&fastQuote?.payment_enforced&&!['paid','waived'].includes(fastQuote.status)){
-   Alert.alert('FastTrack payment required','Complete FastTrack payment before submitting this application.',[
+   notify('FastTrack payment required','Complete FastTrack payment before submitting this application.',[
     {text:'Not now',style:'cancel'},
     {text:'Open checkout',onPress:()=>router.push(('/fasttrack-checkout/'+id) as never)}
    ]);
@@ -144,7 +145,7 @@ export default function HousingApply(){
       :e instanceof Error&&e.message==='PAYMENT_REQUIRED'
         ?'FastTrack payment is required before submission.'
         :'The application was not submitted. Please try again.';
-   Alert.alert('Could not submit',message);
+   notify('Could not submit',message);
   }finally{setSaving(false)}
  }
 

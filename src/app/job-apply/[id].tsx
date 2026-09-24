@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
@@ -44,7 +45,7 @@ export default function JobApply(){
 
  async function submit(){
   if(!job||!id)return;
-  if(!ready){Alert.alert('Application not ready','Complete the required fields before submitting.');return}
+  if(!ready){notify('Application not ready','Complete the required fields before submitting.');return}
   setSubmitting(true);
   try{
    await saveJobApplicationProfile(form);
@@ -52,8 +53,8 @@ export default function JobApply(){
    router.replace((applicationId?'/job-application/'+applicationId:'/job-applications') as never);
   }catch(e){
    if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace(('/sign-up?returnTo='+encodeURIComponent('/job/'+id)) as never);return}
-   if(e instanceof Error&&e.message==='ALREADY_APPLIED'){Alert.alert('Already applied','You already submitted an application for this job.',[{text:'View application',onPress:()=>router.replace('/job-applications' as never)}]);return}
-   Alert.alert('Could not submit','Please try again.');
+   if(e instanceof Error&&e.message==='ALREADY_APPLIED'){notify('Already applied','You already submitted an application for this job.',[{text:'View application',onPress:()=>router.replace('/job-applications' as never)}]);return}
+   notify('Could not submit','Please try again.');
   }finally{setSubmitting(false)}
  }
 

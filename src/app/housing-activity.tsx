@@ -1,6 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
@@ -10,7 +11,7 @@ export default function HousingActivity(){
  const [tours,setTours]=useState<HousingTourRequest[]>([]);const [inquiries,setInquiries]=useState<HousingInquiry[]>([]);const [loading,setLoading]=useState(true);const [error,setError]=useState('');
  const load=useCallback(()=>{setLoading(true);setError('');Promise.all([loadMyHousingTours(),loadMyHousingInquiries()]).then(([a,b])=>{setTours(a);setInquiries(b)}).catch(e=>setError(e?.message==='SIGNED_OUT'?'Sign in to see your housing activity.':'Housing activity could not be loaded.')).finally(()=>setLoading(false))},[]);
  useFocusEffect(useCallback(()=>{load()},[load]));
- async function cancel(id:string){Alert.alert('Cancel tour request?','This changes your pending request to cancelled.',[{text:'Keep request',style:'cancel'},{text:'Cancel request',style:'destructive',onPress:async()=>{try{await cancelHousingTourRequest(id);await load()}catch{Alert.alert('Could not cancel','Please try again.')}}}])}
+ async function cancel(id:string){notify('Cancel tour request?','This changes your pending request to cancelled.',[{text:'Keep request',style:'cancel'},{text:'Cancel request',style:'destructive',onPress:async()=>{try{await cancelHousingTourRequest(id);await load()}catch{notify('Could not cancel','Please try again.')}}}])}
  return <ScreenFrame><PageHeader eyebrow="FAIRPATH HOUSING" title="Housing activity" backTo="/me"/><ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
   {loading?<State text="Loading housing activity…"/>:error?<State text={error}/>:<>
    <Text style={s.section}>TOUR REQUESTS</Text>{tours.length?tours.map(t=><View key={t.id} style={s.card}><View style={s.top}><InlineBadge tone={t.status==='confirmed'?'lime':undefined}>{t.status.toUpperCase()}</InlineBadge><Text style={s.date}>{new Date(t.preferred_date+'T00:00:00').toLocaleDateString()}</Text></View><Text style={s.title}>{t.preferred_window.toUpperCase()}</Text>{t.status==='confirmed'&&t.confirmed_date?<Text style={s.confirmed}>CONFIRMED · {new Date(t.confirmed_date+'T00:00:00').toLocaleDateString()}{t.confirmed_window?' · '+t.confirmed_window.toUpperCase():''}</Text>:null}{t.note?<Text style={s.body}>{t.note}</Text>:null}{t.partner_note?<View style={s.response}><Text style={s.responseLabel}>PROPERTY TEAM</Text><Text style={s.responseText}>{t.partner_note}</Text></View>:null}{t.status==='requested'?<Pressable style={s.link} onPress={()=>void cancel(t.id)}><Text style={s.linkText}>CANCEL REQUEST</Text></Pressable>:null}</View>):<Text style={s.none}>No tour requests yet.</Text>}
