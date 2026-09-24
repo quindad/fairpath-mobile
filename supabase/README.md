@@ -1,51 +1,45 @@
 # Supabase schema — source of truth
 
-This directory is the start of bringing the database under source control
-(Step 0 Foundation, item 1). It is **not yet linked to the live project**.
+Two completely separate Supabase projects exist:
+
+| Project | Ref | Role |
+|---|---|---|
+| `fairpath-mobile` | `rqpczemdagoddhuwefxt` | **PRODUCTION** — existing live data. Never migrated, pushed to, or repaired from this repo. |
+| `fairpath-mobile-dev` | `znvhmuhojvwvjzmaqwff` | **DEVELOPMENT** — the only project this repo is linked to (`supabase/.temp/project-ref`, gitignored). |
 
 ## What's here
 
-- `config.toml` — Supabase CLI project config (unlinked scaffolding).
-- `migrations/` — SQL migrations, applied in filename order.
-  - `20260924_0001_feature_flags.sql` — new `feature_flags` table (Step 0 item 4). This is real, owned DDL, not a reconstruction.
-- `SCHEMA_INVENTORY.md` — every table/RPC/bucket the mobile client currently assumes exists, gathered by reading `src/`. This is **not** a schema dump — it has no constraints, RLS, defaults, or triggers, because those aren't visible from client code. Treat it as a reconciliation checklist, not a source of truth.
+- `config.toml` — Supabase CLI config (labels, Postgres major version).
+- `migrations/` — SQL migrations applied in version order. Every file MUST have a unique 14-digit
+  version prefix (the CLI keys `schema_migrations` on it); `npm run test:baseline` enforces this.
+  - `20260901000000_baseline_tables.sql` — production's 36 tables / 440 columns, **generated** from
+    read-only exports. Refuses to run if `public.profiles` exists (so it can never run on production).
+  - `20260901000100_baseline_constraints_security_logic.sql` — production's constraints, RLS,
+    RPCs, triggers, storage and cron, **generated** from a read-only definitions export.
+    *Pending that export — see `baseline/README.md`.*
+  - `20260924140001_feature_flags.sql` — Step 0 `feature_flags`.
+  - `20260924150002` … `20260924150010` — Step 1 canonical profile (taxonomy, profile columns,
+    addresses, convictions, supervision/registration records, consent ledger, engine flag, backfill).
+- `baseline/` — generators, sources and the runbook for bootstrapping the empty DEV database.
+- `SCHEMA_INVENTORY.md` — original client-side reconciliation checklist (superseded by the baseline
+  exports, kept for history).
 
-## Blocked: pulling the real baseline schema
+## Runbook
 
-This environment only has the client's public anon/publishable key
-(hardcoded today in `src/lib/supabase.ts`, being moved to env vars in this
-same pass — see item 5). That key can query data through RLS; it cannot
-read schema, RLS policy bodies, RPC/trigger definitions, or dump the
-database. Producing the real baseline migration needs someone with actual
-project credentials to run, from a machine with the Supabase CLI installed:
+See **`baseline/README.md`** for the exact, ordered procedure (export -> generate -> verify ->
+`supabase db push` to DEV -> point Expo at DEV).
 
-```bash
-supabase login
-supabase link --project-ref <the live project ref>
-supabase db pull
-```
+## Safety rules
 
-`db pull` writes the live schema as a new migration file in this directory.
-From that point on, every future schema change should be a new migration
-here, reviewed like any other code change, instead of made ad hoc against
-the dashboard.
+1. Before ANY schema-mutating CLI command: `cat supabase/.temp/project-ref` must print
+   `znvhmuhojvwvjzmaqwff`.
+2. Never run `supabase link` to production from this repo; never `db push` or `migration repair`
+   against production. Production promotion of Step 0/1 is a separate, explicit, reviewed future step.
+3. In a development build the app refuses to start without `.env.local` (no silent fallback to
+   production) and logs a loud error if pointed at production (`src/lib/supabase.ts`).
+4. Never commit `supabase/.temp/`, `.env.local`, or a raw production dump.
 
-## Generating TypeScript types
+## Types
 
-Once linked:
-
-```bash
-supabase gen types typescript --linked > src/core/supabase/database.types.ts
-```
-
-No generated types file was fabricated as part of this change — a
-hand-written "generated" file with unverified column types/nullability
-would be actively misleading. `npm run db:types` (added to `package.json`)
-runs the command above once the project is linked.
-
-## Ongoing workflow
-
-- New schema changes: `supabase migration new <name>`, edit the generated
-  file, `supabase db push` (or apply via the SQL editor and then run
-  `supabase db pull` to reconcile the migration history).
-- Regenerate types after any schema change: `npm run db:types`.
+Once DEV is fully migrated and linked: `npm run db:types` writes `src/core/supabase/database.types.ts`
+from the **dev** schema.

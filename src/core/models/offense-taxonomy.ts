@@ -1,7 +1,7 @@
 /**
  * PROVISIONAL 9-category justice-history offense taxonomy.
  *
- * Mirrors supabase/migrations/20260924_0002_offense_taxonomy.sql version 1,
+ * Mirrors supabase/migrations/20260924150002_offense_taxonomy.sql version 1,
  * seeded with status='provisional'. Do not treat this as final — the
  * category boundaries require legal/domain review (FairPath V1 Master
  * Product Blueprint, Sec. 16) before any production eligibility decision

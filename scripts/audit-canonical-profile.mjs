@@ -25,15 +25,15 @@ function stripSqlComments(sql) {
 // 1. Required Step 1 files exist
 // ---------------------------------------------------------------------
 const requiredMigrations = [
-  'supabase/migrations/20260924_0002_offense_taxonomy.sql',
-  'supabase/migrations/20260924_0003_profiles_identity_location_consent.sql',
-  'supabase/migrations/20260924_0004_addresses.sql',
-  'supabase/migrations/20260924_0005_convictions.sql',
-  'supabase/migrations/20260924_0006_supervision_records.sql',
-  'supabase/migrations/20260924_0007_registration_records.sql',
-  'supabase/migrations/20260924_0008_consent_events.sql',
-  'supabase/migrations/20260924_0009_feature_flag_justice_engine.sql',
-  'supabase/migrations/20260924_0010_backfill_canonical_profile.sql',
+  'supabase/migrations/20260924150002_offense_taxonomy.sql',
+  'supabase/migrations/20260924150003_profiles_identity_location_consent.sql',
+  'supabase/migrations/20260924150004_addresses.sql',
+  'supabase/migrations/20260924150005_convictions.sql',
+  'supabase/migrations/20260924150006_supervision_records.sql',
+  'supabase/migrations/20260924150007_registration_records.sql',
+  'supabase/migrations/20260924150008_consent_events.sql',
+  'supabase/migrations/20260924150009_feature_flag_justice_engine.sql',
+  'supabase/migrations/20260924150010_backfill_canonical_profile.sql',
 ];
 const requiredCode = [
   'src/core/models/offense-taxonomy.ts',
@@ -55,15 +55,15 @@ if (failures.length) {
 }
 
 const sensitiveTableMigrations = {
-  addresses: read('supabase/migrations/20260924_0004_addresses.sql'),
-  convictions: read('supabase/migrations/20260924_0005_convictions.sql'),
-  supervision_records: read('supabase/migrations/20260924_0006_supervision_records.sql'),
-  registration_records: read('supabase/migrations/20260924_0007_registration_records.sql'),
-  consent_events: read('supabase/migrations/20260924_0008_consent_events.sql'),
+  addresses: read('supabase/migrations/20260924150004_addresses.sql'),
+  convictions: read('supabase/migrations/20260924150005_convictions.sql'),
+  supervision_records: read('supabase/migrations/20260924150006_supervision_records.sql'),
+  registration_records: read('supabase/migrations/20260924150007_registration_records.sql'),
+  consent_events: read('supabase/migrations/20260924150008_consent_events.sql'),
 };
-const backfill = read('supabase/migrations/20260924_0010_backfill_canonical_profile.sql');
-const taxonomySql = read('supabase/migrations/20260924_0002_offense_taxonomy.sql');
-const featureFlagSql = read('supabase/migrations/20260924_0009_feature_flag_justice_engine.sql');
+const backfill = read('supabase/migrations/20260924150010_backfill_canonical_profile.sql');
+const taxonomySql = read('supabase/migrations/20260924150002_offense_taxonomy.sql');
+const featureFlagSql = read('supabase/migrations/20260924150009_feature_flag_justice_engine.sql');
 
 // ---------------------------------------------------------------------
 // 2. RLS invariant: no anon access on any justice-history/consent table
@@ -138,7 +138,7 @@ if (!/justice_eligibility_engine_enabled['",\s]*,\s*false/i.test(featureFlagSql)
 // 8. profiles migration: search_radius_miles default, zip/radius
 //    nullable-by-default (progressive onboarding, Sterling decision #7)
 // ---------------------------------------------------------------------
-const profilesSql = read('supabase/migrations/20260924_0003_profiles_identity_location_consent.sql');
+const profilesSql = read('supabase/migrations/20260924150003_profiles_identity_location_consent.sql');
 if (!/search_radius_miles smallint not null default 25/i.test(profilesSql)) {
   failures.push('profiles migration does not set search_radius_miles default to 25.');
 }

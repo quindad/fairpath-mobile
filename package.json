@@ -51,6 +51,9 @@
     "test:housing": "node scripts/audit-housing.mjs",
     "test:marketplace": "node scripts/audit-marketplace.mjs",
     "test:canonical-profile": "node scripts/audit-canonical-profile.mjs",
+    "test:baseline": "node scripts/audit-baseline.mjs",
+    "db:baseline:tables": "node supabase/baseline/generate-baseline-tables.mjs",
+    "db:baseline:logic": "node supabase/baseline/generate-baseline-logic.mjs",
     "db:pull": "supabase db pull",
     "db:types": "supabase gen types typescript --linked > src/core/supabase/database.types.ts"
   },

@@ -1,12 +1,12 @@
 # Schema inventory (reconstructed from client code — NOT a verified schema dump)
 
-**Status: blocked.** This environment has no Supabase CLI, no project login, and no
-credentials beyond the client's public anon/publishable key, which cannot read
-schema, RLS, or RPC bodies. A real baseline migration must come from
-`supabase db pull` (or a manual `pg_dump`/dashboard export) run by someone with
-project credentials — see `supabase/README.md`.
+**Status: SUPERSEDED (kept for history).** The authoritative baseline now lives in
+`supabase/baseline/` — generated from read-only production exports (36 tables / 440
+columns) into `supabase/migrations/20260901000000_baseline_tables.sql` and, once the
+definitions export is provided, `20260901000100_baseline_constraints_security_logic.sql`.
+See `supabase/baseline/README.md`. Prefer those over this client-side inventory.
 
-What follows is **not** that. It's every table, RPC, and storage bucket the
+What follows was the original client-derived checklist, **not** a schema dump. It's every table, RPC, and storage bucket the
 mobile client currently assumes exists, gathered by reading `src/` directly, so
 the person who does have DB access has a checklist to reconcile against the
 live project rather than starting from nothing. Column lists reflect what the
@@ -52,4 +52,4 @@ Nothing below should be treated as authoritative until reconciled against
 
 ## New in this pass
 
-- **feature_flags** — added fresh in `supabase/migrations/20260924_0001_feature_flags.sql`. This one *is* real, owned DDL (not reconstructed) since it didn't exist before.
+- **feature_flags** — added fresh in `supabase/migrations/20260924140001_feature_flags.sql`. This one *is* real, owned DDL (not reconstructed) since it didn't exist before.

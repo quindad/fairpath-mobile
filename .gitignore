@@ -43,3 +43,8 @@ example
 # generated native folders
 /ios
 /android
+
+# Supabase CLI local link state (contains the linked project ref; never commit)
+supabase/.temp/
+# Empty leftover from an abandoned CLI dump attempt; raw production dumps must never be committed
+supabase/production_baseline.sql

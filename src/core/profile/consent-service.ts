@@ -19,7 +19,7 @@ const CURRENT_PRIVACY_VERSION = 'v1';
  * for terms/privacy specifically, also updates the denormalized
  * "current state" pointer columns on profiles so a fast check doesn't
  * need to query the ledger. Insert-only by design (see migration
- * 20260924_0008_consent_events.sql) — there is no update/delete here.
+ * 20260924150008_consent_events.sql) — there is no update/delete here.
  */
 export async function recordConsent(
   eventType: ConsentEventType,

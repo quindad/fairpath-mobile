@@ -1,0 +1,441 @@
+table_name,column_name,data_type,udt_name,is_nullable,column_default
+app_config,key,text,text,NO,null
+app_config,value,jsonb,jsonb,NO,null
+app_config,updated_at,timestamp with time zone,timestamptz,NO,now()
+external_opportunities,id,uuid,uuid,NO,gen_random_uuid()
+external_opportunities,source_id,uuid,uuid,NO,null
+external_opportunities,kind,text,text,NO,null
+external_opportunities,external_id,text,text,NO,null
+external_opportunities,canonical_url,text,text,YES,null
+external_opportunities,raw_payload,jsonb,jsonb,NO,'{}'::jsonb
+external_opportunities,normalized_payload,jsonb,jsonb,NO,'{}'::jsonb
+external_opportunities,content_hash,text,text,YES,null
+external_opportunities,first_seen_at,timestamp with time zone,timestamptz,NO,now()
+external_opportunities,last_seen_at,timestamp with time zone,timestamptz,NO,now()
+external_opportunities,expires_at,timestamp with time zone,timestamptz,YES,null
+external_opportunities,active,boolean,bool,NO,true
+fairpath_subscriptions,user_id,uuid,uuid,NO,null
+fairpath_subscriptions,plan,text,text,NO,null
+fairpath_subscriptions,status,text,text,NO,null
+fairpath_subscriptions,current_period_end,timestamp with time zone,timestamptz,YES,null
+fairpath_subscriptions,created_at,timestamp with time zone,timestamptz,NO,now()
+fairpath_subscriptions,updated_at,timestamp with time zone,timestamptz,NO,now()
+housing_application_documents,id,uuid,uuid,NO,gen_random_uuid()
+housing_application_documents,application_id,uuid,uuid,NO,null
+housing_application_documents,user_id,uuid,uuid,NO,null
+housing_application_documents,document_type,text,text,NO,null
+housing_application_documents,file_name,text,text,NO,null
+housing_application_documents,storage_path,text,text,NO,null
+housing_application_documents,mime_type,text,text,YES,null
+housing_application_documents,size_bytes,bigint,int8,YES,null
+housing_application_documents,status,text,text,NO,'uploaded'::text
+housing_application_documents,rejection_reason,text,text,YES,null
+housing_application_documents,created_at,timestamp with time zone,timestamptz,NO,now()
+housing_application_documents,updated_at,timestamp with time zone,timestamptz,NO,now()
+housing_application_events,id,uuid,uuid,NO,gen_random_uuid()
+housing_application_events,application_id,uuid,uuid,NO,null
+housing_application_events,actor_user_id,uuid,uuid,YES,null
+housing_application_events,event_type,text,text,NO,null
+housing_application_events,metadata,jsonb,jsonb,NO,'{}'::jsonb
+housing_application_events,created_at,timestamp with time zone,timestamptz,NO,now()
+housing_applications,id,uuid,uuid,NO,gen_random_uuid()
+housing_applications,user_id,uuid,uuid,NO,null
+housing_applications,listing_id,uuid,uuid,NO,null
+housing_applications,application_type,text,text,NO,'standard'::text
+housing_applications,status,text,text,NO,'started'::text
+housing_applications,answers,jsonb,jsonb,NO,'{}'::jsonb
+housing_applications,submitted_at,timestamp with time zone,timestamptz,YES,null
+housing_applications,updated_at,timestamp with time zone,timestamptz,NO,now()
+housing_applications,current_step,integer,int4,NO,1
+housing_applications,applicant_snapshot,jsonb,jsonb,NO,'{}'::jsonb
+housing_applications,consent_snapshot,jsonb,jsonb,NO,'{}'::jsonb
+housing_applications,partner_note,text,text,YES,null
+housing_applications,status_reason,text,text,YES,null
+housing_fasttrack_orders,id,uuid,uuid,NO,gen_random_uuid()
+housing_fasttrack_orders,application_id,uuid,uuid,NO,null
+housing_fasttrack_orders,user_id,uuid,uuid,NO,null
+housing_fasttrack_orders,currency,text,text,NO,'usd'::text
+housing_fasttrack_orders,base_amount_cents,integer,int4,NO,7500
+housing_fasttrack_orders,discount_cents,integer,int4,NO,0
+housing_fasttrack_orders,amount_due_cents,integer,int4,NO,null
+housing_fasttrack_orders,status,text,text,NO,'requires_payment'::text
+housing_fasttrack_orders,provider,text,text,YES,null
+housing_fasttrack_orders,provider_payment_id,text,text,YES,null
+housing_fasttrack_orders,created_at,timestamp with time zone,timestamptz,NO,now()
+housing_fasttrack_orders,updated_at,timestamp with time zone,timestamptz,NO,now()
+housing_inquiries,id,uuid,uuid,NO,gen_random_uuid()
+housing_inquiries,user_id,uuid,uuid,NO,null
+housing_inquiries,listing_id,uuid,uuid,NO,null
+housing_inquiries,subject,text,text,NO,'Question about this home'::text
+housing_inquiries,message,text,text,NO,null
+housing_inquiries,status,text,text,NO,'open'::text
+housing_inquiries,created_at,timestamp with time zone,timestamptz,NO,now()
+housing_inquiries,updated_at,timestamp with time zone,timestamptz,NO,now()
+housing_inquiries,response_message,text,text,YES,null
+housing_inquiries,responded_at,timestamp with time zone,timestamptz,YES,null
+housing_listings,id,uuid,uuid,NO,gen_random_uuid()
+housing_listings,owner_id,uuid,uuid,NO,null
+housing_listings,title,text,text,NO,null
+housing_listings,description,text,text,NO,''::text
+housing_listings,property_type,text,text,NO,'apartment'::text
+housing_listings,address_line1,text,text,YES,null
+housing_listings,address_line2,text,text,YES,null
+housing_listings,city,text,text,NO,null
+housing_listings,state,text,text,NO,null
+housing_listings,postal_code,text,text,YES,null
+housing_listings,latitude,double precision,float8,YES,null
+housing_listings,longitude,double precision,float8,YES,null
+housing_listings,bedrooms,numeric,numeric,YES,null
+housing_listings,bathrooms,numeric,numeric,YES,null
+housing_listings,square_feet,integer,int4,YES,null
+housing_listings,rent_monthly,numeric,numeric,NO,null
+housing_listings,deposit_amount,numeric,numeric,YES,null
+housing_listings,application_fee,numeric,numeric,YES,null
+housing_listings,available_date,date,date,YES,null
+housing_listings,lease_terms,ARRAY,_text,YES,null
+housing_listings,amenities,ARRAY,_text,YES,null
+housing_listings,utilities_included,ARRAY,_text,YES,null
+housing_listings,pet_policy,text,text,YES,null
+housing_listings,parking,text,text,YES,null
+housing_listings,accessibility_features,ARRAY,_text,YES,null
+housing_listings,screening_summary,text,text,YES,null
+housing_listings,eligibility_rules,jsonb,jsonb,NO,'{}'::jsonb
+housing_listings,virtual_tour_url,text,text,YES,null
+housing_listings,tour_provider,text,text,YES,null
+housing_listings,floor_plan_url,text,text,YES,null
+housing_listings,video_url,text,text,YES,null
+housing_listings,fasttrack_enabled,boolean,bool,NO,false
+housing_listings,status,text,text,NO,'draft'::text
+housing_listings,featured,boolean,bool,NO,false
+housing_listings,created_at,timestamp with time zone,timestamptz,NO,now()
+housing_listings,updated_at,timestamp with time zone,timestamptz,NO,now()
+housing_listings,source_id,uuid,uuid,YES,null
+housing_listings,external_opportunity_id,uuid,uuid,YES,null
+housing_listings,source_label,text,text,NO,'FairPath'::text
+housing_listings,source_url,text,text,YES,null
+housing_listings,garage_spaces,integer,int4,YES,null
+housing_listings,parking_types,ARRAY,_text,NO,'{}'::text[]
+housing_listings,furnished,boolean,bool,NO,false
+housing_listings,has_basement,boolean,bool,NO,false
+housing_listings,has_yard,boolean,bool,NO,false
+housing_listings,has_balcony_patio,boolean,bool,NO,false
+housing_listings,laundry_type,text,text,YES,null
+housing_listings,has_central_air,boolean,bool,NO,false
+housing_listings,pet_types,ARRAY,_text,NO,'{}'::text[]
+housing_listings,move_in_ready,boolean,bool,NO,false
+housing_listings,walk_score,integer,int4,YES,null
+housing_listings,transit_score,integer,int4,YES,null
+housing_listings,bike_score,integer,int4,YES,null
+housing_listings,neighborhood_data_updated_at,timestamp with time zone,timestamptz,YES,null
+housing_listings,school_data_provider,text,text,YES,null
+housing_listings,school_data_updated_at,timestamp with time zone,timestamptz,YES,null
+housing_listings,neighborhood_data_provider,text,text,YES,null
+housing_listings,required_application_documents,ARRAY,_text,NO,'{}'::text[]
+housing_media,id,uuid,uuid,NO,gen_random_uuid()
+housing_media,listing_id,uuid,uuid,NO,null
+housing_media,media_type,text,text,NO,null
+housing_media,url,text,text,NO,null
+housing_media,sort_order,integer,int4,NO,0
+housing_media,caption,text,text,YES,null
+housing_nearby_places,id,uuid,uuid,NO,gen_random_uuid()
+housing_nearby_places,listing_id,uuid,uuid,NO,null
+housing_nearby_places,provider,text,text,NO,null
+housing_nearby_places,provider_place_id,text,text,NO,null
+housing_nearby_places,category,text,text,NO,null
+housing_nearby_places,name,text,text,NO,null
+housing_nearby_places,distance_miles,numeric,numeric,YES,null
+housing_nearby_places,sort_order,integer,int4,NO,0
+housing_nearby_places,data_updated_at,timestamp with time zone,timestamptz,NO,now()
+housing_reports,id,uuid,uuid,NO,gen_random_uuid()
+housing_reports,user_id,uuid,uuid,YES,null
+housing_reports,listing_id,uuid,uuid,NO,null
+housing_reports,reason,text,text,NO,null
+housing_reports,details,text,text,YES,null
+housing_reports,status,text,text,NO,'open'::text
+housing_reports,created_at,timestamp with time zone,timestamptz,NO,now()
+housing_schools,id,uuid,uuid,NO,gen_random_uuid()
+housing_schools,listing_id,uuid,uuid,NO,null
+housing_schools,provider,text,text,NO,null
+housing_schools,provider_school_id,text,text,NO,null
+housing_schools,name,text,text,NO,null
+housing_schools,school_type,text,text,YES,null
+housing_schools,grades,text,text,YES,null
+housing_schools,distance_miles,numeric,numeric,YES,null
+housing_schools,quality_label,text,text,YES,null
+housing_schools,profile_url,text,text,YES,null
+housing_schools,sort_order,integer,int4,NO,0
+housing_schools,data_updated_at,timestamp with time zone,timestamptz,NO,now()
+housing_tour_requests,id,uuid,uuid,NO,gen_random_uuid()
+housing_tour_requests,user_id,uuid,uuid,NO,null
+housing_tour_requests,listing_id,uuid,uuid,NO,null
+housing_tour_requests,preferred_date,date,date,NO,null
+housing_tour_requests,preferred_window,text,text,NO,null
+housing_tour_requests,note,text,text,YES,null
+housing_tour_requests,status,text,text,NO,'requested'::text
+housing_tour_requests,created_at,timestamp with time zone,timestamptz,NO,now()
+housing_tour_requests,updated_at,timestamp with time zone,timestamptz,NO,now()
+housing_tour_requests,confirmed_date,date,date,YES,null
+housing_tour_requests,confirmed_window,text,text,YES,null
+housing_tour_requests,partner_note,text,text,YES,null
+job_applications,id,uuid,uuid,NO,gen_random_uuid()
+job_applications,user_id,uuid,uuid,NO,null
+job_applications,job_id,uuid,uuid,NO,null
+job_applications,status,text,text,NO,'started'::text
+job_applications,answers,jsonb,jsonb,NO,'{}'::jsonb
+job_applications,submitted_at,timestamp with time zone,timestamptz,YES,null
+job_applications,updated_at,timestamp with time zone,timestamptz,NO,now()
+jobs,id,uuid,uuid,NO,gen_random_uuid()
+jobs,employer_id,uuid,uuid,NO,null
+jobs,title,text,text,NO,null
+jobs,company_name,text,text,NO,null
+jobs,description,text,text,NO,''::text
+jobs,location_text,text,text,YES,null
+jobs,workplace_type,text,text,NO,'onsite'::text
+jobs,employment_type,text,text,NO,'full_time'::text
+jobs,pay_min,numeric,numeric,YES,null
+jobs,pay_max,numeric,numeric,YES,null
+jobs,pay_period,text,text,YES,null
+jobs,currency,text,text,NO,'USD'::text
+jobs,schedule,ARRAY,_text,YES,null
+jobs,benefits,ARRAY,_text,YES,null
+jobs,skills,ARRAY,_text,YES,null
+jobs,requirements,ARRAY,_text,YES,null
+jobs,education_requirement,text,text,YES,null
+jobs,experience_level,text,text,YES,null
+jobs,background_policy_summary,text,text,YES,null
+jobs,eligibility_rules,jsonb,jsonb,NO,'{}'::jsonb
+jobs,application_method,text,text,NO,'fairpath'::text
+jobs,external_apply_url,text,text,YES,null
+jobs,status,text,text,NO,'draft'::text
+jobs,featured,boolean,bool,NO,false
+jobs,created_at,timestamp with time zone,timestamptz,NO,now()
+jobs,updated_at,timestamp with time zone,timestamptz,NO,now()
+jobs,source_id,uuid,uuid,YES,null
+jobs,external_opportunity_id,uuid,uuid,YES,null
+jobs,source_label,text,text,NO,'FairPath'::text
+jobs,source_url,text,text,YES,null
+jobs,city,text,text,YES,null
+jobs,state,text,text,YES,null
+jobs,postal_code,text,text,YES,null
+jobs,latitude,double precision,float8,YES,null
+jobs,longitude,double precision,float8,YES,null
+jobs,location_precision,text,text,YES,null
+jobs,easy_apply_enabled,boolean,bool,NO,false
+jobs,application_questions,jsonb,jsonb,NO,'[]'::jsonb
+jobs,company_website_url,text,text,YES,null
+jobs,published_at,timestamp with time zone,timestamptz,YES,null
+jobs,expires_at,timestamp with time zone,timestamptz,YES,null
+jobs,closed_at,timestamp with time zone,timestamptz,YES,null
+marketplace_claim_events,id,uuid,uuid,NO,gen_random_uuid()
+marketplace_claim_events,claim_id,uuid,uuid,NO,null
+marketplace_claim_events,actor_user_id,uuid,uuid,YES,null
+marketplace_claim_events,event_type,text,text,NO,null
+marketplace_claim_events,metadata,jsonb,jsonb,NO,'{}'::jsonb
+marketplace_claim_events,created_at,timestamp with time zone,timestamptz,NO,now()
+marketplace_claims,id,uuid,uuid,NO,gen_random_uuid()
+marketplace_claims,item_id,uuid,uuid,NO,null
+marketplace_claims,claimant_id,uuid,uuid,NO,null
+marketplace_claims,status,text,text,NO,'requested'::text
+marketplace_claims,pickup_deadline,timestamp with time zone,timestamptz,YES,null
+marketplace_claims,pickup_code,text,text,YES,null
+marketplace_claims,created_at,timestamp with time zone,timestamptz,NO,now()
+marketplace_claims,updated_at,timestamp with time zone,timestamptz,NO,now()
+marketplace_claims,counts_toward_quota,boolean,bool,NO,true
+marketplace_claims,approved_at,timestamp with time zone,timestamptz,YES,null
+marketplace_claims,ready_at,timestamp with time zone,timestamptz,YES,null
+marketplace_claims,completed_at,timestamp with time zone,timestamptz,YES,null
+marketplace_claims,cancelled_at,timestamp with time zone,timestamptz,YES,null
+marketplace_claims,declined_at,timestamp with time zone,timestamptz,YES,null
+marketplace_claims,no_show_at,timestamp with time zone,timestamptz,YES,null
+marketplace_items,id,uuid,uuid,NO,gen_random_uuid()
+marketplace_items,seller_id,uuid,uuid,NO,null
+marketplace_items,title,text,text,NO,null
+marketplace_items,description,text,text,NO,''::text
+marketplace_items,category,text,text,NO,'other'::text
+marketplace_items,condition,text,text,YES,null
+marketplace_items,price,numeric,numeric,NO,0
+marketplace_items,is_free,boolean,bool,NO,true
+marketplace_items,city,text,text,NO,null
+marketplace_items,state,text,text,NO,null
+marketplace_items,pickup_notes,text,text,YES,null
+marketplace_items,safe_pickup,boolean,bool,NO,true
+marketplace_items,status,text,text,NO,'available'::text
+marketplace_items,created_at,timestamp with time zone,timestamptz,NO,now()
+marketplace_items,updated_at,timestamp with time zone,timestamptz,NO,now()
+marketplace_items,latitude,double precision,float8,YES,null
+marketplace_items,longitude,double precision,float8,YES,null
+marketplace_items,postal_code,text,text,YES,null
+marketplace_items,quantity,integer,int4,NO,1
+marketplace_items,featured,boolean,bool,NO,false
+marketplace_items,seller_type,text,text,NO,'individual'::text
+marketplace_items,pickup_area,text,text,YES,null
+marketplace_items,moderation_status,text,text,NO,'approved'::text
+marketplace_items,listed_at,timestamp with time zone,timestamptz,YES,null
+marketplace_items,claimed_at,timestamp with time zone,timestamptz,YES,null
+marketplace_items,removed_at,timestamp with time zone,timestamptz,YES,null
+marketplace_media,id,uuid,uuid,NO,gen_random_uuid()
+marketplace_media,item_id,uuid,uuid,NO,null
+marketplace_media,url,text,text,NO,null
+marketplace_media,sort_order,integer,int4,NO,0
+marketplace_media,storage_path,text,text,YES,null
+marketplace_media,mime_type,text,text,YES,null
+marketplace_messages,id,uuid,uuid,NO,gen_random_uuid()
+marketplace_messages,claim_id,uuid,uuid,NO,null
+marketplace_messages,sender_id,uuid,uuid,NO,null
+marketplace_messages,body,text,text,NO,null
+marketplace_messages,created_at,timestamp with time zone,timestamptz,NO,now()
+marketplace_pickup_details,item_id,uuid,uuid,NO,null
+marketplace_pickup_details,seller_id,uuid,uuid,NO,null
+marketplace_pickup_details,location_name,text,text,YES,null
+marketplace_pickup_details,address_line1,text,text,YES,null
+marketplace_pickup_details,address_line2,text,text,YES,null
+marketplace_pickup_details,city,text,text,NO,null
+marketplace_pickup_details,state,text,text,NO,null
+marketplace_pickup_details,postal_code,text,text,YES,null
+marketplace_pickup_details,instructions,text,text,YES,null
+marketplace_pickup_details,contact_phone,text,text,YES,null
+marketplace_pickup_details,created_at,timestamp with time zone,timestamptz,NO,now()
+marketplace_pickup_details,updated_at,timestamp with time zone,timestamptz,NO,now()
+marketplace_reports,id,uuid,uuid,NO,gen_random_uuid()
+marketplace_reports,item_id,uuid,uuid,NO,null
+marketplace_reports,reporter_id,uuid,uuid,NO,null
+marketplace_reports,reason,text,text,NO,null
+marketplace_reports,details,text,text,YES,null
+marketplace_reports,status,text,text,NO,'open'::text
+marketplace_reports,created_at,timestamp with time zone,timestamptz,NO,now()
+marketplace_reports,updated_at,timestamp with time zone,timestamptz,NO,now()
+marketplace_saves,user_id,uuid,uuid,NO,null
+marketplace_saves,item_id,uuid,uuid,NO,null
+marketplace_saves,created_at,timestamp with time zone,timestamptz,NO,now()
+offense_catalog,id,uuid,uuid,NO,gen_random_uuid()
+offense_catalog,jurisdiction_type,text,text,NO,'state'::text
+offense_catalog,state_code,text,text,YES,null
+offense_catalog,jurisdiction_name,text,text,NO,null
+offense_catalog,offense_code,text,text,NO,null
+offense_catalog,offense_title,text,text,NO,null
+offense_catalog,offense_level,text,text,YES,null
+offense_catalog,offense_degree,text,text,YES,null
+offense_catalog,offense_class,text,text,YES,null
+offense_catalog,offense_category,text,text,YES,null
+offense_catalog,description,text,text,YES,null
+offense_catalog,source_agency,text,text,YES,null
+offense_catalog,source_url,text,text,NO,null
+offense_catalog,effective_start,date,date,YES,null
+offense_catalog,effective_end,date,date,YES,null
+offense_catalog,active,boolean,bool,NO,true
+offense_catalog,aliases,ARRAY,_text,NO,'{}'::text[]
+offense_catalog,search_terms,ARRAY,_text,NO,'{}'::text[]
+offense_catalog,last_verified_at,timestamp with time zone,timestamptz,YES,null
+offense_catalog,created_at,timestamp with time zone,timestamptz,NO,now()
+offense_catalog,updated_at,timestamp with time zone,timestamptz,NO,now()
+opportunity_evidence,id,uuid,uuid,NO,gen_random_uuid()
+opportunity_evidence,external_opportunity_id,uuid,uuid,YES,null
+opportunity_evidence,local_job_id,uuid,uuid,YES,null
+opportunity_evidence,local_housing_id,uuid,uuid,YES,null
+opportunity_evidence,evidence_type,text,text,NO,null
+opportunity_evidence,evidence_text,text,text,YES,null
+opportunity_evidence,evidence_source,text,text,NO,null
+opportunity_evidence,confidence,numeric,numeric,YES,null
+opportunity_evidence,machine_extracted,boolean,bool,NO,false
+opportunity_evidence,reviewed_at,timestamp with time zone,timestamptz,YES,null
+opportunity_evidence,created_at,timestamp with time zone,timestamptz,NO,now()
+opportunity_ingestion_runs,id,uuid,uuid,NO,gen_random_uuid()
+opportunity_ingestion_runs,source_id,uuid,uuid,NO,null
+opportunity_ingestion_runs,status,text,text,NO,null
+opportunity_ingestion_runs,fetched_count,integer,int4,NO,0
+opportunity_ingestion_runs,created_count,integer,int4,NO,0
+opportunity_ingestion_runs,updated_count,integer,int4,NO,0
+opportunity_ingestion_runs,error_count,integer,int4,NO,0
+opportunity_ingestion_runs,error_summary,text,text,YES,null
+opportunity_ingestion_runs,started_at,timestamp with time zone,timestamptz,NO,now()
+opportunity_ingestion_runs,finished_at,timestamp with time zone,timestamptz,YES,null
+opportunity_sources,id,uuid,uuid,NO,gen_random_uuid()
+opportunity_sources,kind,text,text,NO,null
+opportunity_sources,provider_key,text,text,NO,null
+opportunity_sources,display_name,text,text,NO,null
+opportunity_sources,status,text,text,NO,'planned'::text
+opportunity_sources,ingestion_mode,text,text,NO,null
+opportunity_sources,terms_url,text,text,YES,null
+opportunity_sources,attribution_required,boolean,bool,NO,false
+opportunity_sources,ai_processing_allowed,boolean,bool,NO,false
+opportunity_sources,configuration,jsonb,jsonb,NO,'{}'::jsonb
+opportunity_sources,last_sync_at,timestamp with time zone,timestamptz,YES,null
+opportunity_sources,created_at,timestamp with time zone,timestamptz,NO,now()
+opportunity_sources,updated_at,timestamp with time zone,timestamptz,NO,now()
+product_events,id,bigint,int8,NO,null
+product_events,user_id,uuid,uuid,YES,null
+product_events,event_name,text,text,NO,null
+product_events,surface,text,text,NO,null
+product_events,entity_id,text,text,YES,null
+product_events,properties,jsonb,jsonb,NO,'{}'::jsonb
+product_events,created_at,timestamp with time zone,timestamptz,NO,now()
+profile_answers,user_id,uuid,uuid,NO,null
+profile_answers,question_id,text,text,NO,null
+profile_answers,answer,jsonb,jsonb,NO,null
+profile_answers,source,text,text,NO,'user'::text
+profile_answers,verification_state,text,text,NO,'self_reported'::text
+profile_answers,updated_at,timestamp with time zone,timestamptz,NO,now()
+profiles,id,uuid,uuid,NO,null
+profiles,first_name,text,text,YES,null
+profiles,last_name,text,text,YES,null
+profiles,account_type,text,text,NO,'member'::text
+profiles,onboarding_completed,boolean,bool,NO,false
+profiles,created_at,timestamp with time zone,timestamptz,NO,now()
+profiles,updated_at,timestamp with time zone,timestamptz,NO,now()
+profiles,goals,ARRAY,_text,NO,'{}'::text[]
+profiles,location_text,text,text,YES,null
+profiles,justice_impacted,text,text,YES,null
+profiles,opportunity_priorities,ARRAY,_text,NO,'{}'::text[]
+profiles,work_preferences,ARRAY,_text,NO,'{}'::text[]
+profiles,housing_preferences,ARRAY,_text,NO,'{}'::text[]
+profiles,ai_preferences,ARRAY,_text,NO,'{}'::text[]
+profiles,onboarding_completed_at,timestamp with time zone,timestamptz,YES,null
+saved_housing,user_id,uuid,uuid,NO,null
+saved_housing,listing_id,uuid,uuid,NO,null
+saved_housing,created_at,timestamp with time zone,timestamptz,NO,now()
+saved_housing_searches,id,uuid,uuid,NO,gen_random_uuid()
+saved_housing_searches,user_id,uuid,uuid,NO,null
+saved_housing_searches,name,text,text,NO,'Housing search'::text
+saved_housing_searches,query,text,text,NO,''::text
+saved_housing_searches,location,text,text,NO,''::text
+saved_housing_searches,filters,jsonb,jsonb,NO,'{}'::jsonb
+saved_housing_searches,created_at,timestamp with time zone,timestamptz,NO,now()
+saved_housing_searches,updated_at,timestamp with time zone,timestamptz,NO,now()
+saved_jobs,user_id,uuid,uuid,NO,null
+saved_jobs,job_id,uuid,uuid,NO,null
+saved_jobs,created_at,timestamp with time zone,timestamptz,NO,now()
+user_convictions,id,uuid,uuid,NO,gen_random_uuid()
+user_convictions,user_id,uuid,uuid,NO,null
+user_convictions,offense_catalog_id,uuid,uuid,YES,null
+user_convictions,jurisdiction_type,text,text,NO,'state'::text
+user_convictions,state_code,text,text,YES,null
+user_convictions,county,text,text,YES,null
+user_convictions,court_name,text,text,YES,null
+user_convictions,case_number,text,text,YES,null
+user_convictions,offense_code,text,text,YES,null
+user_convictions,offense_title,text,text,NO,null
+user_convictions,offense_level,text,text,YES,null
+user_convictions,offense_degree,text,text,YES,null
+user_convictions,offense_class,text,text,YES,null
+user_convictions,disposition,text,text,YES,null
+user_convictions,conviction_date,date,date,YES,null
+user_convictions,sentence_date,date,date,YES,null
+user_convictions,sentence_summary,text,text,YES,null
+user_convictions,release_date,date,date,YES,null
+user_convictions,supervision_status,text,text,YES,null
+user_convictions,source_type,text,text,NO,'self_reported'::text
+user_convictions,verification_state,text,text,NO,'self_reported'::text
+user_convictions,source_reference,text,text,YES,null
+user_convictions,share_with_employers,boolean,bool,NO,false
+user_convictions,user_notes,text,text,YES,null
+user_convictions,created_at,timestamp with time zone,timestamptz,NO,now()
+user_convictions,updated_at,timestamp with time zone,timestamptz,NO,now()
+user_notifications,id,uuid,uuid,NO,gen_random_uuid()
+user_notifications,user_id,uuid,uuid,NO,null
+user_notifications,category,text,text,NO,null
+user_notifications,title,text,text,NO,null
+user_notifications,body,text,text,NO,null
+user_notifications,route,text,text,YES,null
+user_notifications,metadata,jsonb,jsonb,NO,'{}'::jsonb
+user_notifications,read_at,timestamp with time zone,timestamptz,YES,null
+user_notifications,created_at,timestamp with time zone,timestamptz,NO,now()

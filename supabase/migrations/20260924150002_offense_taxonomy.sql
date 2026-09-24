@@ -2,7 +2,7 @@
 --
 -- PROVISIONAL. Ships for building/testing the eligibility engine against,
 -- but production eligibility decisions stay behind the
--- justice_eligibility_engine_enabled feature flag (see migration 0009)
+-- justice_eligibility_engine_enabled feature flag (see 20260924150009_feature_flag_justice_engine.sql)
 -- until formal legal review approves the taxonomy (Sterling decision #1).
 --
 -- Two tables so a future legal-approved revision is a new version + a

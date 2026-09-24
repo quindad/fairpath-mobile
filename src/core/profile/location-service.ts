@@ -10,7 +10,7 @@ export const DEFAULT_SEARCH_RADIUS_MILES = 25;
 
 /**
  * Reads/writes profiles.zip_code / search_radius_miles / location_captured_at
- * (supabase/migrations/20260924_0003_profiles_identity_location_consent.sql).
+ * (supabase/migrations/20260924150003_profiles_identity_location_consent.sql).
  *
  * This is the progressive-onboarding location capture (Sterling decision
  * #7): never required at account creation. Enforcing "location required

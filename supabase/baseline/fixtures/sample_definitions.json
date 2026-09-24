@@ -1,0 +1,60 @@
+{
+  "exported_at": "2026-01-01T00:00:00Z",
+  "server_version": "17.0 (FIXTURE — synthetic, for generator tests only, NOT production data)",
+  "extensions": [
+    { "name": "plpgsql", "schema": "pg_catalog", "version": "1.0" },
+    { "name": "pg_cron", "schema": "pg_catalog", "version": "1.6" },
+    { "name": "pg_trgm", "schema": "extensions", "version": "1.6" }
+  ],
+  "constraints": [
+    { "table": "profiles", "name": "profiles_id_fkey", "type": "f", "def": "FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE" },
+    { "table": "profiles", "name": "profiles_pkey", "type": "p", "def": "PRIMARY KEY (id)" },
+    { "table": "profiles", "name": "profiles_account_type_check", "type": "c", "def": "CHECK ((account_type = ANY (ARRAY['member'::text, 'employer'::text])))" },
+    { "table": "jobs", "name": "jobs_pkey", "type": "p", "def": "PRIMARY KEY (id)" },
+    { "table": "saved_jobs", "name": "saved_jobs_job_id_fkey", "type": "f", "def": "FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE" },
+    { "table": "saved_jobs", "name": "saved_jobs_pkey", "type": "p", "def": "PRIMARY KEY (user_id, job_id)" }
+  ],
+  "indexes": [
+    { "table": "jobs", "name": "jobs_status_idx", "def": "CREATE INDEX jobs_status_idx ON public.jobs USING btree (status)" },
+    { "table": "saved_jobs", "name": "saved_jobs_uidx", "def": "CREATE UNIQUE INDEX saved_jobs_uidx ON public.saved_jobs USING btree (user_id, job_id)" }
+  ],
+  "tables": [
+    { "name": "profiles", "rls": true, "force_rls": false, "acl": ["postgres=arwdDxtm/postgres", "anon=r/postgres", "authenticated=arwd/postgres", "service_role=arwdDxtm/postgres"] },
+    { "name": "jobs", "rls": true, "force_rls": false, "acl": null },
+    { "name": "saved_jobs", "rls": false, "force_rls": false, "acl": null }
+  ],
+  "identity_columns": [
+    { "table": "product_events", "column": "id", "kind": "a" }
+  ],
+  "views": [],
+  "policies": [
+    { "schema": "public", "table": "profiles", "name": "profiles_owner_select", "permissive": "PERMISSIVE", "roles": ["authenticated"], "cmd": "SELECT", "qual": "(id = auth.uid())", "with_check": null },
+    { "schema": "public", "table": "jobs", "name": "jobs_public_read", "permissive": "PERMISSIVE", "roles": ["public"], "cmd": "SELECT", "qual": "(status = 'published'::text)", "with_check": null },
+    { "schema": "storage", "table": "objects", "name": "housing_docs_owner", "permissive": "PERMISSIVE", "roles": ["authenticated"], "cmd": "ALL", "qual": "((bucket_id = 'housing-application-documents'::text) AND ((storage.foldername(name))[1] = (auth.uid())::text))", "with_check": "((bucket_id = 'housing-application-documents'::text) AND ((storage.foldername(name))[1] = (auth.uid())::text))" }
+  ],
+  "functions": [
+    {
+      "signature": "submit_housing_application(uuid,jsonb,jsonb)",
+      "def": "CREATE OR REPLACE FUNCTION public.submit_housing_application(p_application_id uuid, p_answers jsonb, p_consent jsonb)\n RETURNS SETOF housing_applications\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nbegin\n  raise exception 'it''s a fixture';\nend;\n$function$\n",
+      "acl": ["=X/postgres", "postgres=X/postgres", "authenticated=X/postgres"]
+    },
+    {
+      "signature": "handle_new_user()",
+      "def": "CREATE OR REPLACE FUNCTION public.handle_new_user()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\nAS $function$\nbegin\n  insert into public.profiles (id) values (new.id);\n  return new;\nend;\n$function$\n",
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"]
+    }
+  ],
+  "triggers": [
+    { "table": "auth.users", "name": "on_auth_user_created", "def": "CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user()" }
+  ],
+  "buckets": [
+    { "id": "housing-application-documents", "name": "housing-application-documents", "public": false, "file_size_limit": 10485760, "allowed_mime_types": ["application/pdf", "image/jpeg"] },
+    { "id": "marketplace-media", "name": "marketplace-media", "public": true, "file_size_limit": null, "allowed_mime_types": null }
+  ],
+  "cron_jobs": [
+    { "name": "expire-marketplace-pickups", "schedule": "*/15 * * * *", "command": "select public.expire_marketplace_pickups();", "active": true }
+  ],
+  "app_config_flags": [
+    { "key": "fasttrack_payment_enforced", "value": false }
+  ]
+}

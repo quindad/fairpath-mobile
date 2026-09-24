@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 
 /**
- * Server-backed feature flags (supabase/migrations/20260924_0001_feature_flags.sql).
+ * Server-backed feature flags (supabase/migrations/20260924140001_feature_flags.sql).
  *
  * Fetched once per app session and cached in memory — flags gate whether a
  * module is visible, not per-render behavior, so a session-lifetime cache

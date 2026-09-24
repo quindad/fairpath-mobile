@@ -24,10 +24,10 @@ export type OffenseCatalogItem={
 };
 
 /**
- * Canonical conviction record (supabase/migrations/20260924_0005_convictions.sql).
+ * Canonical conviction record (supabase/migrations/20260924150005_convictions.sql).
  * Supersedes the old user_convictions table, which is kept (read-only,
  * migrated into `convictions`) rather than dropped — see
- * supabase/migrations/20260924_0010_backfill_canonical_profile.sql.
+ * supabase/migrations/20260924150010_backfill_canonical_profile.sql.
  *
  * share_with_employers is deliberately NOT present (Sterling decision
  * #3: retired). Employers/property owners never receive raw conviction
