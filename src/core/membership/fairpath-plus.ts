@@ -8,7 +8,7 @@ export type MembershipBenefit = {
   valueMessage?: string;
 };
 
-export const FAIRPATH_PLUS_MONTHLY_PRICE_USD = 2;
+export { FAIRPATH_PLUS_MONTHLY_PRICE_USD } from '@/core/membership/plus-config';
 
 export const MEMBERSHIP_BENEFITS: MembershipBenefit[] = [
   { id: 'marketplace_claims', title: 'More Marketplace claims', description: 'Get up to 7 included Marketplace claims per month.', plan: 'plus' },
