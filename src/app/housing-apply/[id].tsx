@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
@@ -9,8 +9,12 @@ import {
   FastTrackQuote,
   HousingApplicationDocument,
   HousingApplicationForm,
+  HousingApplicationMode,
   loadFastTrackQuote,
   loadHousingApplicationForm,
+  loadHousingApplicationPrefill,
+  loadHousingListing,
+  loadMyHousingApplication,
   loadMyHousingApplicationDetail,
   saveHousingApplicationDraft,
   submitHousingApplication,
@@ -37,7 +41,14 @@ const EMPLOYMENT=['Employed','Self-employed','Benefits / assistance','Unemployed
 const PETS=['None','Cat(s)','Dog(s)','Other'];
 
 export default function HousingApply(){
- const {id}=useLocalSearchParams<{id:string}>();
+ // id is an application id, or 'new' (with ?listing=&mode=) before anything has been saved.
+ const {id,listing,mode:modeParam}=useLocalSearchParams<{id:string;listing?:string;mode?:string}>();
+ const isNew=id==='new';
+ const [appId,setAppId]=useState<string|null>(isNew?null:id??null);
+ const [listingId,setListingId]=useState<string|null>(isNew?(listing??null):null);
+ const [loadError,setLoadError]=useState('');
+ const [reload,setReload]=useState(0);
+ const submitLock=useRef(false);
  const [form,setForm]=useState<HousingApplicationForm>(EMPTY);
  const [step,setStep]=useState(1);
  const [fast,setFast]=useState(false);
@@ -52,21 +63,44 @@ export default function HousingApply(){
  const [requiredDocs,setRequiredDocs]=useState<HousingApplicationDocument['document_type'][]>([]);
  const [documents,setDocuments]=useState<HousingApplicationDocument[]>([]);
 
+ // Opening this screen never writes to the database. The draft row is created by the first
+ // "SAVE & CONTINUE" (server function save_housing_application_draft).
  useEffect(()=>{
   if(!id)return;
-  Promise.all([loadHousingApplicationForm(id),loadMyHousingApplicationDetail(id)])
-   .then(([x,a])=>{
-    if(a.status!=='started'){router.replace(('/housing-application/'+id) as never);return}
-    setForm(x.form);
-    setStep(Math.max(1,Math.min(x.current_step,5)));
-    setFast(a.application_type==='fasttrack');
-    setTitle(a.listing?.title??'Housing application');
-    setRequiredDocs((a.listing?.required_application_documents??[]) as HousingApplicationDocument['document_type'][]);
-   })
-   .catch(()=>notify('Could not load application','Please try again.'))
-   .finally(()=>setLoading(false));
- },[id]);
- useEffect(()=>{if(!id||!fast)return;loadFastTrackQuote(id).then(setFastQuote).catch(()=>setFastQuote(null))},[id,fast]);
+  let active=true;
+  setLoading(true);setLoadError('');
+  const signedOut=(e:unknown)=>{if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace(('/sign-up?returnTo='+encodeURIComponent(isNew&&listing?'/housing/'+listing:'/housing-application/'+id)) as never);return true}return false};
+  if(isNew){
+   const mode:HousingApplicationMode=modeParam==='fasttrack'?'fasttrack':'standard';
+   if(!listing){setLoadError('This application link is missing its home.');setLoading(false);return}
+   Promise.all([loadHousingListing(listing),loadMyHousingApplication(listing),loadHousingApplicationPrefill(mode)])
+    .then(([home,existing,prefill])=>{
+     if(!active)return;
+     if(existing){router.replace(((existing.status==='started'?'/housing-apply/':'/housing-application/')+existing.id) as never);return}
+     if(mode==='fasttrack'&&!home.fasttrack_enabled){setLoadError('FastTrack is not available for this home.');return}
+     setForm(prefill);setStep(1);setFast(mode==='fasttrack');setTitle(home.title);setListingId(home.id);
+     setRequiredDocs((home.required_application_documents??[]) as HousingApplicationDocument['document_type'][]);
+    })
+    .catch(e=>{if(!active||signedOut(e))return;setLoadError('The application could not be loaded. Check your connection and try again.')})
+    .finally(()=>{if(active)setLoading(false)});
+  }else{
+   Promise.all([loadHousingApplicationForm(id),loadMyHousingApplicationDetail(id)])
+    .then(([x,a])=>{
+     if(!active)return;
+     if(a.status!=='started'){router.replace(('/housing-application/'+id) as never);return}
+     setForm(x.form);
+     setStep(Math.max(1,Math.min(x.current_step,5)));
+     setFast(a.application_type==='fasttrack');
+     setTitle(a.listing?.title??'Housing application');
+     setListingId(x.listing_id);setAppId(id);
+     setRequiredDocs((a.listing?.required_application_documents??[]) as HousingApplicationDocument['document_type'][]);
+    })
+    .catch(e=>{if(!active||signedOut(e))return;setLoadError('The application could not be loaded. Check your connection and try again.')})
+    .finally(()=>{if(active)setLoading(false)});
+  }
+  return()=>{active=false};
+ },[id,listing,modeParam,reload]); // eslint-disable-line react-hooks/exhaustive-deps
+ useEffect(()=>{if(!appId||!fast)return;loadFastTrackQuote(appId).then(setFastQuote).catch(()=>setFastQuote(null))},[appId,fast]);
 
  const errors=useMemo(()=>validateHousingApplicationForm(form),[form]);
  const currentFields=STEP_FIELDS[step]??[];
@@ -84,7 +118,7 @@ export default function HousingApply(){
  function displayError(key:keyof HousingApplicationForm){return touched[key]?errors[key]:undefined}
 
  async function saveAndNext(){
-  if(!id||saving)return;
+  if(!listingId||saving)return;
   markStep();
   if(currentErrors.length){
    notify('Complete this step',currentErrors.length===1?'One required item still needs attention.':currentErrors.length+' required items still need attention.');
@@ -93,16 +127,21 @@ export default function HousingApply(){
   setSaving(true);
   try{
    const next=Math.min(step+1,5);
-   await saveHousingApplicationDraft(id,form,next);
+   const draft=await saveHousingApplicationDraft({listingId,mode:fast?'fasttrack':'standard',form,step:next});
+   setAppId(draft.id);
    setStep(next);
    setTouched({});
-  }catch{notify('Could not save','Your application stayed on this step. Please try again.')}
+  }catch(e){
+   if(e instanceof Error&&e.message==='APPLICATION_NOT_EDITABLE'){notify('Application already submitted','This application can no longer be edited.');if(appId)router.replace(('/housing-application/'+appId) as never);return}
+   if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace(('/sign-up?returnTo='+encodeURIComponent('/housing/'+listingId)) as never);return}
+   notify('Could not save','Your application stayed on this step. Please try again.')
+  }
   finally{setSaving(false)}
  }
 
  async function previous(){
   if(step<=1){router.back();return}
-  if(id){try{await saveHousingApplicationDraft(id,form,step-1)}catch{}}
+  if(appId&&listingId){try{await saveHousingApplicationDraft({listingId,mode:fast?'fasttrack':'standard',form,step:step-1})}catch{}}
   setTouched({});
   setStep(v=>Math.max(1,v-1));
  }
@@ -124,7 +163,7 @@ export default function HousingApply(){
   if(fast&&fastQuote?.payment_enforced&&!['paid','waived'].includes(fastQuote.status)){
    notify('FastTrack payment required','Complete FastTrack payment before submitting this application.',[
     {text:'Not now',style:'cancel'},
-    {text:'Open checkout',onPress:()=>router.push(('/fasttrack-checkout/'+id) as never)}
+    {text:'Open checkout',onPress:()=>router.push(('/fasttrack-checkout/'+appId) as never)}
    ]);
    return;
   }
@@ -132,24 +171,32 @@ export default function HousingApply(){
  }
 
  async function doSubmit(){
-  if(!id||saving)return;
+  if(!appId||saving||submitLock.current)return;
+  submitLock.current=true;
   setSaving(true);
   try{
-   await submitHousingApplication(id,form,{accuracy,submit:submitConsent,fasttrack_ack:fast?fastAck:undefined});
-   router.replace(('/housing-application/'+id+'?submitted=1') as never);
+   await submitHousingApplication(appId,form,{accuracy,submit:submitConsent,fasttrack_ack:fast?fastAck:undefined});
+   router.replace(('/housing-application/'+appId+'?submitted=1') as never);
   }catch(e){
    const message=e instanceof Error&&e.message==='APPLICATION_INCOMPLETE'
     ?'Required information is still missing.'
-    :e instanceof Error&&e.message==='CONSENT_REQUIRED'
+    :e instanceof Error&&e.message==='REQUIRED_DOCUMENTS_MISSING'
+      ?'A required document is missing. Upload every document this property requires.'
+      :e instanceof Error&&e.message==='LISTING_UNAVAILABLE'
+      ?'This home is no longer accepting applications.'
+      :e instanceof Error&&e.message==='APPLICATION_NOT_SUBMITTABLE'
+      ?'This application was already submitted or can no longer be edited.'
+      :e instanceof Error&&e.message==='CONSENT_REQUIRED'
       ?'Required confirmations are missing.'
       :e instanceof Error&&e.message==='PAYMENT_REQUIRED'
         ?'FastTrack payment is required before submission.'
         :'The application was not submitted. Please try again.';
    notify('Could not submit',message);
-  }finally{setSaving(false)}
+  }finally{setSaving(false);submitLock.current=false}
  }
 
- if(loading)return <ScreenFrame><PageHeader eyebrow="FAIRPATH HOUSING" title="Application" backTo="/housing-applications"/><Text style={s.loading}>Loading application…</Text></ScreenFrame>;
+ if(loading)return <ScreenFrame><PageHeader eyebrow="FAIRPATH HOUSING" title="Application" backTo={listingId?'/housing/'+listingId:'/housing-applications'}/><Text style={s.loading}>Loading application…</Text></ScreenFrame>;
+ if(loadError)return <ScreenFrame><PageHeader eyebrow="FAIRPATH HOUSING" title="Application" backTo={listingId?'/housing/'+listingId:'/housing-applications'}/><View style={s.errorState}><Text style={s.loadError}>{loadError}</Text><Pressable style={s.retry} onPress={()=>setReload(n=>n+1)}><Text style={s.retryText}>TRY AGAIN</Text></Pressable></View></ScreenFrame>;
 
  return <ScreenFrame>
   <PageHeader eyebrow={fast?'FASTTRACK APPLICATION':'STANDARD APPLICATION'} title={title} onBack={()=>void previous()}/>
@@ -194,10 +241,10 @@ export default function HousingApply(){
     <SectionHead kicker="STEP 4 OF 5" title="Housing history"/>
     <Field label="CURRENT / PRIOR HOUSING" value={form.housing_history} onChangeText={v=>update('housing_history',v)} multiline placeholder="Current residence, prior residence, dates, or 'No prior rental history'" error={displayError('housing_history')}/>
     <Field label="LANDLORD / HOUSING REFERENCES" value={form.references} onChangeText={v=>update('references',v)} multiline placeholder="Names and contact details, or 'None available'" error={displayError('references')}/>
-    <Field label="ADDITIONAL NOTES" value={form.additional_notes} onChangeText={v=>update('additional_notes',v)} multiline placeholder="Optional information you want considered"/>
+    <Field optional label="ADDITIONAL NOTES" value={form.additional_notes} onChangeText={v=>update('additional_notes',v)} multiline placeholder="Optional information you want considered"/>
    </>:null}
 
-   {step===5?<>
+   {step===5&&appId?<>
     <SectionHead kicker="STEP 5 OF 5" title="Review & submit"/>
     <Review label="APPLICATION TYPE" value={fast?'FastTrack':'Standard'}/>
     <Review label="APPLICANT" value={[form.first_name,form.last_name].filter(Boolean).join(' ')}/>
@@ -217,7 +264,7 @@ export default function HousingApply(){
      <Text style={s.errorSummaryText}>{allErrors.length} required {allErrors.length===1?'item needs':'items need'} attention. TAP TO FIX.</Text>
     </Pressable>:null}
 
-    <HousingApplicationDocuments applicationId={id!} requiredTypes={requiredDocs} onDocumentsChange={setDocuments}/>
+    <HousingApplicationDocuments applicationId={appId!} requiredTypes={requiredDocs} onDocumentsChange={setDocuments}/>
     {missingRequiredDocs.length?<View style={s.documentWarning}><Lucide name="triangle-alert" color={C.lime} size={14}/><Text style={s.documentWarningText}>Upload the required property documents before submitting: {missingRequiredDocs.join(', ').replaceAll('_',' ')}.</Text></View>:null}
     {fast&&fastQuote?<View style={s.fastQuote}>
      <View style={s.quoteTop}>
@@ -225,7 +272,7 @@ export default function HousingApply(){
       <Text style={s.quoteAmount}>{`$${(fastQuote.amount_due_cents/100).toFixed(2)}`}</Text>
      </View>
      {fastQuote.discount_cents>0?<Text style={s.quoteDiscount}>{`FairPath+ discount: -$${(fastQuote.discount_cents/100).toFixed(2)}`}</Text>:null}
-     <Text style={s.quoteBody}>FastTrack speeds up reuse and review of your information. It does not guarantee approval or replace property-specific screening.</Text>
+     <Text style={s.quoteBody}>FastTrack speeds up reuse and review of your information. It does not guarantee approval or replace property-specific screening.</Text> {fastQuote.payment_enforced?<Text style={s.quoteBody}>Payment is required before submitting. Checkout is not connected to a payment provider yet, so paid FastTrack cannot be completed in this build.</Text>:<Text style={s.quoteBody}>FairPath is not collecting FastTrack payment yet. You will not be charged for this application.</Text>}
     </View>:null}
     <Consent checked={accuracy} onPress={()=>setAccuracy(v=>!v)} text="I confirm the information in this application is accurate to the best of my knowledge."/>
     <Consent checked={submitConsent} onPress={()=>setSubmitConsent(v=>!v)} text="I want FairPath to submit this completed application into the property application workflow."/>
@@ -248,16 +295,16 @@ function firstErrorStep(errors:Partial<Record<keyof HousingApplicationForm,strin
  return 1;
 }
 function SectionHead({kicker,title}:{kicker:string;title:string}){return <><Text style={s.kicker}>{kicker}</Text><Text style={s.heading}>{title}</Text></>}
-function Field({label,value,onChangeText,placeholder='',keyboardType='default',multiline=false,error,maxLength,autoCapitalize='sentences'}:{label:string;value:string;onChangeText:(v:string)=>void;placeholder?:string;keyboardType?:any;multiline?:boolean;error?:string;maxLength?:number;autoCapitalize?:any}){
- return <View style={s.field}><View style={s.fieldHead}><Text style={s.label}>{label}</Text>{error?<Text style={s.required}>REQUIRED</Text>:null}</View><TextInput style={[s.input,multiline&&s.multi,error&&s.inputError]} value={value} onChangeText={onChangeText} placeholder={placeholder||'Enter '+label.toLowerCase()} placeholderTextColor={C.muted} keyboardType={keyboardType} multiline={multiline} maxLength={maxLength} autoCapitalize={autoCapitalize}/>{error?<Text style={s.errorText}>{error}</Text>:null}</View>
+function Field({label,value,onChangeText,placeholder='',keyboardType='default',multiline=false,error,maxLength,autoCapitalize='sentences',optional=false}:{optional?:boolean;label:string;value:string;onChangeText:(v:string)=>void;placeholder?:string;keyboardType?:any;multiline?:boolean;error?:string;maxLength?:number;autoCapitalize?:any}){
+ return <View style={s.field}><View style={s.fieldHead}><Text style={s.label}>{label}</Text><Text style={[s.required,!error&&s.requiredIdle]}>{optional?'OPTIONAL':'REQUIRED'}</Text></View><TextInput style={[s.input,multiline&&s.multi,error&&s.inputError]} value={value} onChangeText={onChangeText} placeholder={placeholder||'Enter '+label.toLowerCase()} placeholderTextColor={C.muted} keyboardType={keyboardType} multiline={multiline} maxLength={maxLength} autoCapitalize={autoCapitalize}/>{error?<Text style={s.errorText}>{error}</Text>:null}</View>
 }
-function MoneyField({label,value,onChangeText,error}:{label:string;value:string;onChangeText:(v:string)=>void;error?:string}){return <View style={s.field}><View style={s.fieldHead}><Text style={s.label}>{label}</Text>{error?<Text style={s.required}>REQUIRED</Text>:null}</View><View style={[s.money,error&&s.inputError]}><Text style={s.moneyPrefix}>$</Text><TextInput style={s.moneyInput} value={value} onChangeText={onChangeText} keyboardType="number-pad" placeholder="0" placeholderTextColor={C.muted}/></View>{error?<Text style={s.errorText}>{error}</Text>:null}</View>}
-function ChoiceField({label,options,value,onChange,error}:{label:string;options:string[];value:string;onChange:(v:string)=>void;error?:string}){return <View style={s.field}><View style={s.fieldHead}><Text style={s.label}>{label}</Text>{error?<Text style={s.required}>REQUIRED</Text>:null}</View><View style={s.choiceGrid}>{options.map(o=><Pressable key={o} style={[s.choice,value===o&&s.choiceActive]} onPress={()=>onChange(o)}><Text style={[s.choiceText,value===o&&s.choiceTextActive]}>{o.toUpperCase()}</Text></Pressable>)}</View>{error?<Text style={s.errorText}>{error}</Text>:null}</View>}
+function MoneyField({label,value,onChangeText,error,optional=false}:{optional?:boolean;label:string;value:string;onChangeText:(v:string)=>void;error?:string}){return <View style={s.field}><View style={s.fieldHead}><Text style={s.label}>{label}</Text><Text style={[s.required,!error&&s.requiredIdle]}>{optional?'OPTIONAL':'REQUIRED'}</Text></View><View style={[s.money,error&&s.inputError]}><Text style={s.moneyPrefix}>$</Text><TextInput style={s.moneyInput} value={value} onChangeText={onChangeText} keyboardType="number-pad" placeholder="0" placeholderTextColor={C.muted}/></View>{error?<Text style={s.errorText}>{error}</Text>:null}</View>}
+function ChoiceField({label,options,value,onChange,error,optional=false}:{optional?:boolean;label:string;options:string[];value:string;onChange:(v:string)=>void;error?:string}){return <View style={s.field}><View style={s.fieldHead}><Text style={s.label}>{label}</Text><Text style={[s.required,!error&&s.requiredIdle]}>{optional?'OPTIONAL':'REQUIRED'}</Text></View><View style={s.choiceGrid}>{options.map(o=><Pressable key={o} style={[s.choice,value===o&&s.choiceActive]} onPress={()=>onChange(o)}><Text style={[s.choiceText,value===o&&s.choiceTextActive]}>{o.toUpperCase()}</Text></Pressable>)}</View>{error?<Text style={s.errorText}>{error}</Text>:null}</View>}
 function Review({label,value}:{label:string;value:string}){return <View style={s.review}><Text style={s.label}>{label}</Text><Text style={s.reviewValue}>{value||'Not provided'}</Text></View>}
 function Consent({checked,onPress,text}:{checked:boolean;onPress:()=>void;text:string}){return <Pressable style={s.consent} onPress={onPress}><View style={[s.checkBox,checked&&s.checkBoxOn]}>{checked?<Lucide name="check" color={C.black} size={12}/>:null}</View><Text style={s.consentText}>{text}</Text></Pressable>}
 
 const s=StyleSheet.create({
- loading:{color:C.mutedStrong,padding:L.mobileGutter},
+ loading:{color:C.mutedStrong,padding:L.mobileGutter},errorState:{padding:L.mobileGutter},loadError:{color:C.danger,fontSize:13,lineHeight:19},retry:{height:46,backgroundColor:C.lime,alignItems:'center',justifyContent:'center',marginTop:16},retryText:{color:C.black,fontFamily:F.extraBold,fontSize:9,letterSpacing:.9},
  progress:{flexDirection:'row',gap:5,paddingHorizontal:L.mobileGutter,paddingTop:14},
  piece:{flex:1,minWidth:0},bar:{height:3,backgroundColor:C.borderStrong},barOn:{backgroundColor:C.lime},
  stepLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:5.5,letterSpacing:.4,marginTop:5},stepOn:{color:C.lime},
@@ -266,7 +313,7 @@ const s=StyleSheet.create({
  modeTop:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},completion:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:.7},
  modeTitle:{color:C.white,fontFamily:F.black,fontSize:19,marginTop:10},modeBody:{color:C.mutedStrong,fontSize:10,lineHeight:16,marginTop:5},
  kicker:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.1},heading:{color:C.white,fontFamily:F.black,fontSize:26,marginTop:5,marginBottom:16},
- field:{marginBottom:14},fieldHead:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},label:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8,marginBottom:6},required:{color:C.lime,fontFamily:F.extraBold,fontSize:6,letterSpacing:.7},
+ field:{marginBottom:14},fieldHead:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},label:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8,marginBottom:6},required:{color:C.lime,fontFamily:F.extraBold,fontSize:6,letterSpacing:.7},requiredIdle:{color:C.muted},
  input:{minHeight:48,borderWidth:1,borderColor:C.borderStrong,color:C.white,paddingHorizontal:12,fontSize:13},inputError:{borderColor:C.lime},
  multi:{minHeight:96,paddingTop:12,textAlignVertical:'top'},errorText:{color:C.lime,fontSize:9,marginTop:5},
  money:{height:48,borderWidth:1,borderColor:C.borderStrong,flexDirection:'row',alignItems:'center',paddingHorizontal:12},moneyPrefix:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:14},moneyInput:{flex:1,color:C.white,fontSize:13,paddingLeft:6},

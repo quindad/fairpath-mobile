@@ -20,7 +20,7 @@ const LABEL:Record<string,string>={
  approved:'APPROVED',denied:'NOT APPROVED',withdrawn:'WITHDRAWN'
 };
 const FORM_STEPS=['Applicant','Income','Household','History','Review'];
-const EVENT_LABEL:Record<string,string>={submitted:'APPLICATION SUBMITTED',reviewing:'PROPERTY REVIEW STARTED',tour:'TOUR / NEXT STEP',approved:'APPLICATION APPROVED',denied:'APPLICATION NOT APPROVED',withdrawn:'APPLICATION WITHDRAWN'};
+const EVENT_LABEL:Record<string,string>={started:'DRAFT STARTED',submitted:'APPLICATION SUBMITTED',reviewing:'PROPERTY REVIEW STARTED',tour:'TOUR / NEXT STEP',approved:'APPLICATION APPROVED',denied:'APPLICATION NOT APPROVED',withdrawn:'APPLICATION WITHDRAWN'};
 
 export default function HousingApplication(){
  const {id,submitted:submittedParam}=useLocalSearchParams<{id:string;submitted?:string}>();
@@ -68,11 +68,11 @@ export default function HousingApplication(){
  }
  function withdrawSubmitted(){
   if(!item)return;
-  notify('Withdraw submitted application?','This changes the FairPath application status to withdrawn. It cannot undo actions already taken outside FairPath.',[
-   {text:'Cancel',style:'cancel'},
-   {text:'Withdraw',style:'destructive',onPress:async()=>{
+  notify('Withdraw application?','This marks your application as withdrawn and the property team will see that. It cannot undo anything already done outside FairPath.',[
+   {text:'Keep application',style:'cancel'},
+   {text:'Withdraw application',style:'destructive',onPress:async()=>{
     try{await withdrawMyHousingApplication(item.id);await load()}
-    catch{notify('Could not withdraw','Please try again.')}
+    catch(e){notify('Could not withdraw',e instanceof Error&&e.message==='CANNOT_WITHDRAW'?'This application can no longer be withdrawn. Refresh to see its current status.':'Please try again.')}
    }}
   ]);
  }
@@ -101,16 +101,22 @@ export default function HousingApplication(){
    {events.length?<View style={s.activity}><Text style={s.section}>ACTIVITY</Text>{events.map(e=><View key={e.id} style={s.activityRow}><View style={s.activityDot}/><View style={{flex:1}}><Text style={s.activityTitle}>{EVENT_LABEL[e.event_type]??e.event_type.replaceAll('_',' ').toUpperCase()}</Text><Text style={s.activityDate}>{new Date(e.created_at).toLocaleString()}</Text></View></View>)}</View>:null}
 
    {isSubmitted?<View style={s.submittedCard}><Text style={s.smallLabel}>SUBMITTED</Text><Text style={s.submittedDate}>{new Date(item.submitted_at!).toLocaleString()}</Text><Text style={s.submittedBody}>Your application is now in the FairPath housing workflow. Property-owner review, screening, fees, availability, and final decisions can still apply.</Text></View>:null}
+   {!draft&&Object.keys(item.answers??{}).length?<View style={s.answers}>
+    <Text style={s.section}>SUBMITTED INFORMATION</Text>
+    {([['APPLICANT',[item.answers.first_name,item.answers.last_name].filter(Boolean).join(' ')],['CONTACT',[item.answers.email,item.answers.phone].filter(Boolean).join(' · ')],['EMPLOYMENT',[item.answers.employment_status,item.answers.employer].filter(Boolean).join(' · ')],['MONTHLY INCOME',item.answers.monthly_income?'$'+Number(String(item.answers.monthly_income).replace(/[^0-9.]/g,'')||0).toLocaleString():''],['MOVE-IN',item.answers.move_in_date??''],['OCCUPANTS',item.answers.occupants??''],['PETS',item.answers.pets??'']] as [string,string][]).filter(([,v])=>v).map(([k,v])=><View key={k} style={s.answerRow}><Text style={s.answerKey}>{k}</Text><Text style={s.answerValue}>{v}</Text></View>)}
+    <Text style={s.answerNote}>Only the fields you entered in this application were sent. FairPath does not attach your justice-history or other profile records.</Text>
+   </View>:null}
    <HousingApplicationDocuments applicationId={item.id} readOnly={!draft}/>
 
    {draft?<Pressable style={s.primary} onPress={()=>router.push(('/housing-apply/'+item.id) as never)}>
     <Text style={s.primaryText}>{fast?'CONTINUE FASTTRACK APPLICATION':'CONTINUE STANDARD APPLICATION'}</Text><Lucide name="arrow-right" color={C.black} size={16}/>
    </Pressable>:null}
 
-   {!draft?<Pressable style={s.homeButton} onPress={()=>router.replace('/home' as never)}><Lucide name="house" color={C.black} size={15}/><Text style={s.homeButtonText}>BACK TO FAIRPATH HOME</Text></Pressable>:null}
+   {!draft?<Pressable style={s.homeButton} onPress={()=>router.replace('/housing-applications' as never)}><Lucide name="file-check-2" color={C.black} size={15}/><Text style={s.homeButtonText}>ALL MY APPLICATIONS</Text></Pressable>:null}
+   {!draft?<Pressable style={s.secondary} onPress={()=>router.replace('/home' as never)}><Text style={s.secondaryText}>BACK TO FAIRPATH HOME</Text></Pressable>:null}
    {item.listing?<Pressable style={s.secondary} onPress={()=>router.push(('/housing/'+item.listing!.id) as never)}><Text style={s.secondaryText}>VIEW HOME</Text></Pressable>:null}
    {draft?<Pressable style={s.dangerButton} onPress={deleteDraft}><Text style={s.dangerText}>DELETE DRAFT APPLICATION</Text></Pressable>:null}
-   {['submitted','reviewing','tour'].includes(item.status)?<Pressable style={s.dangerButton} onPress={withdrawSubmitted}><Text style={s.dangerText}>WITHDRAW SUBMITTED APPLICATION</Text></Pressable>:null}
+   {['submitted','reviewing','tour'].includes(item.status)?<Pressable style={s.dangerButton} onPress={withdrawSubmitted}><Text style={s.dangerText}>WITHDRAW APPLICATION</Text></Pressable>:null}
 
    <Text style={s.updated}>LAST UPDATED {new Date(item.updated_at).toLocaleString()}</Text>
   </ScrollView>
@@ -132,6 +138,7 @@ const s=StyleSheet.create({
  draftCard:{borderWidth:1,borderColor:C.borderStrong,padding:14,marginTop:18},progressHead:{flexDirection:'row',justifyContent:'space-between'},progressTitle:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},progressPct:{color:C.lime,fontFamily:F.extraBold,fontSize:10},track:{height:3,backgroundColor:C.borderStrong,marginTop:8},fill:{height:3,backgroundColor:C.lime},
  stepList:{marginTop:12},stepRow:{minHeight:34,flexDirection:'row',alignItems:'center',gap:9,borderBottomWidth:1,borderBottomColor:C.border},stepDot:{width:18,height:18,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center'},stepDotDone:{backgroundColor:C.lime,borderColor:C.lime},stepDotCurrent:{borderColor:C.lime},stepText:{color:C.muted,fontSize:10,flex:1},stepTextActive:{color:C.white,fontFamily:F.bold},current:{color:C.lime,fontFamily:F.extraBold,fontSize:6,letterSpacing:.7},draftCopy:{color:C.mutedStrong,fontSize:9,lineHeight:14,marginTop:12},
  timeline:{marginTop:22},section:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.1,marginBottom:6},timelineRow:{flexDirection:'row',gap:10,minHeight:62},timelineDot:{width:12,height:12,borderRadius:6,borderWidth:1,borderColor:C.borderStrong,marginTop:3},timelineDotOn:{backgroundColor:C.lime,borderColor:C.lime},timelineCopy:{flex:1,borderBottomWidth:1,borderBottomColor:C.border,paddingBottom:12},timelineTitle:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:11},timelineTitleOn:{color:C.white},timelineBody:{color:C.muted,fontSize:9,lineHeight:14,marginTop:3},
+ answers:{marginTop:20},answerRow:{paddingVertical:9,borderBottomWidth:1,borderBottomColor:C.border},answerKey:{color:C.muted,fontFamily:F.extraBold,fontSize:7,letterSpacing:.9},answerValue:{color:C.white,fontSize:12,lineHeight:18,marginTop:3},answerNote:{color:C.muted,fontSize:9,lineHeight:14,marginTop:10},
  activity:{marginTop:20},activityRow:{minHeight:46,flexDirection:'row',gap:10,alignItems:'flex-start',borderBottomWidth:1,borderBottomColor:C.border,paddingVertical:9},activityDot:{width:9,height:9,borderRadius:5,backgroundColor:C.lime,marginTop:3},activityTitle:{color:C.white,fontFamily:F.extraBold,fontSize:9},activityDate:{color:C.muted,fontSize:8,marginTop:3},submittedCard:{borderWidth:1,borderColor:'#526F2B',backgroundColor:'#0F150B',padding:14,marginTop:18},smallLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},submittedDate:{color:C.white,fontFamily:F.extraBold,fontSize:12,marginTop:5},submittedBody:{color:C.mutedStrong,fontSize:9,lineHeight:14,marginTop:6},
  primary:{height:50,backgroundColor:C.lime,flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:14,marginTop:20},primaryText:{color:C.black,fontFamily:F.extraBold,fontSize:9,letterSpacing:.9},
  homeButton:{height:50,backgroundColor:C.lime,flexDirection:'row',gap:8,alignItems:'center',justifyContent:'center',marginTop:18},homeButtonText:{color:C.black,fontFamily:F.extraBold,fontSize:9,letterSpacing:.8},secondary:{height:46,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center',marginTop:9},secondaryText:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8},

@@ -5,7 +5,7 @@ import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
-import { isHousingSaved, loadHousingListing, loadMyHousingApplication, saveHousing, startHousingApplication, unsaveHousing, type HousingApplicationStatus, type HousingListing } from '@/core/opportunities/opportunity-service';
+import { isHousingSaved, loadHousingListing, loadMyHousingApplication, saveHousing, unsaveHousing, type HousingApplicationStatus, type HousingListing } from '@/core/opportunities/opportunity-service';
 import { supabase } from '@/lib/supabase';
 
 const STATUS_LABEL:Record<HousingApplicationStatus,string>={
@@ -19,7 +19,6 @@ export default function HousingDetail(){
  const [error,setError]=useState('');
  const [saved,setSaved]=useState(false);
  const [application,setApplication]=useState<{id:string;status:HousingApplicationStatus;application_type:'standard'|'fasttrack';current_step:number}|null>(null);
- const [starting,setStarting]=useState(false);
  const [galleryIndex,setGalleryIndex]=useState(0);
  const [galleryWidth,setGalleryWidth]=useState(0);
  const galleryRef=useRef<ScrollView|null>(null);
@@ -48,18 +47,18 @@ export default function HousingDetail(){
   }
  }
 
+ // Opening the application form does not write anything. The draft is created by the first
+ // completed section (server function save_housing_application_draft).
  async function startApplication(mode:'standard'|'fasttrack'){
-  if(!item||starting)return;
+  if(!item)return;
   const {data:{user}}=await supabase.auth.getUser();
   if(!user){router.push(('/sign-up?returnTo='+encodeURIComponent('/housing/'+item.id)) as never);return}
-  if(application){router.push(('/housing-application/'+application.id) as never);return}
-  setStarting(true);
-  try{
-   const created=await startHousingApplication(item.id,mode==='fasttrack');
-   setApplication(created);
-   router.push(('/housing-application/'+created.id) as never);
-  }catch{notify('Could not start application','Please try again.')}
-  finally{setStarting(false)}
+  openApplication(mode);
+ }
+ function openApplication(mode:'standard'|'fasttrack'){
+  if(!item)return;
+  if(application){router.push(((application.status==='started'?'/housing-apply/':'/housing-application/')+application.id) as never);return}
+  router.push(('/housing-apply/new?listing='+item.id+'&mode='+mode) as never);
  }
 
  async function openUrl(url:string|null){
@@ -114,6 +113,7 @@ export default function HousingDetail(){
     {availability?<Fact label="AVAILABLE" value={availability}/>:null}
    </View>
 
+   {item.description?<Section label="ABOUT THIS HOME"><Text style={s.body}>{item.description}</Text></Section>:null}
    {(item.deposit_amount!=null||item.application_fee!=null)?<Section label="COST SNAPSHOT">
     <View style={s.costRow}><Text style={s.costLabel}>Monthly rent</Text><Text style={s.costValue}>{`$${Number(item.rent_monthly).toLocaleString()}`}</Text></View>
     {item.deposit_amount!=null?<View style={s.costRow}><Text style={s.costLabel}>Listed deposit</Text><Text style={s.costValue}>{`$${Number(item.deposit_amount).toLocaleString()}`}</Text></View>:null}
@@ -177,21 +177,21 @@ export default function HousingDetail(){
 
    <View style={s.notice}>
     <Lucide name="shield-check" color={C.lime} size={16}/>
-    <Text style={s.noticeText}>{application?'Your application is saved in FairPath. Open it to continue or review status.':item.fasttrack_enabled?'Choose Standard or FastTrack. Neither option submits anything until you complete the full application and confirm submission.':'Starting an application creates a private draft. Nothing is submitted until you complete and confirm it.'}</Text>
+    <Text style={s.noticeText}>{application?(application.status==='started'?'You have a saved draft for this home. Continue where you left off.':'Your application is in FairPath. Open it to review its status and history.'):item.fasttrack_enabled?'Choose Standard or FastTrack. Nothing is saved until you finish the first section, and nothing is submitted until you review and confirm.':'Nothing is saved until you finish the first section, and nothing is submitted until you review and confirm.'}</Text>
    </View>
 
-   {application?<Pressable style={s.primary} onPress={()=>router.push(('/housing-application/'+application.id) as never)}>
-    <Text style={s.primaryText}>OPEN {application.application_type==='fasttrack'?'FASTTRACK':'STANDARD'} APPLICATION</Text><Lucide name="arrow-right" color={C.black} size={16}/>
+   {application?<Pressable style={s.primary} onPress={()=>openApplication(application.application_type)}>
+    <Text style={s.primaryText}>{application.status==='started'?'CONTINUE':'OPEN'} {application.application_type==='fasttrack'?'FASTTRACK':'STANDARD'} APPLICATION</Text><Lucide name="arrow-right" color={C.black} size={16}/>
    </Pressable>:item.fasttrack_enabled?<View style={s.applyChoices}>
     <Text style={s.applyChoiceLabel}>CHOOSE APPLICATION TYPE</Text>
-    <Pressable style={s.fastTrackButton} onPress={()=>void startApplication('fasttrack')} disabled={starting}>
-     <View><Text style={s.fastTrackButtonTitle}>{starting?'STARTING…':'FASTTRACK APPLICATION'}</Text><Text style={s.fastTrackButtonBody}>Reuse available FairPath profile information and move through the application faster.</Text></View><Lucide name="zap" color={C.black} size={16}/>
+    <Pressable style={s.fastTrackButton} onPress={()=>void startApplication('fasttrack')}>
+     <View><Text style={s.fastTrackButtonTitle}>FASTTRACK APPLICATION</Text><Text style={s.fastTrackButtonBody}>Reuse available FairPath profile information and move through the application faster.</Text></View><Lucide name="zap" color={C.black} size={16}/>
     </Pressable>
-    <Pressable style={s.standardButton} onPress={()=>void startApplication('standard')} disabled={starting}>
+    <Pressable style={s.standardButton} onPress={()=>void startApplication('standard')}>
      <View><Text style={s.standardButtonTitle}>STANDARD APPLICATION</Text><Text style={s.standardButtonBody}>Start a clean application and enter each section manually.</Text></View><Lucide name="arrow-right" color={C.lime} size={16}/>
     </Pressable>
-   </View>:<Pressable style={[s.primary,starting&&s.primaryMuted]} onPress={()=>void startApplication('standard')} disabled={starting}>
-    <Text style={s.primaryText}>{starting?'STARTING…':'START STANDARD APPLICATION'}</Text><Lucide name="arrow-right" color={C.black} size={16}/>
+   </View>:<Pressable style={s.primary} onPress={()=>void startApplication('standard')}>
+    <Text style={s.primaryText}>START STANDARD APPLICATION</Text><Lucide name="arrow-right" color={C.black} size={16}/>
    </Pressable>}
   </ScrollView>
  </ScreenFrame>;

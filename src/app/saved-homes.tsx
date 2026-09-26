@@ -1,6 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
@@ -12,7 +13,7 @@ export default function SavedHomes(){
  const [error,setError]=useState('');
  const load=useCallback(()=>{setLoading(true);setError('');loadSavedHousing().then(setRows).catch(e=>setError(e?.message==='SIGNED_OUT'?'Sign in to see your saved homes.':'Saved homes could not be loaded.')).finally(()=>setLoading(false))},[]);
  useFocusEffect(useCallback(()=>{load()},[load]));
- async function remove(id:string){try{await unsaveHousing(id);setRows(v=>v.filter(x=>x.id!==id))}catch{}}
+ async function remove(id:string){try{await unsaveHousing(id);setRows(v=>v.filter(x=>x.id!==id))}catch{notify('Could not remove saved home','Please try again.')}}
  return <ScreenFrame><PageHeader eyebrow="FAIRPATH HOUSING" title="Saved homes" backTo="/me"/>
   <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <View style={s.introRow}><Text style={s.intro}>Homes you bookmarked for another look.</Text><Pressable onPress={()=>router.push('/saved-housing-searches' as never)}><Text style={s.searches}>SAVED SEARCHES →</Text></Pressable></View>

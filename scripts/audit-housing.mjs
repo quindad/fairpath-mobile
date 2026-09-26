@@ -106,6 +106,77 @@ if(!/nonce/.test(findSrc)||/setHomes\(\[\]\)/.test(findSrc))failures.push('LIST/
  if(normalizePlace('columbus, ohio')!=='columbus, OH'||normalizePlace('Ohio')!=='OH'||normalizePlace('West Virginia')!=='WV'||normalizePlace('Kansas City')!=='Kansas City'||normalizePlace('New York')!=='New York'||normalizePlace('Cleveland OH')!=='Cleveland, OH')failures.push('normalizePlace state-name handling is wrong.');
 }
 
+// ---- Housing applications: server-controlled status, drafts, FastTrack, inquiries, history ----
+{
+ const sec=read('supabase/migrations/20260928120000_housing_applications_secure.sql').replace(/--.*$/gm,'');
+ const fn=name=>(sec.match(new RegExp('create or replace function public\\.'+name+'\\([\\s\\S]*?\\n\\$\\$;'))||[''])[0];
+ // direct write paths are closed
+ if(!/drop policy if exists "Applicants update own housing applications"/.test(sec)||!/revoke insert, update on table public\.housing_applications from authenticated/.test(sec))failures.push('Applicants must not be able to UPDATE/INSERT housing_applications directly (self-approval).');
+ if(!/drop policy if exists "Applicants create own housing application events"/.test(sec)||!/revoke insert, update, delete on table public\.housing_application_events from authenticated/.test(sec))failures.push('Applicants must not be able to forge application events.');
+ if(!/drop policy if exists "Users create own FastTrack orders"/.test(sec)||!/revoke insert, update, delete on table public\.housing_fasttrack_orders from authenticated/.test(sec))failures.push('Members must not be able to create/alter FastTrack orders (fake payment).');
+ if(!/drop policy if exists "Renters create own housing inquiries"/.test(sec)||!/revoke insert, update, delete on table public\.housing_inquiries from authenticated/.test(sec))failures.push('Inquiries must be created through send_housing_inquiry only.');
+ if(!/status = 'uploaded'/.test(sec)||!/revoke update on table public\.housing_application_documents from authenticated/.test(sec))failures.push('Document rows must be insert-only and forced to status uploaded.');
+ // server functions
+ for(const name of ['save_housing_application_draft','submit_housing_application','withdraw_housing_application','quote_housing_fasttrack','send_housing_inquiry']){
+  const body=fn(name);
+  if(!body)failures.push(name+' is not defined in the secure housing migration.');
+  else{
+   if(!/security definer/.test(body)||!/set search_path = public/.test(body))failures.push(name+' must be SECURITY DEFINER with a fixed search_path.');
+   if(!/auth\.uid\(\)/.test(body))failures.push(name+' must derive the user from auth.uid().');
+   if(!new RegExp('revoke all on function public\\.'+name+'[\\s\\S]*?from public, anon').test(sec))failures.push(name+' must not be executable by anon.');
+  }
+ }
+ if(!/step < 2/.test(fn('save_housing_application_draft'))||!/NO_MEANINGFUL_INPUT/.test(fn('save_housing_application_draft')))failures.push('A draft must not be created before meaningful input (step >= 2).');
+ if(!/status <> 'started'/.test(fn('save_housing_application_draft'))||!/APPLICATION_NOT_EDITABLE/.test(fn('save_housing_application_draft')))failures.push('Only started drafts may be edited.');
+ if(!/status = 'submitted'/.test(fn('submit_housing_application'))||!/a\.status = 'started'/.test(fn('submit_housing_application')))failures.push('submit must move started -> submitted only.');
+ if(!/storage\.objects/.test(fn('submit_housing_application'))||!/REQUIRED_DOCUMENTS_MISSING/.test(fn('submit_housing_application')))failures.push('Required documents must exist as real uploaded files, not just rows.');
+ if(!/PAYMENT_REQUIRED/.test(fn('submit_housing_application'))||!/fasttrack_payment_enforced/.test(fn('submit_housing_application')))failures.push('FastTrack payment enforcement must remain server-side.');
+ if(/statuss*=s*'(approved|denied|reviewing|tour|submitted)'/.test(fn('withdraw_housing_application')+fn('save_housing_application_draft')+fn('send_housing_inquiry')+fn('quote_housing_fasttrack')))failures.push('Applicant-callable functions must never be able to set approved/denied/reviewing/tour.');
+ if(!/in \('submitted', 'reviewing', 'tour'\)/.test(fn('withdraw_housing_application'))||!/CANNOT_WITHDRAW/.test(fn('withdraw_housing_application')))failures.push('withdraw must be limited to submitted/reviewing/tour.');
+ if(/conviction|supervision|registration|offense/i.test(sec))failures.push('The housing application functions must not touch justice-history data.');
+ if(!/interval '10 minutes'/.test(fn('send_housing_inquiry'))||!/RATE_LIMITED/.test(fn('send_housing_inquiry')))failures.push('Inquiries must be de-duplicated and rate limited server-side.');
+ if(!/log_housing_application_started/.test(sec)||!/after insert on public\.housing_applications/.test(sec))failures.push('Application history needs a started event written by trigger.');
+
+ // client: no direct writes, RPCs used
+ const svc=read('src/core/housing/housing-service.ts');
+ const allSrc=['src/core/housing/housing-service.ts','src/app/housing/[id].tsx','src/app/housing-apply/[id].tsx','src/app/housing-application/[id].tsx','src/app/housing-inquiry/[id].tsx','src/app/housing-applications.tsx'].map(read).join('\n');
+ if(/from\('housing_applications'\)\s*\.(insert|update|upsert)/.test(allSrc))failures.push('The client must not insert/update housing_applications directly.');
+ if(/from\('housing_inquiries'\)\s*\.insert|from\('housing_application_events'\)\s*\.insert|from\('housing_fasttrack_orders'\)\s*\.(insert|upsert|update)/.test(allSrc))failures.push('The client must not write inquiries, events or FastTrack orders directly.');
+ if(/startHousingApplication/.test(allSrc))failures.push('Legacy startHousingApplication (created a draft on view) must stay removed.');
+ for(const r of ["rpc('save_housing_application_draft'","rpc('submit_housing_application'","rpc('withdraw_housing_application'","rpc('quote_housing_fasttrack'","rpc('send_housing_inquiry'"])if(!svc.includes(r))failures.push('housing-service must call '+r);
+ // opening a property / form must not create an application
+ const detailSrc=read('src/app/housing/[id].tsx');
+ if(!/housing-apply\/new\?listing=/.test(detailSrc))failures.push('Starting an application must open the form without writing (housing-apply/new).');
+ if(/saveHousingApplicationDraft|submitHousingApplication/.test(detailSrc))failures.push('The property screen must never save or submit an application.');
+ const applySrc=read('src/app/housing-apply/[id].tsx');
+ if(!/isNew/.test(applySrc)||!/setAppId\(draft\.id\)/.test(applySrc))failures.push('The apply screen must create the draft only from SAVE & CONTINUE.');
+ const loadEffect=applySrc.slice(applySrc.indexOf('useEffect(()=>{'),applySrc.indexOf('const errors=useMemo'));
+ if(/saveHousingApplicationDraft|submitHousingApplication|loadFastTrackQuote\(id/.test(loadEffect))failures.push('Loading the apply screen must not write or quote.');
+ if(!/submitLock/.test(applySrc)||!/REQUIRED_DOCUMENTS_MISSING/.test(applySrc))failures.push('Submit must be double-tap safe and surface missing documents.');
+ if(!/optional\?'OPTIONAL':'REQUIRED'/.test(applySrc)||!/SimpleDatePicker/.test(applySrc)||!/formatUsPhone/.test(applySrc))failures.push('Required fields must be clearly marked, with date pickers and phone formatting.');
+ if(!/appId&&listingId/.test(applySrc)&&!/router\.replace\(\('\/housing-application\/'\+appId\+'\?submitted=1'\)/.test(applySrc))failures.push('A successful submit must replace to the application workspace with a success state.');
+ // FastTrack: honest about payment
+ if(!/not collecting FastTrack payment/.test(applySrc)||!/PAYMENT PROVIDER CONNECTION REQUIRED/.test(read('src/app/fasttrack-checkout/[id].tsx')))failures.push('FastTrack must state honestly that payment is not connected/collected.');
+ if(/provider_payment_id|stripe|paymentIntent/i.test(allSrc))failures.push('Housing must not pretend to process payments.');
+ // workspace
+ const ws=read('src/app/housing-application/[id].tsx');
+ if(!/WITHDRAW APPLICATION/.test(ws)||/WITHDRAW SUBMITTED|from workspace/i.test(ws)||!/Keep application/.test(ws))failures.push('Withdraw needs user-facing wording and a confirmation.');
+ if(!/loadHousingApplicationEvents/.test(ws)||!/SUBMITTED INFORMATION/.test(ws)||!/HousingApplicationDocuments/.test(ws)||!/ALL MY APPLICATIONS/.test(ws))failures.push('Workspace must show history, submitted information, documents and a route to My Applications.');
+ // sensitive data
+ if(/user_convictions|convictions|supervision_records|registration_records|justice/i.test(svc))failures.push('housing-service must not read justice-history data.');
+ if(!/\.in\('question_id',\['identity\.phone','identity\.date_of_birth','identity\.address','identity\.current_location','housing\.household_size'\]\)/.test(svc))failures.push('FastTrack prefill must read only the identity/household answers the form asks for.');
+ if(!/mode!=='fasttrack'\)return/.test(svc))failures.push('Standard applications must not prefill from the profile.');
+ // inquiry + saved
+ const inq=read('src/app/housing-inquiry/[id].tsx');
+ if(!/sending\.current/.test(inq)||!/setError\(/.test(inq)||!/not a chat|not a full messaging/i.test(inq))failures.push('Inquiry must be double-tap safe, show errors, and state it is one-shot (not messaging).');
+ if(!/notify\('Could not remove saved home'/.test(saved))failures.push('Saved-home removal must surface failures.');
+ if(!/saveHousingSearch/.test(browse)||!/housingFiltersFromRecord\(params\)/.test(browse)||!/deleteSavedHousingSearch/.test(read('src/app/saved-housing-searches.tsx')))failures.push('Saved searches must be saved, restored and removable.');
+ if(!/ABOUT THIS HOME/.test(detailSrc)||!/NO PROPERTY PHOTOS/.test(detailSrc))failures.push('Property details must show the description and an honest no-photo state.');
+ // fake data / overlap
+ for(const f of ['src/app/housing/[id].tsx','src/app/housing-apply/[id].tsx','src/app/housing-application/[id].tsx','src/app/find-housing.tsx'])if(/DEMO_|demo-media|mockListings|sampleHomes/i.test(read(f)))failures.push(f+' contains fake fallback data.');
+ for(const f of ['src/app/housing/[id].tsx','src/app/housing-apply/[id].tsx','src/app/housing-application/[id].tsx'])if(/position:\s*'absolute'[^}]*bottom:\s*0/.test(read(f)))failures.push(f+' has a bottom-pinned bar that would sit behind the global nav.');
+}
+
 if(failures.length){
  console.error('Housing audit failed:\n- '+failures.join('\n- '));
  process.exit(1);
