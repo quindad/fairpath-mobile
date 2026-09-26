@@ -64,6 +64,8 @@
     "test:auth": "node scripts/audit-auth.mjs",
     "test:payments": "node scripts/audit-payments.mjs",
     "test:entitlements": "node scripts/audit-entitlements.mjs",
+    "qa:dev-anon": "node scripts/qa-dev-anon-probe.mjs",
+    "qa:dev-platform": "node scripts/qa-dev-platform.mjs --confirm-dev",
     "seed:dev:dry": "node scripts/seed-dev.mjs",
     "seed:dev": "node scripts/seed-dev.mjs --apply --confirm-dev",
     "seed:dev:reset": "node scripts/seed-dev.mjs --reset --confirm-dev",

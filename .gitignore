@@ -52,3 +52,6 @@ supabase/production_baseline.sql
 # DEV seed: the service-role key is only ever read from the shell environment; never keep it in a file
 .env.seed*
 *.service-role*
+
+# DEV QA harness output
+qa-dev-platform-results.json

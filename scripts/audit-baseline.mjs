@@ -169,6 +169,23 @@ if (baselineTablesFile) {
 }
 
 // ---------------------------------------------------------------------
+// 5c. PL/pgSQL ambiguity: `set outcome = outcome` (a variable with the same name as the column) is not caught at
+//     CREATE time and fails on every call (SQLSTATE 42702). Applied migrations cannot be edited, so only the LATEST
+//     definition of each function is checked (a forward fix supersedes the broken one).
+// ---------------------------------------------------------------------
+{
+  const latest = new Map();
+  for (const f of files) {
+    const sql = norm(read('supabase/migrations/' + f));
+    for (const m of sql.matchAll(/create or replace function public\.([a-z_0-9]+)\([\s\S]*?\n\$\$;/gi)) latest.set(m[1], { file: f, body: stripSqlComments(m[0]) });
+  }
+  for (const [name, { file, body }] of latest) {
+    const bad = body.match(/(?:\bset\s|,\s*)([a-z_]+)\s*=\s*\1\s*(?:,|;|\bwhere\b|\breturning\b|\n)/i);
+    if (bad) failures.push(`${file}: function ${name} assigns a variable to a column of the same name ("${bad[0].trim()}") — ambiguous reference at runtime.`);
+  }
+}
+
+// ---------------------------------------------------------------------
 // 6. Production isolation: no executable migration may mention the
 //    production project ref/host
 // ---------------------------------------------------------------------
