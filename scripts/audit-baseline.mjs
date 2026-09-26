@@ -144,6 +144,31 @@ if (baselineTablesFile) {
 }
 
 // ---------------------------------------------------------------------
+// 5b. Grant invariant: DEV/hosted defaults do not reliably grant table
+//     privileges, so every table created after the baseline needs an
+//     explicit grant to service_role, and to every role its RLS policies
+//     target (otherwise RLS is never reached: "permission denied").
+// ---------------------------------------------------------------------
+{
+  const allSql = files.map((f) => stripSqlComments(norm(read('supabase/migrations/' + f)))).join('\n');
+  const granted = (table, role) =>
+    [...allSql.matchAll(/grant\s+[a-z,\s]+\s+on\s+(?:table\s+)?([^;]+?)\s+to\s+([^;]+);/gi)].some(
+      (g) => new RegExp(`public\\.${table}\\b`, 'i').test(g[1]) && new RegExp(`\\b${role}\\b`, 'i').test(g[2]),
+    );
+  for (const f of files.filter((x) => x !== baselineTablesFile && x !== baselineLogicFile)) {
+    const sql = stripSqlComments(norm(read('supabase/migrations/' + f)));
+    for (const m of sql.matchAll(/create table (?:if not exists )?public\.([a-z_]+)/gi)) {
+      const t = m[1];
+      const roles = new Set(['service_role']);
+      for (const p of allSql.matchAll(new RegExp(`create policy[^;]*?on\\s+public\\.${t}\\b[^;]*?\\bto\\s+([a-z_,\\s]+?)\\s+(?:using|with check)`, 'gi'))) {
+        for (const r of p[1].split(',')) if (/^(anon|authenticated)$/i.test(r.trim())) roles.add(r.trim().toLowerCase());
+      }
+      for (const r of roles) if (!granted(t, r)) failures.push(`${f}: public.${t} has no explicit GRANT to ${r} in any migration.`);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------
 // 6. Production isolation: no executable migration may mention the
 //    production project ref/host
 // ---------------------------------------------------------------------
