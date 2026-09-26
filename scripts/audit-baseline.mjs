@@ -11,6 +11,11 @@ const read = (f) => fs.readFileSync(path.join(root, f), 'utf8');
 const exists = (f) => fs.existsSync(path.join(root, f));
 const stripSqlComments = (sql) => sql.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n');
 const norm = (s) => s.replace(/\r\n/g, '\n');
+// Destructive = a real DROP TABLE / TRUNCATE / DELETE FROM *statement*. Dollar-quoted bodies
+// (function bodies, cron commands) are ignored, and GRANT privilege lists — which contain the
+// words "delete"/"truncate" — are not statements.
+const stripDollarQuoted = (sql) => sql.replace(/\$([A-Za-z_]*)\$[\s\S]*?\$\1\$/g, '$$$$');
+const isDestructive = (sql) => /\bdrop\s+table\b|^\s*truncate\b|\bdelete\s+from\b/im.test(stripDollarQuoted(stripSqlComments(sql)));
 
 const migDir = path.join(root, 'supabase/migrations');
 const files = fs.readdirSync(migDir).filter((f) => f.endsWith('.sql')).sort();
@@ -52,7 +57,7 @@ if (baselineTablesFile) {
   for (const t of csvTables) if (!created.includes(t)) failures.push(`Baseline tables migration is missing table ${t}.`);
   const colCount = [...sql.matchAll(/^  "[a-z_0-9]+" /gm)].length;
   if (colCount !== columnsCsv.length) failures.push(`Baseline tables migration has ${colCount} columns, export has ${columnsCsv.length}.`);
-  if (/drop table|truncate|delete from/i.test(stripSqlComments(sql))) failures.push('Baseline tables migration contains a destructive statement.');
+  if (isDestructive(sql)) failures.push('Baseline tables migration contains a destructive statement.');
 
   // drift: regenerate to a temp file and compare byte-for-byte
   const tmp = path.join(os.tmpdir(), 'fp_baseline_tables_check.sql');
@@ -74,7 +79,7 @@ if (!definitionsSrc) {
   else {
     const sql = norm(read('supabase/migrations/' + baselineLogicFile));
     if (!/BASELINE LOGIC REFUSED/.test(sql) || !/profiles_pkey/.test(sql)) failures.push('Baseline logic migration is missing its production-refusal guard.');
-    if (/drop table|truncate|delete from/i.test(stripSqlComments(sql))) failures.push('Baseline logic migration contains a destructive statement.');
+    if (isDestructive(sql)) failures.push('Baseline logic migration contains a destructive statement.');
     if (!/enable row level security/.test(sql)) failures.push('Baseline logic migration enables RLS on no tables — that would leave DEV unprotected.');
     const tmp = path.join(os.tmpdir(), 'fp_baseline_logic_check.sql');
     const r = spawnSync(process.execPath, ['supabase/baseline/generate-baseline-logic.mjs'], { cwd: root, env: { ...process.env, BASELINE_OUT: tmp }, encoding: 'utf8' });
