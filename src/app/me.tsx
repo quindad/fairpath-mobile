@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { notify } from '@/core/ui/notify';
-import { ScreenFrame, PageHeader, BottomNav } from '@/components/ProductChrome';
+import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { supabase } from '@/lib/supabase';
 
@@ -41,7 +41,7 @@ export default function Screen(){
     <Text style={s.signOutText}>SIGN OUT</Text>
    </Pressable>
   </ScrollView>
-  <BottomNav/>
+  
  </ScreenFrame>
 }
 
