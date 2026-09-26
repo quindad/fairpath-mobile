@@ -13,14 +13,40 @@ export type HousingListing = {
 
 const HOUSING_COLUMNS='id,title,description,property_type,address_line1,address_line2,city,state,postal_code,created_at,bedrooms,bathrooms,square_feet,rent_monthly,deposit_amount,application_fee,available_date,lease_terms,amenities,utilities_included,pet_policy,parking,accessibility_features,screening_summary,eligibility_rules,virtual_tour_url,floor_plan_url,video_url,fasttrack_enabled,required_application_documents,featured,source_label,source_url,latitude,longitude,garage_spaces,parking_types,furnished,has_basement,has_yard,has_balcony_patio,laundry_type,has_central_air,pet_types,move_in_ready,walk_score,transit_score,bike_score,neighborhood_data_provider,housing_media(url,media_type,sort_order),housing_schools(provider,provider_school_id,name,school_type,grades,distance_miles,quality_label,profile_url,sort_order),housing_nearby_places(provider,provider_place_id,category,name,distance_miles,sort_order)';
 
-const STATE_CODES:Record<string,string>={ohio:'OH',maryland:'MD',michigan:'MI',pennsylvania:'PA',indiana:'IN',kentucky:'KY','west virginia':'WV',virginia:'VA','new york':'NY','new jersey':'NJ',delaware:'DE','district of columbia':'DC'};
-function parseHousingLocation(raw:string){const text=raw.trim().replace(/\s+/g,' ');if(!text)return null;if(/^\d{5}$/.test(text))return {postal:text};const comma=text.split(',').map(x=>x.trim()).filter(Boolean);if(comma.length>=2){const city=comma[0];const stateRaw=comma[comma.length-1].toLowerCase();const state=stateRaw.length===2?stateRaw.toUpperCase():STATE_CODES[stateRaw];return {city,state}}const parts=text.split(' ');const last=parts[parts.length-1].toLowerCase();const state=last.length===2?last.toUpperCase():STATE_CODES[last];if(state&&parts.length>1)return {city:parts.slice(0,-1).join(' '),state};for(const [name,code] of Object.entries(STATE_CODES)){if(text.toLowerCase().endsWith(' '+name))return {city:text.slice(0,-name.length).trim(),state:code}}return {free:text}}
-
-export async function loadHousing(search='',location=''){
- let q=supabase.from('housing_listings').select(HOUSING_COLUMNS).eq('status','published').order('featured',{ascending:false}).order('created_at',{ascending:false}).limit(100);
- const term=search.trim();if(term)q=q.or(`title.ilike.%${term}%,description.ilike.%${term}%,property_type.ilike.%${term}%`);
- const loc=parseHousingLocation(location);if(loc){if('postal' in loc&&loc.postal)q=q.eq('postal_code',loc.postal);else if('city' in loc&&loc.city){q=q.ilike('city','%'+loc.city+'%');if(loc.state)q=q.eq('state',loc.state)}else if('free' in loc&&loc.free)q=q.or(`city.ilike.%${loc.free}%,state.ilike.%${loc.free}%,postal_code.ilike.%${loc.free}%`)}
- const {data,error}=await q;if(error)throw error;return (data??[]) as HousingListing[];
+export type HousingSort='featured'|'nearest'|'price_low'|'price_high'|'newest';
+import {BOOLEAN_FILTER_KEYS,EMPTY_HOUSING_FILTERS,type HousingFilters} from '@/core/housing/housing-filters';
+export {countHousingFilters,EMPTY_HOUSING_FILTERS,housingFiltersFromRecord,type HousingFilters} from '@/core/housing/housing-filters';
+export type HousingSearchParams={query?:string;zip?:string|null;radiusMiles?:number;location?:string;filters?:HousingFilters;sort?:HousingSort;limit?:number;offset?:number};
+export type HousingCard=Pick<HousingListing,'id'|'title'|'property_type'|'city'|'state'|'postal_code'|'bedrooms'|'bathrooms'|'square_feet'|'rent_monthly'|'fasttrack_enabled'|'featured'|'source_label'|'created_at'|'latitude'|'longitude'|'housing_media'>&{distance_miles:number|null};
+export type HousingSearchResult={homes:HousingCard[];total:number;hasMore:boolean};
+export const HOUSING_PAGE_SIZE=20;
+/** Server-side search (public.search_housing): ZIP/radius, text, every filter and sort, with pagination. */
+export async function searchHousing(p:HousingSearchParams={}):Promise<HousingSearchResult>{
+ const f=p.filters??EMPTY_HOUSING_FILTERS;
+ const limit=p.limit??HOUSING_PAGE_SIZE;
+ const offset=p.offset??0;
+ const payload:Record<string,unknown>={};
+ if(f.minRent)payload.minRent=Number(f.minRent);
+ if(f.maxRent)payload.maxRent=Number(f.maxRent);
+ if(f.minSqft)payload.minSqft=Number(f.minSqft);
+ if(f.beds!=='ANY')payload.beds=f.beds;
+ if(f.baths!=='ANY')payload.baths=f.baths;
+ if(f.types.length)payload.types=f.types;
+ for(const k of BOOLEAN_FILTER_KEYS)if(f[k])payload[k]=true;
+ const {data,error}=await supabase.rpc('search_housing',{
+  p_query:p.query?.trim()||null,
+  p_zip:p.zip||null,
+  p_radius_miles:p.radiusMiles??25,
+  p_location:p.zip?null:(p.location?.trim()||null),
+  p_filters:payload,
+  p_sort:p.sort??'featured',
+  p_limit:limit,
+  p_offset:offset
+ });
+ if(error)throw error;
+ const rows=(data??[]) as {listing:HousingCard;distance_miles:number|null;total_count:number|string}[];
+ const total=rows.length?Number(rows[0].total_count):0;
+ return {homes:rows.map(r=>({...r.listing,distance_miles:r.distance_miles})),total,hasMore:offset+rows.length<total};
 }
 export async function loadHousingListing(id:string){
  const {data,error}=await supabase.from('housing_listings').select(HOUSING_COLUMNS).eq('id',id).single();

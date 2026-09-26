@@ -1,8 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { FairPathColors as C, FairPathFonts as F } from '@/constants/fairpath';
-import type { HousingListing } from '@/core/opportunities/opportunity-service';
+import type { HousingCard } from '@/core/housing/housing-service';
 
-export function HousingMap({homes,onOpen}:{homes:HousingListing[];onOpen:(home:HousingListing)=>void}){
+export function HousingMap({homes,onOpen}:{homes:HousingCard[];onOpen:(home:HousingCard)=>void}){
  const located=homes.filter(h=>h.latitude!=null&&h.longitude!=null);
  return <View style={s.wrap}>
   <View style={s.head}><Text style={s.label}>MAP VIEW</Text><Text style={s.count}>{located.length} LOCATED</Text></View>

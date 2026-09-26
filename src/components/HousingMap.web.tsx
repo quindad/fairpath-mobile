@@ -1,21 +1,50 @@
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { FairPathColors as C, FairPathFonts as F } from '@/constants/fairpath';
-import type { HousingListing } from '@/core/opportunities/opportunity-service';
+import type { HousingCard } from '@/core/housing/housing-service';
+import { HousingMapCard } from '@/components/HousingMapCard';
 
-export function HousingMap({homes,onOpen}:{homes:HousingListing[];onOpen:(home:HousingListing)=>void}){
- const located=homes.filter(h=>h.latitude!=null&&h.longitude!=null);
- if(!located.length)return <View style={s.wrap}><Text style={s.empty}>No map coordinates are available for these results yet.</Text></View>;
- const lats=located.map(h=>Number(h.latitude)),lngs=located.map(h=>Number(h.longitude));
- const minLat=Math.min(...lats),maxLat=Math.max(...lats),minLng=Math.min(...lngs),maxLng=Math.max(...lngs);
- const latPad=Math.max(.03,(maxLat-minLat)*.18),lngPad=Math.max(.03,(maxLng-minLng)*.18);
- const first=located[0];
- const src='https://www.openstreetmap.org/export/embed.html?bbox='+encodeURIComponent([minLng-lngPad,minLat-latPad,maxLng+lngPad,maxLat+latPad].join(','))+'&layer=mapnik&marker='+encodeURIComponent(Number(first.latitude)+','+Number(first.longitude));
- return <View style={s.wrap}>
-  <View style={s.head}><Text style={s.label}>MAP VIEW</Text><Text style={s.count}>{located.length} HOMES MAPPED</Text></View>
-  <View style={s.map}>{React.createElement('iframe' as any,{src,title:'FairPath housing map',style:{width:'100%',height:'100%',border:0},loading:'lazy'})}</View>
-  <Text style={s.note}>Map by OpenStreetMap. Select a home below to open its FairPath listing.</Text>
-  {located.slice(0,12).map(h=><Pressable key={h.id} style={s.row} onPress={()=>onOpen(h)}><View style={s.pin}/><View style={s.copy}><Text style={s.title}>{h.title}</Text><Text style={s.meta}>{[h.city,h.state].filter(Boolean).join(', ')} · {'$'+Number(h.rent_monthly).toLocaleString()+'/mo'}</Text></View><Text style={s.open}>OPEN →</Text></Pressable>)}
- </View>
+function safeJson(value:unknown){
+ return JSON.stringify(value).replace(/</g,'\\u003c');
 }
-const s=StyleSheet.create({wrap:{borderTopWidth:1,borderBottomWidth:1,borderColor:C.borderStrong,backgroundColor:'#0A0C0A',padding:12,marginTop:8},head:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingBottom:8},label:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:1},count:{color:C.muted,fontFamily:F.extraBold,fontSize:7},map:{height:360,borderWidth:1,borderColor:C.borderStrong,overflow:'hidden'},row:{minHeight:52,flexDirection:'row',alignItems:'center',gap:9,borderBottomWidth:1,borderBottomColor:C.border},pin:{width:10,height:10,borderRadius:5,backgroundColor:C.lime},copy:{flex:1},title:{color:C.white,fontFamily:F.extraBold,fontSize:10},meta:{color:C.mutedStrong,fontSize:8,marginTop:3},open:{color:C.lime,fontFamily:F.extraBold,fontSize:7},empty:{color:C.mutedStrong,fontSize:10,lineHeight:15,paddingVertical:18},note:{color:C.muted,fontSize:7.5,lineHeight:12,marginVertical:9}});
+
+/** Web map (Leaflet in an iframe). Pin clicks are posted to the page so the same preview card as native is used. */
+export function HousingMap({homes,onOpen}:{homes:HousingCard[];onOpen:(home:HousingCard)=>void}){
+ const located=useMemo(()=>homes.filter(h=>h.latitude!=null&&h.longitude!=null),[homes]);
+ const [selectedId,setSelectedId]=useState<string|null>(null);
+ const selected=located.find(h=>h.id===selectedId)??null;
+ const key=located.map(h=>h.id).join(',');
+
+ useEffect(()=>{
+  const onMessage=(e:MessageEvent)=>{
+   const d=e.data as {fpSelectHome?:string;fpClear?:boolean}|null;
+   if(d&&typeof d.fpSelectHome==='string')setSelectedId(d.fpSelectHome);
+   if(d&&d.fpClear)setSelectedId(null);
+  };
+  window.addEventListener('message',onMessage);
+  return()=>window.removeEventListener('message',onMessage);
+ },[]);
+
+ const html=useMemo(()=>{
+  const points=located.map(h=>({id:h.id,lat:Number(h.latitude),lng:Number(h.longitude)}));
+  if(!points.length)return '';
+  return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><style>html,body,#map{height:100%;margin:0;background:#090b09}</style></head><body><div id="map"></div><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script>const homes=${safeJson(points)};const map=L.map('map',{zoomControl:true});L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap'}).addTo(map);homes.forEach(h=>{const icon=L.divIcon({className:'',html:'<div style="width:22px;height:22px;background:#a8f32c;border:3px solid #090b09;border-radius:50%;box-shadow:0 1px 6px rgba(0,0,0,.45)"></div>',iconSize:[22,22],iconAnchor:[11,11]});L.marker([h.lat,h.lng],{icon}).addTo(map).on('click',()=>parent.postMessage({fpSelectHome:h.id},'*'))});map.on('click',()=>parent.postMessage({fpClear:true},'*'));if(homes.length===1){map.setView([homes[0].lat,homes[0].lng],13)}else{map.fitBounds(L.latLngBounds(homes.map(h=>[h.lat,h.lng])),{padding:[40,40]})}</script></body></html>`;
+ },[key]); // eslint-disable-line react-hooks/exhaustive-deps
+
+ if(!located.length)return <View style={s.empty}><Text style={s.emptyTitle}>No mappable homes yet.</Text><Text style={s.emptyBody}>Listings without map coordinates stay in List view.</Text></View>;
+ const iframe=React.createElement('iframe' as any,{srcDoc:html,title:'FairPath housing map',key,style:{width:'100%',height:'100%',border:'0',display:'block'}});
+ return <View style={s.wrap}>
+  {iframe}
+  {selected?<HousingMapCard home={selected} onOpen={onOpen} onClose={()=>setSelectedId(null)}/>
+   :<View style={s.note}><Text style={s.noteText}>Tap a pin to preview the home. Map by OpenStreetMap.</Text></View>}
+ </View>;
+}
+
+const s=StyleSheet.create({
+ wrap:{flex:1,minHeight:260,borderTopWidth:1,borderBottomWidth:1,borderColor:C.borderStrong,overflow:'hidden',backgroundColor:C.card,position:'relative'},
+ note:{position:'absolute',left:10,right:10,bottom:10,backgroundColor:'rgba(9,11,9,.94)',borderWidth:1,borderColor:C.borderStrong,paddingHorizontal:10,paddingVertical:8},
+ noteText:{color:C.mutedStrong,fontFamily:F.medium,fontSize:9,lineHeight:13},
+ empty:{flex:1,minHeight:220,alignItems:'center',justifyContent:'center',borderTopWidth:1,borderBottomWidth:1,borderColor:C.borderStrong,paddingHorizontal:24},
+ emptyTitle:{color:C.white,fontFamily:F.extraBold,fontSize:17},
+ emptyBody:{color:C.muted,fontFamily:F.regular,fontSize:10,lineHeight:15,textAlign:'center',marginTop:6}
+});
