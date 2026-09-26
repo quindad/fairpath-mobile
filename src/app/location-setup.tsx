@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FormScrollView } from '@/components/FormScrollView';
 import { notify } from '@/core/ui/notify';
 import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
@@ -62,7 +63,7 @@ export default function LocationSetup() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="FAIRPATH" title="Your location" backTo="/me" />
-      <ScrollView contentContainerStyle={s.content}>
+      <FormScrollView contentContainerStyle={s.content}>
         <Text style={s.intro}>
           Used to find Jobs and Housing near you. Optional — you can browse without it, and change it anytime.
         </Text>
@@ -99,7 +100,7 @@ export default function LocationSetup() {
         >
           <Text style={s.primaryText}>{saving ? 'SAVING…' : 'SAVE LOCATION'}</Text>
         </Pressable>
-      </ScrollView>
+      </FormScrollView>
     </ScreenFrame>
   );
 }

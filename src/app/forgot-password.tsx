@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FormScrollView } from '@/components/FormScrollView';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 
@@ -31,7 +32,7 @@ export default function ForgotPasswordScreen() {
   }
 
   return <View style={styles.screen}><StatusBar style="light"/><SafeAreaView style={styles.safeArea}>
-    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <FormScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Pressable onPress={()=>router.replace('/sign-in')} style={styles.backButton}><Text style={styles.backArrow}>←</Text></Pressable>
       <View style={styles.heading}>
         <Text style={styles.kicker}>ACCOUNT RECOVERY</Text>
@@ -46,7 +47,7 @@ export default function ForgotPasswordScreen() {
           <Text style={styles.primaryText}>{loading?'Sending…':'Send reset link'}</Text><Text style={styles.arrow}>{loading?'•':'→'}</Text>
         </Pressable>
       </View> : <Pressable style={styles.secondaryButton} onPress={()=>router.replace('/sign-in')}><Text style={styles.secondaryText}>Back to sign in</Text></Pressable>}
-    </ScrollView>
+    </FormScrollView>
   </SafeAreaView></View>;
 }
 const styles=StyleSheet.create({

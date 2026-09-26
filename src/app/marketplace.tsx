@@ -1,6 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FormScrollView } from '@/components/FormScrollView';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, FilterStrip, SharpChip, InlineBadge } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
@@ -54,7 +55,7 @@ export default function Marketplace(){
 
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH MARKETPLACE" title="Free Marketplace"/>
-  <ScrollView contentContainerStyle={s.page} showsVerticalScrollIndicator={false}>
+  <FormScrollView contentContainerStyle={s.page} showsVerticalScrollIndicator={false}>
    <View style={s.hero}>
     <Text style={s.heroTitle}>Good stuff. Free. Local.</Text>
     <Text style={s.heroBody}>Claim useful items from people and organizations in your community. FairPath keeps claimant selection anonymous, protects private pickup details, and verifies pickup.</Text>
@@ -117,7 +118,7 @@ export default function Marketplace(){
     <Lucide name="shield" color={C.lime} size={17}/>
     <View style={{flex:1}}><Text style={s.safetyTitle}>FAIRPATH MARKETPLACE SAFETY</Text><Text style={s.safetyBody}>Exact pickup details stay private until a claim is approved. Claimants are shown anonymously during selection, and pickup is verified with a code.</Text></View>
    </View>
-  </ScrollView>
+  </FormScrollView>
  </ScreenFrame>
 }
 

@@ -1,6 +1,7 @@
 import { router, usePathname } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FormScrollView } from '@/components/FormScrollView';
 import { notify } from '@/core/ui/notify';
 import { FairPathLogo } from '@/components/FairPathLogo';
 import { Lucide } from '@react-native-vector-icons/lucide';
@@ -19,7 +20,7 @@ export default function Home(){
   return()=>{active=false}
  },[pathname,reloadKey]);
  return <ScreenFrame>
-  <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+  <FormScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <View style={s.top}><View style={s.brand}><FairPathLogo width={112}/></View><Pressable accessibilityRole="button" accessibilityLabel="Notifications" style={s.bell} onPress={()=>router.push('/notifications' as never)}><Lucide name="bell" color={C.white} size={17}/></Pressable></View>
 
    <View style={s.hero}><Text style={s.eyebrow}>YOUR FAIRPATH FORWARD</Text><Text style={s.title}>Opportunity has a <Text style={s.titleAccent}>path.</Text></Text><Text style={s.sub}>Jobs. Housing. Resources. A stronger you.</Text><View style={s.search}><Lucide name="search" color={C.lime} size={17}/><TextInput value={search} onChangeText={setSearch} returnKeyType="search" onSubmitEditing={()=>{const q=search.trim();router.push((q?'/find-jobs?search='+encodeURIComponent(q):'/find') as never)}} style={s.searchInput} placeholder="Search jobs..." placeholderTextColor={C.muted}/>{search.length>0?<Pressable accessibilityLabel="Clear search" onPress={()=>setSearch('')}><Text style={s.clearSearch}>×</Text></Pressable>:null}</View><View style={s.quickPills}><Pressable style={[s.pill,s.pillActive]} onPress={()=>router.push('/find-jobs')}><Text style={s.pillActiveText}>Jobs</Text></Pressable><Pressable style={s.pill} onPress={()=>router.push('/find-housing')}><Text style={s.pillText}>Housing</Text></Pressable><Pressable style={s.pill} onPress={()=>router.push('/marketplace')}><Text style={s.pillText}>Marketplace</Text></Pressable><Pressable style={s.pill} onPress={()=>router.push('/resources')}><Text style={s.pillText}>Resources</Text></Pressable></View></View>
@@ -54,7 +55,7 @@ export default function Home(){
     <Text style={s.aiBody}>Applications, résumés, interview prep, housing questions and your reentry plan.</Text>
     <View style={s.aiFooter}><View style={s.aiRule}/><View style={s.aiAction}><Text style={s.aiActionText}>OPEN FAIRPATH AI</Text><Lucide name="arrow-right" color={C.lime} size={15}/></View></View>
    </Pressable>
-  </ScrollView>
+  </FormScrollView>
  </ScreenFrame>
 }
 const s=StyleSheet.create({

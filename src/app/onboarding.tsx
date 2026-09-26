@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 
 import { supabase } from '../lib/supabase';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FormScrollView, KeyboardFooterLayout } from '@/components/FormScrollView';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const LIME = '#A8F32C';
@@ -178,6 +179,7 @@ export default function OnboardingScreen() {
     <View style={styles.screen}>
       <StatusBar style="light" />
       <SafeAreaView style={styles.safeArea}>
+        <KeyboardFooterLayout>
         <View style={styles.topBar}>
           <Pressable onPress={goBack} style={styles.backButton}>
             <Text style={styles.backArrow}>←</Text>
@@ -189,7 +191,7 @@ export default function OnboardingScreen() {
           <View style={[styles.progressFill, { width: `${progress}%` }]} />
         </View>
 
-        <ScrollView
+        <FormScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
@@ -233,7 +235,7 @@ export default function OnboardingScreen() {
               <Text style={styles.privacyNote}>Used for matching. Never shown publicly by default.</Text>
             </View>
           )}
-        </ScrollView>
+        </FormScrollView>
 
         <View style={styles.footer}>
           <Pressable
@@ -247,6 +249,7 @@ export default function OnboardingScreen() {
           {saveError ? <Text style={styles.errorText}>{saveError}</Text> : null}
           <Text style={styles.footerNote}>You stay in control of what FairPath uses to personalize your experience.</Text>
         </View>
+        </KeyboardFooterLayout>
       </SafeAreaView>
     </View>
   );

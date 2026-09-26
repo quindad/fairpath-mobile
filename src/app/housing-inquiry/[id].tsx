@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FormScrollView } from '@/components/FormScrollView';
 import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
@@ -48,7 +49,7 @@ export default function HousingInquiry(){
 
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH HOUSING" title="Ask about this home" backTo={id?'/housing/'+id:'/find-housing'}/>
-  <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+  <FormScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
    <Text style={s.intro}>Ask about availability, screening, move-in requirements, utilities, accessibility, or another property-specific detail. The property team can reply once; this is a single question, not a chat.</Text>
    <Text style={s.label}>SUBJECT</Text>
    <TextInput style={s.input} value={subject} onChangeText={setSubject} maxLength={120} placeholderTextColor={C.muted}/>
@@ -60,7 +61,7 @@ export default function HousingInquiry(){
     <Text style={s.primaryText}>{saving?'SENDING…':'SEND QUESTION'}</Text>
     <Lucide name="send" color={C.black} size={16}/>
    </Pressable>
-  </ScrollView>
+  </FormScrollView>
  </ScreenFrame>;
 }
 

@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FormScrollView } from '@/components/FormScrollView';
 import { notify } from '@/core/ui/notify';
 import * as DocumentPicker from 'expo-document-picker';
 import { Lucide } from '@react-native-vector-icons/lucide';
@@ -79,7 +80,7 @@ export default function MarketplaceListItem(){
 
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH MARKETPLACE" title="List a free item" backTo="/marketplace"/>
-  <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+  <FormScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <View style={s.intro}><Text style={s.introTitle}>Give it forward.</Text><Text style={s.introBody}>FairPath Marketplace is for free items. No selling, bidding, or hidden fees. Claimants are anonymous while you choose, and exact pickup details stay private until approval.</Text></View>
 
    <Label text="ITEM TITLE"/><TextInput value={title} onChangeText={setTitle} style={s.field} maxLength={100} placeholder="Example: Solid wood dining table" placeholderTextColor={C.muted}/>
@@ -113,7 +114,7 @@ export default function MarketplaceListItem(){
    <View style={s.rules}><Lucide name="shield-alert" color={C.lime} size={17}/><View style={{flex:1}}><Text style={s.rulesTitle}>MARKETPLACE RULES</Text><Text style={s.rulesBody}>Free useful goods only. No weapons, drugs, alcohol, prescription medication, stolen/counterfeit goods, unsafe products, or discriminatory claim selection. Do not put private pickup details in the public description.</Text></View></View>
 
    <Pressable style={[s.publish,saving&&s.disabled]} disabled={saving} onPress={()=>void publish()}><Text style={s.publishText}>{saving?'PUBLISHING…':'PUBLISH FREE ITEM'}</Text><Lucide name="arrow-right" color={C.black} size={16}/></Pressable>
-  </ScrollView>
+  </FormScrollView>
  </ScreenFrame>
 }
 

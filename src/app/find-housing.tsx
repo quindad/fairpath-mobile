@@ -1,6 +1,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FormScrollView, KEYBOARD_LIST_PROPS } from '@/components/FormScrollView';
 import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, SharpChip, InlineBadge } from '@/components/ProductChrome';
@@ -289,7 +290,7 @@ export default function Housing(){
     <View><Text style={s.modalEyebrow}>FAIRPATH HOUSING</Text><Text style={s.modalTitle}>Filters</Text></View>
     <Pressable accessibilityRole="button" accessibilityLabel="Close filters" hitSlop={10} style={s.modalClose} onPress={()=>setFiltersOpen(false)}><Lucide name="x" color={C.white} size={16}/></Pressable>
    </View>
-   <ScrollView contentContainerStyle={s.modalBody} keyboardShouldPersistTaps="handled">
+   <FormScrollView contentContainerStyle={s.modalBody} keyboardShouldPersistTaps="handled">
     <Text style={s.groupLabel}>SORT BY</Text>
     <View style={s.wrapRow}>{SORTS.filter(([k])=>k!=='nearest'||zip).map(([k,label])=><SharpChip key={k} label={label} active={draft.sort===k} onPress={()=>setDraft(d=>({...d,sort:k}))}/>)}</View>
 
@@ -328,7 +329,7 @@ export default function Housing(){
     <Text style={s.groupLabel}>HOME FEATURES</Text>
     <View style={s.wrapRow}>{FEATURE_TOGGLES.map(([k,label])=><SharpChip key={k} label={label} active={Boolean(draft.filters[k])} onPress={()=>patchDraft({[k]:!draft.filters[k]} as Partial<HousingFilters>)}/>)}</View>
     <Text style={s.groupHint}>Neighborhood, transit and school filters will appear when verified provider data is connected.</Text>
-   </ScrollView>
+   </FormScrollView>
    <View style={s.modalFooter}>
     <Pressable accessibilityRole="button" style={s.resetBtn} onPress={resetDraft}><Text style={s.resetText}>RESET</Text></Pressable>
     <Pressable accessibilityRole="button" style={[s.primary,s.applyBtn]} onPress={applyFilters}><Text style={s.primaryText}>SHOW HOMES</Text><Lucide name="check" color={C.black} size={16}/></Pressable>
@@ -359,6 +360,7 @@ export default function Housing(){
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH HOUSING" title="Find housing" backTo="/" alwaysBackTo/>
   <FlatList
+   {...KEYBOARD_LIST_PROPS}
    data={homes}
    keyExtractor={h=>h.id}
    renderItem={({item})=>renderHome(item)}

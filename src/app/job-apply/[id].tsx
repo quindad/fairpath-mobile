@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FormScrollView } from '@/components/FormScrollView';
 import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
@@ -64,7 +65,7 @@ export default function JobApply(){
 
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH EASY APPLY" title="Review application" backTo={id?'/job/'+id:'/find-jobs'} alwaysBackTo/>
-  <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+  <FormScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <View style={s.hero}>
     <Text style={s.company}>{job.company_name.toUpperCase()}</Text>
     <Text style={s.title}>{job.title}</Text>
@@ -104,7 +105,7 @@ export default function JobApply(){
     <Text style={[s.submitText,!ready&&s.submitTextDisabled]}>{submitting?'SUBMITTING…':ready?'SUBMIT APPLICATION':'COMPLETE REQUIRED ITEMS'}</Text>
     <Lucide name="arrow-right" color={ready?C.black:C.mutedStrong} size={16}/>
    </Pressable>
-  </ScrollView>
+  </FormScrollView>
  </ScreenFrame>;
 }
 

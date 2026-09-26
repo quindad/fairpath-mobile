@@ -1,6 +1,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { FormScrollView, KEYBOARD_LIST_PROPS } from '@/components/FormScrollView';
 import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, SharpChip, InlineBadge } from '@/components/ProductChrome';
@@ -323,7 +324,7 @@ export default function FindJobs(){
     <View><Text style={s.modalEyebrow}>FAIRPATH JOBS</Text><Text style={s.modalTitle}>Filters</Text></View>
     <Pressable accessibilityRole="button" accessibilityLabel="Close filters" hitSlop={10} style={s.modalClose} onPress={()=>setFiltersOpen(false)}><Lucide name="x" color={C.white} size={16}/></Pressable>
    </View>
-   <ScrollView contentContainerStyle={s.modalBody}>
+   <FormScrollView contentContainerStyle={s.modalBody}>
     <Text style={s.groupLabel}>DISTANCE</Text>
     {zip?<View style={s.radiusRow}>{RADIUS_CHOICES.map(r=><View key={r} style={s.radiusCell}><SharpChip label={r+' mi'} active={draft.radius===r} onPress={()=>setDraft(d=>({...d,radius:r}))}/></View>)}</View>
      :<Text style={s.groupHint}>Enter a ZIP code in WHERE to search within a distance. Currently: {where.trim()?'searching "'+where.trim()+'"':'all locations'}.</Text>}
@@ -344,7 +345,7 @@ export default function FindJobs(){
      <View style={s.switchCopy}><Text style={s.switchTitle}>Verified second-chance only</Text><Text style={s.switchBody}>Employers with explicit fair-chance hiring evidence.</Text></View>
      <Switch value={draft.secondChance} onValueChange={v=>setDraft(d=>({...d,secondChance:v}))} trackColor={{false:C.borderStrong,true:'#526F2B'}} thumbColor={draft.secondChance?C.lime:C.mutedStrong}/>
     </View>
-   </ScrollView>
+   </FormScrollView>
    <View style={s.modalFooter}>
     <Pressable accessibilityRole="button" style={s.resetBtn} onPress={resetDraft}><Text style={s.resetText}>RESET</Text></Pressable>
     <Pressable accessibilityRole="button" style={[s.primary,s.applyBtn]} onPress={applyFilters}><Text style={s.primaryText}>APPLY FILTERS</Text><Lucide name="check" color={C.black} size={16}/></Pressable>
@@ -375,6 +376,7 @@ export default function FindJobs(){
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH JOBS" title="Find work" backTo="/" alwaysBackTo/>
   <FlatList
+   {...KEYBOARD_LIST_PROPS}
    data={jobs}
    keyExtractor={j=>j.id}
    renderItem={({item})=>renderJob(item)}

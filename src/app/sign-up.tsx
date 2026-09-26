@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FormScrollView } from '@/components/FormScrollView';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { supabase } from '../lib/supabase';
@@ -101,7 +102,7 @@ export default function SignUpScreen() {
     <View style={styles.screen}>
       <StatusBar style="light" />
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <FormScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Pressable onPress={() => router.replace((returnTo||'/find-jobs') as never)} style={styles.backButton}>
             <Text style={styles.backArrow}>←</Text>
           </Pressable>
@@ -199,7 +200,7 @@ export default function SignUpScreen() {
             <Text style={styles.loginMuted}>Already have an account?</Text>
             <Pressable onPress={() => router.replace(returnTo?('/sign-in?returnTo='+encodeURIComponent(returnTo)) as never:'/sign-in')}><Text style={styles.loginLink}> Sign in</Text></Pressable>
           </View>
-        </ScrollView>
+        </FormScrollView>
       </SafeAreaView>
     </View>
   );

@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FormScrollView } from '@/components/FormScrollView';
 import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome';
@@ -204,7 +205,7 @@ export default function HousingApply(){
    {STEPS.map((label,i)=><View key={label} style={s.piece}><View style={[s.bar,i<step&&s.barOn]}/><Text style={[s.stepLabel,i===step-1&&s.stepOn]}>{label}</Text></View>)}
   </View>
 
-  <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+  <FormScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
    <View style={s.modeCard}>
     <View style={s.modeTop}><InlineBadge tone={fast?'lime':undefined}>{fast?'FASTTRACK':'STANDARD'}</InlineBadge><Text style={s.completion}>{completion}% COMPLETE</Text></View>
     <Text style={s.modeTitle}>{fast?'Prefilled where FairPath already knows the answer.':'A full application, one section at a time.'}</Text>
@@ -286,7 +287,7 @@ export default function HousingApply(){
     <Lucide name="arrow-right" color={step===5&&(allErrors.length>0||missingRequiredDocs.length>0||!accuracy||!submitConsent||(fast&&!fastAck))?C.mutedStrong:C.black} size={16}/>
    </Pressable>
    {step>1?<Pressable style={s.secondary} onPress={()=>void previous()}><Text style={s.secondaryText}>← PREVIOUS STEP</Text></Pressable>:null}
-  </ScrollView>
+  </FormScrollView>
  </ScreenFrame>;
 }
 
