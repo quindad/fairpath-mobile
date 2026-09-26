@@ -9,31 +9,6 @@ import { isJobSaved, loadJob, loadMyJobApplicationForJob, saveJob, unsaveJob, ty
 import { loadFairPathReadiness } from '@/core/profile/profile-service';
 import { supabase } from '@/lib/supabase';
 
-const DEMO_JOBS:Record<string,Job>={
- 'demo-warehouse':{
-  id:'demo-warehouse',title:'Warehouse Associate',company_name:'Second Chance Logistics',
-  description:'Sample FairPath opportunity used to preview the job experience.',location_text:'Columbus, OH',
-  city:'Columbus',state:'OH',postal_code:null,workplace_type:'onsite',employment_type:'full_time',
-  pay_min:19,pay_max:23,pay_period:'hour',benefits:['Sample benefits'],skills:['Warehouse operations'],
-  requirements:['Sample requirements shown for preview only'],
-  background_policy_summary:'Demo second-chance opportunity. This is sample data, not a live employer posting.',
-  eligibility_rules:{second_chance_evidence:'explicit'},application_method:'demo',external_apply_url:null,
-  source_label:'FairPath Demo',source_url:null,featured:true,created_at:new Date().toISOString(),
-  latitude:39.9612,longitude:-82.9988,location_precision:'city',easy_apply_enabled:true,application_questions:[]
- },
- 'demo-support':{
-  id:'demo-support',title:'Customer Support Specialist',company_name:'Pathway Services',
-  description:'Sample FairPath opportunity used to preview the job experience.',location_text:'Remote',
-  city:null,state:null,postal_code:null,workplace_type:'remote',employment_type:'full_time',
-  pay_min:20,pay_max:25,pay_period:'hour',benefits:['Sample benefits'],skills:['Customer support'],
-  requirements:['Sample requirements shown for preview only'],
-  background_policy_summary:'Demo opportunity. This is sample data, not a live employer posting.',
-  eligibility_rules:{second_chance_evidence:'explicit'},application_method:'demo',external_apply_url:null,
-  source_label:'FairPath Demo',source_url:null,featured:true,created_at:new Date().toISOString(),
-  latitude:null,longitude:null,location_precision:'remote',easy_apply_enabled:true,application_questions:[]
- }
-};
-
 export default function JobDetail(){
  const {id}=useLocalSearchParams<{id:string}>();
  const [job,setJob]=useState<Job|null>(null);
@@ -48,13 +23,12 @@ export default function JobDetail(){
   if(!id)return;
   loadFairPathReadiness().then(({readiness})=>setReadiness(readiness.overallPercentage)).catch(()=>setReadiness(0));
   loadMyJobApplicationForJob(id).then(x=>{setApplicationStatus(x?.status??null);setApplicationId(x?.id??null)}).catch(()=>{setApplicationStatus(null);setApplicationId(null)});
-  if(!id.startsWith('demo-'))isJobSaved(id).then(setSaved).catch(()=>setSaved(false));
-  if(DEMO_JOBS[id]){setJob(DEMO_JOBS[id]);setLoading(false);return}
+  isJobSaved(id).then(setSaved).catch(()=>setSaved(false));
   loadJob(id).then(setJob).catch(()=>setError('This job could not be loaded.')).finally(()=>setLoading(false));
  },[id]);
 
  useFocusEffect(useCallback(()=>{
-  if(!id||id.startsWith('demo-'))return;
+  if(!id)return;
   let active=true;
   isJobSaved(id).then(value=>{if(active)setSaved(value)}).catch(()=>{});
   return()=>{active=false};
@@ -62,7 +36,6 @@ export default function JobDetail(){
 
  async function save(){
   if(!job)return;
-  if(job.application_method==='demo'){notify('Preview job','Sample jobs are not saved to your account.');return}
   try{
    if(saved){await unsaveJob(job.id);setSaved(false)}
    else{await saveJob(job.id);setSaved(true)}
@@ -92,12 +65,8 @@ export default function JobDetail(){
    notify('Job unavailable',job.status==='filled'?'This position has been filled.':expiredByTime||job.status==='expired'?'This job posting has expired.':'This job is no longer accepting applications.');
    return;
   }
-  if(job.application_method==='demo'){
-   notify('Preview job','This is sample data for the FairPath preview. Live jobs can use FairPath Easy Apply.');
-   return;
-  }
   if(job.application_method==='external'&&job.external_apply_url){
-   await Linking.openURL(job.external_apply_url);
+   try{await Linking.openURL(job.external_apply_url)}catch{notify('Link unavailable','We could not open this application link.')}
    return;
   }
   if(job.easy_apply_enabled&&readiness!==100){
@@ -163,7 +132,7 @@ export default function JobDetail(){
 
   <View style={s.bottom}>
    <Pressable style={[s.apply,(inactive||applied)&&s.applyDisabled]} onPress={apply}>
-    <Text style={[s.applyText,(inactive||applied)&&s.applyTextDisabled]}>{applied?'VIEW APPLICATION':inactive?(job.status==='filled'?'POSITION FILLED':expiredByTime||job.status==='expired'?'JOB EXPIRED':'JOB CLOSED'):job.application_method==='demo'?'PREVIEW LISTING':job.application_method==='external'?'CONTINUE TO APPLY':job.easy_apply_enabled&&readiness!==100?'COMPLETE PROFILE TO UNLOCK':job.easy_apply_enabled?'EASY APPLY WITH FAIRPATH':'APPLY WITH FAIRPATH'}</Text>
+    <Text style={[s.applyText,(inactive||applied)&&s.applyTextDisabled]}>{applied?'VIEW APPLICATION':inactive?(job.status==='filled'?'POSITION FILLED':expiredByTime||job.status==='expired'?'JOB EXPIRED':'JOB CLOSED'):job.application_method==='external'?'CONTINUE TO APPLY':job.easy_apply_enabled&&readiness!==100?'COMPLETE PROFILE TO UNLOCK':job.easy_apply_enabled?'EASY APPLY WITH FAIRPATH':'APPLY WITH FAIRPATH'}</Text>
     <Text style={[s.applyText,(inactive||applied)&&s.applyTextDisabled]}>{applied?'→':inactive?'—':'→'}</Text>
    </Pressable>
   </View>

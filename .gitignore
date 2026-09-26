@@ -48,3 +48,7 @@ example
 supabase/.temp/
 # Empty leftover from an abandoned CLI dump attempt; raw production dumps must never be committed
 supabase/production_baseline.sql
+
+# DEV seed: the service-role key is only ever read from the shell environment; never keep it in a file
+.env.seed*
+*.service-role*
