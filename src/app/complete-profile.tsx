@@ -3,6 +3,9 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { FormScrollView, KeyboardFooterLayout } from '@/components/FormScrollView';
+import { FairBackButton } from '@/components/ProductChrome';
+import { FairPathDatePicker } from '@/components/FairPathDatePicker';
+import { isValidDateForKind, type DateKind } from '@/core/forms/dates';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FairPathColors } from '@/constants/fairpath';
 import { getRequiredVisibleQuestions, type ProfileQuestion } from '@/core/models/profile-questions';
@@ -26,18 +29,10 @@ function encodeValue(q:ProfileQuestion,value:string|string[]){
  if(q.input==='number') return Number(value);
  return value;
 }
-function isValidDateText(text:string){
- const match=text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
- if(!match)return false;
- const month=Number(match[1]),day=Number(match[2]),year=Number(match[3]);
- const date=new Date(year,month-1,day);
- return year>=1900&&date.getFullYear()===year&&date.getMonth()===month-1&&date.getDate()===day&&date.getTime()<=Date.now();
-}
-function formatDateInput(raw:string){
- const digits=raw.replace(/\D/g,'').slice(0,8);
- if(digits.length<=2)return digits;
- if(digits.length<=4)return digits.slice(0,2)+'/'+digits.slice(2);
- return digits.slice(0,2)+'/'+digits.slice(2,4)+'/'+digits.slice(4);
+function dateKindFor(id:string):DateKind{
+ if(id==='identity.date_of_birth')return 'dob';
+ if(id==='release.expected_release_date')return 'any';
+ return 'past';
 }
 function validationMessage(q:ProfileQuestion|null,value:string|string[]){
  if(!q)return '';
@@ -46,7 +41,7 @@ function validationMessage(q:ProfileQuestion|null,value:string|string[]){
   const digits=text.replace(/\D/g,'');
   if(digits.length!==10)return 'Enter a valid 10-digit phone number.';
  }
- if(q.input==='date'&&text&&!isValidDateText(text))return 'Enter a valid date as MM/DD/YYYY.';
+ if(q.input==='date'&&text&&!isValidDateForKind(text,dateKindFor(q.id)))return dateKindFor(q.id)==='dob'?'Choose a real date of birth that is not in the future.':'Choose a real date.';
  return '';
 }
 
@@ -125,7 +120,7 @@ export default function CompleteProfile(){
  if(loading||!question)return <View style={s.screen}><StatusBar style="light"/><SafeAreaView style={s.center}><Text style={s.loading}>{error||'Loading your FairPath…'}</Text></SafeAreaView></View>;
 
  return <View style={s.screen}><StatusBar style="light"/><SafeAreaView style={s.safe}><KeyboardFooterLayout>
-  <View style={s.top}><Pressable style={s.back} onPress={goToPreviousQuestion}><Text style={s.backText}>←</Text></Pressable><Text style={s.percent}>{percent}% READY</Text></View>
+  <View style={s.top}><FairBackButton onPress={goToPreviousQuestion}/><Text style={s.percent}>{percent}% READY</Text></View>
   <View style={s.track}><View style={[s.fill,{width:`${percent}%`}]}/></View>
   <FormScrollView contentContainerStyle={[s.content,desktop&&s.contentDesktop,compact&&s.contentCompact]} keyboardShouldPersistTaps="handled">
    <Text style={s.kicker}>{areaNames[question.area]}</Text>
@@ -134,7 +129,7 @@ export default function CompleteProfile(){
    {question.sensitive?<View style={s.private}><Text style={s.privateText}>PRIVATE PROFILE INFORMATION</Text><Text style={s.privateBody}>This answer is not automatically displayed as a general partner-visible profile field.</Text></View>:null}
    {showLegacyJusticeBanner?<View style={s.private}><Text style={s.privateText}>CONFIRM YOUR RECORD DETAILS</Text><Text style={s.privateBody}>You previously told FairPath you have a justice record. We need this specific answer to build your structured profile — it wasn't carried over automatically.</Text></View>:null}
    {options.length>0?<View style={s.options}>{options.map(o=>{const selected=Array.isArray(value)?value.includes(o):value===o;return <Pressable key={o} style={[s.option,selected&&s.optionSelected]} onPress={()=>selectOption(o)}><View style={[s.mark,selected&&s.markSelected]}><Text style={s.check}>{selected?'✓':''}</Text></View><Text style={[s.optionText,selected&&s.optionTextSelected]}>{o}</Text></Pressable>})}</View>:
-   <><TextInput value={String(value)} onChangeText={v=>{setValue(question.id==='identity.phone'?formatUsPhone(v):question.input==='date'?formatDateInput(v):v);if(error)setError('')}} style={s.input} placeholder={question.id==='identity.phone'?'(555) 555-1234':question.input==='date'?'MM/DD/YYYY':question.input==='number'?'Enter a number':'Type your answer'} placeholderTextColor="#666C66" keyboardType={question.id==='identity.phone'?'phone-pad':question.input==='date'||question.input==='number'?'numeric':'default'} maxLength={question.input==='date'?10:undefined} onSubmitEditing={saveAndContinue}/>{validation?<Text style={s.validation}>{validation}</Text>:null}</>}
+   question.input==='date'?<><FairPathDatePicker kind={dateKindFor(question.id)} label="SELECT DATE" value={String(value)} onChange={v=>{setValue(v);if(error)setError('')}} error={validation||undefined}/></>:<><TextInput value={String(value)} onChangeText={v=>{setValue(question.id==='identity.phone'?formatUsPhone(v):v);if(error)setError('')}} style={s.input} placeholder={question.id==='identity.phone'?'(555) 555-1234':question.input==='number'?'Enter a number':'Type your answer'} placeholderTextColor="#666C66" keyboardType={question.id==='identity.phone'?'phone-pad':question.input==='number'?'numeric':'default'} onSubmitEditing={saveAndContinue}/>{validation?<Text style={s.validation}>{validation}</Text>:null}</>}
   </FormScrollView>
   <View style={[s.footer,desktop&&s.footerDesktop]}><Pressable disabled={!canContinue||saving} style={[s.button,(!canContinue||saving)&&s.disabled]} onPress={saveAndContinue}><Text style={[s.buttonText,(!canContinue||saving)&&s.buttonTextDisabled]}>{saving?'Saving…':'Save & continue'}</Text><Text style={[s.buttonArrow,(!canContinue||saving)&&s.buttonArrowDisabled]}>→</Text></Pressable>{error?<Text style={s.error}>{error}</Text>:null}<Text style={s.note}>Saved to your FairPath so you can pick up where you left off.</Text></View>
  </KeyboardFooterLayout></SafeAreaView></View>

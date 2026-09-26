@@ -7,16 +7,16 @@ import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { createHousingTourRequest } from '@/core/opportunities/opportunity-service';
-import { isTodayOrFutureDateText, isValidDateText } from '@/core/forms/formatters';
-import { SimpleDatePicker } from '@/components/SimpleDatePicker';
+import { isValidDateForKind } from '@/core/forms/dates';
+import { FairPathDatePicker } from '@/components/FairPathDatePicker';
 
 const WINDOWS=['morning','afternoon','evening','flexible'] as const;
 export default function HousingTour(){
  const {id}=useLocalSearchParams<{id:string}>(); const [date,setDate]=useState(''); const [window,setWindow]=useState<(typeof WINDOWS)[number]>('flexible'); const [note,setNote]=useState(''); const [saving,setSaving]=useState(false);
- async function submit(){if(!id||saving)return;if(!isValidDateText(date,{allowFuture:true})||!isTodayOrFutureDateText(date)){notify('Choose a future date','Tour requests must be for today or a future date.');return}const [m,d,y]=date.split('/');setSaving(true);try{await createHousingTourRequest({listingId:id,preferredDate:`${y}-${m}-${d}`,preferredWindow:window,note});notify('Tour request sent','Your request is saved in FairPath. A property partner can confirm or decline it when Partner tools are live.');router.back()}catch(e){if(e instanceof Error&&e.message==='SIGNED_OUT'){router.push(('/sign-up?returnTo='+encodeURIComponent('/housing-tour/'+id)) as never);return}notify('Could not request tour','Please try again.')}finally{setSaving(false)}}
+ async function submit(){if(!id||saving)return;if(!isValidDateForKind(date,'future')){notify('Choose a future date','Tour requests must be for today or a future date.');return}const [m,d,y]=date.split('/');setSaving(true);try{await createHousingTourRequest({listingId:id,preferredDate:`${y}-${m}-${d}`,preferredWindow:window,note});notify('Tour request sent','Your request is saved in FairPath. A property partner can confirm or decline it when Partner tools are live.');router.back()}catch(e){if(e instanceof Error&&e.message==='SIGNED_OUT'){router.push(('/sign-up?returnTo='+encodeURIComponent('/housing-tour/'+id)) as never);return}notify('Could not request tour','Please try again.')}finally{setSaving(false)}}
  return <ScreenFrame><PageHeader eyebrow="FAIRPATH HOUSING" title="Request a tour" backTo={id?'/housing/'+id:'/find-housing'}/><FormScrollView contentContainerStyle={s.content}>
   <Text style={s.intro}>Choose a preferred date and time window. This is a request, not a confirmed appointment.</Text>
-  <SimpleDatePicker label="PREFERRED DATE" value={date} onChange={setDate} minDate={new Date()}/>
+  <FairPathDatePicker kind="future" label="PREFERRED DATE" value={date} onChange={setDate}/>
   <Text style={s.label}>TIME WINDOW</Text><View style={s.grid}>{WINDOWS.map(x=><Pressable key={x} style={[s.choice,window===x&&s.choiceOn]} onPress={()=>setWindow(x)}><Text style={[s.choiceText,window===x&&s.choiceTextOn]}>{x.toUpperCase()}</Text></Pressable>)}</View>
   <Text style={s.label}>NOTE</Text><TextInput style={[s.input,s.multi]} value={note} onChangeText={setNote} multiline placeholder="Optional note for the property team" placeholderTextColor={C.muted}/>
   <View style={s.notice}><Lucide name="calendar-clock" color={C.lime} size={15}/><Text style={s.noticeText}>FairPath will show this request to the property side once the FairPath Partner workflow is connected. Until then, it remains a saved request in your account.</Text></View>

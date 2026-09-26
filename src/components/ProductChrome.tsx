@@ -23,7 +23,15 @@ export function safeBack(fallback='/home'){
 }
 export function PageHeader({eyebrow,title,onBack=true,backTo='/home',alwaysBackTo=false,trailing}:{eyebrow:string;title:string;onBack?:boolean|(()=>void);backTo?:string;alwaysBackTo?:boolean;trailing?:React.ReactNode}){
   const goBack=()=>typeof onBack==='function'?onBack():alwaysBackTo?router.replace(backTo as never):safeBack(backTo);
-  return <View style={s.header}>{onBack?<Pressable accessibilityRole="button" accessibilityLabel="Go back" style={s.back} onPress={goBack}><Text style={s.backText}>←</Text></Pressable>:null}<View style={s.headerCopy}><Text style={s.eyebrow}>{eyebrow}</Text><Text style={s.title}>{title}</Text></View>{trailing?<View style={s.trailing}>{trailing}</View>:null}</View>;
+  return <View style={s.header}>{onBack?<FairBackButton onPress={goBack}/>:null}<View style={s.headerCopy}><Text style={s.eyebrow}>{eyebrow}</Text><Text style={s.title}>{title}</Text></View>{trailing?<View style={s.trailing}>{trailing}</View>:null}</View>;
+}
+/**
+ * The one FairPath back control (PageHeader and the auth/onboarding screens all use it).
+ * It never decides where to go: callers pass router.back()/replace logic, so history and the
+ * Jobs/Housing search state behind it are untouched.
+ */
+export function FairBackButton({onPress,label='Go back'}:{onPress:()=>void;label?:string}){
+  return <Pressable accessibilityRole="button" accessibilityLabel={label} hitSlop={{top:8,bottom:8,left:8,right:14}} onPress={onPress} style={({pressed})=>[s.back,pressed&&s.backPressed]}><Lucide name="chevron-left" color={C.white} size={20}/></Pressable>;
 }
 export function SectionTitle({children}:{children:React.ReactNode}){return <Text style={s.section}>{children}</Text>}
 export function SharpChip({label,active,onPress}:{label:string;active?:boolean;onPress?:()=>void}){
@@ -47,7 +55,7 @@ export function InlineBadge({children,tone='default'}:{children:React.ReactNode;
 const s=StyleSheet.create({
  screen:{flex:1,backgroundColor:C.black},safe:{flex:1,width:'100%',maxWidth:L.consumerMaxWidth,alignSelf:'center'},
  header:{minHeight:86,paddingHorizontal:L.mobileGutter,paddingTop:14,paddingBottom:14,flexDirection:'row',alignItems:'center',borderBottomWidth:1,borderBottomColor:C.border},
- back:{width:34,height:34,borderRadius:R.sm,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center',marginRight:12},
+ back:{width:40,height:40,borderRadius:2,borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#0A0C0A',alignItems:'center',justifyContent:'center',marginRight:12},backPressed:{borderColor:C.lime,backgroundColor:'#10150C'},
  backText:{color:C.white,fontSize:18},headerCopy:{flex:1,minWidth:0},eyebrow:{color:C.lime,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.5},title:{color:C.white,fontFamily:F.black,fontSize:24,lineHeight:26,letterSpacing:-.6,marginTop:3,flexShrink:1},trailing:{marginLeft:10},
  section:{color:C.muted,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.4,marginBottom:8},
  chip:{height:34,borderRadius:R.sm,borderWidth:1,borderColor:C.border,paddingHorizontal:12,alignItems:'center',justifyContent:'center',backgroundColor:C.black},

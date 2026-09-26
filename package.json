@@ -56,6 +56,7 @@
     "test:seed": "node scripts/audit-seed.mjs",
     "test:jobs": "node scripts/audit-jobs.mjs",
     "test:keyboard": "node scripts/audit-keyboard.mjs",
+    "test:dates": "node scripts/audit-dates.mjs",
     "seed:dev:dry": "node scripts/seed-dev.mjs",
     "seed:dev": "node scripts/seed-dev.mjs --apply --confirm-dev",
     "seed:dev:reset": "node scripts/seed-dev.mjs --reset --confirm-dev",

@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { FormScrollView } from '@/components/FormScrollView';
+import { FairBackButton } from '@/components/ProductChrome';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { supabase } from '../lib/supabase';
@@ -71,9 +72,7 @@ export default function SignInScreen() {
       <StatusBar style="light" />
       <SafeAreaView style={styles.safeArea}>
         <FormScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Pressable onPress={() => router.replace((returnTo||'/find-jobs') as never)} style={styles.backButton}>
-            <Text style={styles.backArrow}>←</Text>
-          </Pressable>
+          <FairBackButton onPress={() => router.replace((returnTo||'/find-jobs') as never)} />
 
           <View style={styles.heading}>
             <Text style={styles.kicker}>WELCOME BACK</Text>

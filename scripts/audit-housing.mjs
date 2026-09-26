@@ -153,7 +153,7 @@ if(!/nonce/.test(findSrc)||/setHomes\(\[\]\)/.test(findSrc))failures.push('LIST/
  const loadEffect=applySrc.slice(applySrc.indexOf('useEffect(()=>{'),applySrc.indexOf('const errors=useMemo'));
  if(/saveHousingApplicationDraft|submitHousingApplication|loadFastTrackQuote\(id/.test(loadEffect))failures.push('Loading the apply screen must not write or quote.');
  if(!/submitLock/.test(applySrc)||!/REQUIRED_DOCUMENTS_MISSING/.test(applySrc))failures.push('Submit must be double-tap safe and surface missing documents.');
- if(!/optional\?'OPTIONAL':'REQUIRED'/.test(applySrc)||!/SimpleDatePicker/.test(applySrc)||!/formatUsPhone/.test(applySrc))failures.push('Required fields must be clearly marked, with date pickers and phone formatting.');
+ if(!/optional\?'OPTIONAL':'REQUIRED'/.test(applySrc)||!/FairPathDatePicker/.test(applySrc)||!/formatUsPhone/.test(applySrc))failures.push('Required fields must be clearly marked, with date pickers and phone formatting.');
  if(!/appId&&listingId/.test(applySrc)&&!/router\.replace\(\('\/housing-application\/'\+appId\+'\?submitted=1'\)/.test(applySrc))failures.push('A successful submit must replace to the application workspace with a success state.');
  // FastTrack: honest about payment
  if(!/not collecting FastTrack payment/.test(applySrc)||!/PAYMENT PROVIDER CONNECTION REQUIRED/.test(read('src/app/fasttrack-checkout/[id].tsx')))failures.push('FastTrack must state honestly that payment is not connected/collected.');

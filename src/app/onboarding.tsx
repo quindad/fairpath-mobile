@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { FormScrollView, KeyboardFooterLayout } from '@/components/FormScrollView';
+import { FairBackButton } from '@/components/ProductChrome';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const LIME = '#A8F32C';
@@ -181,9 +182,7 @@ export default function OnboardingScreen() {
       <SafeAreaView style={styles.safeArea}>
         <KeyboardFooterLayout>
         <View style={styles.topBar}>
-          <Pressable onPress={goBack} style={styles.backButton}>
-            <Text style={styles.backArrow}>←</Text>
-          </Pressable>
+          <FairBackButton onPress={goBack} />
           <Text style={styles.stepCount}>{stepIndex + 1} / {steps.length}</Text>
         </View>
 

@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
-import { isTodayOrFutureDateText, isValidDateText, isValidEmail } from '@/core/forms/formatters';
+import { isValidEmail } from '@/core/forms/formatters';
+import { isValidDateForKind } from '@/core/forms/dates';
 import { currentUser } from '@/core/supabase/current-user';
 import { trackProductEvent } from '@/core/analytics/product-events';
 
@@ -142,13 +143,13 @@ export function validateHousingApplicationForm(form:HousingApplicationForm){
  if(form.last_name.trim().length<2)errors.last_name='Enter your last name.';
  if(!isValidEmail(form.email))errors.email='Enter a valid email address.';
  if(form.phone.replace(/\D/g,'').length!==10)errors.phone='Enter a 10-digit phone number.';
- if(!isValidDateText(form.date_of_birth,{allowFuture:false}))errors.date_of_birth='Enter date of birth as MM/DD/YYYY.';
+ if(!isValidDateForKind(form.date_of_birth,'dob'))errors.date_of_birth='Enter date of birth as MM/DD/YYYY.';
  if(!form.current_address.trim())errors.current_address='Enter your current address or housing situation.';
  if(!form.employment_status.trim())errors.employment_status='Select an employment status.';
  if(form.employment_status!=='Unemployed'&&!form.employer.trim())errors.employer='Enter your employer or income source.';
  const income=Number(form.monthly_income.replace(/[^0-9.]/g,''));
  if(!form.monthly_income.trim()||Number.isNaN(income)||income<0)errors.monthly_income='Enter gross monthly income. Use 0 if none.';
- if(!isValidDateText(form.move_in_date,{allowFuture:true})||!isTodayOrFutureDateText(form.move_in_date))errors.move_in_date='Choose today or a future move-in date.';
+ if(!isValidDateForKind(form.move_in_date,'future'))errors.move_in_date='Choose today or a future move-in date.';
  const occupants=Number(form.occupants);
  if(!Number.isInteger(occupants)||occupants<1)errors.occupants='Enter at least 1 occupant.';
  if(!form.pets.trim())errors.pets='Enter pet details or select None.';
