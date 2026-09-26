@@ -3,6 +3,7 @@ import { router, Stack, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { PaymentsProvider } from '@/components/PaymentsProvider';
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -43,12 +44,14 @@ export default function RootLayout() {
   }
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: '#090A09' },
-        animation: 'fade',
-      }}
-    />
+    <PaymentsProvider>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: '#090A09' },
+          animation: 'fade',
+        }}
+      />
+    </PaymentsProvider>
   );
 }

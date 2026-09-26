@@ -152,7 +152,7 @@ if (baselineTablesFile) {
 {
   const allSql = files.map((f) => stripSqlComments(norm(read('supabase/migrations/' + f)))).join('\n');
   const granted = (table, role) =>
-    [...allSql.matchAll(/grant\s+[a-z,\s]+\s+on\s+(?:table\s+)?([^;]+?)\s+to\s+([^;]+);/gi)].some(
+    [...allSql.matchAll(/grant\s+[a-z,\s]+(?:\([^)]*\))?\s*on\s+(?:table\s+)?([^;]+?)\s+to\s+([^;]+);/gi)].some(
       (g) => new RegExp(`public\\.${table}\\b`, 'i').test(g[1]) && new RegExp(`\\b${role}\\b`, 'i').test(g[2]),
     );
   for (const f of files.filter((x) => x !== baselineTablesFile && x !== baselineLogicFile)) {

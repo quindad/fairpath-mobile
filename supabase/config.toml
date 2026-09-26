@@ -17,3 +17,13 @@ project_id = "fairpath-mobile-dev"
 [db]
 # Matches the remote Postgres major version (fairpath-mobile-dev runs 17.x).
 major_version = 17
+
+# Edge Functions. Functions called by servers (not signed-in members) authenticate themselves.
+[functions.claim-correctional-transition]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.store-subscription-webhook]
+verify_jwt = false
