@@ -66,6 +66,19 @@ check(/grant select \([^)]*\)\s+on table public\.payment_transactions to authent
 check(/revoke all on function public\.apply_payment_event[\s\S]*?from public, anon, authenticated/.test(mig), 'apply_payment_event must be service-only.');
 check(!/card|pan\b|cvc/i.test(mig.replace(/'requires_payment_method'|payment_method/g, '')), 'No card data may be stored.');
 
+// ---- column grants must cover every column the app filters on (PostgreSQL requires SELECT on filter columns) ----
+{
+  const allMig = fs.readdirSync('supabase/migrations').filter((x) => x.endsWith('.sql')).map((x) => strip(read('supabase/migrations/' + x))).join('\n');
+  const granted = new Set();
+  for (const m of allMig.matchAll(/grant select \(([^)]*)\)\s+on table public\.payment_transactions to authenticated/g)) m[1].split(',').forEach((c) => granted.add(c.trim()));
+  const q = svc.match(/from\('payment_transactions'\)[\s\S]*?;/g) ?? [];
+  for (const stmt of q) {
+    for (const c of [...stmt.matchAll(/\.(?:eq|in|neq|gt|lt|order)\('([a-z_]+)'/g)].map((x) => x[1])) check(granted.has(c), 'payments-service filters/orders payment_transactions by "' + c + '" but members have no column grant on it (permission denied at runtime).');
+    const sel = stmt.match(/\.select\('([^']*)'\)/);
+    if (sel) for (const c of sel[1].split(',').map((x) => x.trim())) check(granted.has(c), 'payments-service selects payment_transactions."' + c + '" without a column grant.');
+  }
+}
+
 // ---- FairPath+ is not sold through Stripe ----
 check(!/subscriptions\.create|mode:\s*'subscription'|fairpath_plus/i.test(create + hook), 'FairPath+ subscriptions must not be processed through Stripe checkout.');
 

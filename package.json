@@ -66,6 +66,8 @@
     "test:entitlements": "node scripts/audit-entitlements.mjs",
     "qa:dev-anon": "node scripts/qa-dev-anon-probe.mjs",
     "qa:dev-platform": "node scripts/qa-dev-platform.mjs --confirm-dev",
+    "qa:dev-ui": "node scripts/qa-dev-ui-session.mjs --confirm-dev",
+    "qa:dev-ui-cleanup": "node scripts/qa-dev-ui-session.mjs --cleanup --confirm-dev",
     "seed:dev:dry": "node scripts/seed-dev.mjs",
     "seed:dev": "node scripts/seed-dev.mjs --apply --confirm-dev",
     "seed:dev:reset": "node scripts/seed-dev.mjs --reset --confirm-dev",

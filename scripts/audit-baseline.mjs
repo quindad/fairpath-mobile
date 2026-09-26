@@ -186,6 +186,19 @@ if (baselineTablesFile) {
 }
 
 // ---------------------------------------------------------------------
+// 5d. DEV QA harness safety: DEV-only guards, key from env only, disposable identities, cleanup, no production ref
+// ---------------------------------------------------------------------
+for (const h of ['scripts/qa-dev-platform.mjs', 'scripts/qa-dev-ui-session.mjs']) {
+  const src = read(h);
+  if (!/assertDevTarget\(/.test(src)) failures.push(h + ' must use the DEV-only guard.');
+  if (!/process\.env\.SUPABASE_SERVICE_ROLE_KEY/.test(src) || /SERVICE_ROLE_KEY\s*=\s*['"][A-Za-z0-9._-]{20,}/.test(src)) failures.push(h + ' must read the service key from the environment only.');
+  if (!/@dev-seed\.fairpath\.test/.test(src)) failures.push(h + ' must only create @dev-seed.fairpath.test identities.');
+  if (/rqpczemdagoddhuwefxt/.test(src)) failures.push(h + ' mentions the production ref.');
+  if (!/deleteUser/.test(src)) failures.push(h + ' must clean up the identities it creates.');
+  if (/console\.log\([^)]*serviceKey/.test(src)) failures.push(h + ' must never print the service key.');
+}
+
+// ---------------------------------------------------------------------
 // 6. Production isolation: no executable migration may mention the
 //    production project ref/host
 // ---------------------------------------------------------------------

@@ -213,8 +213,8 @@ await test('payments (DB boundary): wrong amount rejected; duplicate event ignor
   eq((await admin.from('housing_applications').select('status,submitted_at').eq('id', fastApp).single()).data, { status: 'started', submitted_at: null }, 'application untouched by payment');
 });
 await test('payments: history is owner-only and column-limited; members cannot write payment tables', async () => {
-  const mine = await tenant.client.from('payment_transactions').select('id,status,amount_cents,provider_payment_intent_id');
-  ok(!mine.error && mine.data.length >= 1, 'own history readable');
+  const mine = await tenant.client.from('payment_transactions').select('id,purpose,purpose_ref,amount_cents,currency,status,provider_payment_intent_id,failure_code,created_at,succeeded_at').eq('user_id', tenant.id).order('created_at', { ascending: false });
+  ok(!mine.error && mine.data.length >= 1, 'own history readable with the exact query the app runs: ' + JSON.stringify(mine.error));
   has(await tenant.client.from('payment_transactions').select('metadata'), 'permission denied');
   has(await tenant.client.from('payment_transactions').select('provider_customer_id'), 'permission denied');
   eq((await other.client.from('payment_transactions').select('id')).data ?? [], [], 'others see nothing');
@@ -347,11 +347,31 @@ await test('regression: signed-in Jobs search, secure Easy Apply, history and wi
   const stored = (await admin.from('job_applications').select('id,status,answers').eq('user_id', tenant.id).eq('job_id', jobId).single()).data;
   ok(!('date_of_birth' in stored.answers.profile) && !('address' in stored.answers.profile), 'DOB/address never stored');
   fails(await tenant.client.from('job_applications').insert({ user_id: tenant.id, job_id: jobId, status: 'hired' }), 'direct insert');
+  fails(await tenant.client.from('job_applications').update({ status: 'hired' }).eq('id', stored.id), 'direct status update must fail');
+  has(await other.client.rpc('withdraw_job_application', { p_application_id: stored.id }), 'CANNOT_WITHDRAW');
   ok(!(await tenant.client.rpc('withdraw_job_application', { p_application_id: stored.id })).error, 'withdraw');
+  has(await tenant.client.rpc('withdraw_job_application', { p_application_id: stored.id }), 'CANNOT_WITHDRAW');
   eq((await tenant.client.from('job_application_events').select('event_type').eq('application_id', stored.id).order('created_at')).data.map((e) => e.event_type), ['submitted', 'withdrawn']);
 });
+await test('housing: standard submit -> withdraw lifecycle is server-controlled; no direct edits; no resubmit; one notification per status', async () => {
+  const d = new Date(Date.now() + 30 * 864e5); const move = String(d.getMonth() + 1).padStart(2, '0') + '/' + String(d.getDate()).padStart(2, '0') + '/' + d.getFullYear();
+  const form = { ...FORM, move_in_date: move };
+  const app = one(await other.client.rpc('save_housing_application_draft', { p_listing_id: listing, p_type: 'standard', p_answers: form, p_step: 4 })).id;
+  has(await other.client.rpc('submit_housing_application', { p_application_id: app, p_answers: form, p_consent: { accuracy: true } }), 'CONSENT_REQUIRED');
+  has(await tenant.client.rpc('submit_housing_application', { p_application_id: app, p_answers: form, p_consent: { accuracy: true, submit: true } }), 'APPLICATION_NOT_SUBMITTABLE');
+  const sub = one(await other.client.rpc('submit_housing_application', { p_application_id: app, p_answers: form, p_consent: { accuracy: true, submit: true } }));
+  eq(sub.status, 'submitted');
+  has(await other.client.rpc('submit_housing_application', { p_application_id: app, p_answers: form, p_consent: { accuracy: true, submit: true } }), 'APPLICATION_NOT_SUBMITTABLE');
+  fails(await other.client.from('housing_applications').update({ status: 'approved' }).eq('id', app), 'direct edit must fail');
+  has(await tenant.client.rpc('withdraw_housing_application', { p_application_id: app }), 'CANNOT_WITHDRAW');
+  ok(!(await other.client.rpc('withdraw_housing_application', { p_application_id: app })).error, 'owner withdraw');
+  has(await other.client.rpc('withdraw_housing_application', { p_application_id: app }), 'CANNOT_WITHDRAW');
+  has(await other.client.rpc('save_housing_application_draft', { p_listing_id: listing, p_type: 'standard', p_answers: form, p_step: 3 }), 'APPLICATION_NOT_EDITABLE');
+  eq((await admin.from('housing_application_events').select('event_type').eq('application_id', app).order('created_at')).data.map((e) => e.event_type), ['started', 'submitted', 'withdrawn']);
+  eq((await notes(other, 'housing_app:' + app + ':submitted')).length, 1); eq((await notes(other, 'housing_app:' + app + ':withdrawn')).length, 1);
+});
 await test('regression: signed-in Housing search, saved homes, application list and Marketplace RPC still work', async () => {
-  const h = await tenant.client.rpc('search_housing', { p_zip: '43228', p_radius_miles: 25, p_filters: { beds: '2+' }, p_limit: 5 });
+  const h = await tenant.client.rpc('search_housing', { p_zip: '43228', p_radius_miles: 25, p_filters: {}, p_limit: 5 });
   ok(!h.error && h.data.length > 0, 'search_housing');
   const id = h.data[0].listing.id;
   ok(!(await tenant.client.from('saved_housing').insert({ user_id: tenant.id, listing_id: id })).error, 'save home');

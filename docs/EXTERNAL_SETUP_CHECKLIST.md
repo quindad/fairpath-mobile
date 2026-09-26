@@ -111,3 +111,25 @@ The notification records, `push_tokens` and the `notification_deliveries` queue 
 key (.p8) or Expo push setup, `expo-notifications` in the app (native rebuild), and a worker (Edge Function on a
 schedule) that reads `notification_deliveries` where `status = 'pending'`. None of that exists yet and nothing in the
 app pretends to send push.
+
+## 7. Edge Function status on DEV (as probed with the public key)
+
+All four functions return 404 on DEV: none is deployed. Deploy only to DEV by passing the ref explicitly, so a wrong
+CLI link can never redirect it to production:
+
+| Function | Purpose | Safe to deploy to DEV now? | Secrets needed |
+| --- | --- | --- | --- |
+| `store-subscription-webhook` | Refuses (501) until store verification exists | Yes, no secrets, inert | none |
+| `claim-correctional-transition` | Trusted Corrections claim endpoint | Yes; refuses (501) until the secret is set | `CORRECTIONS_INTEGRATION_SECRET` |
+| `create-fasttrack-payment` | Server-priced Stripe PaymentIntent | Deploy yes; refuses (501) without a key. Do not test payments until Stripe TEST secrets are set | `STRIPE_SECRET_KEY` |
+| `stripe-webhook` | Signature-verified payment settlement | Deploy yes; refuses (501) without secrets | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
+
+```powershell
+Get-Content supabase/.temp/project-ref      # must print znvhmuhojvwvjzmaqwff
+npx supabase functions deploy store-subscription-webhook --project-ref znvhmuhojvwvjzmaqwff
+npx supabase functions deploy claim-correctional-transition --project-ref znvhmuhojvwvjzmaqwff
+npx supabase functions deploy create-fasttrack-payment --project-ref znvhmuhojvwvjzmaqwff
+npx supabase functions deploy stripe-webhook --project-ref znvhmuhojvwvjzmaqwff
+```
+
+Deploying with `--project-ref` of the DEV project cannot affect production. Never run these with the production ref.
