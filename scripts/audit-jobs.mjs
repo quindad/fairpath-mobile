@@ -34,6 +34,18 @@ check(/create or replace function public\.withdraw_job_application/.test(code), 
 check(/create table if not exists public\.job_application_events/.test(code) && /log_job_application_event/.test(code), 'application event table/trigger missing');
 check(/grant select on table public\.job_application_events to authenticated/.test(code) && !/grant [a-z, ]*(insert|update|delete)[a-z, ]* on table public\.job_application_events to authenticated/.test(code), 'events must be read-only for authenticated');
 
+// The LATEST definition of submit_job_application (forward fix): duplicate detection first, validation intact.
+{
+  const fixed = read('supabase/migrations/20260930140000_claim_and_apply_ordering_fixes.sql').replace(/--.*$/gm, '');
+  const latest = (fixed.match(/create or replace function public\.submit_job_application\([\s\S]*?\n\$\$;/) || [''])[0];
+  const dup = latest.indexOf("raise exception 'ALREADY_APPLIED'");
+  const firstValidation = latest.indexOf("raise exception 'INVALID_APPLICATION:first_name'");
+  check(latest && dup > -1 && dup < firstValidation, 'A repeat submission must report ALREADY_APPLIED before field validation runs.');
+  for (const need of ['INVALID_APPLICATION:first_name', 'INVALID_APPLICATION:phone', 'INVALID_APPLICATION:question:%', 'JOB_UNAVAILABLE', 'on conflict (user_id, job_id) do nothing']) check(latest.includes(need), `The latest submit_job_application must keep: ${need}`);
+  check(!/date_of_birth|address|conviction|offense/i.test(latest), 'The latest submit_job_application must not accept DOB/address/justice fields.');
+  check(/security definer/.test(latest) && /auth\.uid\(\)/.test(latest) && /'submitted'/.test(latest), 'The latest submit_job_application must stay server-controlled.');
+}
+
 // ---- client ----
 const svc = read('src/core/jobs/jobs-service.ts');
 check(/rpc\('search_jobs'/.test(svc), 'jobs-service must search through the search_jobs RPC');

@@ -344,6 +344,10 @@ await test('regression: signed-in Jobs search, secure Easy Apply, history and wi
   const applied = await tenant.client.rpc('submit_job_application', { p_job_id: jobId, p_answers: { profile: { first_name: 'Quinn', last_name: 'Tester', phone: '(614) 555-0100', date_of_birth: '01/01/1990', address: 'x' }, employer_questions: Object.fromEntries((cand.application_questions ?? []).filter((q) => q.required).map((q) => [q.id, q.type === 'yes_no' ? 'Yes' : 'ok'])) } });
   ok(!applied.error, 'submit: ' + JSON.stringify(applied.error));
   has(await tenant.client.rpc('submit_job_application', { p_job_id: jobId, p_answers: {} }), 'ALREADY_APPLIED');
+  const validPayload = { profile: { first_name: 'Quinn', last_name: 'Tester', phone: '(614) 555-0100' }, employer_questions: Object.fromEntries((cand.application_questions ?? []).filter((q) => q.required).map((q) => [q.id, q.type === 'yes_no' ? 'Yes' : 'ok'])) };
+  has(await tenant.client.rpc('submit_job_application', { p_job_id: jobId, p_answers: validPayload }), 'ALREADY_APPLIED');
+  has(await other.client.rpc('submit_job_application', { p_job_id: jobId, p_answers: {} }), 'INVALID_APPLICATION:first_name');
+  eq((await admin.from('job_applications').select('id').eq('job_id', jobId).eq('user_id', other.id)).data.length, 0, 'invalid submission creates nothing');
   const stored = (await admin.from('job_applications').select('id,status,answers').eq('user_id', tenant.id).eq('job_id', jobId).single()).data;
   ok(!('date_of_birth' in stored.answers.profile) && !('address' in stored.answers.profile), 'DOB/address never stored');
   fails(await tenant.client.from('job_applications').insert({ user_id: tenant.id, job_id: jobId, status: 'hired' }), 'direct insert');

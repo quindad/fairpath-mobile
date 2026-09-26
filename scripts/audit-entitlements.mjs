@@ -38,7 +38,17 @@ check(/reason/.test(fn('revoke_entitlement_grant')) && /REASON_REQUIRED/.test(fn
 check(/entitlement_audit_log_immutable/.test(mig) && /before update or delete/.test(mig), 'The audit log must be append-only.');
 
 // ---- correctional transition rules ----
-const claim = fn('claim_correctional_transition');
+// The LATEST definition wins (a forward migration superseded the original ordering).
+const fixMig = strip(read('supabase/migrations/20260930140000_claim_and_apply_ordering_fixes.sql'));
+const claim = (fixMig.match(/create or replace function public\.claim_correctional_transition\([\s\S]*?\n\$\$;/) || [''])[0];
+check(claim.length > 0, 'The claim function must be defined by the ordering fix migration.');
+{
+  const identityCheck = claim.indexOf('where c.identity_key = p_identity_key');
+  const accountCheck = claim.indexOf("g.source_type = 'correctional_transition'");
+  const insertEvent = claim.indexOf('insert into public.corrections_migration_events');
+  check(identityCheck > -1 && identityCheck < accountCheck && accountCheck < insertEvent, 'Claim order must be: identity already processed -> account already has a grant -> consume the identity and issue.');
+  check(/'already_claimed'/.test(claim.slice(identityCheck, accountCheck)), 'A repeat claim of a processed identity must report already_claimed.');
+}
 check(/, 90,/.test(claim), 'The correctional benefit must be 90 days.');
 check(/identity_key text not null unique/.test(mig) && /on conflict \(identity_key\) do nothing/.test(claim), 'One verified Corrections identity can be claimed once.');
 check(/account_already_has_benefit/.test(claim) && /entitlement_grants_one_correctional_per_user/.test(mig), 'One account can hold only one correctional grant.');
