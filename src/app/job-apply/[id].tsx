@@ -6,10 +6,9 @@ import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { loadJob, loadJobApplicationAutofill, loadMyJobApplicationForJob, saveJobApplicationProfile, submitJobApplication, type Job, type JobApplicationAutofill } from '@/core/opportunities/opportunity-service';
-import { loadFairPathReadiness } from '@/core/profile/profile-service';
-import { formatDateInput, formatUsPhone } from '@/core/forms/formatters';
+import { formatUsPhone } from '@/core/forms/formatters';
 
-const EMPTY:JobApplicationAutofill={first_name:'',last_name:'',email:'',phone:'',address:'',date_of_birth:'',education:'',skills:'',certifications:'',desired_roles:'',resume_ready:''};
+const EMPTY:JobApplicationAutofill={first_name:'',last_name:'',email:'',phone:'',education:'',skills:'',certifications:'',desired_roles:'',resume_ready:''};
 
 export default function JobApply(){
  const {id}=useLocalSearchParams<{id:string}>();
@@ -20,16 +19,15 @@ export default function JobApply(){
  const [submitting,setSubmitting]=useState(false);
  const [error,setError]=useState('');
 
- useEffect(()=>{if(!id)return;Promise.all([loadJob(id),loadJobApplicationAutofill(),loadFairPathReadiness(),loadMyJobApplicationForJob(id)]).then(([j,a,r,existing])=>{if(existing){router.replace(('/job-application/'+existing.id) as never);return}if(r.readiness.overallPercentage!==100){router.replace(('/complete-profile?returnTo='+encodeURIComponent('/job/'+id)) as never);return}setJob(j);setForm(a)}).catch(e=>{if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace(('/sign-up?returnTo='+encodeURIComponent('/job/'+id)) as never);return}setError('Application could not load.')}).finally(()=>setLoading(false))},[id]);
+ useEffect(()=>{if(!id)return;Promise.all([loadJob(id),loadJobApplicationAutofill(),loadMyJobApplicationForJob(id)]).then(([j,a,existing])=>{if(existing){router.replace(('/job-application/'+existing.id) as never);return}setJob(j);setForm(a)}).catch(e=>{if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace(('/sign-up?returnTo='+encodeURIComponent('/job/'+id)) as never);return}setError('Application could not load.')}).finally(()=>setLoading(false))},[id]);
 
- const requiredKeys:(keyof JobApplicationAutofill)[]=['first_name','last_name','email','phone','address'];
+ const requiredKeys:(keyof JobApplicationAutofill)[]=['first_name','last_name','email','phone'];
  const validRequired=(key:keyof JobApplicationAutofill,value:string)=>{
   const v=value.trim();
   if(!v)return false;
   if(key==='first_name'||key==='last_name')return v.length>=2;
   if(key==='email')return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
   if(key==='phone')return v.replace(/\D/g,'').length===10;
-  if(key==='address')return v.length>=10&&/\d/.test(v)&&/[A-Za-z]/.test(v);
   return true;
  };
  const completedRequired=useMemo(()=>requiredKeys.filter(k=>validRequired(k,form[k])).length,[form]);
@@ -49,11 +47,14 @@ export default function JobApply(){
   setSubmitting(true);
   try{
    await saveJobApplicationProfile(form);
-   const applicationId=await submitJobApplication(id,{profile:form,employer_questions:extra,reviewed_by_user:true,reviewed_at:new Date().toISOString()});
+   const applicationId=await submitJobApplication(id,{profile:form,employer_questions:extra});
    router.replace((applicationId?'/job-application/'+applicationId:'/job-applications') as never);
   }catch(e){
    if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace(('/sign-up?returnTo='+encodeURIComponent('/job/'+id)) as never);return}
    if(e instanceof Error&&e.message==='ALREADY_APPLIED'){notify('Already applied','You already submitted an application for this job.',[{text:'View application',onPress:()=>router.replace('/job-applications' as never)}]);return}
+   const msg=e instanceof Error?e.message:'';
+   if(msg==='JOB_UNAVAILABLE'){notify('Job unavailable','This job is no longer accepting applications.');return}
+   if(msg.startsWith('INVALID_APPLICATION')){notify('Application incomplete','Check the required fields and try again.');return}
    notify('Could not submit','Please try again.');
   }finally{setSubmitting(false)}
  }
@@ -73,7 +74,7 @@ export default function JobApply(){
 
    <View style={s.notice}>
     <Lucide name="wand-sparkles" color={C.lime} size={17}/>
-    <View style={s.noticeCopy}><Text style={s.noticeTitle}>Autofilled from your FairPath profile</Text><Text style={s.noticeBody}>Review every field before submitting. Reusable details you update here are saved to your FairPath profile for future Easy Apply applications. FairPath does not auto-answer criminal-history questions.</Text></View>
+    <View style={s.noticeCopy}><Text style={s.noticeTitle}>Autofilled from your FairPath profile</Text><Text style={s.noticeBody}>Review every field before submitting. Only your name, email, phone and the details below are sent to the employer. FairPath never shares your date of birth, home address or record details, and does not auto-answer criminal-history questions.</Text></View>
    </View>
 
    <Text style={s.sectionLabel}>CONTACT</Text>
@@ -81,10 +82,8 @@ export default function JobApply(){
    <Field label="LAST NAME" value={form.last_name} onChangeText={v=>set('last_name',v)} required valid={validRequired('last_name',form.last_name)} invalidHint="Enter your full last name" />
    <Field label="EMAIL" value={form.email} onChangeText={v=>set('email',v)} keyboardType="email-address" required valid={validRequired('email',form.email)} invalidHint="Enter a valid email address" />
    <Field label="PHONE" value={formatUsPhone(form.phone)} onChangeText={v=>set('phone',formatUsPhone(v))} keyboardType="phone-pad" required valid={validRequired('phone',form.phone)} invalidHint="Enter a 10-digit phone number" />
-   <Field label="HOME ADDRESS" value={form.address} onChangeText={v=>set('address',v)} required valid={validRequired('address',form.address)} invalidHint="Enter your full street address" />
 
    <Text style={s.sectionLabel}>PROFILE</Text>
-   <Field label="DATE OF BIRTH" value={formatDateInput(form.date_of_birth)} onChangeText={v=>set('date_of_birth',formatDateInput(v))} />
    <Field label="EDUCATION" value={form.education} onChangeText={v=>set('education',v)} />
    <Field label="SKILLS" value={form.skills} onChangeText={v=>set('skills',v)} multiline />
    <Field label="CERTIFICATIONS" value={form.certifications} onChangeText={v=>set('certifications',v)} multiline />

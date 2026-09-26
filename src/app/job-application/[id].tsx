@@ -5,7 +5,14 @@ import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
-import { loadMyJobApplicationDetail, withdrawMyJobApplication, type JobApplicationStatus, type MyJobApplicationDetail } from '@/core/opportunities/opportunity-service';
+import { loadJobApplicationEvents, loadMyJobApplicationDetail, withdrawMyJobApplication, type JobApplicationEvent, type JobApplicationStatus, type MyJobApplicationDetail } from '@/core/opportunities/opportunity-service';
+
+function eventLabel(e:JobApplicationEvent){
+ const who=e.actor_type==='employer'?' by employer':e.actor_type==='applicant'&&e.event_type!=='submitted'?' by you':'';
+ if(e.event_type==='submitted')return 'Application submitted';
+ if(e.event_type==='withdrawn')return 'Application withdrawn'+who;
+ return 'Status: '+e.to_status.replace('_',' ')+who;
+}
 
 const STATUS:Record<JobApplicationStatus,{label:string;tone:'lime'|'default';body:string}>={
  started:{label:'IN PROGRESS',tone:'default',body:'Your application has not been submitted yet.'},
@@ -51,9 +58,11 @@ export default function JobApplicationDetail(){
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
  const [withdrawing,setWithdrawing]=useState(false);
+ const [events,setEvents]=useState<JobApplicationEvent[]>([]);
 
  useEffect(()=>{
   if(!id)return;
+  loadJobApplicationEvents(id).then(setEvents).catch(()=>{});
   loadMyJobApplicationDetail(id)
    .then(setItem)
    .catch(e=>{
@@ -77,8 +86,9 @@ export default function JobApplicationDetail(){
   try{
    await withdrawMyJobApplication(item.id);
    setItem({...item,status:'withdrawn',updated_at:new Date().toISOString()});
+   loadJobApplicationEvents(item.id).then(setEvents).catch(()=>{});
   }catch{
-   notify('Could not withdraw','Please try again.');
+   notify('Could not withdraw','This application can no longer be withdrawn. Refresh and try again.');
   }finally{setWithdrawing(false)}
  }
 
@@ -107,9 +117,10 @@ export default function JobApplicationDetail(){
    </View>
 
    <View style={s.timeline}>
-    <Text style={s.sectionLabel}>APPLICATION TIMELINE</Text>
-    <View style={s.timelineRow}><Text style={s.timelineKey}>Submitted</Text><Text style={s.timelineValue}>{fmt(item.submitted_at)}</Text></View>
-    <View style={s.timelineRow}><Text style={s.timelineKey}>Last update</Text><Text style={s.timelineValue}>{fmt(item.updated_at)}</Text></View>
+    <Text style={s.sectionLabel}>APPLICATION HISTORY</Text>
+    {events.length?events.map(e=><View key={e.id} style={s.timelineRow}><Text style={s.timelineKey}>{eventLabel(e)}</Text><Text style={s.timelineValue}>{fmt(e.created_at)}</Text></View>)
+     :<><View style={s.timelineRow}><Text style={s.timelineKey}>Submitted</Text><Text style={s.timelineValue}>{fmt(item.submitted_at)}</Text></View>
+     <View style={s.timelineRow}><Text style={s.timelineKey}>Last update</Text><Text style={s.timelineValue}>{fmt(item.updated_at)}</Text></View></>}
    </View>
 
    <View style={s.section}>

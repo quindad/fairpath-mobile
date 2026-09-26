@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase';
-import { formatDateInput } from '@/core/forms/formatters';
 import { currentUser } from '@/core/supabase/current-user';
 
 export type Job = {
@@ -12,18 +11,60 @@ export type Job = {
 
 const JOB_COLUMNS='id,title,company_name,description,location_text,city,state,postal_code,workplace_type,employment_type,pay_min,pay_max,pay_period,benefits,skills,requirements,background_policy_summary,eligibility_rules,application_method,external_apply_url,company_website_url,source_label,source_url,featured,created_at,status,published_at,expires_at,closed_at,latitude,longitude,location_precision,easy_apply_enabled,application_questions';
 
-type JobFilters={remote?:boolean;fullTime?:boolean;partTime?:boolean;secondChance?:boolean};
-export async function loadJobs(search='',location='',filters:JobFilters={}){
- let q=supabase.from('jobs').select(JOB_COLUMNS).eq('status','published').gt('expires_at',new Date().toISOString()).order('featured',{ascending:false}).order('created_at',{ascending:false}).limit(100);
- if(search.trim())q=q.or(`title.ilike.%${search.trim()}%,company_name.ilike.%${search.trim()}%,description.ilike.%${search.trim()}%`);
- if(location.trim())q=q.or(`location_text.ilike.%${location.trim()}%,city.ilike.%${location.trim()}%,state.ilike.%${location.trim()}%`);
- if(filters.remote)q=q.eq('workplace_type','remote');
- if(filters.fullTime)q=q.eq('employment_type','full_time');
- if(filters.partTime)q=q.eq('employment_type','part_time');
- const {data,error}=await q;if(error)throw error;
- let rows=(data??[]) as Job[];
- if(filters.secondChance)rows=rows.filter(j=>j.eligibility_rules?.second_chance_evidence==='explicit');
- return rows;
+export type JobSearchParams={
+ query?:string;
+ zip?:string|null;
+ radiusMiles?:number;
+ location?:string;
+ remote?:boolean;
+ employmentType?:'full_time'|'part_time'|null;
+ secondChance?:boolean;
+ limit?:number;
+ offset?:number;
+};
+export type JobSearchResult={jobs:(Job&{distance_miles:number|null})[];total:number;secondChanceCount:number;hasMore:boolean};
+export const JOB_PAGE_SIZE=20;
+export function isZip(value:string){return /^d{5}$/.test(value.trim())}
+/** Server-side search (public.search_jobs): ZIP/radius, text, type and second-chance filters with pagination. */
+export async function searchJobs(p:JobSearchParams={}):Promise<JobSearchResult>{
+ const limit=p.limit??JOB_PAGE_SIZE;
+ const offset=p.offset??0;
+ const {data,error}=await supabase.rpc('search_jobs',{
+  p_query:p.query?.trim()||null,
+  p_zip:p.zip||null,
+  p_radius_miles:p.radiusMiles??25,
+  p_location:p.zip?null:(p.location?.trim()||null),
+  p_remote:Boolean(p.remote),
+  p_employment_type:p.employmentType??null,
+  p_second_chance:Boolean(p.secondChance),
+  p_limit:limit,
+  p_offset:offset
+ });
+ if(error)throw error;
+ const rows=(data??[]) as {job:Job;distance_miles:number|null;total_count:number|string;second_chance_count:number|string}[];
+ const total=rows.length?Number(rows[0].total_count):0;
+ const secondChanceCount=rows.length?Number(rows[0].second_chance_count):0;
+ const listed=p.secondChance?secondChanceCount:total;
+ return {
+  jobs:rows.map(r=>({...r.job,distance_miles:r.distance_miles})),
+  total,
+  secondChanceCount,
+  hasMore:offset+rows.length<listed
+ };
+}
+/** Whether a ZIP can be placed on the map (postal_codes, or listings in that ZIP/prefix). */
+export async function resolveZipCenter(zip:string):Promise<{latitude:number;longitude:number}|null>{
+ if(!isZip(zip))return null;
+ const {data,error}=await supabase.rpc('resolve_postal_center',{p_zip:zip.trim()});
+ if(error)throw error;
+ const row=(data??[])[0] as {latitude:number;longitude:number}|undefined;
+ return row?{latitude:row.latitude,longitude:row.longitude}:null;
+}
+/** Small unpaginated list (Home featured jobs). */
+export async function loadJobs(search='',location='',filters:{remote?:boolean;fullTime?:boolean;partTime?:boolean;secondChance?:boolean}={}){
+ const zip=isZip(location)?location.trim():null;
+ const r=await searchJobs({query:search,zip,location:zip?'':location,remote:filters.remote,employmentType:filters.fullTime?'full_time':filters.partTime?'part_time':null,secondChance:filters.secondChance,limit:20});
+ return r.jobs as Job[];
 }
 export async function loadJob(id:string){
  const {data,error}=await supabase.from('jobs').select(JOB_COLUMNS).eq('id',id).single();
@@ -59,18 +100,18 @@ export async function loadSavedJobs():Promise<Job[]>{
  return (data??[]).map((row:any)=>row.job).filter(Boolean) as Job[];
 }
 
-export type JobApplicationAutofill={first_name:string;last_name:string;email:string;phone:string;address:string;date_of_birth:string;education:string;skills:string;certifications:string;desired_roles:string;resume_ready:string};
+export type JobApplicationAutofill={first_name:string;last_name:string;email:string;phone:string;education:string;skills:string;certifications:string;desired_roles:string;resume_ready:string};
 export async function loadJobApplicationAutofill():Promise<JobApplicationAutofill>{
  const user=await currentUser();
  const [{data:profile,error:profileError},{data:rows,error:answersError}]=await Promise.all([
-  supabase.from('profiles').select('first_name,last_name').eq('id',user.id).single(),
+  supabase.from('profiles').select('first_name,last_name,phone').eq('id',user.id).single(),
   supabase.from('profile_answers').select('question_id,answer').eq('user_id',user.id)
  ]);
  if(profileError||answersError)throw profileError??answersError;
  const answers:Record<string,unknown>={};
  for(const row of rows??[])answers[row.question_id]=row.answer;
  const text=(id:string)=>{const v=answers[id];return Array.isArray(v)?v.join(', '):v==null?'':String(v)};
- return {first_name:profile?.first_name??'',last_name:profile?.last_name??'',email:user.email??'',phone:text('identity.phone'),address:text('identity.address')||text('identity.current_location'),date_of_birth:formatDateInput(text('identity.date_of_birth')),education:text('employment.education_level'),skills:text('employment.skills'),certifications:text('employment.licenses_certifications'),desired_roles:text('employment.desired_roles'),resume_ready:answers['documents.resume']===true?'Yes':answers['documents.resume']===false?'No':''};
+ return {first_name:profile?.first_name??'',last_name:profile?.last_name??'',email:user.email??'',phone:text('identity.phone')||(profile?.phone??''),education:text('employment.education_level'),skills:text('employment.skills'),certifications:text('employment.licenses_certifications'),desired_roles:text('employment.desired_roles'),resume_ready:answers['documents.resume']===true?'Yes':answers['documents.resume']===false?'No':''};
 }
 export async function saveJobApplicationProfile(form:JobApplicationAutofill){
  const user=await currentUser();
@@ -79,8 +120,6 @@ export async function saveJobApplicationProfile(form:JobApplicationAutofill){
  const list=(value:string)=>value.split(',').map(x=>x.trim()).filter(Boolean);
  const rows=[
   ['identity.phone',form.phone.trim()],
-  ['identity.address',form.address.trim()],
-  ['identity.date_of_birth',form.date_of_birth.trim()],
   ['employment.education_level',form.education.trim()],
   ['employment.skills',list(form.skills)],
   ['employment.licenses_certifications',list(form.certifications)],
@@ -93,23 +132,11 @@ export async function saveJobApplicationProfile(form:JobApplicationAutofill){
   if(error)throw error;
  }
 }
-export async function submitJobApplication(jobId:string,answers:Record<string,unknown>={}){
- const user=await currentUser();
- const now=new Date().toISOString();
- const {error}=await supabase
-  .from('job_applications')
-  .insert({user_id:user.id,job_id:jobId,status:'submitted',answers,submitted_at:now,updated_at:now});
- if(error){
-  if(error.code==='23505')throw new Error('ALREADY_APPLIED');
-  throw error;
- }
- const {data:created}=await supabase
-  .from('job_applications')
-  .select('id')
-  .eq('user_id',user.id)
-  .eq('job_id',jobId)
-  .maybeSingle();
- return (created?.id as string|undefined)??null;
+/** Creates the application through public.submit_job_application (validated server-side, whitelisted fields only). */
+export async function submitJobApplication(jobId:string,answers:{profile:Partial<JobApplicationAutofill>;employer_questions:Record<string,string>}){
+ const {data,error}=await supabase.rpc('submit_job_application',{p_job_id:jobId,p_answers:answers});
+ if(error)throw new Error(error.message.includes('ALREADY_APPLIED')?'ALREADY_APPLIED':error.message.includes('SIGNED_OUT')?'SIGNED_OUT':error.message);
+ return data as string;
 }
 export type JobApplicationStatus='started'|'submitted'|'viewed'|'interview'|'offer'|'hired'|'withdrawn'|'rejected';
 export type MyJobApplication={
@@ -162,11 +189,16 @@ export async function loadMyJobApplicationDetail(applicationId:string):Promise<M
  return data as unknown as MyJobApplicationDetail;
 }
 export async function withdrawMyJobApplication(applicationId:string){
- const user=await currentUser();
- const {error}=await supabase
-  .from('job_applications')
-  .update({status:'withdrawn',updated_at:new Date().toISOString()})
-  .eq('id',applicationId)
-  .eq('user_id',user.id);
+ const {error}=await supabase.rpc('withdraw_job_application',{p_application_id:applicationId});
  if(error)throw error;
+}
+export type JobApplicationEvent={id:string;event_type:'submitted'|'status_changed'|'withdrawn';from_status:JobApplicationStatus|null;to_status:JobApplicationStatus;actor_type:'applicant'|'employer'|'system';created_at:string};
+export async function loadJobApplicationEvents(applicationId:string):Promise<JobApplicationEvent[]>{
+ const {data,error}=await supabase
+  .from('job_application_events')
+  .select('id,event_type,from_status,to_status,actor_type,created_at')
+  .eq('application_id',applicationId)
+  .order('created_at',{ascending:true});
+ if(error)throw error;
+ return (data??[]) as JobApplicationEvent[];
 }

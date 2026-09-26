@@ -1,70 +1,116 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, SharpChip, InlineBadge } from '@/components/ProductChrome';
 import { JobMap } from '@/components/JobMap';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
-import { loadJobs, loadSavedJobIds, saveJob, unsaveJob, type Job } from '@/core/opportunities/opportunity-service';
-import { loadProfileAnswers } from '@/core/profile/profile-service';
+import { isZip, JOB_PAGE_SIZE, loadSavedJobIds, resolveZipCenter, saveJob, searchJobs, unsaveJob, type Job } from '@/core/opportunities/opportunity-service';
+import { loadLocationSettings } from '@/core/profile/location-service';
 import { supabase } from '@/lib/supabase';
 
 type Lane='all'|'second';
+type JobRow=Job&{distance_miles?:number|null};
+const RADIUS_CHOICES=[10,25,50,100];
 
 export default function FindJobs(){
  const params=useLocalSearchParams<{search?:string}>();
  const initialSearch=typeof params.search==='string'?params.search:'';
  const [query,setQuery]=useState(initialSearch);
  const [location,setLocation]=useState('');
- const [jobs,setJobs]=useState<Job[]>([]);
+ const [radius,setRadius]=useState(25);
+ const [jobs,setJobs]=useState<JobRow[]>([]);
+ const [total,setTotal]=useState(0);
+ const [secondCount,setSecondCount]=useState(0);
+ const [hasMore,setHasMore]=useState(false);
  const [lane,setLane]=useState<Lane>('all');
  const [remote,setRemote]=useState(false);
  const [fullTime,setFullTime]=useState(false);
  const [partTime,setPartTime]=useState(false);
+ const [locationReady,setLocationReady]=useState(false);
  const [loading,setLoading]=useState(true);
+ const [loadingMore,setLoadingMore]=useState(false);
  const [error,setError]=useState('');
+ const [zipUnplaced,setZipUnplaced]=useState(false);
  const [viewMode,setViewMode]=useState<'list'|'map'>('list');
  const [savedJobs,setSavedJobs]=useState<Record<string,boolean>>({});
+ const requestId=useRef(0);
+ const zip=isZip(location)?location.trim():null;
 
- async function run(next={remote,fullTime,partTime,lane}){
+ function criteria(offset:number){
+  return {
+   query,
+   zip,
+   radiusMiles:radius,
+   location,
+   remote,
+   employmentType:fullTime?'full_time' as const:partTime?'part_time' as const:null,
+   secondChance:lane==='second',
+   limit:JOB_PAGE_SIZE,
+   offset
+  };
+ }
+
+ async function run(){
+  const mine=++requestId.current;
   setLoading(true);
   setError('');
   try{
-   setJobs(await loadJobs(query,location,{
-    remote:next.remote,
-    fullTime:next.fullTime,
-    partTime:next.partTime,
-    secondChance:next.lane==='second'
-   }));
+   const r=await searchJobs(criteria(0));
+   if(mine!==requestId.current)return;
+   setJobs(r.jobs);setTotal(r.total);setSecondCount(r.secondChanceCount);setHasMore(r.hasMore);
   }catch{
+   if(mine!==requestId.current)return;
    setError('Jobs could not load. Check your connection and try again.');
   }finally{
-   setLoading(false);
+   if(mine===requestId.current)setLoading(false);
   }
  }
 
+ async function loadMore(){
+  if(loading||loadingMore||!hasMore)return;
+  const mine=requestId.current;
+  setLoadingMore(true);
+  try{
+   const r=await searchJobs(criteria(jobs.length));
+   if(mine!==requestId.current)return;
+   setJobs(prev=>{const seen=new Set(prev.map(j=>j.id));return [...prev,...r.jobs.filter(j=>!seen.has(j.id))]});
+   setHasMore(r.hasMore);
+  }catch{
+   if(mine===requestId.current)setError('More jobs could not load. Pull to retry by searching again.');
+  }finally{
+   setLoadingMore(false);
+  }
+ }
+
+ // Default the WHERE field and radius from the member's saved location (guests skip this).
  useEffect(()=>{
   let active=true;
-  loadProfileAnswers()
-   .then(a=>{
+  loadLocationSettings()
+   .then(s=>{
     if(!active)return;
-    const v=a['identity.current_location'];
-    if(typeof v==='string')setLocation(v);
+    if(s.zip_code)setLocation(s.zip_code);
+    setRadius(s.search_radius_miles);
    })
-   .finally(()=>{
-    if(active){
-     loadJobs(initialSearch)
-      .then(setJobs)
-      .catch(()=>setError('Jobs could not load.'))
-      .finally(()=>setLoading(false));
-     loadSavedJobIds()
-      .then(ids=>{if(active)setSavedJobs(Object.fromEntries(ids.map(id=>[id,true])))})
-      .catch(()=>{});
-    }
-   });
+   .catch(()=>{})
+   .finally(()=>{if(active)setLocationReady(true)});
   return()=>{active=false};
- },[initialSearch]);
+ },[]);
+
+ // Chips, lanes and radius re-run the search immediately; typed text runs on SEARCH.
+ useEffect(()=>{
+  if(!locationReady)return;
+  void run();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[locationReady,lane,remote,fullTime,partTime,radius]);
+
+ useEffect(()=>{
+  let active=true;
+  setZipUnplaced(false);
+  if(zip)resolveZipCenter(zip).then(c=>{if(active)setZipUnplaced(!c)}).catch(()=>{});
+  return()=>{active=false};
+ },[zip]);
 
  useFocusEffect(useCallback(()=>{
   let active=true;
@@ -74,10 +120,8 @@ export default function FindJobs(){
   return()=>{active=false};
  },[]));
 
- const counts=useMemo(()=>({
-  all:jobs.length,
-  second:jobs.filter(j=>j.eligibility_rules?.second_chance_evidence==='explicit').length
- }),[jobs]);
+ const counts={all:total,second:secondCount};
+ const shownCount=lane==='second'?secondCount:total;
 
  function openJob(j:Job){
   router.push(('/job/'+j.id) as never);
@@ -114,26 +158,56 @@ export default function FindJobs(){
   }
  }
 
- function chooseLane(next:Lane){
-  setLane(next);
-  void run({remote,fullTime,partTime,lane:next});
- }
- function chooseRemote(){
-  const next=!remote;
-  setRemote(next);
-  void run({remote:next,fullTime,partTime,lane});
- }
- function chooseFull(){
-  const next=!fullTime;
-  setFullTime(next);
-  setPartTime(false);
-  void run({remote,fullTime:next,partTime:false,lane});
- }
- function choosePart(){
-  const next=!partTime;
-  setPartTime(next);
-  setFullTime(false);
-  void run({remote,fullTime:false,partTime:next,lane});
+ function chooseLane(next:Lane){setLane(next)}
+ function chooseRemote(){setRemote(!remote)}
+ function chooseFull(){setFullTime(!fullTime);setPartTime(false)}
+ function choosePart(){setPartTime(!partTime);setFullTime(false)}
+
+ function renderJob(j:JobRow){
+  const saved=Boolean(savedJobs[j.id]);
+  return <Pressable key={j.id} style={s.card} onPress={()=>openJob(j)}>
+    <View style={s.cardTop}>
+     <View style={s.companyMark}><Text style={s.companyMarkText}>{j.company_name.slice(0,1).toUpperCase()}</Text></View>
+     <View style={s.cardTopCopy}>
+      <Text style={s.jobTitle}>{j.title}</Text>
+      <Text style={s.company}>{j.company_name}</Text>
+     </View>
+     <Pressable accessibilityRole="button" accessibilityLabel={saved?'Remove saved job':'Save job'} style={[s.saveBtn,saved&&s.saveBtnActive]} onPress={(e)=>{e.stopPropagation?.();void handleSave(j.id)}}>
+      <Lucide name={saved?'bookmark-check':'bookmark'} color={saved?C.black:C.mutedStrong} size={15}/>
+     </Pressable>
+    </View>
+
+    <View style={s.metaRow}>
+     <Lucide name="map-pin" color={C.muted} size={13}/>
+     <Text style={s.meta}>{j.location_text||[j.city,j.state].filter(Boolean).join(', ')||'Location not listed'}</Text>
+     <View style={s.metaDot}/>
+     <Text style={s.meta}>{j.workplace_type.replace('_',' ')}</Text>
+     {j.distance_miles!=null?<><View style={s.metaDot}/><Text style={s.meta}>{j.distance_miles<10?j.distance_miles.toFixed(1):Math.round(j.distance_miles)} mi</Text></>:null}
+    </View>
+
+    {j.pay_min!=null?<Text style={s.pay}>
+     {'$'+Number(j.pay_min).toLocaleString()+(j.pay_max?' – $'+Number(j.pay_max).toLocaleString():'')+' / '+(j.pay_period||'period')}
+    </Text>:null}
+
+    <View style={s.badgeRow}>
+     <InlineBadge tone={j.eligibility_rules?.second_chance_evidence==='explicit'?'lime':'default'}>{matchLabel(j)}</InlineBadge>
+     {j.easy_apply_enabled?<InlineBadge tone="lime">EASY APPLY</InlineBadge>:null}
+     <InlineBadge>{j.employment_type.replace('_',' ').toUpperCase()}</InlineBadge>
+    </View>
+
+    <Text style={s.desc} numberOfLines={2}>{j.description}</Text>
+
+    <View style={s.cardFooter}>
+     <View>
+      <Text style={s.sourceLabel}>SOURCE</Text>
+      <Text style={s.source}>{j.source_label||'FairPath'}</Text>
+     </View>
+     <View style={s.viewAction}>
+      <Text style={s.viewText}>VIEW JOB</Text>
+      <Lucide name="arrow-right" color={C.lime} size={14}/>
+     </View>
+    </View>
+   </Pressable>;
  }
 
  return <ScreenFrame>
@@ -156,13 +230,19 @@ export default function FindJobs(){
     <View style={s.fieldIcon}><Lucide name="map-pin" color={C.lime} size={15}/></View>
     <View style={s.fieldCopy}>
      <Text style={s.fieldLabel}>WHERE</Text>
-     <TextInput value={location} onChangeText={setLocation} style={s.input} placeholder="City, state or ZIP" placeholderTextColor={C.muted}/>
+     <TextInput value={location} onChangeText={setLocation} style={s.input} placeholder="ZIP, city or state" placeholderTextColor={C.muted}/>
     </View>
     <Pressable accessibilityRole="button" accessibilityLabel="Show jobs on map" style={s.mapBtn} onPress={()=>setViewMode('map')}>
      <Lucide name="map" color={C.lime} size={15}/>
      <Text style={s.mapBtnText}>MAP</Text>
     </Pressable>
    </View>
+
+   {zip?<View style={s.radiusRow}>
+    <Text style={s.radiusLabel}>WITHIN</Text>
+    {RADIUS_CHOICES.map(r=><View key={r} style={s.radiusCell}><SharpChip label={r+' mi'} active={radius===r} onPress={()=>setRadius(r)}/></View>)}
+   </View>:null}
+   {zip&&zipUnplaced?<Text style={s.zipNote}>We can't place ZIP {zip} on the map yet, so you'll see jobs in that exact ZIP plus remote work.</Text>:null}
 
    <Pressable style={s.primary} onPress={()=>void run()}>
     <Text style={s.primaryText}>SEARCH JOBS</Text>
@@ -192,73 +272,41 @@ export default function FindJobs(){
    <View style={s.filterCell}><SharpChip label="Part-time" active={partTime} onPress={choosePart}/></View>
   </View>
 
-  <ScrollView contentContainerStyle={s.list} showsVerticalScrollIndicator={false}>
-   <View style={s.resultsTop}>
-    <Text style={s.results}>{loading?'SEARCHING':String(jobs.length)+' RESULTS'}</Text>
-    <View style={s.viewToggle}>
-     <Pressable style={[s.viewButton,viewMode==='list'&&s.viewButtonActive]} onPress={()=>setViewMode('list')}>
-      <Lucide name="list" color={viewMode==='list'?C.lime:C.mutedStrong} size={13}/>
-      <Text style={[s.viewButtonText,viewMode==='list'&&s.viewButtonTextActive]}>LIST</Text>
-     </Pressable>
-     <Pressable style={[s.viewButton,viewMode==='map'&&s.viewButtonActive]} onPress={()=>setViewMode('map')}>
-      <Lucide name="map" color={viewMode==='map'?C.lime:C.mutedStrong} size={13}/>
-      <Text style={[s.viewButtonText,viewMode==='map'&&s.viewButtonTextActive]}>MAP</Text>
-     </Pressable>
-    </View>
-   </View>
-
-   {error?<Text style={s.error}>{error}</Text>:null}
-
-   {!loading&&jobs.length===0?<View style={s.empty}>
-    <Text style={s.emptyTitle}>No jobs match these filters.</Text>
-    <Text style={s.emptyBody}>Try a wider location, remove a filter, or switch back to All Jobs.</Text>
-   </View>:null}
-
-   {!loading&&jobs.length>0&&viewMode==='map'?<JobMap jobs={jobs} onOpenJob={openJob}/>:null}
-
-   {viewMode==='list'?jobs.map(j=>{const saved=Boolean(savedJobs[j.id]);return <Pressable key={j.id} style={s.card} onPress={()=>openJob(j)}>
-    <View style={s.cardTop}>
-     <View style={s.companyMark}><Text style={s.companyMarkText}>{j.company_name.slice(0,1).toUpperCase()}</Text></View>
-     <View style={s.cardTopCopy}>
-      <Text style={s.jobTitle}>{j.title}</Text>
-      <Text style={s.company}>{j.company_name}</Text>
-     </View>
-     <Pressable accessibilityRole="button" accessibilityLabel={saved?'Remove saved job':'Save job'} style={[s.saveBtn,saved&&s.saveBtnActive]} onPress={(e)=>{e.stopPropagation?.();void handleSave(j.id)}}>
-      <Lucide name={saved?'bookmark-check':'bookmark'} color={saved?C.black:C.mutedStrong} size={15}/>
-     </Pressable>
-    </View>
-
-    <View style={s.metaRow}>
-     <Lucide name="map-pin" color={C.muted} size={13}/>
-     <Text style={s.meta}>{j.location_text||[j.city,j.state].filter(Boolean).join(', ')||'Location not listed'}</Text>
-     <View style={s.metaDot}/>
-     <Text style={s.meta}>{j.workplace_type.replace('_',' ')}</Text>
-    </View>
-
-    {j.pay_min!=null?<Text style={s.pay}>
-     {'$'+Number(j.pay_min).toLocaleString()+(j.pay_max?' – $'+Number(j.pay_max).toLocaleString():'')+' / '+(j.pay_period||'period')}
-    </Text>:null}
-
-    <View style={s.badgeRow}>
-     <InlineBadge tone={j.eligibility_rules?.second_chance_evidence==='explicit'?'lime':'default'}>{matchLabel(j)}</InlineBadge>
-     {j.easy_apply_enabled?<InlineBadge tone="lime">EASY APPLY</InlineBadge>:null}
-     <InlineBadge>{j.employment_type.replace('_',' ').toUpperCase()}</InlineBadge>
-    </View>
-
-    <Text style={s.desc} numberOfLines={2}>{j.description}</Text>
-
-    <View style={s.cardFooter}>
-     <View>
-      <Text style={s.sourceLabel}>SOURCE</Text>
-      <Text style={s.source}>{j.source_label||'FairPath'}</Text>
-     </View>
-     <View style={s.viewAction}>
-      <Text style={s.viewText}>VIEW JOB</Text>
-      <Lucide name="arrow-right" color={C.lime} size={14}/>
+  <FlatList
+   data={viewMode==='list'?jobs:[]}
+   keyExtractor={j=>j.id}
+   renderItem={({item})=>renderJob(item)}
+   contentContainerStyle={s.list}
+   showsVerticalScrollIndicator={false}
+   onEndReached={()=>{if(viewMode==='list')void loadMore()}}
+   onEndReachedThreshold={0.6}
+   ListHeaderComponent={<View>
+    <View style={s.resultsTop}>
+     <Text style={s.results}>{loading?'SEARCHING':String(shownCount)+(shownCount===1?' RESULT':' RESULTS')+(zip?' · WITHIN '+radius+' MI':'')}</Text>
+     <View style={s.viewToggle}>
+      <Pressable style={[s.viewButton,viewMode==='list'&&s.viewButtonActive]} onPress={()=>setViewMode('list')}>
+       <Lucide name="list" color={viewMode==='list'?C.lime:C.mutedStrong} size={13}/>
+       <Text style={[s.viewButtonText,viewMode==='list'&&s.viewButtonTextActive]}>LIST</Text>
+      </Pressable>
+      <Pressable style={[s.viewButton,viewMode==='map'&&s.viewButtonActive]} onPress={()=>setViewMode('map')}>
+       <Lucide name="map" color={viewMode==='map'?C.lime:C.mutedStrong} size={13}/>
+       <Text style={[s.viewButtonText,viewMode==='map'&&s.viewButtonTextActive]}>MAP</Text>
+      </Pressable>
      </View>
     </View>
-   </Pressable>}):null}
-  </ScrollView>
+    {error?<Text style={s.error}>{error}</Text>:null}
+    {!loading&&jobs.length===0&&!error?<View style={s.empty}>
+     <Text style={s.emptyTitle}>No jobs match these filters.</Text>
+     <Text style={s.emptyBody}>{zip?'Try a larger radius, remove a filter, or switch back to All Jobs.':'Try a wider location, remove a filter, or switch back to All Jobs.'}</Text>
+    </View>:null}
+    {!loading&&jobs.length>0&&viewMode==='map'?<JobMap jobs={jobs} onOpenJob={openJob}/>:null}
+   </View>}
+   ListFooterComponent={<View style={s.footer}>
+    {loadingMore?<Text style={s.footerText}>LOADING MORE JOBS…</Text>:null}
+    {!loadingMore&&hasMore&&!loading?<Pressable style={s.moreBtn} onPress={()=>void loadMore()}><Text style={s.moreText}>{viewMode==='map'?'LOAD MORE JOBS ON MAP':'LOAD MORE JOBS'}</Text></Pressable>:null}
+    {!loading&&!hasMore&&jobs.length>0?<Text style={s.footerText}>END OF RESULTS</Text>:null}
+   </View>}
+  />
  </ScreenFrame>;
 }
 
@@ -316,5 +364,9 @@ const s=StyleSheet.create({
  empty:{borderTopWidth:1,borderTopColor:C.border,paddingVertical:28},
  emptyTitle:{color:C.white,fontFamily:F.extraBold,fontSize:18},
  emptyBody:{color:C.muted,fontSize:13,lineHeight:20,marginTop:7},
- error:{color:C.danger,fontSize:12,paddingVertical:12}
+ error:{color:C.danger,fontSize:12,paddingVertical:12},
+ radiusRow:{flexDirection:'row',alignItems:'center',gap:7,marginBottom:10},radiusLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:1.2,width:46},radiusCell:{flex:1},
+ zipNote:{color:C.muted,fontSize:10,lineHeight:15,marginBottom:10},
+ footer:{paddingTop:18,alignItems:'stretch'},footerText:{color:C.muted,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.1,textAlign:'center',paddingVertical:10},
+ moreBtn:{height:42,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center',backgroundColor:'#0A0C0A'},moreText:{color:C.lime,fontFamily:F.extraBold,fontSize:9,letterSpacing:1}
 });

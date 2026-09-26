@@ -6,7 +6,6 @@ import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome
 import { JobMap } from '@/components/JobMap';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { isJobSaved, loadJob, loadMyJobApplicationForJob, saveJob, unsaveJob, type Job, type JobApplicationStatus } from '@/core/opportunities/opportunity-service';
-import { loadFairPathReadiness } from '@/core/profile/profile-service';
 import { supabase } from '@/lib/supabase';
 
 export default function JobDetail(){
@@ -14,14 +13,12 @@ export default function JobDetail(){
  const [job,setJob]=useState<Job|null>(null);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
- const [readiness,setReadiness]=useState<number|null>(null);
  const [applicationStatus,setApplicationStatus]=useState<JobApplicationStatus|null>(null);
  const [applicationId,setApplicationId]=useState<string|null>(null);
  const [saved,setSaved]=useState(false);
 
  useEffect(()=>{
   if(!id)return;
-  loadFairPathReadiness().then(({readiness})=>setReadiness(readiness.overallPercentage)).catch(()=>setReadiness(0));
   loadMyJobApplicationForJob(id).then(x=>{setApplicationStatus(x?.status??null);setApplicationId(x?.id??null)}).catch(()=>{setApplicationStatus(null);setApplicationId(null)});
   isJobSaved(id).then(setSaved).catch(()=>setSaved(false));
   loadJob(id).then(setJob).catch(()=>setError('This job could not be loaded.')).finally(()=>setLoading(false));
@@ -67,10 +64,6 @@ export default function JobDetail(){
   }
   if(job.application_method==='external'&&job.external_apply_url){
    try{await Linking.openURL(job.external_apply_url)}catch{notify('Link unavailable','We could not open this application link.')}
-   return;
-  }
-  if(job.easy_apply_enabled&&readiness!==100){
-   router.push(('/complete-profile?returnTo='+encodeURIComponent('/job/'+job.id)) as never);
    return;
   }
   router.push(('/job-apply/'+job.id) as never);
@@ -132,7 +125,7 @@ export default function JobDetail(){
 
   <View style={s.bottom}>
    <Pressable style={[s.apply,(inactive||applied)&&s.applyDisabled]} onPress={apply}>
-    <Text style={[s.applyText,(inactive||applied)&&s.applyTextDisabled]}>{applied?'VIEW APPLICATION':inactive?(job.status==='filled'?'POSITION FILLED':expiredByTime||job.status==='expired'?'JOB EXPIRED':'JOB CLOSED'):job.application_method==='external'?'CONTINUE TO APPLY':job.easy_apply_enabled&&readiness!==100?'COMPLETE PROFILE TO UNLOCK':job.easy_apply_enabled?'EASY APPLY WITH FAIRPATH':'APPLY WITH FAIRPATH'}</Text>
+    <Text style={[s.applyText,(inactive||applied)&&s.applyTextDisabled]}>{applied?'VIEW APPLICATION':inactive?(job.status==='filled'?'POSITION FILLED':expiredByTime||job.status==='expired'?'JOB EXPIRED':'JOB CLOSED'):job.application_method==='external'?'CONTINUE TO APPLY':job.easy_apply_enabled?'EASY APPLY WITH FAIRPATH':'APPLY WITH FAIRPATH'}</Text>
     <Text style={[s.applyText,(inactive||applied)&&s.applyTextDisabled]}>{applied?'→':inactive?'—':'→'}</Text>
    </Pressable>
   </View>
