@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { FormScrollView } from '@/components/FormScrollView';
 import { FairBackButton } from '@/components/ProductChrome';
+import { SocialAuthButtons } from '@/components/SocialAuthButtons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { supabase } from '../lib/supabase';
@@ -122,6 +123,8 @@ export default function SignInScreen() {
               <Text style={styles.arrow}>{loading ? '•' : '→'}</Text>
             </Pressable>
           </View>
+
+          <SocialAuthButtons returnTo={returnTo} />
 
           <View style={styles.signupRow}>
             <Text style={styles.signupMuted}>New to FairPath?</Text>

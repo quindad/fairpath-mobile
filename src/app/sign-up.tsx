@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { FormScrollView } from '@/components/FormScrollView';
 import { FairBackButton } from '@/components/ProductChrome';
+import { SocialAuthButtons } from '@/components/SocialAuthButtons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { supabase } from '../lib/supabase';
@@ -194,6 +195,19 @@ export default function SignUpScreen() {
               <Text style={styles.arrow}>{loading ? '•' : '→'}</Text>
             </Pressable>
           </View>
+
+          <SocialAuthButtons
+            returnTo={returnTo}
+            beforeStart={() => {
+              if (!agreedToTerms) { setErrorMessage('Please agree to the Terms and Privacy Policy first.'); return false; }
+              setErrorMessage('');
+              return true;
+            }}
+            onSignedIn={async (r) => {
+              if (!r.needsConsent) return;
+              try { await recordSignUpConsent(); return { needsConsent: false }; } catch { return; }
+            }}
+          />
 
           <View style={styles.loginRow}>
             <Text style={styles.loginMuted}>Already have an account?</Text>
