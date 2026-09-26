@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { FairPathColors as C, FairPathFonts as F } from '@/constants/fairpath';
 import type { Job } from '@/core/opportunities/opportunity-service';
 
-export function JobMap({jobs,onOpenJob,compact=false}:{jobs:Job[];onOpenJob?:(job:Job)=>void;compact?:boolean}){
+export function JobMap({jobs,onOpenJob,compact=false}:{jobs:Job[];onOpenJob?:(job:Job)=>void;compact?:boolean;fill?:boolean}){
  const located=jobs.filter(j=>j.latitude!=null&&j.longitude!=null);
  return <View style={[s.wrap,compact&&s.compact]}>
   <View style={s.head}><Text style={s.label}>LOCATION VIEW</Text><Text style={s.count}>{located.length} LOCATED</Text></View>

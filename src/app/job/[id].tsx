@@ -133,7 +133,7 @@ export default function JobDetail(){
 }
 
 const s=StyleSheet.create({
- content:{paddingHorizontal:L.mobileGutter,paddingTop:20,paddingBottom:110},
+ content:{paddingHorizontal:L.mobileGutter,paddingTop:20,paddingBottom:28},
  state:{padding:L.mobileGutter},stateText:{color:C.muted},error:{color:C.danger},
  save:{height:32,borderWidth:1,borderColor:C.borderStrong,paddingHorizontal:10,justifyContent:'center'},saveActive:{backgroundColor:C.lime,borderColor:C.lime},saveText:{color:C.white,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8},saveTextActive:{color:C.black},
  company:{color:C.lime,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.2},
@@ -150,7 +150,7 @@ const s=StyleSheet.create({
  sectionLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.1,marginBottom:8},
  body:{color:C.mutedStrong,fontSize:13,lineHeight:20},line:{color:C.mutedStrong,fontSize:13,lineHeight:21},
  source:{paddingVertical:16},sourceLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:8,letterSpacing:1},sourceText:{color:C.mutedStrong,fontSize:11,marginTop:4},
- bottom:{position:'absolute',left:0,right:0,bottom:0,paddingHorizontal:L.mobileGutter,paddingTop:10,paddingBottom:14,backgroundColor:C.black,borderTopWidth:1,borderTopColor:C.border},
+ bottom:{paddingHorizontal:L.mobileGutter,paddingTop:10,paddingBottom:14,backgroundColor:C.black,borderTopWidth:1,borderTopColor:C.border},
  apply:{height:48,backgroundColor:C.lime,paddingHorizontal:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},applyDisabled:{backgroundColor:'#1A2114',borderWidth:1,borderColor:'#2C3823'},
  applyText:{color:C.black,fontFamily:F.extraBold,fontSize:10,letterSpacing:.8},applyTextDisabled:{color:C.mutedStrong}
 });

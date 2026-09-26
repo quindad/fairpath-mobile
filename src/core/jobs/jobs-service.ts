@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { currentUser } from '@/core/supabase/current-user';
+import { isZip } from '@/core/jobs/location-utils';
 
 export type Job = {
  id:string; title:string; company_name:string; description:string; location_text:string|null; city:string|null; state:string|null; postal_code:string|null;
@@ -24,7 +25,7 @@ export type JobSearchParams={
 };
 export type JobSearchResult={jobs:(Job&{distance_miles:number|null})[];total:number;secondChanceCount:number;hasMore:boolean};
 export const JOB_PAGE_SIZE=20;
-export function isZip(value:string){return /^d{5}$/.test(value.trim())}
+export { isZip, normalizePlace } from '@/core/jobs/location-utils';
 /** Server-side search (public.search_jobs): ZIP/radius, text, type and second-chance filters with pagination. */
 export async function searchJobs(p:JobSearchParams={}):Promise<JobSearchResult>{
  const limit=p.limit??JOB_PAGE_SIZE;

@@ -4,11 +4,10 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { notify } from '@/core/ui/notify';
 import { FairPathLogo } from '@/components/FairPathLogo';
 import { Lucide } from '@react-native-vector-icons/lucide';
-import { BottomNav } from '@/components/ProductChrome';
+import { ScreenFrame } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { loadFairPathReadiness } from '@/core/profile/profile-service';
 import { loadJobs, loadSavedJobIds, saveJob, unsaveJob, type Job } from '@/core/opportunities/opportunity-service';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Home(){
  const pathname=usePathname(); const [readiness,setReadiness]=useState<number|null>(null); const [search,setSearch]=useState(''); const [featured,setFeatured]=useState<Job[]>([]); const [jobsState,setJobsState]=useState<'loading'|'ready'|'error'>('loading'); const [reloadKey,setReloadKey]=useState(0); const [savedJobs,setSavedJobs]=useState<Record<string,boolean>>({});
@@ -19,7 +18,7 @@ export default function Home(){
   loadSavedJobIds().then(ids=>{if(active)setSavedJobs(Object.fromEntries(ids.map(id=>[id,true])))}).catch(()=>{});
   return()=>{active=false}
  },[pathname,reloadKey]);
- return <View style={s.screen}><SafeAreaView style={s.safe}>
+ return <ScreenFrame>
   <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <View style={s.top}><View style={s.brand}><FairPathLogo width={112}/></View><Pressable accessibilityRole="button" accessibilityLabel="Notifications" style={s.bell} onPress={()=>router.push('/notifications' as never)}><Lucide name="bell" color={C.white} size={17}/></Pressable></View>
 
@@ -56,11 +55,10 @@ export default function Home(){
     <View style={s.aiFooter}><View style={s.aiRule}/><View style={s.aiAction}><Text style={s.aiActionText}>OPEN FAIRPATH AI</Text><Lucide name="arrow-right" color={C.lime} size={15}/></View></View>
    </Pressable>
   </ScrollView>
-  <BottomNav/>
- </SafeAreaView></View>
+ </ScreenFrame>
 }
 const s=StyleSheet.create({
- screen:{flex:1,backgroundColor:C.black},safe:{flex:1,width:'100%',maxWidth:L.consumerMaxWidth,alignSelf:'center'},content:{paddingHorizontal:L.mobileGutter,paddingTop:8,paddingBottom:88},
+ screen:{flex:1,backgroundColor:C.black},safe:{flex:1,width:'100%',maxWidth:L.consumerMaxWidth,alignSelf:'center'},content:{paddingHorizontal:L.mobileGutter,paddingTop:8,paddingBottom:24},
  top:{height:62,flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginBottom:18},brand:{flexDirection:'row',alignItems:'center'},bell:{width:40,height:40,borderRadius:20,borderWidth:1,borderColor:C.borderStrong,backgroundColor:C.card,alignItems:'center',justifyContent:'center'},
  hero:{paddingBottom:14},eyebrow:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.5,marginBottom:8},title:{color:C.white,fontFamily:F.extraBold,fontSize:36,lineHeight:38,letterSpacing:-1.3,maxWidth:520},titleAccent:{color:C.lime},sub:{color:C.mutedStrong,fontFamily:F.medium,fontSize:12,lineHeight:18,marginTop:9,maxWidth:500},search:{height:50,marginTop:20,borderRadius:25,borderWidth:1,borderColor:C.borderStrong,backgroundColor:C.card,flexDirection:'row',alignItems:'center',gap:9,paddingHorizontal:15},searchInput:{flex:1,color:C.white,fontFamily:F.medium,fontSize:12,paddingVertical:0},clearSearch:{color:C.mutedStrong,fontSize:20,paddingLeft:10},quickPills:{flexDirection:'row',gap:7,marginTop:11,flexWrap:'wrap'},pill:{height:36,borderRadius:18,borderWidth:1,borderColor:C.borderStrong,backgroundColor:C.black,paddingHorizontal:15,alignItems:'center',justifyContent:'center'},pillActive:{backgroundColor:C.lime,borderColor:C.lime},pillText:{color:C.white,fontFamily:F.bold,fontSize:9},pillActiveText:{color:C.black,fontFamily:F.extraBold,fontSize:9},
  readiness:{paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.border},readinessTop:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start'},label:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.2},readinessTitle:{color:C.white,fontFamily:F.extraBold,fontSize:18,marginTop:5},percent:{color:C.white,fontFamily:F.black,fontSize:21},

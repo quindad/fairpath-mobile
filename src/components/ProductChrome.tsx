@@ -1,11 +1,21 @@
 import { router, usePathname } from 'expo-router';
+import { createContext, useContext } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L, FairPathRadius as R } from '@/constants/fairpath';
 
+/** True while a ScreenFrame is already rendering the global nav, so a stray nested <BottomNav/> renders nothing. */
+const NavProvided=createContext(false);
+
+/**
+ * Every screen renders inside ScreenFrame, and ScreenFrame is the ONLY place the
+ * global bottom navigation is mounted. Anything rendered inside it that is
+ * pinned to the bottom must sit in normal flow above the nav (never
+ * position:'absolute' with bottom:0, which lands behind the nav).
+ */
 export function ScreenFrame({children,showNav=true}:{children:React.ReactNode;showNav?:boolean}){
-  return <View style={s.screen}><SafeAreaView style={s.safe}>{children}{showNav?<BottomNav/>:null}</SafeAreaView></View>;
+  return <View style={s.screen}><SafeAreaView style={s.safe}><NavProvided.Provider value={showNav}>{children}</NavProvided.Provider>{showNav?<BottomNavBar/>:null}</SafeAreaView></View>;
 }
 export function safeBack(fallback='/home'){
   if(router.canGoBack())router.back();
@@ -20,10 +30,15 @@ export function SharpChip({label,active,onPress}:{label:string;active?:boolean;o
   return <Pressable onPress={onPress} style={[s.chip,active&&s.chipActive]}><Text style={[s.chipText,active&&s.chipTextActive]}>{label}</Text></Pressable>;
 }
 export function FilterStrip({children}:{children:React.ReactNode}){return <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterStrip}>{children}</ScrollView>}
+/** Guarded public export: renders nothing when a ScreenFrame already provides the nav. */
 export function BottomNav(){
+ const provided=useContext(NavProvided);
+ return provided?null:<BottomNavBar/>;
+}
+function BottomNavBar(){
  const pathname=usePathname();
  const items:[string,string,string][]=[['house','Home','/home'],['search','Find','/find'],['bot','AI','/fairpath-ai'],['store','Market','/marketplace'],['user','Me','/me']];
- return <View style={s.nav}>{items.map(([icon,label,route])=>{const active=pathname===route||(route==='/find'&&(pathname.includes('job')||pathname.includes('housing')))||(route==='/fairpath-ai'&&(pathname.includes('fairpath-ai')||pathname.includes('credit-tools')))||(route==='/marketplace'&&pathname.includes('market'));return <Pressable key={label} style={s.navItem} onPress={()=>router.replace(route as never)}><View style={[s.navIconWrap,active&&s.navIconWrapActive]}><Lucide name={icon as any} color={active?C.lime:C.mutedStrong} size={17}/></View><Text style={[s.navText,active&&s.navActive]}>{label}</Text>{active?<View style={s.navIndicator}/>:null}</Pressable>})}</View>
+ return <View style={s.nav} accessibilityRole="tablist" accessibilityLabel="Primary navigation" testID="primary-nav">{items.map(([icon,label,route])=>{const active=pathname===route||(route==='/find'&&(pathname.includes('job')||pathname.includes('housing')))||(route==='/fairpath-ai'&&(pathname.includes('fairpath-ai')||pathname.includes('credit-tools')))||(route==='/marketplace'&&pathname.includes('market'));return <Pressable key={label} style={s.navItem} onPress={()=>router.replace(route as never)}><View style={[s.navIconWrap,active&&s.navIconWrapActive]}><Lucide name={icon as any} color={active?C.lime:C.mutedStrong} size={17}/></View><Text style={[s.navText,active&&s.navActive]}>{label}</Text>{active?<View style={s.navIndicator}/>:null}</Pressable>})}</View>
 }
 export function Divider(){return <View style={s.divider}/>}
 export function InlineBadge({children,tone='default'}:{children:React.ReactNode;tone?:'default'|'lime'}){

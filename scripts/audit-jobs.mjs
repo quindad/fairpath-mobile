@@ -55,6 +55,38 @@ const apply = read('src/app/job-apply/[id].tsx');
 check(!/date_of_birth|HOME ADDRESS|form\.address/.test(apply), 'Easy Apply must not collect DOB or home address');
 check(/\['first_name','last_name','email','phone'\]/.test(apply), 'Easy Apply must require only name, email and phone (plus employer-required questions)');
 
+// ---- iPhone QA regressions ----
+// ZIP detection was silently broken by a mangled regex: execute the real helper.
+const { isZip, normalizePlace } = await import('../src/core/jobs/location-utils.ts');
+check(isZip('43228') && isZip(' 43228 ') && !isZip('4322') && !isZip('432289') && !isZip('4322a') && !isZip('Columbus'), 'isZip must accept exactly five digits');
+check(normalizePlace('Columbus OH') === 'Columbus, OH' && normalizePlace('columbus, oh') === 'columbus, OH' && normalizePlace('Columbus') === 'Columbus', 'normalizePlace must format "City, ST"');
+check(/export \{ isZip/.test(svc), 'jobs-service must re-export the tested isZip helper');
+
+// WHERE prefill + manual override
+check(/loadLocationSettings\(\)[\s\S]*?setWhere\(next\)/.test(find), 'WHERE must prefill from the saved ZIP');
+check(/whereTouched\.current=true/.test(find) && /if\(!whereTouched\.current\)/.test(find), 'typing in WHERE must never be overwritten by the saved ZIP');
+check(/DEFAULT_SEARCH_RADIUS_MILES/.test(find) && /setRadius\(s\.search_radius_miles\)/.test(find), 'saved radius must prefill, defaulting to 25');
+check(/USE MY SAVED ZIP/.test(find) && /clearWhere/.test(find), 'member must be able to switch away from / back to the saved ZIP');
+check(/RADIUS_CHOICES=\[10,25,50,100\]/.test(find), 'radius choices 10/25/50/100 must be available in the search UI');
+
+// Filters
+check(/<Modal visible=\{filtersOpen\}/.test(find) && /FILTERS/.test(find) && /openFilters/.test(find), 'a FILTERS control must open a full filter modal');
+for (const [needle, label] of [['DISTANCE', 'distance'], ['JOB TYPE', 'job type'], ['Remote only', 'remote'], ['Verified second-chance only', 'second chance']]) {
+  check(find.includes(needle), `filter modal must include ${label}`);
+}
+
+// One map affordance, functional map
+check(!/mapBtn/.test(find) && (find.match(/accessibilityLabel="Map view"/g) || []).length === 1, 'exactly one MAP control (the LIST/MAP toggle) must exist');
+check(/if\(viewMode==='map'\)return/.test(find) && /<JobMap[^>]*fill/.test(find), 'map mode must render a full-height map');
+const nativeMap = read('src/components/JobMap.native.tsx');
+check(/onPress=\{e=>\{e\.stopPropagation/.test(nativeMap) && /JobMapCard/.test(nativeMap) && /fitToCoordinates/.test(nativeMap), 'native map must support pin selection, a job card and fit-to-pins');
+check(/onOpen=\{onOpenJob\}/.test(nativeMap) && /onOpen=\{onOpenJob\}/.test(read('src/components/JobMap.web.tsx')), 'selected pin must be able to open Job Details on native and web');
+check(/setViewMode\('list'\)/.test(find) && !/setJobs\(\[\]\)/.test(find), 'LIST/MAP switching must not reset search results');
+
+// Job details CTA must sit above the global nav
+const detail = read('src/app/job/[id].tsx');
+check(!/position:\s*'absolute'/.test(detail), 'job details CTA must be in normal flow above the global nav, not absolutely positioned');
+
 if (failures.length) {
   console.error('Jobs audit failed:\n- ' + failures.join('\n- '));
   process.exit(1);
