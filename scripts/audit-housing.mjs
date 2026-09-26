@@ -156,7 +156,7 @@ if(!/nonce/.test(findSrc)||/setHomes\(\[\]\)/.test(findSrc))failures.push('LIST/
  if(!/optional\?'OPTIONAL':'REQUIRED'/.test(applySrc)||!/FairPathDatePicker/.test(applySrc)||!/formatUsPhone/.test(applySrc))failures.push('Required fields must be clearly marked, with date pickers and phone formatting.');
  if(!/appId&&listingId/.test(applySrc)&&!/router\.replace\(\('\/housing-application\/'\+appId\+'\?submitted=1'\)/.test(applySrc))failures.push('A successful submit must replace to the application workspace with a success state.');
  // FastTrack: honest about payment
- if(!/not collecting FastTrack payment/.test(applySrc)||!/PAYMENT PROVIDER CONNECTION REQUIRED/.test(read('src/app/fasttrack-checkout/[id].tsx')))failures.push('FastTrack must state honestly that payment is not connected/collected.');
+ if(!/not collecting FastTrack payment/.test(applySrc)||!/PAYMENTS ARE NOT CONNECTED/.test(read('src/app/fasttrack-checkout/[id].tsx')))failures.push('FastTrack must state honestly that payment is not connected/collected.');
  if(/provider_payment_id|stripe|paymentIntent/i.test(allSrc))failures.push('Housing must not pretend to process payments.');
  // workspace
  const ws=read('src/app/housing-application/[id].tsx');
