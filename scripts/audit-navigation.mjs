@@ -21,5 +21,10 @@ if(otherFrames.length)failures.push('Screens using ScreenFrame must not add thei
 // Pinned bars: a full-width position:absolute bottom:0 bar inside ScreenFrame lands BEHIND the nav.
 const pinned=files.filter(f=>{const src=fs.readFileSync(f,'utf8');return /<ScreenFrame/.test(src)&&/\{[^{}]*position:\s*'absolute'[^{}]*left:\s*0[^{}]*right:\s*0[^{}]*bottom:\s*0[^{}]*\}|\{[^{}]*position:\s*'absolute'[^{}]*bottom:\s*0[^{}]*left:\s*0[^{}]*right:\s*0[^{}]*\}/.test(src)}).map(f=>path.relative(process.cwd(),f));
 if(pinned.length)failures.push('Full-width position:absolute bottom:0 bars sit behind the global nav; keep CTAs in normal flow above it: '+pinned.join(', '));
+// A literal space between two JSX elements on ONE line is a text node. Inside a <View> that throws
+// "Unexpected text node" (web) / "Text strings must be rendered within a <Text>" (native). Put the next element on its own line.
+const strayText=[];
+for(const f of walk('src').filter(x=>/\.tsx$/.test(x))){const src=fs.readFileSync(f,'utf8');src.split(/\r?\n/).forEach((line,i)=>{if(/(<\/[A-Za-z.]+>|\/>) +\{[^{}]*(\?|&&)\s*</.test(line))strayText.push(path.relative(process.cwd(),f)+':'+(i+1))})}
+if(strayText.length)failures.push('Stray space between JSX elements (creates a text node inside a View); move the second element to its own line: '+strayText.join(', '));
 if(failures.length){console.error('Navigation audit failed:\n- '+failures.join('\n- '));process.exit(1)}
 console.log('Navigation audit passed: '+files.length+' route files checked.');

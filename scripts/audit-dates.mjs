@@ -40,6 +40,9 @@ const picker = read('src/components/FairPathDatePicker.tsx');
 check(/'year'/.test(picker) && /'month'/.test(picker) && /'day'/.test(picker) && /chooseYear/.test(picker), 'The picker must let users choose year, month and day directly.');
 check(!/setMonth\(.*-\s*1\)|chevron-left.*Month|prevMonth|nextMonth/.test(picker), 'The picker must not rely on month-by-month arrow stepping.');
 check(/boundsForKind/.test(picker) && /isDateWithin/.test(picker), 'The picker must enforce bounds through the shared date rules.');
+// The year list must open already positioned on the selected year. A programmatic scrollToOffset after layout left the
+// list blank (rows never rendered) when editing an existing date of birth.
+check(/initialScrollIndex=/.test(picker) && /getItemLayout=/.test(picker) && !/scrollToOffset|scrollToIndex/.test(picker), 'The year list must use initialScrollIndex (with getItemLayout), not a post-layout scroll.');
 check(!fs.existsSync('src/components/SimpleDatePicker.tsx'), 'The old month-arrow SimpleDatePicker must stay removed.');
 
 const users = files.filter((f) => f.startsWith('src/app/') && /FairPathDatePicker/.test(read(f)));

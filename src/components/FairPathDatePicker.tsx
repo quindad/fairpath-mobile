@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { FairPathColors as C, FairPathFonts as F } from '@/constants/fairpath';
@@ -31,7 +31,6 @@ export function FairPathDatePicker({label,value,onChange,kind='any',error,option
  const [month,setMonth]=useState<number|null>(selected?selected.getMonth():null);
  const [day,setDay]=useState<number|null>(selected?selected.getDate():null);
  const years=useMemo(()=>yearsFor(bounds,kind),[bounds.min.getTime(),bounds.max.getTime(),kind]); // eslint-disable-line react-hooks/exhaustive-deps
- const listRef=useRef<FlatList<number>|null>(null);
 
  function openPicker(){
   const s=parseDateText(value);
@@ -98,12 +97,14 @@ export function FairPathDatePicker({label,value,onChange,kind='any',error,option
 
      <View style={s.body}>
       {view==='year'?<FlatList
-       ref={listRef}
+       key={'years-'+year}
+       initialScrollIndex={Math.max(0,Math.floor(initialIndex/YEAR_COLS)-1)}
+       initialNumToRender={48}
+       windowSize={11}
        data={years}
        keyExtractor={y=>String(y)}
        numColumns={YEAR_COLS}
        getItemLayout={(_,row)=>({length:YEAR_ROW,offset:YEAR_ROW*row,index:row})}
-       onLayout={()=>listRef.current?.scrollToOffset({offset:Math.max(0,Math.floor(initialIndex/YEAR_COLS)*YEAR_ROW-YEAR_ROW),animated:false})}
        showsVerticalScrollIndicator={false}
        renderItem={({item})=><Pressable accessibilityRole="button" accessibilityLabel={'Year '+item} style={[s.yearCell,item===year&&s.cellOn]} onPress={()=>chooseYear(item)}><Text style={[s.cellText,item===year&&s.cellTextOn]}>{item}</Text></Pressable>}
       />:null}

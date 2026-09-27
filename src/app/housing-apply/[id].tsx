@@ -273,7 +273,8 @@ export default function HousingApply(){
       <Text style={s.quoteAmount}>{`$${(fastQuote.amount_due_cents/100).toFixed(2)}`}</Text>
      </View>
      {fastQuote.discount_cents>0?<Text style={s.quoteDiscount}>{`FairPath+ discount: -$${(fastQuote.discount_cents/100).toFixed(2)}`}</Text>:null}
-     <Text style={s.quoteBody}>FastTrack speeds up reuse and review of your information. It does not guarantee approval or replace property-specific screening.</Text> {fastQuote.payment_enforced?<Text style={s.quoteBody}>Payment is required before you can submit. You pay securely in checkout, and paying does not approve your application.</Text>:<Text style={s.quoteBody}>FairPath is not collecting FastTrack payment yet. You will not be charged for this application.</Text>}
+     <Text style={s.quoteBody}>FastTrack speeds up reuse and review of your information. It does not guarantee approval or replace property-specific screening.</Text>
+     {fastQuote.payment_enforced?<Text style={s.quoteBody}>Payment is required before you can submit. You pay securely in checkout, and paying does not approve your application.</Text>:<Text style={s.quoteBody}>FairPath is not collecting FastTrack payment yet. You will not be charged for this application.</Text>}
     </View>:null}
     <Consent checked={accuracy} onPress={()=>setAccuracy(v=>!v)} text="I confirm the information in this application is accurate to the best of my knowledge."/>
     <Consent checked={submitConsent} onPress={()=>setSubmitConsent(v=>!v)} text="I want FairPath to submit this completed application into the property application workflow."/>
