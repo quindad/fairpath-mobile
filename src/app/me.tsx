@@ -15,11 +15,13 @@ const rows=[
  ["Housing applications","Track standard and FastTrack applications","/housing-applications"],
  ["Housing activity","Tour requests and property questions","/housing-activity"],
  ["Marketplace claims","Track requests, pickup windows and codes","/marketplace-claims"],
+ ["Saved resources","Resources you saved or are working through","/saved-resources"],
  ["Saved Marketplace","Free items you bookmarked","/saved-marketplace"],
  ["My Marketplace listings","Manage items you are giving away","/marketplace-my-listings"],
  ["Notifications","Housing, Marketplace, jobs and FairPath updates","/notifications"],
  ["Payments","Receipts and payment history","/payments"],
  ["FairPath+","Your membership and access","/plus"],
+ ["Appearance","Dark, light or system","/appearance"],
  ["Privacy","Control your account and information","/profile-readiness"]
 ] as const;
 

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { PaymentsProvider } from '@/components/PaymentsProvider';
 import { isPublicRoute } from '@/core/auth/public-routes';
+import { ThemeProvider, useFairPathTheme } from '@/core/theme/ThemeProvider';
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -45,14 +46,23 @@ export default function RootLayout() {
   }
 
   return (
-    <PaymentsProvider>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: '#090A09' },
-          animation: 'fade',
-        }}
-      />
-    </PaymentsProvider>
+    <ThemeProvider>
+      <PaymentsProvider>
+        <ThemedStack />
+      </PaymentsProvider>
+    </ThemeProvider>
+  );
+}
+
+function ThemedStack() {
+  const { tokens } = useFairPathTheme();
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: tokens.background },
+        animation: 'fade',
+      }}
+    />
   );
 }

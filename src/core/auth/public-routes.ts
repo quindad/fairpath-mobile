@@ -20,6 +20,9 @@ export function isPublicRoute(path: string): boolean {
     path === '/forgot-password' ||
     path === '/reset-password' ||
     path === '/check-email' ||
+    path === '/appearance' ||
+    path === '/resources' ||
+    path.startsWith('/resource/') ||
     path === '/auth/callback' ||
     path.startsWith('/auth/')
   );
