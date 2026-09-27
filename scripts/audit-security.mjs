@@ -75,6 +75,12 @@ check(!/console\./.test(handler + read('supabase/functions/render-document/index
 const idx = read('supabase/functions/render-document/index.ts');
 check(/p_official_form_ref: null/.test(idx), 'the server path never mints an official form yet');
 
+// extract-credit-report is off by default, consent-gated, authenticated and silent
+check(!/\[functions\.extract-credit-report\][^\[]*verify_jwt\s*=\s*false/.test(cfg), 'extract-credit-report must keep JWT verification on');
+const ex = read('supabase/functions/extract-credit-report/handler.ts') + read('supabase/functions/extract-credit-report/index.ts');
+check(/consent_required/.test(ex) && /extraction_not_enabled/.test(ex) && /CREDIT_EXTRACTION_ENABLED/.test(ex), 'credit extraction is consent-gated and disabled by default');
+check(!/console\./.test(ex), 'credit extraction never logs');
+
 // ---------- the fixture guard exists for every fixture-bearing table ----------
 check(/resources_guard_fixture/.test(read('supabase/migrations/20261001100000_resources_core.sql')), 'resources fixture guard');
 check(/record_relief_guard_fixture/.test(read('supabase/migrations/20261001170000_record_relief.sql')), 'record relief fixture guard');

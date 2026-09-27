@@ -9,6 +9,7 @@ const steps = [
   ...['baseline', 'canonical-profile', 'seed', 'navigation', 'housing', 'marketplace', 'jobs', 'keyboard', 'dates', 'notifications', 'auth', 'payments', 'entitlements',
     'theme', 'resources', 'profile', 'member', 'credit', 'relief', 'ai', 'security'].map((n) => [`audit: ${n}`, NODE, [`scripts/audit-${n}.mjs`]]),
   ['documents render', NODE, ['scripts/test-documents-render.mjs']],
+  ['credit extraction boundary', NODE, ['scripts/test-credit-extraction.mjs']],
   ['render-document handler', NODE, ['scripts/test-render-handler.mjs']],
   ['SQL: all migrations apply', NODE, ['scripts/local-sql-check.mjs']],
   ['SQL: resources', NODE, ['scripts/test-local-resources.mjs']],

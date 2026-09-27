@@ -13,6 +13,7 @@ export const SYNC = [
   ['src/core/documents/render-docx.ts', 'supabase/functions/_shared/core/documents/render-docx.ts'],
   ['src/core/documents/builders/resources.ts', 'supabase/functions/_shared/core/documents/builders/resources.ts'],
   ['src/core/documents/builders/opportunity-profile.ts', 'supabase/functions/_shared/core/documents/builders/opportunity-profile.ts'],
+  ['src/core/credit/extraction.ts', 'supabase/functions/_shared/core/credit/extraction.ts'],
   ['src/core/resources/resource-format.ts', 'supabase/functions/_shared/core/resources/resource-format.ts'],
 ];
 
