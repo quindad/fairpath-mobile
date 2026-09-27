@@ -212,6 +212,26 @@ begin
     execute format('grant select, insert, update, delete on table public.%I to service_role', t);
   end loop;
 end $$;
+-- Explicit grants (the loop above is convenient; these make each table's privileges greppable and auditable).
+grant select on table public.credit_report_uploads to authenticated;
+grant select, insert, update, delete on table public.credit_report_uploads to service_role;
+grant select on table public.credit_extraction_jobs to authenticated;
+grant select, insert, update, delete on table public.credit_extraction_jobs to service_role;
+grant select on table public.credit_reports to authenticated;
+grant select, insert, update, delete on table public.credit_reports to service_role;
+grant select on table public.credit_accounts to authenticated;
+grant select, insert, update, delete on table public.credit_accounts to service_role;
+grant select on table public.credit_inquiries to authenticated;
+grant select, insert, update, delete on table public.credit_inquiries to service_role;
+grant select on table public.credit_review_items to authenticated;
+grant select, insert, update, delete on table public.credit_review_items to service_role;
+grant select on table public.credit_disputes to authenticated;
+grant select, insert, update, delete on table public.credit_disputes to service_role;
+grant select on table public.credit_dispute_events to authenticated;
+grant select, insert, update, delete on table public.credit_dispute_events to service_role;
+grant select on table public.credit_dispute_evidence to authenticated;
+grant select, insert, update, delete on table public.credit_dispute_evidence to service_role;
+
 alter table public.credit_dispute_items enable row level security;
 drop policy if exists "credit_dispute_items_owner_read" on public.credit_dispute_items;
 create policy "credit_dispute_items_owner_read" on public.credit_dispute_items for select to authenticated

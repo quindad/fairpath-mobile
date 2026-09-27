@@ -58,8 +58,9 @@ const gen = read('src/core/documents/generate.ts');
 check(/generated_by|generatedBy/.test(gen) && /'device'/.test(gen), 'device-generated documents are labelled');
 check(!/p_official_form_ref: (?!null)|officialFormRef\s*[:=]\s*\{/.test(gen + docSvc),'the client never sets an official form reference');
 const create = read('src/app/documents/create.tsx');
-check(/cannot recall/.test(create) && /PREPARED ON THIS DEVICE/.test(create), 'create screen states the recall limit and the generation source');
-check(/logDocumentExport/.test(create), 'export actions are logged (metadata only)');
+const panel = read('src/components/ExportPanel.tsx');
+check(/cannot recall/.test(panel) && /PREPARED ON THIS DEVICE/.test(panel) && /ExportPanel/.test(create), 'export UI states the recall limit and the generation source');
+check(/logDocumentExport/.test(panel), 'export actions are logged (metadata only)');
 
 // ---------- Edge shared copies in sync ----------
 const { SYNC } = await import('./sync-edge-shared.mjs');
