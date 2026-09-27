@@ -56,8 +56,13 @@ const A = await makeUser('a');
 const B = await makeUser('b');
 
 // ---- give A real data to render ----
-const { data: res } = await admin.from('resources').select('id,name').eq('status', 'verified').limit(3);
-ok(res?.length >= 2, 'no verified resources in DEV (run npm run seed:dev:resources)');
+// Resources are visible when published AND verified (see resources-core migration); "status"/"name" are not real
+// columns on this table (title/publish_status/verification_state are) — querying them silently returned nothing and
+// produced a misleading "no verified resources" diagnosis. Surface any real query error loudly instead of guessing.
+const resQ = await admin.from('resources').select('id,title').eq('publish_status', 'published').eq('verification_state', 'verified').limit(3);
+if (resQ.error) throw new Error('resources query failed: ' + resQ.error.message);
+const res = (resQ.data ?? []).map((r) => ({ id: r.id, name: r.title }));
+ok(res.length >= 2, 'no published+verified resources in DEV (run npm run seed:dev:resources)');
 for (const r of res) fine(await A.client.rpc('save_resource', { p_id: r.id }), 'save resource');
 await admin.from('profiles').update({ first_name: 'Quinn', last_name: 'Renderer', phone: '(614) 555-0100', date_of_birth: '1985-02-03' }).eq('id', A.id);
 fine(await A.client.from('member_skills').insert({ user_id: A.id, skill: 'Forklift' }), 'skill');

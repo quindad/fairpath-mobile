@@ -83,7 +83,9 @@ const applyPayload = (job, extra = {}) => ({
 });
 
 await test('snapshot: setup (two Easy Apply jobs; profile with skills and private fields)', async () => {
-  const { data: jobs } = await admin.from('jobs').select('id,application_questions').eq('status', 'published').eq('application_method', 'fairpath').eq('easy_apply_enabled', true).limit(2);
+  const jobsQ = await admin.from('jobs').select('id,application_questions').eq('status', 'published').eq('application_method', 'fairpath').eq('easy_apply_enabled', true).limit(2);
+  if (jobsQ.error) throw new Error('jobs query failed: ' + jobsQ.error.message);
+  const jobs = jobsQ.data;
   ok(jobs?.length === 2, 'need two Easy Apply jobs in DEV inventory (run npm run seed:dev)');
   snap.jobs = jobs;
   await admin.from('profiles').update({ first_name: 'Quinn', last_name: 'Tester', phone: '(614) 555-0100', date_of_birth: '1985-02-03' }).eq('id', A.id);
@@ -99,7 +101,9 @@ await test('snapshot: required employer questions are still enforced (unanswered
 await test('snapshot: a valid first application succeeds when NOT opted in, and stores no snapshot (a forged one is ignored)', async () => {
   const job = snap.jobs[0];
   const id = fine(await A.client.rpc('submit_job_application', { p_job_id: job.id, p_answers: applyPayload(job, { share_opportunity_profile: false, opportunity_snapshot: { skills: ['FORGED'] } }) }), 'apply (no opt-in)');
-  const { data: app } = await admin.from('job_applications').select('answers').eq('id', id).single();
+  const appQ = await admin.from('job_applications').select('answers').eq('id', id).single();
+  if (appQ.error) throw new Error('application row query failed: ' + appQ.error.message);
+  const app = appQ.data;
   snap.apps.plain = app.answers;
   ok(app.answers.opportunity_snapshot === undefined && !JSON.stringify(app.answers).includes('FORGED'), 'no snapshot without opt-in: ' + JSON.stringify(app.answers).slice(0, 200));
 });
@@ -114,7 +118,9 @@ await test('snapshot: duplicate application is rejected with ALREADY_APPLIED and
 await test('snapshot: opted in -> built by the server from the member profile, unknown sections dropped, client forgery ignored', async () => {
   const job = snap.jobs[1];
   const id = fine(await A.client.rpc('submit_job_application', { p_job_id: job.id, p_answers: applyPayload(job, { share_opportunity_profile: true, share_sections: ['skills', 'justice_history', 'date_of_birth'], opportunity_snapshot: { skills: ['FORGED'] } }) }), 'apply (opt-in)');
-  const { data: app } = await admin.from('job_applications').select('answers').eq('id', id).single();
+  const appQ = await admin.from('job_applications').select('answers').eq('id', id).single();
+  if (appQ.error) throw new Error('application row query failed: ' + appQ.error.message);
+  const app = appQ.data;
   snap.apps.shared = app.answers;
   const s = app.answers.opportunity_snapshot;
   ok(s && Array.isArray(s.skills) && s.skills.includes('Forklift') && s.skills.includes('Inventory'), 'skills come from member_skills: ' + JSON.stringify(s).slice(0, 200));
