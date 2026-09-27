@@ -4,10 +4,11 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { PaymentsProvider } from '@/components/PaymentsProvider';
+import { isPublicRoute } from '@/core/auth/public-routes';
 
 void SplashScreen.preventAutoHideAsync();
 
-const PUBLIC_BROWSE=(path:string)=>path==='/'||path==='/find-jobs'||path.startsWith('/job/')||path==='/find-housing'||path==='/housing-filters'||path.startsWith('/housing/')||path==='/sign-in'||path==='/sign-up'||path==='/forgot-password'||path==='/reset-password';
+const PUBLIC_BROWSE=isPublicRoute;
 
 export default function RootLayout() {
   const pathname=usePathname();

@@ -47,5 +47,17 @@ const bad = parseAuthRedirect('fairpathmobile://auth/callback#error=access_denie
 check(bad.error === 'User cancelled' && !bad.accessToken, 'Provider errors must parse and carry no tokens.');
 check(!parseAuthRedirect('fairpathmobile://auth/callback').accessToken, 'A bare redirect has no tokens.');
 
+// The auth callback must be reachable signed-out, or the route guard drops the URL fragment before the session is set
+// (DEV QA sign-in URL, email verification and OAuth returns all failed with /sign-in?returnTo=%2Fauth%2Fcallback).
+{
+  const { isPublicRoute } = await import('../src/core/auth/public-routes.ts');
+  for (const p of ['/auth/callback', '/sign-in', '/sign-up', '/forgot-password', '/reset-password', '/check-email', '/', '/find-jobs', '/job/abc', '/find-housing', '/housing/abc']) check(isPublicRoute(p), `${p} must be reachable while signed out.`);
+  for (const p of ['/home', '/me', '/notifications', '/plus', '/payments', '/housing-activity', '/housing-apply/new', '/job-applications', '/accept-terms', '/onboarding', '/location-setup', '/fasttrack-checkout/x']) check(!isPublicRoute(p), `${p} must require sign-in.`);
+  const layout = read('src/app/_layout.tsx');
+  check(/isPublicRoute/.test(layout) && /signedIn\|\|PUBLIC_BROWSE\(pathname\)/.test(layout), 'The root layout must use the shared public-route list.');
+  const cb = read('src/app/auth/callback.tsx');
+  check(/window\.location\.hash/.test(cb) && /setSession\(/.test(cb), 'The web callback must turn URL tokens into a session.');
+}
+
 if (failures.length) { console.error('Auth audit failed:\n- ' + failures.join('\n- ')); process.exit(1); }
 console.log('Auth audit passed: Apple (nonce id-token) + Google (Supabase OAuth) + email/password; one profile per auth user; no client identity, merging or fake sessions.');
