@@ -33,6 +33,9 @@ export function creditErrorMessage(e: unknown): string {
     ['INVALID_DATE', 'That date is not valid. Use a date that is not in the future.'], ['UNSUPPORTED_TYPE', 'That file type is not supported. Use a PDF, JPG or PNG.'],
     ['FILE_TOO_LARGE', 'That file is too large (15 MB maximum).'], ['TOO_MANY_PAGES', 'That file has too many pages (60 maximum).'], ['UPLOAD_LIMIT', 'You have reached the upload limit. Delete an old upload first.'],
     ['FILE_NOT_UPLOADED', 'The file did not finish uploading. Please try again.'], ['SAMPLE_DATA_DEV_ONLY', 'Sample data is only available in the development environment.'],
+    ['extraction_not_enabled', 'Automatic reading is not turned on yet. Add the accounts yourself below.'], ['consent_required', 'Reading your report needs your permission first.'],
+    ['already_read', 'This file has already been read.'], ['file_too_large', 'That file is too large to read automatically.'], ['file_unreadable', 'FairPath could not open that file.'],
+    ['engine_error', 'Something went wrong reading that file. Please try again, or add the accounts yourself.'], ['nothing_extracted', 'FairPath could not find any accounts on that page. Add them yourself below.'],
     ['SAMPLE_ALREADY_LOADED', 'The sample reports are already loaded.'], ['violates check', 'Please check the values you entered.'],
   ];
   for (const [k, v] of map) if (text.includes(k)) return v;
@@ -126,4 +129,26 @@ export async function uploadReportFile(file: PickedFile, bureau: string): Promis
   const { data, error } = await supabase.rpc('register_credit_upload', { p_upload_id: id, p_bureau: bureau, p_ext: ext, p_pages: pages, p_bytes: bytes.length, p_mime: file.mimeType, p_checksum: checksum });
   if (error) { try { await supabase.storage.from('credit-uploads').remove([path]); } catch { /* ignore */ } throw error; }
   return data as Upload;
+}
+
+// ---------------------------------------------------------------------
+// Automatic reading (extract-credit-report). Off by default: the Edge Function itself refuses to run until an
+// operator sets CREDIT_EXTRACTION_ENABLED and a model key. The member's consent is required on every call regardless.
+// ---------------------------------------------------------------------
+export type ExtractResult = { report_id: string; accounts: number; inquiries: number; skipped_fields: number; needs_member_review: true };
+
+/** Calls the server to read an uploaded report. Requires explicit member consent for this specific file. */
+export async function readUploadedReport(uploadId: string, consent: true): Promise<ExtractResult> {
+  const { data: session } = await supabase.auth.getSession();
+  const token = session.session?.access_token;
+  if (!token) throw new Error('SIGNED_OUT');
+  const base = (supabase as unknown as { supabaseUrl?: string }).supabaseUrl ?? '';
+  const res = await fetch(`${base}/functions/v1/extract-credit-report`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ upload_id: uploadId, consent }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(String(body?.error ?? 'engine_error'));
+  return body as ExtractResult;
 }

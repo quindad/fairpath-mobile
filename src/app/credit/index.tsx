@@ -9,7 +9,7 @@ import {
   BUREAU_LABEL, EXTRACTION_LABEL, ISSUE_LABEL, PAYMENT_STATUS_LABEL, STAGE_INFO, bureauName, dateLabel, dueLabel, formatCents, sortAccountsForReview, DISPUTE_STATUS_LABEL,
 } from '@/core/credit/credit-format';
 import {
-  creditErrorMessage, deleteUpload, extendUploadRetention, loadAccounts, loadDisputes, loadItems, loadReports, loadSampleReports, loadUploads, pickReportFile, uploadReportFile,
+  creditErrorMessage, deleteUpload, extendUploadRetention, loadAccounts, loadDisputes, loadItems, loadReports, loadSampleReports, loadUploads, pickReportFile, readUploadedReport, uploadReportFile,
   type CreditAccount, type CreditReport, type Dispute, type ReviewItem, type Upload,
 } from '@/core/credit/credit-service';
 import { useFairPathTheme, useThemedStyles } from '@/core/theme/ThemeProvider';
@@ -69,7 +69,7 @@ export default function CreditWorkspace() {
       const file = await pickReportFile();
       if (!file) return;
       await uploadReportFile(file, bureau[0] ?? 'unknown');
-      setNote('Uploaded privately. Automatic reading of reports is not available yet, so add the accounts you want to review yourself.');
+      setNote('Uploaded privately. You can try reading it automatically below, or add the accounts you want to review yourself.');
       await load();
     } catch (e) { notify('Could not upload', creditErrorMessage(e)); } finally { setBusy(false); }
   }
@@ -78,7 +78,23 @@ export default function CreditWorkspace() {
     try { await loadSampleReports(); setNote('Sample reports loaded. These are TEST DATA, not a real person.'); await load(); } catch (e) { notify('Could not load samples', creditErrorMessage(e)); } finally { setBusy(false); }
   }
 
-  const uploadStatus = (u: Upload) => u.status === 'uploaded' || u.status === 'processing' ? 'Stored privately. Automatic reading is not available yet.' : u.status === 'needs_review' ? 'Read. Review the accounts.' : u.status === 'failed' ? 'Could not be read' : u.status;
+  const uploadStatus = (u: Upload) => u.status === 'uploaded' ? 'Stored privately.' : u.status === 'processing' ? 'Reading now…' : u.status === 'needs_review' ? 'Read. Review the accounts below.' : u.status === 'failed' ? 'Could not be read automatically. Add the accounts yourself.' : u.status;
+
+  function confirmAndRead(u: Upload) {
+    notify(
+      'Read this file with FairPath?',
+      'FairPath will send this file to a reading service to find the accounts on it. Nothing found is trusted until you confirm it yourself, and the file stays private either way.',
+      [{ text: 'Cancel', style: 'cancel' }, { text: 'Read it', onPress: () => void doRead(u) }],
+    );
+  }
+  async function doRead(u: Upload) {
+    setBusy(true);
+    try {
+      const r = await readUploadedReport(u.id, true);
+      setNote(`Read ${r.accounts} account${r.accounts === 1 ? '' : 's'}${r.inquiries ? ` and ${r.inquiries} inquir${r.inquiries === 1 ? 'y' : 'ies'}` : ''}. Review each one before it counts as yours.`);
+      await load();
+    } catch (e) { notify('Could not read this file', creditErrorMessage(e)); } finally { setBusy(false); }
+  }
 
   return (
     <ScreenFrame>
@@ -124,6 +140,7 @@ export default function CreditWorkspace() {
                     <BodyText muted>{uploadStatus(u)}</BodyText>
                     <BodyText muted>Removed on {dateLabel(u.expires_at)}</BodyText>
                     <View style={s.row}>
+                      {u.status === 'uploaded' ? <TextButton label="READ AUTOMATICALLY" onPress={() => confirmAndRead(u)} /> : null}
                       <TextButton label="KEEP 90 DAYS" onPress={() => void extendUploadRetention(u.id, 90).then(load).catch((e) => notify('Could not extend', creditErrorMessage(e)))} />
                       <TextButton tone="danger" label="DELETE FILE" onPress={() => notify('Delete this file?', 'The file is removed. Accounts you already reviewed stay until you delete the report.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Delete', style: 'destructive', onPress: () => void deleteUpload(u.id).then(load).catch((e) => notify('Could not delete', creditErrorMessage(e))) }])} />
                     </View>

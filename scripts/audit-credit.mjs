@@ -91,7 +91,8 @@ check(/credit-uploads/.test(svc) && !/getPublicUrl|createSignedUrl/.test(svc), '
 check(!/console\.(log|info|debug)/.test(svc), 'the credit service never logs');
 const idx = read('src/app/credit/index.tsx');
 check(/__DEV__/.test(idx) && /LOAD SAMPLE/.test(idx), 'sample data button only in dev builds');
-check(/not available yet/i.test(idx), 'the UI is honest that automatic reading is not connected yet');
+check(/nothing found is trusted until you confirm/i.test(idx), 'the UI is honest that a read account is unconfirmed until the member reviews it');
+check(/readUploadedReport/.test(idx) && /confirmAndRead|Read this file with FairPath/i.test(idx), 'reading a report requires an explicit member confirmation step, not a silent call');
 
 // ---------- SQL boundaries (static) ----------
 const sql = read('supabase/migrations/20261001160000_credit_workspace.sql');
