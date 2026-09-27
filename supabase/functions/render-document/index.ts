@@ -66,7 +66,7 @@ Deno.serve(async (req: Request) => {
         p_subject: spec.subject, p_title: spec.title, p_format: format, p_kind: spec.kind, p_template_id: spec.templateId,
         p_template_version: spec.templateVersion, p_sensitivity: spec.sensitivity,
         p_input_fingerprint: (await import('../_shared/core/documents/spec.ts')).fingerprintOf(spec.inputs),
-        p_confirmed_data_at: spec.confirmedDataAt, p_metadata: {}, p_official_form_ref: null, p_target_user: userId,
+        p_confirmed_data_at: spec.confirmedDataAt, p_metadata: spec.optionsCode ? { options_code: spec.optionsCode } : {}, p_official_form_ref: null, p_target_user: userId,
       });
       if (error) throw new Error('register_failed');
       return data as { id: string; file_name: string; version: number };

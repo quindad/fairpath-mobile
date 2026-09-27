@@ -16,6 +16,8 @@ export default function JobApply(){
  const [job,setJob]=useState<Job|null>(null);
  const [form,setForm]=useState<JobApplicationAutofill>(EMPTY);
  const [extra,setExtra]=useState<Record<string,string>>({});
+ const [shareProfile,setShareProfile]=useState(false);
+ const [shareSections,setShareSections]=useState<string[]>(['experience','education','skills']);
  const [loading,setLoading]=useState(true);
  const [submitting,setSubmitting]=useState(false);
  const [error,setError]=useState('');
@@ -48,7 +50,7 @@ export default function JobApply(){
   setSubmitting(true);
   try{
    await saveJobApplicationProfile(form);
-   const applicationId=await submitJobApplication(id,{profile:form,employer_questions:extra});
+   const applicationId=await submitJobApplication(id,{profile:form,employer_questions:extra,share_opportunity_profile:shareProfile,share_sections:shareProfile?shareSections:[]});
    router.replace((applicationId?'/job-application/'+applicationId:'/job-applications') as never);
   }catch(e){
    if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace(('/sign-up?returnTo='+encodeURIComponent('/job/'+id)) as never);return}
@@ -95,6 +97,14 @@ export default function JobApply(){
     <View style={s.questionHead}><Text style={s.questionLabel}>{q.label}</Text>{q.required?<Text style={s.requiredTag}>REQUIRED</Text>:null}</View>
     {q.type==='yes_no'?<View style={s.yesNo}><Choice label="YES" active={extra[q.id]==='Yes'} onPress={()=>setExtra(v=>({...v,[q.id]:'Yes'}))}/><Choice label="NO" active={extra[q.id]==='No'} onPress={()=>setExtra(v=>({...v,[q.id]:'No'}))}/></View>:<TextInput value={extra[q.id]??''} onChangeText={v=>setExtra(x=>({...x,[q.id]:v}))} style={[s.input,s.multiline]} placeholder="Your answer" placeholderTextColor={C.muted} multiline/>}
    </View>)}</>:null}
+
+   <Text style={s.sectionLabel}>OPPORTUNITY PROFILE (OPTIONAL)</Text>
+   <View style={s.question}>
+    <Text style={s.questionLabel}>Attach a copy of my Opportunity Profile</Text>
+    <Text style={s.muted}>The employer receives a copy of only the parts you choose, as it is right now. They never see your live profile, your date of birth, your home address or any justice information.</Text>
+    <View style={s.yesNo}><Choice label="YES" active={shareProfile} onPress={()=>setShareProfile(true)}/><Choice label="NO" active={!shareProfile} onPress={()=>setShareProfile(false)}/></View>
+    {shareProfile?<View style={s.yesNo}>{[['experience','WORK'],['education','EDUCATION'],['credentials','CERTS'],['skills','SKILLS'],['availability','AVAILABILITY'],['transportation','TRANSPORT']].map(([k,l])=><Choice key={k} label={l} active={shareSections.includes(k)} onPress={()=>setShareSections(cur=>cur.includes(k)?cur.filter(x=>x!==k):[...cur,k])}/>)}</View>:null}
+   </View>
 
    <View style={s.review}>
     <Lucide name="shield-check" color={C.lime} size={17}/>

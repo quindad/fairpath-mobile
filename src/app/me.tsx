@@ -1,63 +1,161 @@
-import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { InlineBadge, PageHeader, ScreenFrame, SectionTitle } from '@/components/ProductChrome';
+import { BodyText, ListRow, Panel, PrimaryButton, SecondaryButton, StatusLine } from '@/components/ui-kit';
+import { FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
+import { loadMemberSummary } from '@/core/profile/member-summary';
+import { nextSteps, type MemberSummary } from '@/core/profile/next-step';
+import { loadContact } from '@/core/profile/opportunity-service';
+import { useFairPathTheme, useThemedStyles } from '@/core/theme/ThemeProvider';
+import type { ThemeTokens } from '@/core/theme/tokens';
 import { notify } from '@/core/ui/notify';
-import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
-import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { supabase } from '@/lib/supabase';
 
-const rows=[
- ["Profile readiness","Review and complete your FairPath profile","/profile-readiness"],
- ["Your location","ZIP code and search radius for Jobs and Housing","/location-setup"],
- ["Saved jobs","Jobs you bookmarked for later","/saved-jobs"],
- ["Job applications","Track your FairPath job applications","/job-applications"],
- ["Saved homes","Your saved FairPath housing","/saved-homes"],
- ["Saved housing searches","Rerun housing searches with your filters","/saved-housing-searches"],
- ["Housing applications","Track standard and FastTrack applications","/housing-applications"],
- ["Housing activity","Tour requests and property questions","/housing-activity"],
- ["Marketplace claims","Track requests, pickup windows and codes","/marketplace-claims"],
- ["Saved resources","Resources you saved or are working through","/saved-resources"],
- ["Saved Marketplace","Free items you bookmarked","/saved-marketplace"],
- ["My Marketplace listings","Manage items you are giving away","/marketplace-my-listings"],
- ["Notifications","Housing, Marketplace, jobs and FairPath updates","/notifications"],
- ["Payments","Receipts and payment history","/payments"],
- ["FairPath+","Your membership and access","/plus"],
- ["Appearance","Dark, light or system","/appearance"],
- ["Privacy","Control your account and information","/profile-readiness"]
-] as const;
+const LINKS: { title: string; body: string; route: string }[] = [
+  { title: 'Job applications', body: 'Track your FairPath job applications', route: '/job-applications' },
+  { title: 'Saved jobs', body: 'Jobs you bookmarked for later', route: '/saved-jobs' },
+  { title: 'Housing applications', body: 'Track standard and FastTrack applications', route: '/housing-applications' },
+  { title: 'Saved homes', body: 'Your saved FairPath housing', route: '/saved-homes' },
+  { title: 'Saved housing searches', body: 'Rerun housing searches with your filters', route: '/saved-housing-searches' },
+  { title: 'Housing activity', body: 'Tour requests and property questions', route: '/housing-activity' },
+  { title: 'Marketplace claims', body: 'Track requests, pickup windows and codes', route: '/marketplace-claims' },
+  { title: 'My Marketplace listings', body: 'Manage items you are giving away', route: '/marketplace-my-listings' },
+  { title: 'Saved Marketplace', body: 'Free items you bookmarked', route: '/saved-marketplace' },
+  { title: 'Notifications', body: 'Housing, Marketplace, jobs and FairPath updates', route: '/notifications' },
+  { title: 'Payments', body: 'Receipts and payment history', route: '/payments' },
+  { title: 'Your location', body: 'ZIP code and search radius', route: '/location-setup' },
+];
 
-export default function Screen(){
- async function signOut(){
-  router.replace('/find-jobs' as never);
-  const {error}=await supabase.auth.signOut();
-  if(error){notify('Could not sign out','Please try again.');}
- }
+export default function MeScreen() {
+  const s = useThemedStyles(styles);
+  const { tokens } = useFairPathTheme();
+  const [summary, setSummary] = useState<MemberSummary | null>(null);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
- return <ScreenFrame>
-  <PageHeader eyebrow="YOUR ACCOUNT" title="Me" onBack={false}/>
-  <ScrollView contentContainerStyle={s.content}>
-   <Text style={s.intro}>Your FairPath in one place.</Text>
-   <View style={s.list}>
-    {rows.map(([title,body,route])=><Pressable key={title} style={s.row} onPress={()=>router.push(route as never)}>
-     <View style={s.copy}><Text style={s.title}>{title}</Text><Text style={s.body}>{body}</Text></View><Text style={s.arrow}>→</Text>
-    </Pressable>)}
-   </View>
-   <Pressable style={s.signOut} onPress={()=>void signOut()}>
-    <Text style={s.signOutText}>SIGN OUT</Text>
-   </Pressable>
-  </ScrollView>
-  
- </ScreenFrame>
+  const load = useCallback(() => {
+    setError('');
+    Promise.all([loadMemberSummary(), loadContact().catch(() => null)])
+      .then(([sum, contact]) => {
+        setSummary(sum);
+        if (contact) { setName(`${contact.first_name} ${contact.last_name}`.trim()); setEmail(contact.email); }
+      })
+      .catch(() => setError('We could not load your summary. Check your connection and try again.'))
+      .finally(() => setLoading(false));
+  }, []);
+  useFocusEffect(load);
+
+  async function signOut() {
+    router.replace('/find-jobs' as never);
+    const { error: err } = await supabase.auth.signOut();
+    if (err) notify('Could not sign out', 'Please try again.');
+  }
+
+  const steps = nextSteps(summary);
+  const primary = steps[0];
+  const more = steps.slice(1, 3);
+  const plus = summary?.plus;
+
+  const tiles: { label: string; value: number; route: string }[] = summary ? [
+    { label: 'JOBS APPLIED', value: summary.jobs?.applied ?? 0, route: '/job-applications' },
+    { label: 'SAVED JOBS', value: summary.jobs?.saved ?? 0, route: '/saved-jobs' },
+    { label: 'HOUSING APPLICATIONS', value: summary.housing?.applications ?? 0, route: '/housing-applications' },
+    { label: 'SAVED HOMES', value: summary.housing?.saved_homes ?? 0, route: '/saved-homes' },
+    { label: 'RESOURCES SAVED', value: summary.resources?.saved ?? 0, route: '/saved-resources' },
+    { label: 'DOCUMENTS', value: summary.documents?.generated ?? 0, route: '/documents' },
+  ] : [];
+
+  return (
+    <ScreenFrame>
+      <PageHeader eyebrow="YOUR ACCOUNT" title="Me" onBack={false} />
+      <ScrollView contentContainerStyle={s.content}>
+        {loading ? <ActivityIndicator color={tokens.accentText} style={s.spinner} /> : null}
+        {error ? <View><StatusLine tone="error">{error}</StatusLine><SecondaryButton label="TRY AGAIN" onPress={load} /></View> : null}
+
+        {summary ? (
+          <>
+            <View style={s.identity}>
+              <View style={s.avatar}><Text style={s.avatarText}>{(name || email || '?').trim().charAt(0).toUpperCase()}</Text></View>
+              <View style={s.identityCopy}>
+                <Text style={s.name}>{name || 'Your FairPath account'}</Text>
+                {email ? <Text style={s.email}>{email}</Text> : null}
+              </View>
+              {plus?.active ? <InlineBadge tone="lime">FAIRPATH+</InlineBadge> : null}
+            </View>
+
+            {summary.deletion_request ? (
+              <Panel tone="warning">
+                <Text style={s.alertTitle}>Account deletion requested</Text>
+                <BodyText muted>Your account has not been deleted. The request is scheduled for review on {new Date(summary.deletion_request.scheduled_for ?? Date.now()).toLocaleDateString()}. You can cancel it until processing starts.</BodyText>
+                <SecondaryButton label="REVIEW OR CANCEL" onPress={() => router.push('/privacy' as never)} />
+              </Panel>
+            ) : null}
+
+            {primary ? (
+              <Panel tone="accent">
+                <Text style={s.eyebrow}>YOUR NEXT STEP</Text>
+                <Text style={s.stepTitle}>{primary.title}</Text>
+                <BodyText>{primary.body}</BodyText>
+                <PrimaryButton label="GO" onPress={() => router.push(primary.route as never)} />
+              </Panel>
+            ) : (
+              <Panel><BodyText>You are up to date. Nothing needs your attention right now.</BodyText></Panel>
+            )}
+            {more.map((m) => <ListRow key={m.key} title={m.title} body={m.body} onPress={() => router.push(m.route as never)} />)}
+
+            <View style={s.block}><SectionTitle>YOUR ACTIVITY</SectionTitle></View>
+            <View style={s.grid}>
+              {tiles.map((t) => (
+                <Pressable key={t.label} accessibilityRole="button" accessibilityLabel={`${t.label}: ${t.value}`} style={s.tile} onPress={() => router.push(t.route as never)}>
+                  <Text style={s.tileValue}>{t.value}</Text>
+                  <Text style={s.tileLabel}>{t.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+            {(summary.resources?.started ?? 0) + (summary.resources?.completed ?? 0) > 0 ? (
+              <BodyText muted>Resources: {summary.resources?.started ?? 0} started, {summary.resources?.completed ?? 0} finished (marked by you).</BodyText>
+            ) : null}
+
+            <View style={s.block}><SectionTitle>PROFILE</SectionTitle></View>
+            <ListRow title="Opportunity Profile" body={`${summary.profile?.completed_sections ?? 0} of ${summary.profile?.total_sections ?? 8} sections complete`} onPress={() => router.push('/opportunity-profile' as never)} />
+            <ListRow title="Justice readiness" body="Your private readiness checklist. Never shared with employers." onPress={() => router.push('/profile-readiness' as never)} />
+            <ListRow title="My Documents" body="Documents FairPath helped you prepare" onPress={() => router.push('/documents' as never)} />
+            <ListRow title="Saved resources" body="Resources you saved or are working through" onPress={() => router.push('/saved-resources' as never)} />
+          </>
+        ) : null}
+
+        <View style={s.block}><SectionTitle>MORE</SectionTitle></View>
+        {LINKS.map((l) => <ListRow key={l.route} title={l.title} body={l.body} onPress={() => router.push(l.route as never)} />)}
+        <ListRow title="FairPath+" body="Your membership and access" onPress={() => router.push('/plus' as never)} />
+
+        <View style={s.block}><SectionTitle>SETTINGS</SectionTitle></View>
+        <ListRow title="Appearance" body="Dark, light or system" onPress={() => router.push('/appearance' as never)} />
+        <ListRow title="Privacy and account" body="What FairPath shares, your data, and deleting your account" onPress={() => router.push('/privacy' as never)} />
+
+        <SecondaryButton label="SIGN OUT" onPress={() => void signOut()} />
+      </ScrollView>
+    </ScreenFrame>
+  );
 }
 
-const s=StyleSheet.create({
- content:{paddingHorizontal:L.mobileGutter,paddingBottom:28},
- intro:{color:C.mutedStrong,fontSize:14,lineHeight:21,paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.border},
- list:{},
- row:{minHeight:82,borderBottomWidth:1,borderBottomColor:C.border,flexDirection:'row',alignItems:'center'},
- copy:{flex:1,paddingRight:12},
- title:{color:C.white,fontFamily:F.extraBold,fontSize:17},
- body:{color:C.muted,fontSize:11,lineHeight:16,marginTop:4},
- arrow:{color:C.lime,fontSize:19},
- signOut:{height:46,marginTop:24,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center'},
- signOutText:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8,letterSpacing:1}
+const styles = (t: ThemeTokens) => ({
+  content: { paddingHorizontal: L.mobileGutter, paddingBottom: 32 },
+  spinner: { marginTop: 28 },
+  block: { marginTop: 22 },
+  identity: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 12, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: t.border },
+  avatar: { width: 46, height: 46, backgroundColor: t.accent, alignItems: 'center' as const, justifyContent: 'center' as const },
+  avatarText: { color: t.onAccent, fontFamily: F.black, fontSize: 20 },
+  identityCopy: { flex: 1 },
+  name: { color: t.text, fontFamily: F.extraBold, fontSize: 17 },
+  email: { color: t.textMuted, fontSize: 12, marginTop: 2 },
+  eyebrow: { color: t.accentText, fontFamily: F.extraBold, fontSize: 9, letterSpacing: 1.4 },
+  stepTitle: { color: t.text, fontFamily: F.black, fontSize: 20, lineHeight: 24, marginVertical: 6 },
+  alertTitle: { color: t.warning, fontFamily: F.extraBold, fontSize: 14, marginBottom: 4 },
+  grid: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, marginHorizontal: -4 },
+  tile: { width: '33.333%' as const, padding: 4 },
+  tileValue: { color: t.text, fontFamily: F.black, fontSize: 26, borderWidth: 1, borderColor: t.border, borderBottomWidth: 0, backgroundColor: t.surface, paddingHorizontal: 10, paddingTop: 10 },
+  tileLabel: { color: t.textMuted, fontFamily: F.extraBold, fontSize: 8, letterSpacing: 0.8, borderWidth: 1, borderColor: t.border, borderTopWidth: 0, backgroundColor: t.surface, paddingHorizontal: 10, paddingBottom: 10, paddingTop: 2, minHeight: 34 },
 });

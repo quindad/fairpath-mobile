@@ -185,3 +185,11 @@ export async function loadResourceCounts(): Promise<{ saved: number; started: nu
   const r = ((data ?? []) as { saved_count: number | string; started_count: number | string; completed_count: number | string }[])[0];
   return { saved: Number(r?.saved_count ?? 0), started: Number(r?.started_count ?? 0), completed: Number(r?.completed_count ?? 0) };
 }
+
+/** The member's saved resources with full detail (only currently-visible ones), for document builders. */
+export async function loadSavedResourceDetails(): Promise<ResourceDetail[]> {
+  const saved = await loadSavedResources(100, 0);
+  const ids = saved.rows.filter((r) => r.available).map((r) => r.resource.id);
+  const details = await Promise.all(ids.map((id) => loadResourceDetail(id)));
+  return details.filter((d): d is ResourceDetail => Boolean(d));
+}

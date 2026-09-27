@@ -43,6 +43,8 @@ export type DocumentSpec = {
   /** Canonical inputs, hashed for stale detection. Never rendered. */
   inputs: unknown;
   footer: string;
+  /** Non-identifying code of the options used (e.g. the Opportunity Profile's include toggles). */
+  optionsCode?: string;
 };
 
 /** Stable JSON: object keys sorted, so the same data always hashes the same. */

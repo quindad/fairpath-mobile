@@ -10,7 +10,7 @@
 --   * file names are safe by construction: FairPath_{Subject}_{YYYY-MM-DD}[_vN].{pdf|docx|csv} - no names, ids, spaces
 --   * an 'official_form' document must carry an official_form_ref AND be server-generated (a device can never mint one)
 --   * highly sensitive documents are on-demand: a stored copy exists only after an explicit "keep a copy" (30/90 days)
---   * metadata holds only allow-listed, non-identifying keys
+--   * metadata holds only allow-listed, non-identifying keys (counters and an options_code such as "n1p0e0z0y0|e1d1c1s1p1a1t0")
 --   * regeneration creates a NEW version linked to the previous one; nothing is overwritten
 --   * members read their own rows; every write is a function (clients have no INSERT/UPDATE/DELETE)
 
@@ -183,7 +183,7 @@ begin
   -- Metadata is limited to non-identifying counters.
   select coalesce(array_agg(k), '{}') into bad_keys
   from jsonb_object_keys(coalesce(p_metadata, '{}'::jsonb)) k
-  where k <> all (array['page_count', 'section_count', 'item_count', 'packet_position', 'packet_total', 'locale']);
+  where k <> all (array['page_count', 'section_count', 'item_count', 'packet_position', 'packet_total', 'locale', 'options_code']);
   if cardinality(bad_keys) > 0 then raise exception 'METADATA_NOT_ALLOWED:%', array_to_string(bad_keys, ','); end if;
 
   select * into prev from public.generated_documents d

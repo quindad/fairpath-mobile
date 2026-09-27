@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Lucide } from '@react-native-vector-icons/lucide';
-import { FairPathColors as C, FairPathFonts as F } from '@/constants/fairpath';
+import { FairPathFonts as F } from '@/constants/fairpath';
+import { useFairPathTheme, useThemedStyles } from '@/core/theme/ThemeProvider';
+import type { ThemeTokens } from '@/core/theme/tokens';
 import {
   boundsForKind, daysInMonth, defaultYearFor, formatDateText, isDateWithin, monthsAllowed, parseDateText, yearsFor,
   type DateBounds, type DateKind
@@ -21,6 +23,8 @@ const YEAR_COLS=4;
  * Bounds are enforced here (cells are disabled) and by the same helpers wherever the value is validated.
  */
 export function FairPathDatePicker({label,value,onChange,kind='any',error,optional=false,minDate,maxDate}:{label:string;value:string;onChange:(value:string)=>void;kind?:DateKind;error?:string;optional?:boolean;minDate?:Date;maxDate?:Date}){
+ const s=useThemedStyles(styles);
+ const {tokens}=useFairPathTheme();
  const base=boundsForKind(kind);
  const bounds:DateBounds={min:minDate??base.min,max:maxDate??base.max};
  const selected=parseDateText(value);
@@ -76,7 +80,7 @@ export function FairPathDatePicker({label,value,onChange,kind='any',error,option
    <View style={{flex:1}}>
     {selected?<><Text style={s.value}>{longValue}</Text><Text style={s.valueSub}>{value}</Text></>:<Text style={s.placeholder}>Select a date</Text>}
    </View>
-   <Lucide name="calendar-days" color={C.lime} size={16}/>
+   <Lucide name="calendar-days" color={tokens.accentText} size={16}/>
   </Pressable>
   {error?<Text style={s.error}>{error}</Text>:null}
 
@@ -85,7 +89,7 @@ export function FairPathDatePicker({label,value,onChange,kind='any',error,option
     <View style={s.sheet}>
      <View style={s.head}>
       <Text style={s.title}>{label}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel="Close date picker" hitSlop={10} style={s.close} onPress={()=>setOpen(false)}><Lucide name="x" color={C.white} size={16}/></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel="Close date picker" hitSlop={10} style={s.close} onPress={()=>setOpen(false)}><Lucide name="x" color={tokens.text} size={16}/></Pressable>
      </View>
 
      <View style={s.tabs}>
@@ -135,29 +139,29 @@ export function FairPathDatePicker({label,value,onChange,kind='any',error,option
  </View>;
 }
 
-const s=StyleSheet.create({
+const styles=(t:ThemeTokens)=>StyleSheet.create({
  wrap:{marginTop:14},
  labelRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:7},
- label:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:1},tag:{color:C.muted,fontFamily:F.extraBold,fontSize:6,letterSpacing:.7},tagError:{color:C.lime},
- field:{minHeight:52,borderWidth:1,borderColor:C.borderStrong,paddingHorizontal:12,paddingVertical:8,flexDirection:'row',alignItems:'center',gap:10},fieldError:{borderColor:C.lime},
- value:{color:C.white,fontFamily:F.bold,fontSize:14},valueSub:{color:C.muted,fontSize:10,marginTop:2},placeholder:{color:C.muted,fontSize:13},
- error:{color:C.lime,fontSize:9,marginTop:5},
- overlay:{flex:1,backgroundColor:'rgba(0,0,0,.72)',justifyContent:'flex-end'},
- sheet:{backgroundColor:'#0B0D0B',borderTopWidth:1,borderColor:C.borderStrong,paddingBottom:30},
+ label:{color:t.accentText,fontFamily:F.extraBold,fontSize:8,letterSpacing:1},tag:{color:t.textMuted,fontFamily:F.extraBold,fontSize:6,letterSpacing:.7},tagError:{color:t.error},
+ field:{minHeight:52,borderWidth:1,borderColor:t.borderStrong,paddingHorizontal:12,paddingVertical:8,flexDirection:'row',alignItems:'center',gap:10},fieldError:{borderColor:t.error},
+ value:{color:t.text,fontFamily:F.bold,fontSize:14},valueSub:{color:t.textMuted,fontSize:10,marginTop:2},placeholder:{color:t.textMuted,fontSize:13},
+ error:{color:t.error,fontSize:9,marginTop:5},
+ overlay:{flex:1,backgroundColor:t.overlay,justifyContent:'flex-end'},
+ sheet:{backgroundColor:t.surface,borderTopWidth:1,borderColor:t.borderStrong,paddingBottom:30},
  head:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:16,paddingTop:16,paddingBottom:12},
- title:{color:C.white,fontFamily:F.black,fontSize:18,flex:1,marginRight:10},close:{width:34,height:34,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center'},
- tabs:{flexDirection:'row',borderTopWidth:1,borderBottomWidth:1,borderColor:C.borderStrong},
- tab:{flex:1,paddingVertical:10,alignItems:'center',borderRightWidth:1,borderRightColor:C.borderStrong},tabOn:{backgroundColor:'#10150C',borderBottomWidth:2,borderBottomColor:C.lime},
- tabLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},tabLabelOn:{color:C.lime},tabValue:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:16,marginTop:3},tabValueOn:{color:C.white},
+ title:{color:t.text,fontFamily:F.black,fontSize:18,flex:1,marginRight:10},close:{width:34,height:34,borderWidth:1,borderColor:t.borderStrong,alignItems:'center',justifyContent:'center'},
+ tabs:{flexDirection:'row',borderTopWidth:1,borderBottomWidth:1,borderColor:t.borderStrong},
+ tab:{flex:1,paddingVertical:10,alignItems:'center',borderRightWidth:1,borderRightColor:t.borderStrong},tabOn:{backgroundColor:t.accentSubtle,borderBottomWidth:2,borderBottomColor:t.accent},
+ tabLabel:{color:t.textMuted,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},tabLabelOn:{color:t.accentText},tabValue:{color:t.textSecondary,fontFamily:F.extraBold,fontSize:16,marginTop:3},tabValueOn:{color:t.text},
  body:{height:300,paddingHorizontal:12,paddingTop:10},
- yearCell:{flex:1,height:YEAR_ROW-8,margin:4,borderWidth:1,borderColor:C.border,alignItems:'center',justifyContent:'center'},
- monthGrid:{flexDirection:'row',flexWrap:'wrap'},monthCell:{width:'33.33%',height:64,borderWidth:1,borderColor:C.border,alignItems:'center',justifyContent:'center'},
- weekRow:{flexDirection:'row'},weekday:{flex:1,textAlign:'center',color:C.muted,fontFamily:F.extraBold,fontSize:9,paddingVertical:6},
+ yearCell:{flex:1,height:YEAR_ROW-8,margin:4,borderWidth:1,borderColor:t.border,alignItems:'center',justifyContent:'center'},
+ monthGrid:{flexDirection:'row',flexWrap:'wrap'},monthCell:{width:'33.33%',height:64,borderWidth:1,borderColor:t.border,alignItems:'center',justifyContent:'center'},
+ weekRow:{flexDirection:'row'},weekday:{flex:1,textAlign:'center',color:t.textMuted,fontFamily:F.extraBold,fontSize:9,paddingVertical:6},
  dayGrid:{flexDirection:'row',flexWrap:'wrap'},dayCell:{width:'14.2857%',height:40,alignItems:'center',justifyContent:'center'},dayBtn:{borderWidth:1,borderColor:'transparent'},
- cellOn:{backgroundColor:C.lime,borderColor:C.lime},cellOff:{opacity:.28},
- cellText:{color:C.white,fontFamily:F.bold,fontSize:14},cellTextOn:{color:C.black,fontFamily:F.extraBold},cellTextOff:{color:C.muted},
- foot:{flexDirection:'row',alignItems:'center',gap:12,paddingHorizontal:16,paddingTop:12,borderTopWidth:1,borderTopColor:C.borderStrong},
- footValue:{flex:1,color:C.mutedStrong,fontSize:12},
- confirm:{height:44,paddingHorizontal:18,backgroundColor:C.lime,alignItems:'center',justifyContent:'center'},confirmOff:{backgroundColor:'#1A2114',borderWidth:1,borderColor:'#2C3823'},
- confirmText:{color:C.black,fontFamily:F.extraBold,fontSize:9,letterSpacing:1},confirmTextOff:{color:C.mutedStrong}
+ cellOn:{backgroundColor:t.accent,borderColor:t.accent},cellOff:{opacity:.28},
+ cellText:{color:t.text,fontFamily:F.bold,fontSize:14},cellTextOn:{color:t.onAccent,fontFamily:F.extraBold},cellTextOff:{color:t.textMuted},
+ foot:{flexDirection:'row',alignItems:'center',gap:12,paddingHorizontal:16,paddingTop:12,borderTopWidth:1,borderTopColor:t.borderStrong},
+ footValue:{flex:1,color:t.textSecondary,fontSize:12},
+ confirm:{height:44,paddingHorizontal:18,backgroundColor:t.accent,alignItems:'center',justifyContent:'center'},confirmOff:{backgroundColor:t.surfaceRaised,borderWidth:1,borderColor:t.border},
+ confirmText:{color:t.onAccent,fontFamily:F.extraBold,fontSize:9,letterSpacing:1},confirmTextOff:{color:t.textSecondary}
 });

@@ -135,6 +135,7 @@ export function buildOpportunityProfile(data: OpportunityProfileData, options: O
     // Fingerprint covers exactly what is exported (data the options select), so unrelated edits do not mark it stale.
     inputs: { data: sanitizeForFingerprint(data, o), options: o },
     footer: 'Prepared by FairPath from information entered by the member. FairPath does not verify this information.',
+    optionsCode: encodeProfileOptions(o),
   };
 }
 
@@ -161,3 +162,18 @@ export function profileExportReady(d: OpportunityProfileData): { ready: boolean;
 }
 
 export { fingerprintOf };
+
+/** Compact, non-identifying code for the options used, stored with the document so "changed since" checks are exact. */
+export function encodeProfileOptions(o: OpportunityProfileOptions): string {
+  const b = (v: boolean) => (v ? '1' : '0');
+  const s = o.sections;
+  return 'a' + o.audience[0] + 'n' + b(o.includeName) + 'p' + b(o.includePhone) + 'e' + b(o.includeEmail) + 'z' + b(o.includeZip) + 'y' + b(o.includePay) +
+    '|e' + b(s.experience) + 'd' + b(s.education) + 'c' + b(s.credentials) + 's' + b(s.skills) + 'p' + b(s.preferences) + 'a' + b(s.availability) + 't' + b(s.transportation);
+}
+export function decodeProfileOptions(code: string | null | undefined): OpportunityProfileOptions | null {
+  const m = /^a([sec])n([01])p([01])e([01])z([01])y([01])\|e([01])d([01])c([01])s([01])p([01])a([01])t([01])$/.exec(code ?? '');
+  if (!m) return null;
+  const t = (i: number) => m[i] === '1';
+  const audience = m[1] === 's' ? 'self' : m[1] === 'e' ? 'employer' : 'caseworker';
+  return { audience, includeName: t(2), includePhone: t(3), includeEmail: t(4), includeZip: t(5), includePay: t(6), sections: { experience: t(7), education: t(8), credentials: t(9), skills: t(10), preferences: t(11), availability: t(12), transportation: t(13) } };
+}

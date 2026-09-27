@@ -95,6 +95,14 @@ export default function SavedResourcesScreen() {
       </View>
       <ScrollView contentContainerStyle={s.content}>
         {tab !== 'saved' ? <Text style={s.note}>Marked by you. FairPath does not verify started or finished.</Text> : null}
+        {tab === 'saved' && rows.some((r) => r.available) ? (
+          <View style={s.exportRow}>
+            <Text style={s.exportText}>Take these with you</Text>
+            <Pressable accessibilityRole="button" style={s.exportBtn} onPress={() => router.push('/documents/create?type=saved_resources_list' as never)}><Text style={s.exportBtnText}>LIST</Text></Pressable>
+            <Pressable accessibilityRole="button" style={s.exportBtn} onPress={() => router.push('/documents/create?type=resource_contact_sheet' as never)}><Text style={s.exportBtnText}>CONTACT SHEET</Text></Pressable>
+            <Pressable accessibilityRole="button" style={s.exportBtn} onPress={() => router.push('/documents/create?type=resource_required_documents' as never)}><Text style={s.exportBtnText}>WHAT TO BRING</Text></Pressable>
+          </View>
+        ) : null}
         {loading ? <ActivityIndicator color={tokens.accentText} style={s.spinner} /> : null}
         {error ? <Text style={s.error}>{error}</Text> : null}
 
@@ -138,6 +146,10 @@ const styles = (t: ThemeTokens) => ({
   content: { paddingHorizontal: L.mobileGutter, paddingTop: 16, paddingBottom: 32 },
   note: { color: t.textMuted, fontSize: 11, lineHeight: 16, marginBottom: 12 },
   spinner: { marginTop: 24 },
+  exportRow: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, alignItems: 'center' as const, gap: 8, marginBottom: 14, borderWidth: 1, borderColor: t.accentBorder, backgroundColor: t.accentSubtle, padding: 10 },
+  exportText: { color: t.text, fontFamily: F.extraBold, fontSize: 12, marginRight: 4 },
+  exportBtn: { minHeight: 34, paddingHorizontal: 10, borderWidth: 1, borderColor: t.borderStrong, backgroundColor: t.surface, alignItems: 'center' as const, justifyContent: 'center' as const },
+  exportBtnText: { color: t.text, fontFamily: F.extraBold, fontSize: 9, letterSpacing: 0.8 },
   error: { color: t.error, fontSize: 13, lineHeight: 19 },
   empty: { borderWidth: 1, borderColor: t.border, backgroundColor: t.surface, padding: 16 },
   emptyTitle: { color: t.text, fontFamily: F.extraBold, fontSize: 16 },

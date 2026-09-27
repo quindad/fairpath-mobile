@@ -2,19 +2,11 @@
 import {
   AlignmentType, BorderStyle, Document, Footer, HeadingLevel, Packer, Paragraph, ShadingType, Table, TableCell, TableRow, TextRun, WidthType,
 } from 'docx';
+import { base64ToBytes } from './bytes.ts';
 import type { DocBlock, DocumentSpec } from './spec.ts';
 
 const NO_BORDER = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
 const THIN = { style: BorderStyle.SINGLE, size: 4, color: 'C8CCC4' };
-
-export function base64ToBytes(b64: string): Uint8Array {
-  const g = globalThis as unknown as { atob?: (s: string) => string; Buffer?: { from(s: string, enc: string): Uint8Array } };
-  if (g.Buffer) return new Uint8Array(g.Buffer.from(b64, 'base64'));
-  const bin = g.atob!(b64);
-  const out = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-  return out;
-}
 
 const run = (text: string, o: { bold?: boolean; size?: number; color?: string; italics?: boolean } = {}) =>
   new TextRun({ text, bold: o.bold, size: o.size ? o.size * 2 : undefined, color: o.color, italics: o.italics, font: 'Arial' });

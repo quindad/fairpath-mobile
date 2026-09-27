@@ -134,7 +134,8 @@ export async function saveJobApplicationProfile(form:JobApplicationAutofill){
  }
 }
 /** Creates the application through public.submit_job_application (validated server-side, whitelisted fields only). */
-export async function submitJobApplication(jobId:string,answers:{profile:Partial<JobApplicationAutofill>;employer_questions:Record<string,string>}){
+/** `share_opportunity_profile` + `share_sections` are only a member choice: the SERVER builds the snapshot from the member's own rows. */
+export async function submitJobApplication(jobId:string,answers:{profile:Partial<JobApplicationAutofill>;employer_questions:Record<string,string>;share_opportunity_profile?:boolean;share_sections?:string[]}){
  const {data,error}=await supabase.rpc('submit_job_application',{p_job_id:jobId,p_answers:answers});
  if(error)throw new Error(error.message.includes('ALREADY_APPLIED')?'ALREADY_APPLIED':error.message.includes('SIGNED_OUT')?'SIGNED_OUT':error.message);
  return data as string;

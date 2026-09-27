@@ -8,6 +8,7 @@ import path from 'node:path';
 export const SYNC = [
   ['src/core/documents/spec.ts', 'supabase/functions/_shared/core/documents/spec.ts'],
   ['src/core/documents/document-types.ts', 'supabase/functions/_shared/core/documents/document-types.ts'],
+  ['src/core/documents/bytes.ts', 'supabase/functions/_shared/core/documents/bytes.ts'],
   ['src/core/documents/render-pdf.ts', 'supabase/functions/_shared/core/documents/render-pdf.ts'],
   ['src/core/documents/render-docx.ts', 'supabase/functions/_shared/core/documents/render-docx.ts'],
   ['src/core/documents/builders/resources.ts', 'supabase/functions/_shared/core/documents/builders/resources.ts'],
@@ -16,17 +17,21 @@ export const SYNC = [
 ];
 
 const norm = (s) => s.replace(/\r\n/g, '\n');
-const check = process.argv.includes('--check');
-let stale = 0;
-for (const [from, to] of SYNC) {
-  const src = norm(fs.readFileSync(from, 'utf8'));
-  const dst = fs.existsSync(to) ? norm(fs.readFileSync(to, 'utf8')) : null;
-  if (dst === src) continue;
-  stale++;
-  if (check) { console.error('OUT OF SYNC: ' + to); continue; }
-  fs.mkdirSync(path.dirname(to), { recursive: true });
-  fs.writeFileSync(to, src);
-  console.log('synced ' + to);
+const isMain = Boolean(process.argv[1]) && process.argv[1].replace(/\\/g, '/').endsWith('sync-edge-shared.mjs');
+
+if (isMain) {
+  const check = process.argv.includes('--check');
+  let stale = 0;
+  for (const [from, to] of SYNC) {
+    const src = norm(fs.readFileSync(from, 'utf8'));
+    const dst = fs.existsSync(to) ? norm(fs.readFileSync(to, 'utf8')) : null;
+    if (dst === src) continue;
+    stale++;
+    if (check) { console.error('OUT OF SYNC: ' + to); continue; }
+    fs.mkdirSync(path.dirname(to), { recursive: true });
+    fs.writeFileSync(to, src);
+    console.log('synced ' + to);
+  }
+  if (check && stale) { console.error(`${stale} shared file(s) out of sync. Run: node scripts/sync-edge-shared.mjs`); process.exit(1); }
+  if (!check) console.log(stale ? `${stale} file(s) synced.` : 'Already in sync.');
 }
-if (check && stale) { console.error(`${stale} shared file(s) out of sync. Run: node scripts/sync-edge-shared.mjs`); process.exit(1); }
-if (!check) console.log(stale ? `${stale} file(s) synced.` : 'Already in sync.');
