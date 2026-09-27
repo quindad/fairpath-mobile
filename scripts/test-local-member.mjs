@@ -62,12 +62,13 @@ await test('unavailable saved resources are counted for the "needs attention" hi
   await db.query(`update public.resources set publish_status='published' where id=$1`, [rid('pantry-cle-44113')]);
 });
 
-await test('module extension point: member_summary_<module> is merged when it exists', async () => {
-  ok(!('credit' in (await summary(M))), 'no credit key before the module exists');
-  await db.query(`create function public.member_summary_credit(p uuid) returns jsonb language sql as $$ select jsonb_build_object('items_to_review', 2) $$`);
+await test('module extension point: credit and record-relief summaries are merged, real and per-member', async () => {
   const s = await summary(M);
-  ok(s.credit?.items_to_review === 2, 'credit module merged: ' + JSON.stringify(s.credit));
-  await db.query('drop function public.member_summary_credit(uuid)');
+  ok(s.credit && s.credit.reports === 0 && s.credit.items_to_review === 0 && s.credit.disputes_active === 0, 'credit block for a member with no reports: ' + JSON.stringify(s.credit));
+  ok(s.record_relief && s.record_relief.cases === 0 && s.record_relief.eligible_now === 0, 'record relief block: ' + JSON.stringify(s.record_relief));
+  await db.query(`create function public.member_summary_zzz(p uuid) returns jsonb language sql as $$ select jsonb_build_object('x', 1) $$`);
+  ok(!('zzz' in (await summary(M))), 'only registered modules are merged (unknown functions are ignored)');
+  await db.query('drop function public.member_summary_zzz(uuid)');
 });
 
 await test('account deletion: request is idempotent, honest, cancellable, and audited', async () => {

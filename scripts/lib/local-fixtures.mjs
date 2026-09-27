@@ -1,12 +1,20 @@
 import { buildResourceFixtures } from '../../supabase/seed/data/resources-fixtures.mjs';
+import { buildRecordReliefFixtures } from '../../supabase/seed/data/record-relief-fixtures.mjs';
 
 /** Generic bulk insert of plain objects into `table` (as the local superuser, i.e. like the service role seed). */
 export async function insertRows(db, table, rows) {
   if (!rows.length) return;
-  // Only the supplied columns are inserted, so column defaults (created_at, ids...) still apply.
-  const cols = [...new Set(rows.flatMap((r) => Object.keys(r)))];
-  const list = cols.map((c) => `"${c}"`).join(', ');
-  await db.query(`insert into ${table} (${list}) select ${list} from jsonb_populate_recordset(null::${table}, $1::jsonb)`, [JSON.stringify(rows)]);
+  // Rows are grouped by which keys they provide, and only those columns are inserted, so column defaults still apply.
+  const groups = new Map();
+  for (const r of rows) {
+    const key = Object.keys(r).sort().join(',');
+    groups.set(key, [...(groups.get(key) ?? []), r]);
+  }
+  for (const [key, list] of groups) {
+    const cols = key.split(',');
+    const names = cols.map((c) => '"' + c + '"').join(', ');
+    await db.query('insert into ' + table + ' (' + names + ') select ' + names + ' from jsonb_populate_recordset(null::' + table + ', $1::jsonb)', [JSON.stringify(list)]);
+  }
 }
 
 /** Loads the DEV Resources fixtures the same way seed-dev-resources.mjs does (environment flag first). */
@@ -42,4 +50,15 @@ export function makeRunner() {
       process.exit(failed ? 1 : 0);
     },
   };
+}
+
+/** Loads the DEV Record Relief fixtures (fictional TEST jurisdictions, rules, forms, federal pathways). */
+export async function loadRecordReliefFixtures(db, now = new Date()) {
+  await db.query(`insert into public.app_config (key, value) values ('environment', '"dev"'::jsonb) on conflict (key) do update set value = excluded.value`);
+  const fx = buildRecordReliefFixtures(now);
+  await insertRows(db, 'public.record_relief_jurisdictions', fx.jurisdictions);
+  await insertRows(db, 'public.record_relief_rules', fx.rules);
+  await insertRows(db, 'public.record_relief_forms', fx.forms);
+  await insertRows(db, 'public.record_relief_federal_pathways', fx.pathways);
+  return fx;
 }

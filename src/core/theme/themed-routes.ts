@@ -8,7 +8,7 @@
  * Migrating a screen = convert it to tokens (no FairPathColors, no hex), then add its route here.
  * scripts/audit-theme.mjs enforces both halves.
  */
-export const THEMED_ROUTES: readonly string[] = ['/appearance', '/resources', '/resource', '/saved-resources', '/opportunity-profile', '/documents', '/me', '/privacy', '/credit'];
+export const THEMED_ROUTES: readonly string[] = ['/appearance', '/resources', '/resource', '/saved-resources', '/opportunity-profile', '/documents', '/me', '/privacy', '/credit', '/record-relief'];
 
 export function isThemedRoute(path: string): boolean {
   return THEMED_ROUTES.some((route) => path === route || path.startsWith(route + '/'));
