@@ -99,6 +99,7 @@ export default function CreditItemScreen() {
           </>
         ) : null}
         {item.stage === 'dismissed' ? <SecondaryButton label="REOPEN" onPress={() => void move('reopen')} /> : null}
+        <SecondaryButton label="ASK FAIRPATH WHY THIS WAS FLAGGED" onPress={() => router.push(('/fairpath-ai?item=' + item.id + '&q=' + encodeURIComponent('Why did you flag this account?')) as never)} />
       </FormScrollView>
     </ScreenFrame>
   );

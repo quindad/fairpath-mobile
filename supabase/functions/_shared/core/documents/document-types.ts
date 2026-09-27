@@ -89,6 +89,12 @@ export const DOCUMENT_TYPES: Record<string, DocumentTypeInfo> = {
     sensitivity: 'highly_sensitive', kind: 'checklist', formats: ['pdf', 'docx'], allowedAudiences: ['self'],
     templateId: 'record_relief_filing_checklist', templateVersion: '1', defaultPersist: 'on_demand', retentionChoices: SENSITIVE_RETENTION,
   },
+  record_relief_forms_guide: {
+    type: 'record_relief_forms_guide', module: 'record_relief', label: 'Forms and filing guide',
+    description: 'The verified official forms for your jurisdiction, where to get them, and how they relate to your case.',
+    sensitivity: 'highly_sensitive', kind: 'checklist', formats: ['pdf'], allowedAudiences: ['self'],
+    templateId: 'record_relief_forms_guide', templateVersion: '1', defaultPersist: 'on_demand', retentionChoices: SENSITIVE_RETENTION,
+  },
   record_relief_worksheet: {
     type: 'record_relief_worksheet', module: 'record_relief', label: 'Prepared-information worksheet',
     description: 'Your confirmed case details organized to help you complete the official form. Not an official form.',

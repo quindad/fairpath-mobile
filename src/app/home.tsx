@@ -6,6 +6,7 @@ import { notify } from '@/core/ui/notify';
 import { FairPathLogo } from '@/components/FairPathLogo';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame } from '@/components/ProductChrome';
+import { HomeStatus } from '@/components/HomeStatus';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { loadFairPathReadiness } from '@/core/profile/profile-service';
 import { loadJobs, loadSavedJobIds, loadUnreadNotificationCount, saveJob, unsaveJob, type Job } from '@/core/opportunities/opportunity-service';
@@ -24,6 +25,7 @@ export default function Home(){
   <FormScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <View style={s.top}><View style={s.brand}><FairPathLogo width={112}/></View><Pressable accessibilityRole="button" accessibilityLabel={unread?'Notifications, '+unread+' unread':'Notifications'} style={s.bell} onPress={()=>router.push('/notifications' as never)}><Lucide name="bell" color={C.white} size={17}/>{unread>0?<View style={s.bellBadge}><Text style={s.bellBadgeText}>{unread>9?'9+':unread}</Text></View>:null}</Pressable></View>
 
+   <HomeStatus/>
    <View style={s.hero}><Text style={s.eyebrow}>YOUR FAIRPATH FORWARD</Text><Text style={s.title}>Opportunity has a <Text style={s.titleAccent}>path.</Text></Text><Text style={s.sub}>Jobs. Housing. Resources. A stronger you.</Text><View style={s.search}><Lucide name="search" color={C.lime} size={17}/><TextInput value={search} onChangeText={setSearch} returnKeyType="search" onSubmitEditing={()=>{const q=search.trim();router.push((q?'/find-jobs?search='+encodeURIComponent(q):'/find') as never)}} style={s.searchInput} placeholder="Search jobs..." placeholderTextColor={C.muted}/>{search.length>0?<Pressable accessibilityLabel="Clear search" onPress={()=>setSearch('')}><Text style={s.clearSearch}>×</Text></Pressable>:null}</View><View style={s.quickPills}><Pressable style={[s.pill,s.pillActive]} onPress={()=>router.push('/find-jobs')}><Text style={s.pillActiveText}>Jobs</Text></Pressable><Pressable style={s.pill} onPress={()=>router.push('/find-housing')}><Text style={s.pillText}>Housing</Text></Pressable><Pressable style={s.pill} onPress={()=>router.push('/marketplace')}><Text style={s.pillText}>Marketplace</Text></Pressable><Pressable style={s.pill} onPress={()=>router.push('/resources')}><Text style={s.pillText}>Resources</Text></Pressable></View></View>
 
    <View style={s.sectionHead}><View><Text style={s.featuredTitle}>Featured Opportunities</Text><Text style={s.featuredSub}>Featured across FairPath</Text></View><Pressable style={s.seeAllButton} onPress={()=>router.push('/find-jobs')}><Text style={s.seeAll}>See all</Text><Text style={s.seeAllArrow}>→</Text></Pressable></View>

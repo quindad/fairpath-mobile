@@ -12,8 +12,8 @@ export type MemberSummary = {
   notifications?: { unread?: number };
   plus?: { active?: boolean; complimentary?: boolean; days_remaining?: number | null; expires_at?: string | null };
   deletion_request?: { status?: string; scheduled_for?: string } | null;
-  credit?: { items_to_review?: number; disputes_awaiting_response?: number; response_due_soon?: number };
-  record_relief?: { cases?: number; eligible_now?: number; countdowns_due_soon?: number; rule_updates?: number };
+  credit?: { reports?: number; accounts_to_confirm?: number; items_to_review?: number; disputes_active?: number; disputes_awaiting_response?: number; response_due_soon?: number; overdue?: number };
+  record_relief?: { cases?: number; eligible_now?: number; countdowns_due_soon?: number; rule_updates?: number; needs_information?: number };
 };
 
 export type NextStep = { key: string; title: string; body: string; route: string; reason: string };

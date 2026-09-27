@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { FormScrollView } from '@/components/FormScrollView';
@@ -50,6 +50,8 @@ export default function ResourcesScreen() {
   const [error, setError] = useState('');
   const [zipHint, setZipHint] = useState('');
   const requestId = useRef(0);
+  const params = useLocalSearchParams<{ q?: string; urgent?: string }>();
+  const autoRan = useRef(false);
   const member = useResourceMemberState('/resources');
   const refreshStates = member.refresh;
 
@@ -147,6 +149,17 @@ export default function ResourcesScreen() {
     setError('');
     setLoading(false);
   }
+
+  // Deep links from the assistant / notifications: /resources?q=food&urgent=1 runs that search once.
+  useEffect(() => {
+    if (autoRan.current || (!params.q && params.urgent !== '1')) return;
+    autoRan.current = true;
+    const query = (params.q ?? '').slice(0, 120);
+    setDraftQuery(query);
+    const next: Search = { ...search, query, urgent: params.urgent === '1' };
+    setSearch(next);
+    void run(next);
+  }, [params.q, params.urgent]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const activeCategory = search.category ? categoryLabels[search.category] ?? search.category : null;
   const headline = search.urgent ? 'Help today' : activeCategory ?? (search.query ? `“${search.query}”` : 'All resources');
