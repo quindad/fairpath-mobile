@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "pdf-lib": "npm:pdf-lib@1.17.1",
+    "docx": "npm:docx@9.7.2"
+  }
+}

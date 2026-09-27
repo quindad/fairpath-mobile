@@ -39,6 +39,9 @@ $f$;
 create or replace function auth.role() returns text language sql stable as $f$
   select coalesce(nullif(current_setting('request.jwt.claim.role', true), ''), 'anon')
 $f$;
+create or replace function auth.jwt() returns jsonb language sql stable as $f$
+  select coalesce(nullif(current_setting('request.jwt.claims', true), '')::jsonb, '{}'::jsonb)
+$f$;
 create table if not exists storage.buckets (
   id text primary key, name text, public boolean default false, file_size_limit bigint, allowed_mime_types text[]
 );
@@ -49,6 +52,8 @@ create table if not exists storage.objects (
 alter table storage.objects enable row level security;
 grant select, insert, update, delete on all tables in schema storage to service_role;
 grant select on storage.buckets to anon, authenticated, service_role;
+-- Supabase grants table privileges to app roles and relies on RLS policies to restrict them.
+grant select, insert, update, delete on storage.objects to authenticated;
 create or replace function storage.foldername(name text) returns text[] language sql immutable as $f$
   select string_to_array(name, '/')
 $f$;
@@ -88,7 +93,8 @@ export async function createLocalDb({ migrationsDir = 'supabase/migrations', upT
 /** Runs `fn` as an authenticated member / anon guest / service role (RLS + grants really apply). */
 export async function asRole(db, who, fn) {
   const [role, sub] = who === 'anon' ? ['anon', ''] : who === 'service' ? ['service_role', ''] : ['authenticated', who];
-  await db.exec(`select set_config('request.jwt.claim.sub', '${sub}', false); select set_config('request.jwt.claim.role', '${role}', false); set role ${role};`);
+  const claims = JSON.stringify({ sub, role, email: sub ? sub + '@test.local' : null }).split("'").join("''");
+  await db.exec(`select set_config('request.jwt.claim.sub', '${sub}', false); select set_config('request.jwt.claim.role', '${role}', false); select set_config('request.jwt.claims', '${claims}', false); set role ${role};`);
   try {
     return await fn();
   } finally {
