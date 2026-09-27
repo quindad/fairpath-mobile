@@ -17,6 +17,7 @@ const steps = [
   ['SQL: member summary + privacy', NODE, ['scripts/test-local-member.mjs']],
   ['SQL: credit', NODE, ['scripts/test-local-credit.mjs']],
   ['SQL: record relief', NODE, ['scripts/test-local-relief.mjs']],
+  ['SQL: record relief fixtures', NODE, ['scripts/test-relief-fixtures.mjs']],
   ['SQL: AI provenance + reminders', NODE, ['scripts/test-local-ai-reminders.mjs']],
 ];
 

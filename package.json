@@ -81,6 +81,7 @@
     "test:all": "node scripts/run-all-tests.mjs",
     "test:sql:credit": "node scripts/test-local-credit.mjs",
     "test:sql:relief": "node scripts/test-local-relief.mjs",
+    "test:relief-fixtures": "node scripts/test-relief-fixtures.mjs",
     "test:sql:ai": "node scripts/test-local-ai-reminders.mjs",
     "test:sql": "node scripts/local-sql-check.mjs",
     "test:sql:resources": "node scripts/test-local-resources.mjs",

@@ -6,7 +6,20 @@
 // versioned rules, the federal branch, official-form provenance). Production legal data must come from a verified source.
 export const RR_FIXTURE_SET = 'record-relief-v1';
 
-const daysAgo = (now, n) => new Date(now.getTime() - n * 86400000).toISOString().slice(0, 10);
+// PostgREST bulk upserts send the UNION of every row's keys and fill any key a row omitted with an explicit NULL (column
+// defaults are not applied), which violates NOT NULL columns such as requires_restitution_paid. So every fixture row is
+// normalized to carry EVERY column of its table, using the same defaults the migration declares.
+export const RULE_DEFAULTS = {
+  summary: null, applies_dispositions: [], applies_offense_classes: [], excluded_offense_classes: [], waiting_years: 0, waiting_months: 0, waiting_days: 0,
+  waiting_anchor: 'latest_completion', requires_fines_paid: false, requires_restitution_paid: false, requires_no_pending_charges: false, max_other_convictions: null,
+  manual_review_flags: [], fees: {}, filing: {}, required_documents: [], steps: [], form_keys: [], effective_to: null, last_verified_at: null, status: 'draft',
+};
+export const FORM_DEFAULTS = { revision: null, effective_date: null, official_source_url: null, last_verified_at: null, remedies: [], auto_fillable: false, field_map: null, status: 'draft' };
+export const PATHWAY_DEFAULTS = { pathway_version: 1, is_general_expungement: false, applies_to: null, last_verified_at: null, status: 'draft' };
+export const JURISDICTION_DEFAULTS = { sort_order: 100 };
+const complete = (defaults, rows) => rows.map((r) => ({ ...defaults, ...r }));
+
+const daysAgo =(now, n) => new Date(now.getTime() - n * 86400000).toISOString().slice(0, 10);
 
 export function buildRecordReliefFixtures(now = new Date()) {
   const fx = { data_origin: 'dev_fixture', fixture_set: RR_FIXTURE_SET };
@@ -64,5 +77,10 @@ export function buildRecordReliefFixtures(now = new Date()) {
     { pathway_key: 'test-fed-draft', pathway_version: 1, title: 'Unverified draft pathway (TEST)', description: 'Draft that must never be shown.', is_general_expungement: false,
       applies_to: null, source_authority: 'test_fixture', source_url: 'https://law.example.test/fed/draft', citation_text: 'TEST-FED 3', effective_from: '2024-01-01', last_verified_at: null, status: 'draft', ...fx },
   ];
-  return { jurisdictions, rules, forms, pathways };
+  return {
+    jurisdictions: complete(JURISDICTION_DEFAULTS, jurisdictions),
+    rules: complete(RULE_DEFAULTS, rules),
+    forms: complete(FORM_DEFAULTS, forms),
+    pathways: complete(PATHWAY_DEFAULTS, pathways),
+  };
 }
