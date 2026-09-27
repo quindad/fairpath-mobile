@@ -36,6 +36,20 @@ await test('safe file names: FairPath_{Subject}_{date}, sanitized, versioned _v2
   ok(must(await reg(B), 'B v1')[0].version === 1, "B's versions are independent of A's");
 });
 
+// Regression: version is one sequence per (document_type, source_record_id), shared across export FORMATS. A CSV
+// export of the same logical document advances the same version counter the PDF used, and the version returned in the
+// response is what any later "keep a copy" storage path must be built from (v2 vs v3 vs whatever it actually is) —
+// this is the exact mismatch that made a DEV harness fail with a hardcoded "v2.pdf" path after a version-3 regeneration.
+await test('versioning is per document_type across formats, not per format: a CSV export of the same document advances the same counter as the PDF', async () => {
+  const opts = { type: 'version_format_regression', subject: 'Version Format Regression' };
+  const pdf1 = must(await reg(A, { ...opts, format: 'pdf' }), 'pdf v1')[0];
+  ok(pdf1.version === 1, 'first generation is v1: ' + pdf1.version);
+  const csv = must(await reg(A, { ...opts, format: 'csv' }), 'csv')[0];
+  ok(csv.version === 2 && csv.supersedes_id === pdf1.id && csv.file_name.endsWith('_v2.csv'), 'CSV shares the PDF\'s version sequence: ' + JSON.stringify(csv));
+  const pdf2 = must(await reg(A, { ...opts, format: 'pdf' }), 'pdf again')[0];
+  ok(pdf2.version === 3 && pdf2.supersedes_id === csv.id && pdf2.file_name.endsWith('_v3.pdf'), 'regenerating the PDF is v3, superseding the CSV (the most recent version): ' + JSON.stringify(pdf2));
+});
+
 await test('direct client writes are denied; the database itself rejects unsafe file names', async () => {
   denied(await tryAs(db, A, `insert into public.generated_documents (user_id, document_type, source_module, title, file_name, format, template_id, template_version, input_fingerprint) values ($1,'x_doc','res','Some title','document1.pdf','pdf','t','1','abcdef')`, [A]), 'permission denied', 'client insert');
   denied(await tryAs(db, A, `update public.generated_documents set title = 'Tampered' where user_id = $1`, [A]), 'permission denied', 'client update');
