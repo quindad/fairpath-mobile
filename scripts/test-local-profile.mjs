@@ -12,6 +12,7 @@ const N = await addUser(db, 'n@test.local');
 const E = await addUser(db, 'e@test.local', 'employer');
 const must = (r, what) => { if (r.error) throw new Error(`${what}: ${r.error}`); return r.rows; };
 const denied = (r, text, what) => ok(r.error && r.error.includes(text), `${what}: expected "${text}", got ${JSON.stringify(r.error ?? r.rows).slice(0, 200)}`);
+const q = async (sql, p = []) => (await db.query(sql, p)).rows;
 const one = async (sql, p = []) => (await db.query(sql, p)).rows[0];
 const ins = (who, table, obj) => {
   const cols = Object.keys(obj);
@@ -133,6 +134,21 @@ await test('snapshot is a point-in-time copy: editing the live profile later doe
   await db.query(`update public.member_work_experience set job_title = 'Changed Later' where user_id = $1`, [M]);
   const apps = (await db.query(`select answers from public.job_applications where user_id = $1 and answers ? 'opportunity_snapshot'`, [M])).rows;
   ok(apps.length === 1 && !JSON.stringify(apps[0].answers).includes('Changed Later'), 'existing snapshot must not follow live edits');
+});
+
+// Regression for the DEV harness failure INVALID_APPLICATION:question:license: required employer questions are enforced,
+// a payload that answers them succeeds, and the duplicate rule still wins over payload validation.
+await test('required employer questions are enforced; a complete first application succeeds; duplicates say ALREADY_APPLIED', async () => {
+  const qJob = await one(`insert into public.jobs (employer_id, title, company_name, status, easy_apply_enabled, application_method, published_at, application_questions)
+                          values ($1, 'Driver', 'Route Co', 'published', true, 'fairpath', now(), '[{"id":"license","label":"Valid license?","required":true},{"id":"notes","label":"Notes","required":false}]'::jsonb) returning id`, [E]);
+  denied(await apply(M, qJob.id, payload()), 'INVALID_APPLICATION:question:license', 'unanswered required question');
+  ok((await q('select 1 from public.job_applications where user_id = $1 and job_id = $2', [M, qJob.id])).length === 0, 'a rejected application must leave no row');
+  const full = payload({ employer_questions: { license: 'Yes' }, share_opportunity_profile: true, share_sections: ['skills'] });
+  const r = must(await apply(M, qJob.id, full), 'complete apply');
+  const a = (await one('select answers from public.job_applications where id = $1', [r[0].id])).answers;
+  ok(a.employer_questions.license === 'Yes' && a.opportunity_snapshot && JSON.stringify(a.opportunity_snapshot.sections) === '["skills"]', 'answers and server-built snapshot stored');
+  denied(await apply(M, qJob.id, payload()), 'ALREADY_APPLIED', 'duplicate with an incomplete payload');
+  ok((await q('select 1 from public.job_applications where user_id = $1 and job_id = $2', [M, qJob.id])).length === 1, 'exactly one row');
 });
 
 await test('deleting a member removes all profile data', async () => {

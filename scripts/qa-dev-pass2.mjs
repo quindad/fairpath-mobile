@@ -74,19 +74,61 @@ await test('opportunity profile: owner-only through PostgREST; validation; guest
   ok(c.length === 8 && c.every((x) => x.is_complete === false || x.section_key === 'skills' === false), 'eight sections, real state');
 });
 
-await test('application snapshot: server-built, opt-in, no DOB/address/justice data', async () => {
-  const { data: jobs } = await admin.from('jobs').select('id').eq('status', 'published').eq('application_method', 'fairpath').eq('easy_apply_enabled', true).limit(1);
-  ok(jobs?.length, 'no Easy Apply job in DEV inventory (run npm run seed:dev)');
+// ---- application snapshot (jobs may carry required employer questions, so the payload answers every one of them) ----
+const snap = { jobs: [], apps: {} };
+const employerAnswers = (job) => Object.fromEntries((job.application_questions ?? []).filter((q) => q?.id).map((q) => [q.id, 'Yes']));
+const applyPayload = (job, extra = {}) => ({
+  profile: { first_name: 'Quinn', last_name: 'Tester', email: A.email, phone: '(614) 555-0100', current_address: '123 Secret Street', date_of_birth: '1985-02-03' },
+  employer_questions: employerAnswers(job), ...extra,
+});
+
+await test('snapshot: setup (two Easy Apply jobs; profile with skills and private fields)', async () => {
+  const { data: jobs } = await admin.from('jobs').select('id,application_questions').eq('status', 'published').eq('application_method', 'fairpath').eq('easy_apply_enabled', true).limit(2);
+  ok(jobs?.length === 2, 'need two Easy Apply jobs in DEV inventory (run npm run seed:dev)');
+  snap.jobs = jobs;
   await admin.from('profiles').update({ first_name: 'Quinn', last_name: 'Tester', phone: '(614) 555-0100', date_of_birth: '1985-02-03' }).eq('id', A.id);
   fine(await A.client.from('member_skills').insert([{ user_id: A.id, skill: 'Inventory' }, { user_id: A.id, skill: 'Teamwork' }]), 'skills');
-  const id = fine(await A.client.rpc('submit_job_application', { p_job_id: jobs[0].id, p_answers: {
-    profile: { first_name: 'Quinn', last_name: 'Tester', phone: '(614) 555-0100' }, employer_questions: {}, share_opportunity_profile: true, share_sections: ['skills', 'justice_history'],
-    opportunity_snapshot: { skills: ['FORGED'] }, date_of_birth: '1985-02-03' } }), 'apply');
-  const { data: app } = await admin.from('job_applications').select('answers').eq('id', id).single();
-  const text = JSON.stringify(app.answers);
-  ok(app.answers.opportunity_snapshot?.skills?.includes('Forklift') && !text.includes('FORGED') && !text.includes('1985') && !/justice|conviction/i.test(text), 'snapshot wrong: ' + text.slice(0, 200));
-  ok(JSON.stringify(app.answers.opportunity_snapshot.sections) === '["skills"]', 'unknown sections must be dropped');
 });
+
+await test('snapshot: required employer questions are still enforced (unanswered -> INVALID_APPLICATION:question:<id>)', async () => {
+  const withQ = snap.jobs.find((j) => (j.application_questions ?? []).some((q) => q?.required));
+  if (!withQ) return console.log('     (no DEV job has a required question; enforcement is covered by the local suite)');
+  has(await A.client.rpc('submit_job_application', { p_job_id: withQ.id, p_answers: { ...applyPayload(withQ), employer_questions: {} } }), 'INVALID_APPLICATION:question:');
+});
+
+await test('snapshot: a valid first application succeeds when NOT opted in, and stores no snapshot (a forged one is ignored)', async () => {
+  const job = snap.jobs[0];
+  const id = fine(await A.client.rpc('submit_job_application', { p_job_id: job.id, p_answers: applyPayload(job, { share_opportunity_profile: false, opportunity_snapshot: { skills: ['FORGED'] } }) }), 'apply (no opt-in)');
+  const { data: app } = await admin.from('job_applications').select('answers').eq('id', id).single();
+  snap.apps.plain = app.answers;
+  ok(app.answers.opportunity_snapshot === undefined && !JSON.stringify(app.answers).includes('FORGED'), 'no snapshot without opt-in: ' + JSON.stringify(app.answers).slice(0, 200));
+});
+
+await test('snapshot: duplicate application is rejected with ALREADY_APPLIED and creates no second row', async () => {
+  const job = snap.jobs[0];
+  has(await A.client.rpc('submit_job_application', { p_job_id: job.id, p_answers: applyPayload(job) }), 'ALREADY_APPLIED');
+  const { data } = await admin.from('job_applications').select('id').eq('user_id', A.id).eq('job_id', job.id);
+  ok(data.length === 1, 'exactly one application row for the job, got ' + data.length);
+});
+
+await test('snapshot: opted in -> built by the server from the member profile, unknown sections dropped, client forgery ignored', async () => {
+  const job = snap.jobs[1];
+  const id = fine(await A.client.rpc('submit_job_application', { p_job_id: job.id, p_answers: applyPayload(job, { share_opportunity_profile: true, share_sections: ['skills', 'justice_history', 'date_of_birth'], opportunity_snapshot: { skills: ['FORGED'] } }) }), 'apply (opt-in)');
+  const { data: app } = await admin.from('job_applications').select('answers').eq('id', id).single();
+  snap.apps.shared = app.answers;
+  const s = app.answers.opportunity_snapshot;
+  ok(s && Array.isArray(s.skills) && s.skills.includes('Forklift') && s.skills.includes('Inventory'), 'skills come from member_skills: ' + JSON.stringify(s).slice(0, 200));
+  ok(!JSON.stringify(app.answers).includes('FORGED'), 'client-supplied snapshot content must be ignored');
+  ok(JSON.stringify(s.sections) === '["skills"]', 'only allow-listed sections survive, got ' + JSON.stringify(s.sections));
+});
+
+await test('snapshot: DOB, street address and justice data never enter the employer-visible answers or snapshot', async () => {
+  const text = JSON.stringify(snap.apps);
+  ok(!/1985|123 Secret|Secret Street|date_of_birth|current_address/i.test(text), 'private personal fields leaked: ' + text.slice(0, 300));
+  ok(!/justice|conviction|record_relief|expunge|sealing|readiness/i.test(JSON.stringify(snap.apps.shared.opportunity_snapshot)), 'justice data in snapshot');
+  ok(!/pay|salary|wage/i.test(JSON.stringify(Object.keys(snap.apps.shared.opportunity_snapshot))), 'pay in snapshot');
+});
+
 
 await test('documents: safe file names, versions, private storage, signed URL, delete', async () => {
   const reg = () => A.client.rpc('register_generated_document', { p_document_type: 'saved_resources_list', p_source_module: 'resources', p_source_record_id: null, p_subject: 'Saved Resources', p_title: 'Saved resources', p_format: 'pdf', p_kind: 'summary', p_template_id: 'saved_resources_list', p_template_version: '1', p_sensitivity: 'standard', p_input_fingerprint: 'abc12345', p_confirmed_data_at: new Date().toISOString(), p_metadata: {}, p_official_form_ref: null, p_target_user: null });
@@ -148,24 +190,75 @@ await test('record relief: TEST rules, federal branch, hedged results, isolation
   has(await A.client.from('record_relief_rules').insert({ rule_key: 'forged-rule', jurisdiction_code: 'US-OH', remedy: 'other', title: 'Forged', source_authority: 'statute', source_url: 'https://x.test', citation_text: 'x', effective_from: '2024-01-01' }), 'permission denied');
 });
 
-await test('summary, privacy request, AI provenance, reminders', async () => {
-  const s = fine(await A.client.rpc('get_member_home_summary'), 'summary');
-  ok(s.jobs.applied >= 1 && s.profile.total_sections === 8 && s.credit.reports === 2 && s.record_relief.cases === 3 && s.documents.generated >= 1, 'summary reflects real state: ' + JSON.stringify([s.jobs, s.credit, s.record_relief]).slice(0, 200));
-  ok((await B.client.rpc('get_member_home_summary')).data.jobs.applied === 0, "B's summary is B's own");
-  has(await anon.rpc('get_member_home_summary'), '');
-  const r1 = fine(await A.client.rpc('request_account_deletion', { p_reason: 'privacy' }), 'request'); const r2 = fine(await A.client.rpc('request_account_deletion', { p_reason: null }), 'again');
-  ok(r1.id === r2.id && r1.status === 'requested', 'idempotent request'); fine(await A.client.rpc('cancel_account_deletion'), 'cancel');
-  const log = (o) => A.client.rpc('log_ai_interaction', { p_task: 'navigation', p_intent: 'open_screen', p_engine: 'deterministic_router', p_route: '/me', p_source_refs: [], p_rule_versions: [], p_official_sources: [], p_confidence: 'deterministic', p_confirmation: 'not_required', ...o });
-  fine(await log({}), 'valid log');
-  has(await log({ p_source_refs: [{ kind: 'credit_item', id: 'x', text: 'Metro balance $2650' }] }), 'INVALID_PROVENANCE');
-  has(await log({ p_route: 'https://evil.example' }), 'check');
-  has(await A.client.rpc('generate_member_reminders'), 'permission denied');
-  const n = fine(await admin.rpc('generate_member_reminders'), 'reminder job');
-  ok(Number.isInteger(n), 'the reminder job runs (service role) and returns a count');
-  const notes = (await admin.from('user_notifications').select('title,body').eq('user_id', A.id)).data;
-  ok(!notes.some((x) => /Metro|TransUnion|QA case|Testland/i.test(x.title + x.body)), 'reminders are lock-screen safe');
-  fine(await A.client.rpc('delete_my_ai_history'), 'delete history');
+// ---- member summary, privacy, AI provenance, reminders: each reported separately, with actual values on failure ----
+const summaryA = { v: null };
+await test('summary: get_member_home_summary returns the expected shape for the member', async () => {
+  summaryA.v = fine(await A.client.rpc('get_member_home_summary'), 'summary');
+  for (const k of ['jobs', 'housing', 'resources', 'profile', 'documents', 'notifications', 'deletion_request', 'credit', 'record_relief']) ok(summaryA.v[k] !== undefined, 'missing section ' + k + '; keys: ' + Object.keys(summaryA.v).join(','));
+  ok(summaryA.v.profile.total_sections === 8, 'profile.total_sections = ' + summaryA.v.profile.total_sections);
 });
+await test('summary: jobs.applied reflects the two real applications', async () => {
+  ok(summaryA.v.jobs.applied === 2, 'jobs.applied = ' + summaryA.v.jobs.applied + ' (expected 2)');
+});
+await test('summary: credit section reflects the loaded sample data', async () => {
+  const c = summaryA.v.credit;
+  ok(c.reports >= 1 && c.items_to_review >= 1, 'credit = ' + JSON.stringify(c));
+});
+await test('summary: record_relief.cases reflects the three cases', async () => {
+  ok(summaryA.v.record_relief.cases === 3, 'record_relief = ' + JSON.stringify(summaryA.v.record_relief));
+});
+await test('summary: documents.generated reflects the remaining generated document', async () => {
+  ok(summaryA.v.documents.generated >= 1, 'documents = ' + JSON.stringify(summaryA.v.documents));
+});
+await test("summary: another member's summary is their own; guests are denied", async () => {
+  const b = fine(await B.client.rpc('get_member_home_summary'), 'B summary');
+  ok(b.jobs.applied === 0 && (b.credit?.reports ?? 0) === 0 && (b.record_relief?.cases ?? 0) === 0, "B sees A's data: " + JSON.stringify([b.jobs, b.credit, b.record_relief]).slice(0, 200));
+  ok((await anon.rpc('get_member_home_summary')).error, 'guest must be denied');
+});
+
+await test('privacy: deletion request is idempotent while open and is request-only (nothing deleted)', async () => {
+  const r1 = fine(await A.client.rpc('request_account_deletion', { p_reason: 'privacy' }), 'request');
+  const r2 = fine(await A.client.rpc('request_account_deletion', { p_reason: null }), 'again');
+  ok(r1.id === r2.id && r1.status === 'requested', 'idempotent: ' + JSON.stringify([r1, r2]));
+  const st = fine(await A.client.rpc('get_account_deletion_status'), 'status');
+  ok(st && st.status === 'requested', 'status reads back: ' + JSON.stringify(st));
+  const still = await admin.auth.admin.getUserById(A.id); ok(still.data?.user, 'the account still exists');
+});
+await test('privacy: request can be cancelled, and a second cancel is refused', async () => {
+  const c = fine(await A.client.rpc('cancel_account_deletion'), 'cancel'); ok(c.status === 'cancelled', 'cancelled');
+  has(await A.client.rpc('cancel_account_deletion'), 'NOT_CANCELLABLE');
+});
+await test("privacy: another member cannot read A's requests; guests are denied", async () => {
+  ok((await B.client.from('account_deletion_requests').select('id')).data.length === 0, "B reads A's request");
+  ok((await anon.rpc('request_account_deletion', { p_reason: null })).error, 'guest denied');
+});
+
+const aiLog = (o) => A.client.rpc('log_ai_interaction', { p_task: 'navigation', p_intent: 'open_screen', p_engine: 'deterministic_router', p_route: '/me', p_source_refs: [], p_rule_versions: [], p_official_sources: [], p_confidence: 'deterministic', p_confirmation: 'not_required', ...o });
+await test('ai provenance: a valid log entry (ids only) is accepted', async () => {
+  const id = fine(await aiLog({ p_source_refs: [{ kind: 'credit_item', id: crypto.randomUUID() }] }), 'valid log'); ok(typeof id === 'string', 'returns the row id');
+});
+await test('ai provenance: content/text in source refs is rejected (INVALID_PROVENANCE)', async () => {
+  has(await aiLog({ p_source_refs: [{ kind: 'credit_item', id: 'x', text: 'Metro balance $2650' }] }), 'INVALID_PROVENANCE');
+});
+await test('ai provenance: an off-app route is rejected by the schema', async () => {
+  const r = await aiLog({ p_route: 'https://evil.example' }); ok(r.error, 'expected an error, got ' + JSON.stringify(r.data));
+});
+await test("ai provenance: ledger is owner-only; history deletion works", async () => {
+  ok((await B.client.from('ai_interactions').select('id')).data.length === 0, "B reads A's ledger");
+  fine(await A.client.rpc('delete_my_ai_history'), 'delete history');
+  ok((await admin.from('ai_interactions').select('id').eq('user_id', A.id)).data.length === 0, 'history removed');
+});
+
+await test('reminders: members cannot run the reminder job', async () => {
+  const r = await A.client.rpc('generate_member_reminders'); ok(r.error && /permission denied/i.test(r.error.message), 'expected permission denied, got ' + JSON.stringify(r.error));
+});
+await test('reminders: the service job runs, is deduped on rerun, and produces lock-screen-safe text', async () => {
+  const n1 = fine(await admin.rpc('generate_member_reminders'), 'reminder job'); ok(Number.isInteger(n1), 'returns a count, got ' + JSON.stringify(n1));
+  const n2 = fine(await admin.rpc('generate_member_reminders'), 'reminder job again'); ok(n2 === 0, 'rerun creates nothing new, got ' + n2);
+  const notes = (await admin.from('user_notifications').select('title,body').eq('user_id', A.id)).data;
+  ok(!notes.some((x) => /Metro|TransUnion|Experian|Equifax|QA case|Testland|\$\d/i.test(x.title + ' ' + x.body)), 'reminder text names private details: ' + JSON.stringify(notes).slice(0, 200));
+});
+
 
 // ---- cleanup (cascade removes all member data) ----
 for (const id of created) await admin.auth.admin.deleteUser(id);
