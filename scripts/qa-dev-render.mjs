@@ -56,13 +56,21 @@ const A = await makeUser('a');
 const B = await makeUser('b');
 
 // ---- give A real data to render ----
-// Resources are visible when published AND verified (see resources-core migration); "status"/"name" are not real
-// columns on this table (title/publish_status/verification_state are) — querying them silently returned nothing and
-// produced a misleading "no verified resources" diagnosis. Surface any real query error loudly instead of guessing.
-const resQ = await admin.from('resources').select('id,title').eq('publish_status', 'published').eq('verification_state', 'verified').limit(3);
-if (resQ.error) throw new Error('resources query failed: ' + resQ.error.message);
-const res = (resQ.data ?? []).map((r) => ({ id: r.id, name: r.title }));
-ok(res.length >= 2, 'no published+verified resources in DEV (run npm run seed:dev:resources)');
+// A resource being published+verified is NOT the same thing as being saveable: save_resource() also requires its
+// organization to be active and its freshness to be fresh/stale (not expired), via resource_is_visible(). Guessing
+// availability from a subset of base-table columns previously chose an unsaveable resource and failed with
+// RESOURCE_UNAVAILABLE. Rather than re-deriving that predicate, the harness calls the SAME function save_resource()
+// calls, so it can never drift from the real contract.
+const candQ = await admin.from('resources').select('id,title').eq('publish_status', 'published').eq('verification_state', 'verified').limit(20);
+if (candQ.error) throw new Error('resources query failed: ' + candQ.error.message);
+const res = [];
+for (const c of candQ.data ?? []) {
+  const v = await admin.rpc('resource_is_visible', { p_id: c.id });
+  if (v.error) throw new Error('resource_is_visible failed: ' + v.error.message);
+  if (v.data === true) res.push({ id: c.id, name: c.title });
+  if (res.length >= 3) break;
+}
+ok(res.length >= 2, 'no resources in DEV currently pass resource_is_visible (published+verified+active org+fresh/stale) — run npm run seed:dev:resources');
 for (const r of res) fine(await A.client.rpc('save_resource', { p_id: r.id }), 'save resource');
 await admin.from('profiles').update({ first_name: 'Quinn', last_name: 'Renderer', phone: '(614) 555-0100', date_of_birth: '1985-02-03' }).eq('id', A.id);
 fine(await A.client.from('member_skills').insert({ user_id: A.id, skill: 'Forklift' }), 'skill');
