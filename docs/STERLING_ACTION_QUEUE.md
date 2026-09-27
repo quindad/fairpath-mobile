@@ -2,15 +2,17 @@
 
 One item at a time, in order. Each blocks something specific; everything else continues without it.
 
-## 1. Rerun the render harness (bug fixed — resources were already seeded correctly)
+## 1. Rerun the render harness (second bug fixed — resources were already seeded correctly)
 - **Command:**
   ```bash
   npm run qa:dev-render
   ```
-- **Why:** the earlier "no verified resources in DEV" was a bug in the harness itself, not a Resources problem. It queried `.eq('status', 'verified')` and `select('id,name')` on `public.resources`, but that table has no `status` or `name` columns (it has `publish_status`, `verification_state`, `title`) — the query errored, the error was silently discarded, and an empty result read as "not seeded." Your 54-row seed was correct the whole time. Fixed in commit `ca9e980`, and a regression suite (`npm run test:qa-harness-columns`, now in `test:all`) checks every DEV-harness column against the real schema and flags any unchecked query error so this exact false negative can't recur.
+- **Why:** two harness bugs, now both fixed, neither was a Resources problem.
+  1. (`ca9e980`) It queried `.eq('status', 'verified')` / `select('id,name')`, columns that don't exist (real ones: `publish_status`, `verification_state`, `title`). The query errored, the error was discarded, and an empty result misread as "not seeded."
+  2. (`a587568`) After fixing #1, it picked ANY row with `publish_status = 'published'` and `verification_state = 'verified'`, but that's not the full contract `save_resource()` enforces — it also requires the organization to be active and the row to be fresh/stale, not expired (`resource_is_visible()`). It picked a published+verified-but-expired-or-org-suspended row and failed with `RESOURCE_UNAVAILABLE`. The harness now filters candidates through `resource_is_visible()` itself — the same function `save_resource()` calls — so it can't drift from the real contract again. Regression suite: `npm run test:resource-availability` (now in `test:all`).
 - **Risk:** low. DEV only, no writes to Resources.
 - **Expected result:** `qa:dev-render` runs its real checks against the deployed function (PDF/DOCX/CSV, versioning, private storage, isolation, malformed/unauthorized requests) and reports N/N.
-- **Unblocks:** confirming the deployed `render-document` function end to end.
+- **Unblocks:** confirming the deployed `render-document` function end to end, then signed-in Browser QA (queue item 2).
 
 ## 2. Create a disposable signed-in DEV UI member for Browser QA
 - **Command:**
