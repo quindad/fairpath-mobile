@@ -27,6 +27,13 @@ Nothing here is pushed. DEV project only (`znvhmuhojvwvjzmaqwff`). Production un
 - Signed-in Browser QA has NOT been done: it needs a disposable DEV member (`npm run qa:dev-ui`, service key).
 - Guest Browser QA in light mode at phone width: Appearance and Assistant look right; assistant asks guests to sign in for credit questions.
 
+## Update 2 (autonomous pass while Sterling away)
+- `qa:dev-render` was run and failed on setup, not on the function: DEV has no verified resources loaded. Queued in `docs/STERLING_ACTION_QUEUE.md` item 1 (`npm run seed:dev:resources` then `npm run qa:dev-render`).
+- Credit: built the client-side consent flow for automatic reading (`readUploadedReport` in `src/core/credit/credit-service.ts`, a confirm dialog + "READ AUTOMATICALLY" button per upload in `src/app/credit/index.tsx`). The server function stays disabled until Sterling sets the extraction secrets (queue item 3) — calling it today returns `extraction_not_enabled`, which the UI now explains in place.
+- Reviewed My Documents staleness/versioning UI (`src/app/documents/index.tsx`): already flags "changed since you created this" from `input_fingerprint`, shows expiring stored copies, and distinguishes server- vs device-generated. No gap found; nothing changed.
+- Audit updated to check the new honest copy and the explicit-consent call path (`scripts/audit-credit.mjs`).
+- All 34 offline checks green. Signed-in Browser QA still blocked on queue item 2 (`npm run qa:dev-ui`).
+
 ## NOT tested (do not assume working)
 - `qa-dev-pass2.mjs` has been syntax-checked and its guard confirmed, but never run against DEV.
 - Signed-in screens for every new module (need migrations pushed).
