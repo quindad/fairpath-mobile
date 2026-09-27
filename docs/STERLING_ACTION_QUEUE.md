@@ -2,17 +2,18 @@
 
 One item at a time, in order. Each blocks something specific; everything else continues without it.
 
-## 1. Rerun the render harness (second bug fixed — resources were already seeded correctly)
+## 1. Rerun the render harness (a third bug fixed — 10/12 was the harness, not the app)
 - **Command:**
   ```bash
   npm run qa:dev-render
   ```
-- **Why:** two harness bugs, now both fixed, neither was a Resources problem.
-  1. (`ca9e980`) It queried `.eq('status', 'verified')` / `select('id,name')`, columns that don't exist (real ones: `publish_status`, `verification_state`, `title`). The query errored, the error was discarded, and an empty result misread as "not seeded."
-  2. (`a587568`) After fixing #1, it picked ANY row with `publish_status = 'published'` and `verification_state = 'verified'`, but that's not the full contract `save_resource()` enforces — it also requires the organization to be active and the row to be fresh/stale, not expired (`resource_is_visible()`). It picked a published+verified-but-expired-or-org-suspended row and failed with `RESOURCE_UNAVAILABLE`. The harness now filters candidates through `resource_is_visible()` itself — the same function `save_resource()` calls — so it can't drift from the real contract again. Regression suite: `npm run test:resource-availability` (now in `test:all`).
-- **Risk:** low. DEV only, no writes to Resources.
-- **Expected result:** `qa:dev-render` runs its real checks against the deployed function (PDF/DOCX/CSV, versioning, private storage, isolation, malformed/unauthorized requests) and reports N/N.
-- **Unblocks:** confirming the deployed `render-document` function end to end, then signed-in Browser QA (queue item 2).
+- **Why:** three harness bugs found and fixed across this pass, none of them a real defect in `render-document`, `register_generated_document`, or `keep_document_copy`.
+  1. (`ca9e980`) Queried columns that don't exist on `resources` (`status`/`name` vs. real `publish_status`/`verification_state`/`title`); the error was silently discarded and read as "not seeded."
+  2. (`a587568`) Picked a resource by raw `published`+`verified` columns instead of the full `resource_is_visible()` contract (also requires an active organization and fresh/stale, not expired) — picked an unsaveable row.
+  3. (`1c78a47`) The 10/12 run: versioning failed because the harness hardcoded "the PDF regenerate is v2," but the CSV test in between shares the same `document_type` and legitimately used version 2 first (a document's version is one sequence across every export format — correct, intentional behavior). The storage test then failed with `FILE_NOT_UPLOADED` for the same reason: it uploaded to a hardcoded `v2.pdf` path while the real document was already v3, so `keep_document_copy()` correctly couldn't find the file at the path it computed. Both are fixed by reading the actual returned version instead of assuming it, and covered by a new local regression test (`test-local-documents.mjs`, 12/12).
+- **Risk:** low. DEV only, no writes to Resources or generated_documents schema.
+- **Expected result:** `qa:dev-render` reports 12/12 against the deployed function (PDF/DOCX/CSV, versioning, private storage, isolation, malformed/unauthorized requests).
+- **Unblocks:** signed-in Browser QA (queue item 2).
 
 ## 2. Create a disposable signed-in DEV UI member for Browser QA
 - **Command:**

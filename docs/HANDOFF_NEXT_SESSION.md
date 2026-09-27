@@ -34,6 +34,12 @@ Nothing here is pushed. DEV project only (`znvhmuhojvwvjzmaqwff`). Production un
 - Audit updated to check the new honest copy and the explicit-consent call path (`scripts/audit-credit.mjs`).
 - All 34 offline checks green. Signed-in Browser QA still blocked on queue item 2 (`npm run qa:dev-ui`).
 
+## Update 3 (Browns-game pass)
+- Root-caused and fixed all three `qa:dev-render` failures reported from real DEV (10/12 → expected 12/12). None were app bugs: two were wrong-column/wrong-predicate mistakes in the harness itself, one was the harness hardcoding a document version instead of reading the one the server actually returned. Regression coverage added at both the harness level (`test-qa-harness-columns`, `test-resource-availability`) and the app level (`test-local-documents.mjs`, now 12/12, proves version is one sequence per document_type across every export format).
+- Static Phase 2 sweep of the signed-in routes (home, me, opportunity-profile, resources, saved-resources, documents, credit, record-relief, fairpath-ai, privacy, appearance): no dead `onPress` handlers, no TODO/placeholder markers, no hardcoded hex colors in themed routes, and the public/gated route split matches what was already verified live (guests redirected from every module route). Nothing needed fixing.
+- 36/36 offline checks green. Signed-in Browser QA is still blocked on `npm run qa:dev-ui` (queue item 2) — I did not fabricate a pass for it.
+- Given the size of the remaining marathon backlog (Credit Builder depth, Record Relief engine breadth, FairPath AI tool surface, Resume Studio, virtual meetings), I stopped after the concrete, verifiable bug-fix and audit work rather than claim large feature builds I could not exercise against real data or the Browser pane this pass. Those phases are unstarted, not silently skipped — flagging that honestly here instead of reporting fake progress.
+
 ## NOT tested (do not assume working)
 - `qa-dev-pass2.mjs` has been syntax-checked and its guard confirmed, but never run against DEV.
 - Signed-in screens for every new module (need migrations pushed).
