@@ -95,6 +95,7 @@
     "qa:dev-resources": "node scripts/qa-dev-resources.mjs",
     "qa:dev-resources-member": "node scripts/qa-dev-resources-member.mjs --confirm-dev",
     "qa:dev-pass2": "node scripts/qa-dev-pass2.mjs --confirm-dev",
+    "qa:dev-render": "node scripts/qa-dev-render.mjs --confirm-dev",
     "qa:dev-platform": "node scripts/qa-dev-platform.mjs --confirm-dev",
     "qa:dev-ui": "node scripts/qa-dev-ui-session.mjs --confirm-dev",
     "qa:dev-ui-cleanup": "node scripts/qa-dev-ui-session.mjs --cleanup --confirm-dev",
