@@ -56,7 +56,7 @@ check(/temp\?\.delete\(\)/.test(deliverNative), 'temp files are deleted after ha
 check(!/console\.(log|info|debug)/.test(docSvc + deliverNative + deliverWeb + read('src/core/documents/generate.ts')), 'document code never logs');
 const gen = read('src/core/documents/generate.ts');
 check(/generated_by|generatedBy/.test(gen) && /'device'/.test(gen), 'device-generated documents are labelled');
-check(!/p_official_form_ref:\s*(?!null)|officialFormRef\s*[:=]\s*\{/.test(gen + docSvc),'the client never sets an official form reference');
+check(!/p_official_form_ref: (?!null)|officialFormRef\s*[:=]\s*\{/.test(gen + docSvc),'the client never sets an official form reference');
 const create = read('src/app/documents/create.tsx');
 check(/cannot recall/.test(create) && /PREPARED ON THIS DEVICE/.test(create), 'create screen states the recall limit and the generation source');
 check(/logDocumentExport/.test(create), 'export actions are logged (metadata only)');

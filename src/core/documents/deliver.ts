@@ -11,6 +11,7 @@ const UTI: Record<string, string> = {
   pdf: 'com.adobe.pdf',
   docx: 'org.openxmlformats.wordprocessingml.document',
   csv: 'public.comma-separated-values-text',
+  zip: 'public.zip-archive',
 };
 
 export async function getDeliveryCapabilities(): Promise<DeliveryCapabilities> {

@@ -107,3 +107,20 @@ export async function generateDocument(type: RenderableType, format: DocFormat, 
   });
   return { row, bytes, fileName: row.file_name, mime: MIME[format], format, preview: { title: spec.title, blocks: spec.blocks, footer: spec.footer }, generatedBy: 'device', fingerprint };
 }
+
+/**
+ * Generic DEVICE generation for a spec the caller already built from the member's confirmed data (credit letters,
+ * record-relief worksheets...). Registered as generated_by = 'device'; the database refuses official-form claims from here.
+ */
+export async function generateFromSpec(spec: DocumentSpec, format: DocFormat, packet?: { position: number; total: number }): Promise<GeneratedDocument> {
+  const info = documentTypeInfo(spec.documentType);
+  if (!info || !info.formats.includes(format)) throw new Error('FORMAT_NOT_AVAILABLE');
+  const bytes = await renderOnDevice(spec, format);
+  const fingerprint = fingerprintOf(spec.inputs);
+  const row = await registerDeviceDocument({
+    documentType: spec.documentType, sourceModule: spec.sourceModule, sourceRecordId: spec.sourceRecordId, subject: spec.subject, title: spec.title, format,
+    kind: spec.kind, templateId: spec.templateId, templateVersion: spec.templateVersion, sensitivity: spec.sensitivity, fingerprint,
+    confirmedDataAt: spec.confirmedDataAt, optionsCode: spec.optionsCode, packet,
+  });
+  return { row, bytes, fileName: row.file_name, mime: MIME[format], format, preview: { title: spec.title, blocks: spec.blocks, footer: spec.footer }, generatedBy: 'device', fingerprint };
+}

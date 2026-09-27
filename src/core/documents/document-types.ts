@@ -59,6 +59,18 @@ export const DOCUMENT_TYPES: Record<string, DocumentTypeInfo> = {
     sensitivity: 'highly_sensitive', kind: 'letter', formats: ['pdf', 'docx'], allowedAudiences: ['self'],
     templateId: 'credit_dispute_letter', templateVersion: '1', defaultPersist: 'on_demand', retentionChoices: SENSITIVE_RETENTION,
   },
+  credit_evidence_checklist: {
+    type: 'credit_evidence_checklist', module: 'credit', label: 'Supporting-document checklist',
+    description: 'What to include with a dispute, plus the documents you added.',
+    sensitivity: 'highly_sensitive', kind: 'checklist', formats: ['pdf', 'docx'], allowedAudiences: ['self'],
+    templateId: 'credit_evidence_checklist', templateVersion: '1', defaultPersist: 'on_demand', retentionChoices: SENSITIVE_RETENTION,
+  },
+  credit_mailing_instructions: {
+    type: 'credit_mailing_instructions', module: 'credit', label: 'Mailing instructions',
+    description: 'General steps for sending a dispute and keeping a paper trail.',
+    sensitivity: 'highly_sensitive', kind: 'worksheet', formats: ['pdf'], allowedAudiences: ['self'],
+    templateId: 'credit_mailing_instructions', templateVersion: '1', defaultPersist: 'on_demand', retentionChoices: SENSITIVE_RETENTION,
+  },
   credit_dispute_history: {
     type: 'credit_dispute_history', module: 'credit', label: 'Dispute history',
     description: 'Your disputes, dates and outcomes.',

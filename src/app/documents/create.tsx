@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, View } from 'react-native';
+import { ExportPanel } from '@/components/ExportPanel';
 import { FormScrollView } from '@/components/FormScrollView';
 import { InlineBadge, PageHeader, ScreenFrame, SectionTitle } from '@/components/ProductChrome';
 import { SpecPreview } from '@/components/SpecPreview';
@@ -78,33 +79,6 @@ export default function CreateDocumentScreen() {
     }
   }
 
-  async function act(action: 'download' | 'share' | 'print' | 'preview') {
-    if (!result) return;
-    const r = await deliver(action, { bytes: result.bytes, fileName: result.fileName, mime: result.mime, format: result.format });
-    if (r.ok) {
-      setStatus(action === 'download' ? 'Downloaded. The file is now on your device, outside FairPath.' : action === 'share' ? 'Share sheet opened.' : action === 'print' ? 'Print dialog opened.' : 'Preview opened.');
-      void logDocumentExport(result.row.id, action === 'share' ? 'share_sheet_opened' : action === 'download' ? 'download' : action === 'print' ? 'print' : 'preview', platform);
-    } else if (r.message) setStatus(r.message);
-  }
-
-  async function keep(days: 30 | 90 | 365) {
-    if (!result) return;
-    setKeepBusy(true);
-    try {
-      const row = await keepDocumentCopy(result.row, result.bytes, days);
-      setResult({ ...result, row });
-      setStatus(`A private copy is stored in FairPath until ${new Date(row.expires_at ?? Date.now()).toLocaleDateString()}. Only you can open it, and you can delete it any time.`);
-    } catch (e) { notify('Could not keep a copy', documentErrorMessage(e)); } finally { setKeepBusy(false); }
-  }
-
-  function remove() {
-    if (!result) return;
-    notify('Delete this document?', 'This removes FairPath’s stored copy and its history entry. A file you already downloaded or shared stays where it is: FairPath cannot recall it.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => void deleteDocument(result.row.id).then(() => { setResult(null); setStatus('Deleted from FairPath.'); }).catch((e) => notify('Could not delete', documentErrorMessage(e))) },
-    ]);
-  }
-
   if (!type || !info) {
     return (
       <ScreenFrame>
@@ -159,39 +133,7 @@ export default function CreateDocumentScreen() {
             <ChipGroup single options={info.formats.map((f) => ({ value: f, label: FORMAT_LABEL[f] }))} selected={[format]} onChange={(n) => setFormat((n[0] as DocFormat) ?? format)} />
             <PrimaryButton label={result ? 'CREATE A NEW VERSION' : `CREATE ${format.toUpperCase()}`} onPress={() => void generate()} busy={busy} />
 
-            {result ? (
-              <>
-                <View style={{ marginTop: 22 }}><SectionTitle>YOUR FILE</SectionTitle></View>
-                <Panel tone="accent">
-                  <BodyText strong>{result.fileName}</BodyText>
-                  <View style={{ flexDirection: 'row', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
-                    <InlineBadge tone="lime">VERSION {result.row.version}</InlineBadge>
-                    <InlineBadge>{result.generatedBy === 'server' ? 'PREPARED BY FAIRPATH' : 'PREPARED ON THIS DEVICE'}</InlineBadge>
-                    <InlineBadge>{Math.max(1, Math.round(result.bytes.length / 1024))} KB</InlineBadge>
-                  </View>
-                </Panel>
-                {caps?.download ? <PrimaryButton label={caps.labels.download + ' ' + result.format.toUpperCase()} onPress={() => void act('download')} /> : null}
-                {caps?.openPreview && result.format === 'pdf' ? <SecondaryButton label="OPEN PREVIEW" onPress={() => void act('preview')} /> : null}
-                {caps?.share ? (caps.download ? <SecondaryButton label={caps.labels.share} onPress={() => void act('share')} /> : <PrimaryButton label={caps.labels.share} onPress={() => void act('share')} />) : null}
-                {caps?.print && result.format === 'pdf' ? <SecondaryButton label="PRINT" onPress={() => void act('print')} /> : null}
-                {caps && !caps.download && !caps.share ? <StatusLine tone="warning">Sharing is not available on this device.</StatusLine> : null}
-                {status ? <StatusLine tone="muted">{status}</StatusLine> : null}
-                {platform !== 'web' ? <StatusLine tone="muted">Native saving and sharing use your phone’s own share sheet.</StatusLine> : null}
-
-                <View style={{ marginTop: 22 }}><SectionTitle>KEEP A COPY IN FAIRPATH (OPTIONAL)</SectionTitle></View>
-                <BodyText muted>
-                  {isStandard ? 'By default FairPath keeps only a record that this file was created, not the file. ' : 'Because this document is sensitive, FairPath does not keep the file unless you ask. '}
-                  If you keep a copy it is stored privately for the time you choose and only you can open it.
-                </BodyText>
-                {result.row.has_stored_copy ? (
-                  <StatusLine tone="success">A copy is stored until {new Date(result.row.expires_at ?? Date.now()).toLocaleDateString()}.</StatusLine>
-                ) : (
-                  <ChipGroup single options={info.retentionChoices.map((d) => ({ value: String(d), label: `${d} days` }))} selected={[]} onChange={(n) => n[0] && !keepBusy && void keep(Number(n[0]) as 30 | 90 | 365)} />
-                )}
-                <SecondaryButton tone="danger" label="DELETE THIS DOCUMENT" onPress={remove} />
-                <StatusLine tone="muted">A file you download or share leaves FairPath. FairPath cannot recall or delete it from your device or another app.</StatusLine>
-              </>
-            ) : null}
+            {result ? <ExportPanel result={result} onChange={setResult} onDeleted={() => setResult(null)} /> : null}
           </>
         ) : null}
       </FormScrollView>

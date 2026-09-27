@@ -72,10 +72,13 @@ create index if not exists document_export_events_user_idx on public.document_ex
 
 create table if not exists public.document_storage_cleanup (
   id uuid primary key default gen_random_uuid(),
-  storage_path text not null unique,
+  bucket text not null default 'generated-documents',
+  storage_path text not null,
   reason text not null check (reason in ('deleted_by_member', 'expired', 'superseded')),
   requested_at timestamptz not null default now()
 );
+
+create unique index if not exists document_storage_cleanup_unique_idx on public.document_storage_cleanup (bucket, storage_path);
 
 alter table public.generated_documents enable row level security;
 alter table public.document_export_events enable row level security;

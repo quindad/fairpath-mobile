@@ -14,6 +14,6 @@ export type DeliveryCapabilities = {
   labels: { share: string; download: string };
 };
 
-export type DeliverableFile = { bytes: Uint8Array; fileName: string; mime: string; format: DocFormat };
+export type DeliverableFile = { bytes: Uint8Array; fileName: string; mime: string; format: DocFormat | 'zip' };
 export type DeliveryAction = 'download' | 'share' | 'print' | 'preview';
 export type DeliveryResult = { ok: boolean; message?: string };

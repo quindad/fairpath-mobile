@@ -50,11 +50,12 @@ export async function listMyDocuments(): Promise<DocumentListItem[]> {
 export async function registerDeviceDocument(args: {
   documentType: string; sourceModule: string; sourceRecordId: string | null; subject: string; title: string; format: DocFormat; kind: string;
   templateId: string; templateVersion: string; sensitivity: DocSensitivity; fingerprint: string; confirmedDataAt: string; optionsCode?: string;
+  packet?: { position: number; total: number };
 }): Promise<DocumentRow> {
   const { data, error } = await supabase.rpc('register_generated_document', {
     p_document_type: args.documentType, p_source_module: args.sourceModule, p_source_record_id: args.sourceRecordId, p_subject: args.subject, p_title: args.title,
     p_format: args.format, p_kind: args.kind, p_template_id: args.templateId, p_template_version: args.templateVersion, p_sensitivity: args.sensitivity,
-    p_input_fingerprint: args.fingerprint, p_confirmed_data_at: args.confirmedDataAt, p_metadata: args.optionsCode ? { options_code: args.optionsCode } : {},
+    p_input_fingerprint: args.fingerprint, p_confirmed_data_at: args.confirmedDataAt, p_metadata: { ...(args.optionsCode ? { options_code: args.optionsCode } : {}), ...(args.packet ? { packet_position: args.packet.position, packet_total: args.packet.total } : {}) },
     p_official_form_ref: null, p_target_user: null,
   });
   if (error) throw error;
