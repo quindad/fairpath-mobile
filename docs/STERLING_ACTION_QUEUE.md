@@ -20,7 +20,7 @@ One item at a time, in order. Each blocks something specific; everything else co
   ```bash
   npx supabase db push
   ```
-- **Why:** `20261002100000_resume_studio.sql` (member_resumes table, owner-only RLS, duplicate_resume()) is written and tested locally (6/6, `npm run test:sql:resume`) but not yet applied to DEV.
+- **Why:** two migrations are written and tested locally but not yet applied to DEV: `20261002100000_resume_studio.sql` (member_resumes, owner-only RLS, duplicate_resume(); 6/6 `npm run test:sql:resume`) and `20261002110000_meetings.sql` (member_meetings, owner-only RLS, set_meeting_status(); 5/5 `npm run test:sql:meetings`).
 - **Risk:** low. New table only, no changes to existing schema.
 - **Expected result:** the push includes this migration with no errors.
 - **Unblocks:** signed-in Resume Studio testing.
