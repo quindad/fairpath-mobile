@@ -1,6 +1,56 @@
 # FairPath handoff: max build pass (branch `feat/v1-canonical-profile`)
 
-Nothing here is pushed. DEV project only (`znvhmuhojvwvjzmaqwff`). Production untouched.
+Nothing here is pushed to GitHub. DEV Supabase project only (`znvhmuhojvwvjzmaqwff`) — migrations ARE pushed there
+(that's expected; it's the DEV database, not production). Production untouched.
+
+## Update 6 (Record Relief full engine QA + Early Access architecture, built and live-verified)
+**Record Relief engine: comprehensively proven, not just seeded.** Drove 8 deliberately distinct fact patterns
+through the real TEST-A..D rules live in the Browser pane, all 8 correct: eligible-now, waiting-period (exact
+countdown, e.g. "1 year, 8 months, 21 days remaining"), restitution-blocked, offense-excluded (with honest
+still-missing-info alongside the exclusion), manual-review-recommended (juvenile flag), stale-rule warning +
+more-info-needed together, no-rules-yet (TEST-D, zero fabrication), and edit-and-recalculate (waiting-period →
+eligible after changing the date, with an honestly appended history log, not a rewritten one). Document packet
+generation (4 documents) confirmed working. TEST jurisdictions are unmistakably labeled "(TEST DATA)" everywhere.
+Every "no verified forms" / "fee not listed" case correctly says so instead of inventing data. One minor open
+item: two `400` console errors on cold page load of any Record Relief case (isolated to page-load/session-refresh
+timing via fetch/XHR interception, not tied to any specific action, zero user-facing effect observed) — logged,
+not chased further per explicit instruction to prioritize product functionality over that specific noise.
+
+**External integration audit — real, not guessed.** `docs/EXTERNAL_INTEGRATION_REGISTER.md` and
+`docs/STERLING_INTEGRATION_SETUP.md` built from actually reading the codebase (env vars, imports, config files),
+with honest CONNECTED / DEV FIXTURE / KEY REQUIRED / NOT STARTED status per feature. Verified the maps
+recommendation against the real Expo SDK 57 docs (per AGENTS.md) rather than assumption: SDK 57 has a new
+`expo-maps`, but it's alpha and has zero web support, which would regress FairPath's working web map fallback —
+staying on `react-native-maps` is correct, not a compromise. Also found `expo-location`'s geocoding is free,
+no-key, and web-compatible — a real unlock for future listing work.
+
+**Coverage markets / Early Access: built AND Browser-verified live end to end on DEV**, not just a schema.
+`supabase/migrations/20261003100000_coverage_markets.sql` (10/10 new local SQL tests): server-determined coverage
+per ZIP (`get_market_coverage`, never client-guessed), idempotent member enrollment (`join_early_access`), and
+idempotent market activation (`activate_coverage_market`) that reuses the EXISTING `entitlement_grants`
+architecture for the 60-day FairPath+ benefit rather than inventing a second one — one grant per (market, member),
+auditable, re-running activation issues zero duplicate grants. Tightened after the security audit correctly
+caught an unnecessary anon table grant (guests only need the SECURITY DEFINER function, not direct table select).
+New `/early-access` screen (public route) never dead-ends a member: always offers the six tools that work
+nationally regardless of local inventory (Resources, Resume Studio, Credit, Record Relief, AI, Opportunity
+Profile). Wired into BOTH `find-jobs.tsx` and `find-housing.tsx`'s empty-result paths, replacing the generic
+"no matches" message with the honest low-coverage message + JOIN EARLY ACCESS button, ONLY when the ZIP itself
+has no configured coverage (checked server-side, never guessed from an empty results array). Verified live:
+honest `coming_soon` default for an unconfigured ZIP, a real join proven persisted by reloading the page from
+zero client state and getting "Already on the list" back from the server, and both search screens routing
+correctly. DEV has zero coverage_markets rows configured yet, so today every ZIP resolves honestly to
+`coming_soon` — seeding real market rows (`full`/`growing`/`limited`) is optional future work, not a blocker.
+
+**Not done this pass, explicitly not claimed as done:** the nationwide 50-state/DC/federal real-legal-data
+coverage matrix (still 100% NOT STARTED beyond the 4 fictional TEST fixtures — this is a major content-sourcing
+project, correctly not attempted in a code session), walkability/location-intelligence provider abstraction,
+inventory provenance model for Jobs/Housing/Resources, notifications event architecture, Credit Builder /
+Resume Studio / Meetings deep re-QA, FairPath AI new coverage/waitlist intents, the internal DEV integration-health
+diagnostics view, and the Partner/Admin contract documentation. All real, scoped work — none of it silently
+skipped, all of it genuinely unstarted.
+
+40/40 offline checks green throughout this pass (was 39; +1 for the new coverage markets SQL suite). 7 new local
+commits, all clean, nothing pushed to GitHub, nothing touching production.
 
 ## Update 5 (full signed-in integration marathon, real member journey)
 Drove a disposable DEV member through Opportunity Profile (8/8) → Easy Apply → Housing FastTrack → Resources →
