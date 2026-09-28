@@ -21,6 +21,11 @@ export default function RootLayout() {
     Manrope_600SemiBold,
     Manrope_700Bold,
     Manrope_800ExtraBold,
+    // The Lucide icon set otherwise lazy-loads its own font the first time an icon renders, via its internal dynamic
+    // loader — on web that path logs "Failed to load font Lucide" (see @react-native-vector-icons/common's
+    // dynamic-font-loading.js). Loading it here, up front with every other app font, avoids that path entirely.
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    Lucide: require('@react-native-vector-icons/lucide/fonts/Lucide.ttf'),
   });
 
   useEffect(() => {

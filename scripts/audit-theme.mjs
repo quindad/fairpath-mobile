@@ -85,6 +85,12 @@ check(/<ThemeProvider>/.test(layout) && /tokens\.background/.test(layout), 'Root
 const provider = read('src/core/theme/ThemeProvider.tsx');
 check(/AsyncStorage/.test(provider) && /isAppearanceMode/.test(provider), 'Appearance choice must persist and be validated on read.');
 
+// Regression: the Lucide icon set otherwise lazy-loads its own font via a dynamic loader that logs
+// "Failed to load font Lucide" on web (@react-native-vector-icons/common's dynamic-font-loading.js). It must be
+// preloaded up front, under its exact font-family key ("Lucide", the package's postScriptName), alongside every
+// other app font, so that path is never exercised.
+check(/Lucide:\s*require\('@react-native-vector-icons\/lucide\/fonts\/Lucide\.ttf'\)/.test(layout), 'Root layout must preload the Lucide icon font under the "Lucide" key so it never falls back to the dynamic loader that logs "Failed to load font Lucide" on web.');
+
 if (failures.length) {
   console.error('Theme audit FAILED:\n - ' + failures.join('\n - '));
   process.exit(1);
