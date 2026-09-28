@@ -66,6 +66,7 @@ export default function RecordReliefHome() {
               {testCovered ? <BodyText muted>This development build also includes fictional TEST jurisdictions used to test the rules engine. They are not real law.</BodyText> : null}
               <BodyText muted>Federal cases are tracked separately from state cases.</BodyText>
             </Panel>
+            <ListRow title="Coverage by state" body="See exactly which jurisdictions have a verified rule loaded" onPress={() => router.push('/record-relief/coverage' as never)} />
             <ListRow title="Find legal help" body="Legal aid and record-relief organizations near you" onPress={() => router.push('/resources' as never)} />
           </>
         ) : null}
