@@ -12,19 +12,37 @@ import type { ThemeTokens } from '@/core/theme/tokens';
 import { notify } from '@/core/ui/notify';
 import { supabase } from '@/lib/supabase';
 
-const LINKS: { title: string; body: string; route: string }[] = [
+// YOUR PATH: the core FairPath tools, in the order a member typically moves through them.
+const PATH_LINKS: { title: string; body: (s: MemberSummary) => string; route: string }[] = [
+  { title: 'Opportunity Profile', body: (s) => `${s.profile?.completed_sections ?? 0} of ${s.profile?.total_sections ?? 8} sections complete`, route: '/opportunity-profile' },
+  { title: 'Resume Studio', body: () => 'Build a clean, ATS-friendly resume', route: '/resume-studio' },
+  { title: 'Credit Builder', body: (s) => (s.credit?.reports ?? 0) > 0 ? `${s.credit?.items_to_review ?? 0} item(s) to review` : 'Review a credit report and prepare disputes', route: '/credit' },
+  { title: 'Record Relief', body: (s) => (s.record_relief?.cases ?? 0) > 0 ? `${s.record_relief?.cases} case(s) tracked` : 'Check a case against verified rules', route: '/record-relief' },
+];
+
+// ACTIVITY: what the member has done across FairPath.
+const ACTIVITY_LINKS: { title: string; body: string; route: string }[] = [
   { title: 'Job applications', body: 'Track your FairPath job applications', route: '/job-applications' },
   { title: 'Saved jobs', body: 'Jobs you bookmarked for later', route: '/saved-jobs' },
   { title: 'Housing applications', body: 'Track standard and FastTrack applications', route: '/housing-applications' },
   { title: 'Saved homes', body: 'Your saved FairPath housing', route: '/saved-homes' },
   { title: 'Saved housing searches', body: 'Rerun housing searches with your filters', route: '/saved-housing-searches' },
   { title: 'Housing activity', body: 'Tour requests and property questions', route: '/housing-activity' },
+  { title: 'Saved resources', body: 'Resources you saved or are working through', route: '/saved-resources' },
+  { title: 'Meetings', body: 'Interviews, appointments and workshops', route: '/meetings' },
+  { title: 'My Documents', body: 'Documents FairPath helped you prepare', route: '/documents' },
   { title: 'Marketplace claims', body: 'Track requests, pickup windows and codes', route: '/marketplace-claims' },
   { title: 'My Marketplace listings', body: 'Manage items you are giving away', route: '/marketplace-my-listings' },
   { title: 'Saved Marketplace', body: 'Free items you bookmarked', route: '/saved-marketplace' },
+];
+
+// ACCOUNT: settings and account-level controls.
+const ACCOUNT_LINKS: { title: string; body: string; route: string }[] = [
+  { title: 'Justice readiness', body: 'Your private readiness checklist. Never shared with employers.', route: '/profile-readiness' },
+  { title: 'Your location', body: 'ZIP code and search radius', route: '/location-setup' },
   { title: 'Notifications', body: 'Housing, Marketplace, jobs and FairPath updates', route: '/notifications' },
   { title: 'Payments', body: 'Receipts and payment history', route: '/payments' },
-  { title: 'Your location', body: 'ZIP code and search radius', route: '/location-setup' },
+  { title: 'FairPath+', body: 'Your membership and access', route: '/plus' },
 ];
 
 export default function MeScreen() {
@@ -119,21 +137,16 @@ export default function MeScreen() {
               <BodyText muted>Resources: {summary.resources?.started ?? 0} started, {summary.resources?.completed ?? 0} finished (marked by you).</BodyText>
             ) : null}
 
-            <View style={s.block}><SectionTitle>PROFILE</SectionTitle></View>
-            <ListRow title="Opportunity Profile" body={`${summary.profile?.completed_sections ?? 0} of ${summary.profile?.total_sections ?? 8} sections complete`} onPress={() => router.push('/opportunity-profile' as never)} />
-            <ListRow title="Resume Studio" body="Build a clean, ATS-friendly resume" onPress={() => router.push('/resume-studio' as never)} />
-            <ListRow title="Meetings" body="Interviews, appointments and workshops" onPress={() => router.push('/meetings' as never)} />
-            <ListRow title="Justice readiness" body="Your private readiness checklist. Never shared with employers." onPress={() => router.push('/profile-readiness' as never)} />
-            <ListRow title="My Documents" body="Documents FairPath helped you prepare" onPress={() => router.push('/documents' as never)} />
-            <ListRow title="Saved resources" body="Resources you saved or are working through" onPress={() => router.push('/saved-resources' as never)} />
+            <View style={s.block}><SectionTitle>YOUR PATH</SectionTitle></View>
+            {PATH_LINKS.map((l) => <ListRow key={l.route} title={l.title} body={l.body(summary)} onPress={() => router.push(l.route as never)} />)}
+
+            <View style={s.block}><SectionTitle>ACTIVITY</SectionTitle></View>
+            {ACTIVITY_LINKS.map((l) => <ListRow key={l.route} title={l.title} body={l.body} onPress={() => router.push(l.route as never)} />)}
           </>
         ) : null}
 
-        <View style={s.block}><SectionTitle>MORE</SectionTitle></View>
-        {LINKS.map((l) => <ListRow key={l.route} title={l.title} body={l.body} onPress={() => router.push(l.route as never)} />)}
-        <ListRow title="FairPath+" body="Your membership and access" onPress={() => router.push('/plus' as never)} />
-
-        <View style={s.block}><SectionTitle>SETTINGS</SectionTitle></View>
+        <View style={s.block}><SectionTitle>ACCOUNT</SectionTitle></View>
+        {ACCOUNT_LINKS.map((l) => <ListRow key={l.route} title={l.title} body={l.body} onPress={() => router.push(l.route as never)} />)}
         <ListRow title="Appearance" body="Dark, light or system" onPress={() => router.push('/appearance' as never)} />
         <ListRow title="Privacy and account" body="What FairPath shares, your data, and deleting your account" onPress={() => router.push('/privacy' as never)} />
 
