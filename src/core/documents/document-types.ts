@@ -71,6 +71,12 @@ export const DOCUMENT_TYPES: Record<string, DocumentTypeInfo> = {
     sensitivity: 'highly_sensitive', kind: 'worksheet', formats: ['pdf'], allowedAudiences: ['self'],
     templateId: 'credit_mailing_instructions', templateVersion: '1', defaultPersist: 'on_demand', retentionChoices: SENSITIVE_RETENTION,
   },
+  credit_identity_correction_letter: {
+    type: 'credit_identity_correction_letter', module: 'credit', label: 'Personal information correction letter',
+    description: 'A letter asking a bureau to correct your name, address, or other personal information on file.',
+    sensitivity: 'highly_sensitive', kind: 'letter', formats: ['pdf', 'docx'], allowedAudiences: ['self'],
+    templateId: 'credit_identity_correction_letter', templateVersion: '1', defaultPersist: 'on_demand', retentionChoices: SENSITIVE_RETENTION,
+  },
   credit_dispute_history: {
     type: 'credit_dispute_history', module: 'credit', label: 'Dispute history',
     description: 'Your disputes, dates and outcomes.',

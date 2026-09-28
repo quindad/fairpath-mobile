@@ -50,6 +50,16 @@ export function letterProblems(items: CreditItemForDoc[], fields: LetterFields):
   return p;
 }
 
+export function identityLetterProblems(bureauName: string, fields: IdentityCorrectionField[], letter: LetterFields): string[] {
+  const p: string[] = [];
+  if (!bureauName.trim()) p.push('Choose who you are sending this to.');
+  if (!fields.some((f) => f.correct.trim())) p.push('Enter at least one correction.');
+  if (letter.senderName.trim().length < 2) p.push('Enter your name as it should appear on the letter.');
+  if (letter.senderAddress.trim().length < 5) p.push('Enter your mailing address.');
+  if (letter.recipientAddress.trim().length < 5) p.push('Enter the address you are sending this to (find the current address on the recipient\'s website).');
+  return p;
+}
+
 export function buildDisputeLetter(dispute: CreditDisputeForDoc, items: CreditItemForDoc[], accounts: CreditAccountForDoc[], fields: LetterFields, now = new Date()): DocumentSpec {
   const byId = new Map(accounts.map((a) => [a.id, a]));
   const blocks: DocBlock[] = [
@@ -77,6 +87,33 @@ export function buildDisputeLetter(dispute: CreditDisputeForDoc, items: CreditIt
   if (fields.enclosures.length) blocks.push({ type: 'heading', text: 'Enclosures', level: 3 }, { type: 'bullets', items: fields.enclosures });
   return spec('credit_dispute_letter', `${dispute.target_kind === 'bureau' ? dispute.target_name : 'Furnisher'} Dispute`, `Dispute letter to ${dispute.target_name}`, blocks,
     { d: dispute.id, items: items.map((i) => [i.id, i.stage, i.member_statement]), fields: { ...fields, dateText: undefined } }, dispute.id, FOOTER_LETTER, now);
+}
+
+export type IdentityCorrectionField = { label: string; current: string; correct: string };
+
+/**
+ * A separate letter for personal-information errors (name, address, DOB, SSN digits, work history on file, etc.) rather
+ * than an account issue. FairPath never pulls these values from the member's identity documents automatically —
+ * every field here is what the member typed into the correction screen, current vs. correct, in their own words.
+ */
+export function buildIdentityCorrectionLetter(bureauName: string, fields: IdentityCorrectionField[], letter: LetterFields, now = new Date()): DocumentSpec {
+  const blocks: DocBlock[] = [
+    { type: 'notice', tone: 'info', text: 'Review everything below. The boxed fields are yours to edit before you send this. FairPath does not send anything for you.' },
+    { type: 'editable', label: 'From', value: [letter.senderName, letter.senderAddress, letter.senderPhone].filter((x) => x.trim()).join('\n'), hint: 'Your name, mailing address and phone number.' },
+    { type: 'paragraph', text: letter.dateText },
+    { type: 'editable', label: 'To', value: [bureauName, letter.recipientAddress].filter((x) => x.trim()).join('\n'), hint: 'Use the current dispute address listed on the recipient\'s official website.' },
+    { type: 'heading', text: 'Request to correct personal information', level: 2 },
+    { type: 'paragraph', text: `To ${bureauName}:` },
+    { type: 'paragraph', text: 'The personal information you have on file for me includes one or more errors. Please correct my file as described below and send me confirmation in writing.' },
+    { type: 'heading', text: 'Corrections requested', level: 3 },
+    { type: 'keyvalue', items: fields.filter((f) => f.correct.trim()).map((f) => ({ label: f.label, value: `On file: ${f.current || 'not listed'}\nCorrect: ${f.correct}` })) },
+    { type: 'paragraph', text: 'Thank you for your prompt attention to this matter.' },
+    { type: 'paragraph', text: 'Sincerely,' },
+    { type: 'paragraph', text: letter.senderName },
+  ];
+  if (letter.enclosures.length) blocks.push({ type: 'heading', text: 'Enclosures', level: 3 }, { type: 'bullets', items: letter.enclosures });
+  return spec('credit_identity_correction_letter', `${bureauName} Personal Info Correction`, `Personal information correction letter to ${bureauName}`, blocks,
+    { b: bureauName, f: fields.map((x) => [x.label, x.correct]) }, null, FOOTER_LETTER, now);
 }
 
 const STANDARD_ENCLOSURES = [
