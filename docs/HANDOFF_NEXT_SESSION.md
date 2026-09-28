@@ -49,7 +49,22 @@ Resume Studio / Meetings deep re-QA, FairPath AI new coverage/waitlist intents, 
 diagnostics view, and the Partner/Admin contract documentation. All real, scoped work — none of it silently
 skipped, all of it genuinely unstarted.
 
-40/40 offline checks green throughout this pass (was 39; +1 for the new coverage markets SQL suite). 7 new local
+**Continued past the first "final report" (correctly called out as premature) with more real, verified work:**
+found and corrected three real errors in my own earlier integration audit by actually reading schema instead of
+grepping for provider names — walkability/schools/nearby-places already have working schema + graceful-empty-
+state UI (DEV seed deliberately leaves it null, not broken), a complete Jobs/Housing inventory provenance/
+ingestion pipeline already exists in baseline schema but is entirely dormant (zero code references it), and push
+notifications already have a full server-side delivery queue (push_tokens, notification_deliveries, auto-queuing
+trigger) with only client-side token registration and an actual sending worker missing — deliberately NOT wired
+up this pass since expo-notifications is a native module needing a device rebuild I cannot verify from the
+Browser pane. Added a new FairPath AI intent (market_coverage: "is FairPath in my area", "am I on the waitlist")
+reading real enrollments through the existing read-only gateway, Browser-verified live. Caught and fixed a
+self-referencing import bug in gateway.ts during that work before it ever ran. Closed a real cohesion gap: Home's
+status card never reflected Early Access enrollment; added it, Browser-verified live. Me and My Documents both
+independently spot-checked and confirmed cohesive (7 Record Relief cases, 4 documents, 1 saved home — all
+matching exactly what was actually created this session, no stale counts, no dead links).
+
+40/40 offline checks green throughout this pass (was 39; +1 for the new coverage markets SQL suite). 11 new local
 commits, all clean, nothing pushed to GitHub, nothing touching production.
 
 ## Update 5 (full signed-in integration marathon, real member journey)
