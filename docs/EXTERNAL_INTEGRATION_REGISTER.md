@@ -77,10 +77,23 @@ action needed — this is implementation work, not a credential.
 
 ## 3. Walkability / neighborhood data (Housing)
 - **Feature:** Sterling explicitly wants real walkability/transit/school-proximity context on housing listings.
-- **Why needed:** currently does not exist at all — there is no walkability field, score, or provider call
-  anywhere in the codebase (confirmed: zero matches for "walk score," "walkability," or any transit/school API).
-- **Current state: NOT STARTED.** This is not a mock returning a fake number — it simply isn't built, which is the
-  correct honest state versus inventing a score.
+- **Correction to an earlier version of this register:** I initially wrote this as "NOT STARTED, zero matches
+  anywhere in the codebase" — that was wrong. I had grepped for provider API call names and missed the schema/UI,
+  which already exist and are further along than I first reported.
+- **Current state: SCHEMA + UI BUILT, PROVIDER NOT CONNECTED.** `housing_listings` already has `walk_score`,
+  `transit_score`, `bike_score`, and `neighborhood_data_provider` columns (baseline schema,
+  `20260901000000_baseline_tables.sql`), plus dedicated `housing_schools` and `housing_nearby_places` tables with
+  per-row `provider` / `provider_school_id` / `distance_miles` / `sort_order` provenance columns. The Home Details
+  screen (`src/app/housing/[id].tsx:137-159`) already renders all of this correctly: an "AROUND THIS HOME" section
+  with WALK/TRANSIT/BIKE score tiles and a "Mobility scores are shown only when verified provider data is
+  available. Source: X." note, plus "SCHOOLS NEARBY" and "NEARBY" sections that only render when data exists —
+  exactly the graceful-empty-state discipline requested, already built. The DEV seed (`supabase/seed/build-
+  inventory.mjs:288`) deliberately leaves these columns NULL with an explicit comment: "no fabricated provider
+  data." So every listing today correctly shows nothing in that section — not broken, not fake, just unconnected.
+- **What this changes about the work ahead:** no schema or UI work is needed to add a provider. Connecting one is
+  an ingestion task — a job that, per listing address, calls the provider and writes `walk_score` /
+  `transit_score` / `bike_score` / `neighborhood_data_provider` and rows into `housing_schools` /
+  `housing_nearby_places` — not a product-design task.
 - **Provider options:**
   - **Walk Score API** — the de facto standard (walkscore.com/professional/api). Requires an API key application
     (they review commercial use); pricing is quote-based for apps at scale, but a low-volume/dev key is often
@@ -205,9 +218,34 @@ action needed — this is implementation work, not a credential.
   actually being built.
 
 ## 11. Jobs / Housing / Resources inventory
-- **Current state: DEV FIXTURE for all three.** All listings today come from `npm run seed:dev:*` scripts —
-  fictional but realistically shaped data, not a live feed. No ATS integration, no job board API, no MLS/rental
-  feed, no 211/government open-data ingestion exists in code.
+- **Current state: DEV FIXTURE for listings; a real, unused provenance/ingestion SCHEMA already exists.** This is
+  a correction to an earlier version of this register, which said the provenance architecture was "not yet built" —
+  it already is, at the schema level, and I missed it on the first pass. `20260901000000_baseline_tables.sql`
+  already defines a complete ingestion pipeline: `opportunity_sources` (provider_key, status
+  `planned`/presumably `active` etc., `ingestion_mode`, `terms_url`, `attribution_required`,
+  `ai_processing_allowed`, `configuration` jsonb, `last_sync_at`), `external_opportunities` (per-source external
+  ID, canonical URL, raw + normalized payload, content hash for change detection, `first_seen_at`/`last_seen_at`,
+  `expires_at`, `active`), `opportunity_evidence` (why a listing was tagged a certain way — `evidence_type`,
+  `evidence_source`, `confidence`, `machine_extracted`, `reviewed_at`), and `opportunity_ingestion_runs` (per-run
+  fetched/created/updated/error counts). Both `jobs` and `housing_listings` already have `source_id` and
+  `external_opportunity_id` foreign keys wired to this pipeline.
+  **But it is completely dormant**: confirmed by searching the entire codebase — zero TypeScript/JS files
+  reference `external_opportunities`, `opportunity_sources`, `opportunity_evidence`, or
+  `opportunity_ingestion_runs` anywhere. `external_opportunities` is even locked down with
+  `revoke all ... from anon, authenticated, service_role` at the RLS layer beyond a narrow read policy, meaning
+  nothing can write to it today without a new migration reopening it for a specific ingestion job. DEV seed data
+  bypasses this pipeline entirely, inserting directly into `jobs`/`housing_listings` with only a free-text
+  `source_label` (e.g. "FairPath DEV Seed") — not linked via `source_id`.
+- **What this means for real-data work:** the hard schema-design problem Sterling asked me to solve in this pass
+  is already solved by whoever built the baseline. The actual remaining work is: (1) insert real `opportunity_sources`
+  rows for each real source once one is chosen (direct employer postings, a permitted feed, etc.), (2) write an
+  ingestion job/Edge Function that fetches from that source, upserts into `external_opportunities`, and
+  projects into `jobs`/`housing_listings` with `source_id`/`external_opportunity_id` set, and (3) reopen
+  `external_opportunities`' RLS for that job's service-role writes. This is meaningfully less work than designing
+  provenance from scratch, and should be corrected in planning accordingly.
+- **Resources has no equivalent dormant schema** — its provenance model (published/verified/fresh/stale/expired,
+  verification history) is real and already in active use (built and verified in a prior session), which is
+  different from Jobs/Housing's unused pipeline.
 - **Real-data path for each (architecture, not yet built):**
   - **Jobs:** direct FairPath employer postings (an employer-facing submission flow, not built) is the right first
     source — no licensing risk, no scraping. ATS integrations (Greenhouse, Lever) are a plausible phase 2 once
