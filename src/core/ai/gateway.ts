@@ -18,6 +18,14 @@ export const gateway: AiGateway = {
   creditItems: async () => (await loadItems()).map((i) => ({ id: i.id, account_id: i.account_id, stage: i.stage, issue_type: i.issue_type, title: i.title, explanation: i.explanation, origin: i.origin })),
   creditAccountsToConfirm: async () => (await loadAccounts()).filter((a) => a.extraction_state === 'needs_review' || a.extraction_state === 'extracted').length,
   reliefCases: async () => (await loadCases()).map((c) => ({ id: c.id, label: c.label })),
+  upcomingMeetings: async () => {
+    const r = await supabase.from('member_meetings').select('id,title,start_at').neq('status', 'cancelled').gte('start_at', new Date().toISOString()).order('start_at', { ascending: true }).limit(5);
+    return (r.data ?? []) as { id: string; title: string; start_at: string }[];
+  },
+  resumeCount: async () => {
+    const r = await supabase.from('member_resumes').select('id', { count: 'exact', head: true });
+    return r.count ?? 0;
+  },
   reliefEvaluations: async () => {
     const evals = await supabase.from('record_relief_evaluations').select('id,case_id,outcome,eligibility_date,rule_key,rule_version').eq('superseded', false);
     return ((evals.data ?? []) as { id: string; case_id: string; outcome: never; eligibility_date: string | null; rule_key: string | null; rule_version: number | null }[]).map((e) => ({

@@ -34,6 +34,8 @@ const gw = (over = {}) => ({
   creditAccountsToConfirm: async () => 2,
   reliefCases: async () => [{ id: 'c1', label: '2016 theft' }],
   reliefEvaluations: async () => [{ case_id: 'c1', id: 'e1', outcome: 'waiting_period', eligibility_date: '2028-01-07', days_remaining: 460, rule_key: 'test-a-misdemeanor-expunge', rule_version: 2 }],
+  upcomingMeetings: async () => [{ id: 'mt1', title: 'Interview with Acme', start_at: '2028-01-07T14:00:00Z' }],
+  resumeCount: async () => 1,
   ...over,
 });
 
@@ -97,10 +99,23 @@ r = await answer('Which states does record relief cover?', gw());
 check(r.intent === 'relief_coverage' && routes(r)[0] === '/record-relief/coverage', 'relief coverage routes to the coverage screen');
 for (const rr of [r]) check(!bad(rr), 'no overclaim/promise language');
 
+check(matchIntent('Build me a resume').intent?.id === 'create_resume', 'create resume');
+check(matchIntent('Download my resume').intent?.id === 'my_resumes', 'my resumes');
+check(matchIntent('What is my next meeting?').intent?.id === 'my_meetings', 'my meetings');
+
+r = await answer('Build me a resume', gw());
+check(r.intent === 'create_resume' && routes(r)[0] === '/resume-studio', 'create resume routes to Resume Studio (guest-safe)');
+r = await answer('Download my resume', gw());
+check(r.intent === 'my_resumes' && /1 resume/.test(r.parts[0].text) && routes(r)[0] === '/resume-studio', 'my resumes reports the real count');
+r = await answer('What is my next meeting?', gw());
+check(r.intent === 'my_meetings' && /Interview with Acme/.test(r.parts[0].text) && routes(r)[0] === '/meetings/mt1' && r.provenance.sourceRefs[0].kind === 'meeting', 'next meeting from real data, with provenance');
+r = await answer('What is my next meeting?', gw({ upcomingMeetings: async () => [] }));
+check(routes(r)[0] === '/meetings/add', 'no meetings -> offer to add one');
+
 // ---------- permissions: signed-out means NO personal reads ----------
 const reads = [];
 const spy = gw({ signedIn: async () => false, summary: async () => { reads.push('summary'); return {}; }, creditItems: async () => { reads.push('credit'); return []; }, reliefCases: async () => { reads.push('cases'); return []; }, profileCompletion: async () => { reads.push('profile'); return []; } });
-for (const q of ['Show my next steps', 'Review my credit report', 'Can I clear this record?', 'Help me finish my profile', 'Build my dispute letter', 'When might I become eligible?', 'Show my job applications', 'Show my saved homes', 'What is my dispute status?']) await answer(q, spy);
+for (const q of ['Show my next steps', 'Review my credit report', 'Can I clear this record?', 'Help me finish my profile', 'Build my dispute letter', 'When might I become eligible?', 'Show my job applications', 'Show my saved homes', 'What is my dispute status?', 'Download my resume', 'What is my next meeting?']) await answer(q, spy);
 check(reads.length === 0, 'a signed-out caller triggers zero personal data reads: ' + reads);
 check((await answer('Show my job applications', spy)).actions[0].route === '/sign-in', 'my_jobs requires sign-in before reading data');
 check((await answer('Show my saved homes', spy)).actions[0].route === '/sign-in', 'my_housing requires sign-in before reading data');
@@ -130,7 +145,8 @@ check(!/\.insert\(|\.update\(|\.delete\(|\.upsert\(/.test(gwSrc), 'the gateway n
 const rpcs = [...gwSrc.matchAll(/\.rpc\('(\w+)'/g)].map((m) => m[1]);
 check(rpcs.every((f) => ['log_ai_interaction', 'delete_my_ai_history'].includes(f)), 'the gateway calls only provenance functions directly: ' + rpcs);
 const tables = [...gwSrc.matchAll(/\.from\('(\w+)'\)/g)].map((m) => m[1]);
-check(tables.every((t) => t === 'record_relief_evaluations'), 'direct table reads limited to the member\'s own evaluations: ' + tables);
+const GATEWAY_TABLE_ALLOWLIST = ['record_relief_evaluations', 'member_meetings', 'member_resumes'];
+check(tables.every((t) => GATEWAY_TABLE_ALLOWLIST.includes(t)), 'direct table reads limited to the allow-list (all owner-only, RLS-protected): ' + tables);
 check(/select\('id,case_id,outcome,eligibility_date,rule_key,rule_version'\)/.test(gwSrc), 'only allow-listed columns are read');
 check(!/anthropic|openai|api[_-]?key|sk-[a-z0-9]/i.test(orch + gwSrc + read('src/core/ai/intents.ts')), 'no model provider or key in client code');
 const screen = read('src/app/fairpath-ai.tsx');

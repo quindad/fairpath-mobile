@@ -7,7 +7,7 @@
 export type IntentId =
   | 'safety' | 'need_shelter' | 'find_resources' | 'finish_profile' | 'credit_review' | 'credit_why_flagged' | 'credit_build_dispute' | 'credit_dispute_status'
   | 'relief_can_i_clear' | 'relief_when_eligible' | 'relief_paperwork' | 'relief_coverage' | 'housing_requirements' | 'find_jobs' | 'my_jobs' | 'find_housing' | 'my_housing'
-  | 'next_steps' | 'documents' | 'help';
+  | 'create_resume' | 'my_resumes' | 'my_meetings' | 'next_steps' | 'documents' | 'help';
 
 export type Intent = { id: IntentId; task: string; label: string; patterns: RegExp[]; priority: number };
 
@@ -41,6 +41,12 @@ export const INTENTS: Intent[] = [
     patterns: [/\b(find|search|look for|show)\b.*\bjobs?\b/i, /\bjob (search|opening|listing)s?\b/i] },
   { id: 'my_jobs', task: 'jobs_status', label: T('My applications'), priority: 66,
     patterns: [/\b(my|saved)\b.*\b(job )?applications?\b/i, /\bsaved jobs?\b/i, /\bapplication status\b/i] },
+  { id: 'create_resume', task: 'resume_create', label: T('Create a resume'), priority: 70,
+    patterns: [/\b(build|create|make|start|write)\b.*\bresume\b/i, /\bresume studio\b/i] },
+  { id: 'my_resumes', task: 'resume_status', label: T('My resumes'), priority: 68,
+    patterns: [/\b(my|edit|download|export)\b.*\bresume/i, /\bresumes?\b.*\b(saved|list|versions?)\b/i] },
+  { id: 'my_meetings', task: 'meetings_status', label: T('My meetings'), priority: 68,
+    patterns: [/\b(my|next|upcoming|schedule)\b.*\b(meeting|appointment|interview)s?\b/i, /\b(meeting|appointment)s?\b.*\b(coming up|scheduled)\b/i] },
   { id: 'find_housing', task: 'housing_search', label: T('Find housing'), priority: 64,
     patterns: [/\b(find|search|look for|show)\b.*\bhousing\b/i, /\b(apartment|rental)s?\b.*\b(find|search|near)\b/i] },
   { id: 'my_housing', task: 'housing_status', label: T('My housing applications'), priority: 65,

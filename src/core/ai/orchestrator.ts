@@ -19,7 +19,7 @@ import { STAGE_INFO, ISSUE_LABEL } from '../credit/credit-format.ts';
 export type Basis = 'rule' | 'member' | 'extracted' | 'app_state' | 'ai';
 export type AnswerPart = { text: string; basis: Basis };
 export type AiAction = { label: string; route: string; primary?: boolean };
-export type SourceRef = { kind: 'resource' | 'credit_item' | 'credit_account' | 'credit_dispute' | 'relief_case' | 'relief_evaluation' | 'profile_section' | 'document' | 'summary' | 'notification'; id: string };
+export type SourceRef = { kind: 'resource' | 'credit_item' | 'credit_account' | 'credit_dispute' | 'relief_case' | 'relief_evaluation' | 'profile_section' | 'document' | 'summary' | 'notification' | 'meeting' | 'resume'; id: string };
 export type Provenance = {
   task: string; intent: string; engine: 'deterministic_router' | 'model'; route: string | null; sourceRefs: SourceRef[];
   ruleVersions: { rule_key: string; rule_version: number }[]; officialSources: { label: string; url: string }[];
@@ -37,6 +37,8 @@ export type AiGateway = {
   creditAccountsToConfirm(): Promise<number>;
   reliefCases(): Promise<{ id: string; label: string }[]>;
   reliefEvaluations(): Promise<{ case_id: string; id: string; outcome: keyof typeof OUTCOME_INFO; eligibility_date: string | null; days_remaining: number | null; rule_key: string | null; rule_version: number | null }[]>;
+  upcomingMeetings(): Promise<{ id: string; title: string; start_at: string }[]>;
+  resumeCount(): Promise<number>;
 };
 
 export type ModelAdapter = {
@@ -272,6 +274,31 @@ async function build(id: IntentId, task: string, text: string, gw: AiGateway, ct
         parts: [{ text: `You have ${s.housing?.applications ?? 0} application(s) and saved ${s.housing?.saved_homes ?? 0} home(s).`, basis: 'app_state' }],
         actions: [{ label: 'My applications', route: '/housing-applications', primary: true }, { label: 'Saved homes', route: '/saved-homes' }],
         provenance: base('housing_status', id, '/housing-applications', { sourceRefs: [{ kind: 'summary', id: 'housing' }] }) };
+    }
+
+    case 'create_resume':
+      return { intent: id, title: 'Let\'s build a resume', modelAssisted: false,
+        parts: [{ text: 'I will open Resume Studio. You can start blank or import your Opportunity Profile as a starting point — nothing is invented, and importing never changes your profile.', basis: 'app_state' }],
+        actions: [{ label: 'Open Resume Studio', route: '/resume-studio', primary: true }], provenance: base('resume_create', id, '/resume-studio') };
+
+    case 'my_resumes': {
+      if (!(await gw.signedIn())) return signInNeeded(id, 'resume_status');
+      const n = await gw.resumeCount();
+      return { intent: id, title: 'Your resumes', modelAssisted: false,
+        parts: [{ text: n > 0 ? `You have ${n} resume${n === 1 ? '' : 's'}. Open Resume Studio to edit, duplicate or export one as a PDF or DOCX.` : 'You have not created a resume yet.', basis: 'app_state' }],
+        actions: [{ label: 'Open Resume Studio', route: '/resume-studio', primary: true }], provenance: base('resume_status', id, '/resume-studio') };
+    }
+
+    case 'my_meetings': {
+      if (!(await gw.signedIn())) return signInNeeded(id, 'meetings_status');
+      const meetings = await gw.upcomingMeetings();
+      if (!meetings.length) return { intent: id, title: 'Nothing scheduled', modelAssisted: false, parts: [{ text: 'You have no upcoming meetings. FairPath tracks interviews, appointments and workshops, but does not host the call itself.', basis: 'app_state' }], actions: [{ label: 'Add a meeting', route: '/meetings/add', primary: true }], provenance: base('meetings_status', id, '/meetings/add') };
+      const next = meetings[0];
+      const when = new Date(next.start_at).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      return { intent: id, title: 'Your next meeting', modelAssisted: false,
+        parts: [{ text: `${next.title}, ${when}.${meetings.length > 1 ? ` You have ${meetings.length} upcoming meetings in total.` : ''}`, basis: 'member' }],
+        actions: [{ label: 'Open ' + next.title, route: '/meetings/' + next.id, primary: true }, ...(meetings.length > 1 ? [{ label: 'All my meetings', route: '/meetings' }] : [])],
+        provenance: base('meetings_status', id, '/meetings/' + next.id, { sourceRefs: [{ kind: 'meeting', id: next.id }] }) };
     }
 
     case 'housing_requirements':
