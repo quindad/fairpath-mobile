@@ -39,6 +39,7 @@ export type AiGateway = {
   reliefEvaluations(): Promise<{ case_id: string; id: string; outcome: keyof typeof OUTCOME_INFO; eligibility_date: string | null; days_remaining: number | null; rule_key: string | null; rule_version: number | null }[]>;
   upcomingMeetings(): Promise<{ id: string; title: string; start_at: string }[]>;
   resumeCount(): Promise<number>;
+  myEarlyAccessEnrollments(): Promise<{ id: string; zip: string; status: 'waitlisted' | 'notified' | 'converted' }[]>;
 };
 
 export type ModelAdapter = {
@@ -306,6 +307,24 @@ async function build(id: IntentId, task: string, text: string, gw: AiGateway, ct
         parts: [{ text: 'Every resource and housing program lists what to bring on its page. Save the ones you like and FairPath combines the required documents into one checklist you can print.', basis: 'app_state' }],
         actions: [{ label: 'Search housing help', route: '/resources?q=' + enc('housing'), primary: true }, { label: 'My saved resources', route: '/saved-resources' }, { label: 'What-to-bring checklist', route: '/documents/create?type=resource_required_documents' }],
         provenance: base('resource_search', id, '/resources?q=housing') };
+
+    case 'market_coverage': {
+      if (!(await gw.signedIn())) return signInNeeded(id, 'market_coverage_status');
+      const enrollments = await gw.myEarlyAccessEnrollments();
+      if (!enrollments.length) {
+        return { intent: id, title: 'Check your area', modelAssisted: false,
+          parts: [{ text: 'You are not on an Early Access list yet. Search jobs or housing with your ZIP, and FairPath will tell you honestly whether your market has coverage or is still building.', basis: 'app_state' }],
+          actions: [{ label: 'Check my ZIP', route: '/early-access', primary: true }], provenance: base('market_coverage_status', id, '/early-access') };
+      }
+      const active = enrollments.find((e) => e.status === 'waitlisted') ?? enrollments[0];
+      const line = active.status === 'converted'
+        ? `Good news: FairPath is now active in ${active.zip}. Your Early Access benefit, if one applied, is already on your account.`
+        : `You are on the Early Access list for ${active.zip}. FairPath will notify you the moment that market opens — nothing else changes about your account in the meantime.`;
+      return { intent: id, title: 'Your Early Access status', modelAssisted: false,
+        parts: [{ text: line, basis: 'member' }],
+        actions: [{ label: 'View Early Access', route: '/early-access?zip=' + active.zip, primary: true }],
+        provenance: base('market_coverage_status', id, '/early-access?zip=' + active.zip) };
+    }
 
     case 'documents':
       return { intent: id, title: 'Your documents', modelAssisted: false,

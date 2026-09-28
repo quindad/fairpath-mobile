@@ -198,10 +198,31 @@ action needed — this is implementation work, not a credential.
 - **Sterling action required:** none — flagging as NOT STARTED by design, not a bug.
 
 ## 10. Push notifications / Email / SMS
-- **Current state: NOT STARTED, all three.** Confirmed zero references to `expo-notifications`, any push token
-  registration, any transactional-email vendor (Resend, SendGrid, Postmark), or any SMS vendor (Twilio) anywhere in
-  `src/` or `supabase/`. FairPath's current "reminders" feature (`member_reminders`) is in-app only — it has no
-  delivery channel outside the app itself.
+- **Correction to an earlier version of this register:** I originally wrote push as "NOT STARTED... zero
+  references anywhere" — wrong for the server side. Found on a closer schema read.
+- **Current state: PUSH IS SCAFFOLDED SERVER-SIDE, NOT CONNECTED CLIENT-SIDE OR TO A SENDER. EMAIL/SMS NOT
+  STARTED.** `20260929100000_inquiry_status_and_notifications.sql` already builds a real delivery boundary:
+  `push_tokens` (user, token, platform, provider, disabled_at), `register_push_token()` (a real, callable
+  `authenticated` RPC that upserts a device token), `notification_deliveries` (per-channel status queue: pending/
+  sent/failed/skipped, provider_message_id, attempts), and a trigger that automatically queues a `'push'` delivery
+  row every single time `create_notification()` fires — which already happens today for entitlement grants,
+  coverage-market activation, application status changes, and inquiry replies. The migration's own comment is
+  explicit and honest about the gap: *"NO push is sent from this migration; a worker with APNs/Expo credentials
+  can consume the queue later."*
+  **What's actually missing, precisely:** (1) no client code anywhere imports `expo-notifications` or calls
+  `register_push_token()` — no device has ever registered a token, so the queue has real rows with nowhere to
+  send them; (2) no worker/Edge Function reads `notification_deliveries` and calls Expo's push API; (3) email and
+  SMS have no equivalent scaffolding at all — `notification_deliveries.channel` supports `'email'`/`'sms'` values
+  in its check constraint, but nothing ever inserts those rows or would know how to send them.
+- **What this changes about the work ahead:** connecting push is now two bounded tasks, not a from-scratch
+  design: (a) client-side — add `expo-notifications`, request permission, call `register_push_token()` on
+  sign-in; (b) server-side — an Edge Function (cron or triggered) that reads pending `notification_deliveries`
+  rows and calls Expo's push endpoint, no vendor account needed beyond Expo's own free push service.
+  **Deliberately not started this pass**: `expo-notifications` is a native module — adding it requires the same
+  dev-client rebuild that `expo-apple-authentication` needed earlier this project, which only Sterling's terminal/
+  device can do, and I cannot verify push delivery at all from the Browser pane (no real device, no push
+  credential). Wiring the client side without being able to test it risks shipping something that looks done but
+  isn't — so this stays queued rather than half-built.
 - **Provider recommendations:**
   - **Push:** Expo push notifications (`expo-notifications` + Expo's push service) — zero extra vendor, works with
     the existing Expo/EAS setup, free.

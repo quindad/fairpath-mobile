@@ -5,6 +5,7 @@ import { loadMemberSummary } from '@/core/profile/member-summary';
 import { loadCompletion } from '@/core/profile/opportunity-service';
 import { loadCases } from '@/core/record-relief/relief-service';
 import { isSignedIn, resolveResourceNeeds } from '@/core/resources/resources-service';
+import { myEarlyAccessEnrollments as loadMyEarlyAccessEnrollments } from '@/core/coverage/coverage-service';
 
 /**
  * The assistant's ONLY window into member data: read-only loaders that already run under the member's own RLS.
@@ -26,6 +27,7 @@ export const gateway: AiGateway = {
     const r = await supabase.from('member_resumes').select('id', { count: 'exact', head: true });
     return r.count ?? 0;
   },
+  myEarlyAccessEnrollments: async () => (await loadMyEarlyAccessEnrollments()).map((e) => ({ id: e.id, zip: e.zip, status: e.status })),
   reliefEvaluations: async () => {
     const evals = await supabase.from('record_relief_evaluations').select('id,case_id,outcome,eligibility_date,rule_key,rule_version').eq('superseded', false);
     return ((evals.data ?? []) as { id: string; case_id: string; outcome: never; eligibility_date: string | null; rule_key: string | null; rule_version: number | null }[]).map((e) => ({

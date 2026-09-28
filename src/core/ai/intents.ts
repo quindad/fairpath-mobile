@@ -7,7 +7,7 @@
 export type IntentId =
   | 'safety' | 'need_shelter' | 'find_resources' | 'finish_profile' | 'credit_review' | 'credit_why_flagged' | 'credit_build_dispute' | 'credit_dispute_status'
   | 'relief_can_i_clear' | 'relief_when_eligible' | 'relief_paperwork' | 'relief_coverage' | 'housing_requirements' | 'find_jobs' | 'my_jobs' | 'find_housing' | 'my_housing'
-  | 'create_resume' | 'my_resumes' | 'my_meetings' | 'next_steps' | 'documents' | 'help';
+  | 'create_resume' | 'my_resumes' | 'my_meetings' | 'next_steps' | 'documents' | 'market_coverage' | 'help';
 
 export type Intent = { id: IntentId; task: string; label: string; patterns: RegExp[]; priority: number };
 
@@ -55,6 +55,9 @@ export const INTENTS: Intent[] = [
     patterns: [/\b(next steps?|what (should|do) i do|what now|where do i start|show my next)\b/i] },
   { id: 'documents', task: 'document_help', label: T('My documents'), priority: 55,
     patterns: [/\b(export|download|print|pdf|my documents|save (a )?copy)\b/i] },
+  { id: 'market_coverage', task: 'market_coverage_status', label: T('Is FairPath in my area'), priority: 67,
+    patterns: [/\bis fairpath\b.*\b(my area|my zip|available|here)\b/i, /\b(when|is)\b.*\bfairpath\b.*\b(launch|come|available|coverage)\b/i,
+      /\b(early access|waitlist)\b.*\b(status|my)\b/i, /\bam i on\b.*\bwaitlist\b/i, /\bis my (area|zip|market)\b.*\bcovered\b/i] },
   { id: 'find_resources', task: 'resource_search', label: T('Find help'), priority: 30,
     patterns: [/\b(need|looking for|find|where can i get|help with)\b/i] },
 ];

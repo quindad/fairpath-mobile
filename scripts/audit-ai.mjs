@@ -36,6 +36,7 @@ const gw = (over = {}) => ({
   reliefEvaluations: async () => [{ case_id: 'c1', id: 'e1', outcome: 'waiting_period', eligibility_date: '2028-01-07', days_remaining: 460, rule_key: 'test-a-misdemeanor-expunge', rule_version: 2 }],
   upcomingMeetings: async () => [{ id: 'mt1', title: 'Interview with Acme', start_at: '2028-01-07T14:00:00Z' }],
   resumeCount: async () => 1,
+  myEarlyAccessEnrollments: async () => [],
   ...over,
 });
 
@@ -112,11 +113,21 @@ check(r.intent === 'my_meetings' && /Interview with Acme/.test(r.parts[0].text) 
 r = await answer('What is my next meeting?', gw({ upcomingMeetings: async () => [] }));
 check(routes(r)[0] === '/meetings/add', 'no meetings -> offer to add one');
 
+check(matchIntent('Is FairPath available in my area?').intent?.id === 'market_coverage', 'market coverage: availability phrasing');
+check(matchIntent('Am I on the waitlist?').intent?.id === 'market_coverage', 'market coverage: waitlist phrasing');
+r = await answer('Is FairPath available in my area?', gw());
+check(r.intent === 'market_coverage' && routes(r)[0] === '/early-access' && !bad(r), 'no enrollment -> honest offer to check, no coverage claimed');
+r = await answer('Am I on the waitlist?', gw({ myEarlyAccessEnrollments: async () => [{ id: 'w1', zip: '43081', status: 'waitlisted' }] }));
+check(r.intent === 'market_coverage' && /43081/.test(r.parts[0].text) && routes(r)[0] === '/early-access?zip=43081' && !bad(r), 'reports the real waitlist zip, never invents a launch date');
+r = await answer('Am I on the waitlist?', gw({ myEarlyAccessEnrollments: async () => [{ id: 'w1', zip: '43081', status: 'converted' }] }));
+check(/now active/.test(r.parts[0].text), 'a converted enrollment reports the market is now active');
+
 // ---------- permissions: signed-out means NO personal reads ----------
 const reads = [];
-const spy = gw({ signedIn: async () => false, summary: async () => { reads.push('summary'); return {}; }, creditItems: async () => { reads.push('credit'); return []; }, reliefCases: async () => { reads.push('cases'); return []; }, profileCompletion: async () => { reads.push('profile'); return []; } });
-for (const q of ['Show my next steps', 'Review my credit report', 'Can I clear this record?', 'Help me finish my profile', 'Build my dispute letter', 'When might I become eligible?', 'Show my job applications', 'Show my saved homes', 'What is my dispute status?', 'Download my resume', 'What is my next meeting?']) await answer(q, spy);
+const spy = gw({ signedIn: async () => false, summary: async () => { reads.push('summary'); return {}; }, creditItems: async () => { reads.push('credit'); return []; }, reliefCases: async () => { reads.push('cases'); return []; }, profileCompletion: async () => { reads.push('profile'); return []; }, myEarlyAccessEnrollments: async () => { reads.push('earlyAccess'); return []; } });
+for (const q of ['Show my next steps', 'Review my credit report', 'Can I clear this record?', 'Help me finish my profile', 'Build my dispute letter', 'When might I become eligible?', 'Show my job applications', 'Show my saved homes', 'What is my dispute status?', 'Download my resume', 'What is my next meeting?', 'Am I on the waitlist?']) await answer(q, spy);
 check(reads.length === 0, 'a signed-out caller triggers zero personal data reads: ' + reads);
+check((await answer('Am I on the waitlist?', spy)).actions[0].route === '/sign-in', 'market_coverage requires sign-in before reading enrollments');
 check((await answer('Show my job applications', spy)).actions[0].route === '/sign-in', 'my_jobs requires sign-in before reading data');
 check((await answer('Show my saved homes', spy)).actions[0].route === '/sign-in', 'my_housing requires sign-in before reading data');
 
