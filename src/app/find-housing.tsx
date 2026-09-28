@@ -14,6 +14,7 @@ import { isZip, normalizePlace, resolveZipCenter } from '@/core/opportunities/op
 import { DEFAULT_SEARCH_RADIUS_MILES, loadLocationSettings } from '@/core/profile/location-service';
 import { supabase } from '@/lib/supabase';
 import { HousingMap } from '@/components/HousingMap';
+import { getMarketCoverage, isLowCoverage, type MarketCoverage } from '@/core/coverage/coverage-service';
 
 const RADIUS_CHOICES=[10,25,50,100];
 const TYPES=['apartment','townhome','house','duplex','condo','room'];
@@ -39,6 +40,7 @@ export default function Housing(){
  const [loadingMore,setLoadingMore]=useState(false);
  const [error,setError]=useState('');
  const [zipUnplaced,setZipUnplaced]=useState(false);
+ const [coverage,setCoverage]=useState<MarketCoverage|null>(null);
  // ui
  const [viewMode,setViewMode]=useState<'list'|'map'>('list');
  const [controlsOpen,setControlsOpen]=useState(false);
@@ -139,6 +141,17 @@ export default function Housing(){
   if(zip)resolveZipCenter(zip).then(c=>{if(active)setZipUnplaced(!c)}).catch(()=>{});
   return()=>{active=false};
  },[zip]);
+
+ // Distinguishes "this search matched nothing" from "FairPath does not have enough coverage here yet".
+ useEffect(()=>{
+  let active=true;
+  if(!loading&&zip&&total===0){
+   getMarketCoverage(zip).then(c=>{if(active)setCoverage(c)}).catch(()=>{});
+  }else{
+   setCoverage(null);
+  }
+  return()=>{active=false};
+ },[loading,zip,total]);
 
  function search(){setNonce(n=>n+1)}
  function changeWhere(v:string){whereTouched.current=true;setWhere(v)}
@@ -276,9 +289,18 @@ export default function Housing(){
   </Pressable>;
  }
 
+ const lowCoverage=zip&&coverage&&isLowCoverage(coverage.status);
  const statusBlock=<>
   {error?<Text style={s.error}>{error}</Text>:null}
-  {!loading&&homes.length===0&&!error?<View style={s.empty}>
+  {!loading&&homes.length===0&&!error&&lowCoverage?<View style={s.empty}>
+   <Text style={s.emptyTitle}>FairPath does not have enough verified housing near {zip} yet.</Text>
+   <Text style={s.emptyBody}>That's different from this search finding nothing — the market itself is still building. FairPath can notify you when it's ready.</Text>
+   <Pressable style={s.earlyAccessBtn} onPress={()=>router.push(('/early-access?zip='+zip) as never)}>
+    <Text style={s.earlyAccessBtnText}>JOIN EARLY ACCESS</Text>
+    <Lucide name="arrow-right" color={C.black} size={14}/>
+   </Pressable>
+  </View>:null}
+  {!loading&&homes.length===0&&!error&&!lowCoverage?<View style={s.empty}>
    <Text style={s.emptyTitle}>No homes match this search.</Text>
    <Text style={s.emptyBody}>{zip?'Try a larger radius, a different keyword, or remove a filter.':'Try a wider location, a different keyword, or remove a filter.'}</Text>
   </View>:null}
@@ -414,6 +436,8 @@ const s=StyleSheet.create({
  body:{paddingTop:13},priceRow:{flexDirection:'row',alignItems:'baseline'},price:{color:C.white,fontFamily:F.black,fontSize:25},per:{color:C.muted,fontSize:11},homeTitle:{color:C.white,fontFamily:F.extraBold,fontSize:19,lineHeight:22,marginTop:4},meta:{color:C.mutedStrong,fontSize:12,marginTop:7},locationRow:{flexDirection:'row',alignItems:'center',gap:6,marginTop:7},location:{color:C.muted,fontSize:11},badges:{flexDirection:'row',gap:6,flexWrap:'wrap',marginTop:11},
  footer:{marginTop:14,paddingTop:12,borderTopWidth:1,borderTopColor:C.border,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},sourceLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},source:{color:C.mutedStrong,fontSize:9,marginTop:3},viewRow:{flexDirection:'row',alignItems:'center',gap:6},viewText:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8},
  empty:{borderTopWidth:1,borderTopColor:C.border,paddingVertical:28},emptyTitle:{color:C.white,fontFamily:F.extraBold,fontSize:18},emptyBody:{color:C.muted,fontSize:13,lineHeight:20,marginTop:7},error:{color:C.danger,fontSize:12,paddingVertical:12},
+ earlyAccessBtn:{height:46,backgroundColor:C.lime,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:8,marginTop:16,paddingHorizontal:16,alignSelf:'flex-start'},
+ earlyAccessBtnText:{color:C.black,fontFamily:F.extraBold,fontSize:9,letterSpacing:.8},
  footerBlock:{paddingTop:18,alignItems:'stretch'},footerText:{color:C.muted,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.1,textAlign:'center',paddingVertical:10},
  moreBtn:{height:42,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center',backgroundColor:'#0A0C0A'},moreText:{color:C.lime,fontFamily:F.extraBold,fontSize:9,letterSpacing:1},
  mapBar:{flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:L.mobileGutter,paddingVertical:10,borderBottomWidth:1,borderBottomColor:C.border},
