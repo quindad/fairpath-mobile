@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { currentUser } from '@/core/supabase/current-user';
 
 export type MeetingType = 'employer_interview' | 'nonprofit_appointment' | 'caseworker_meeting' | 'housing_appointment' | 'workshop' | 'office_hours' | 'other';
 export type MeetingStatus = 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | 'no_show';
@@ -41,7 +42,8 @@ export type NewMeeting = {
   timezone?: string; instructions?: string | null; reminder_minutes_before?: number; related_job_id?: string | null; related_resource_id?: string | null;
 };
 export async function createMeeting(m: NewMeeting): Promise<Meeting> {
-  const { data, error } = await supabase.from('member_meetings').insert(m).select('*').single();
+  const user = await currentUser();
+  const { data, error } = await supabase.from('member_meetings').insert({ ...m, user_id: user.id }).select('*').single();
   if (error) throw error;
   return data as Meeting;
 }
