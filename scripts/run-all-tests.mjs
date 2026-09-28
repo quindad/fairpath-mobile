@@ -25,6 +25,7 @@ const steps = [
   ['SQL: AI provenance + reminders', NODE, ['scripts/test-local-ai-reminders.mjs']],
   ['SQL: resume studio', NODE, ['scripts/test-local-resume.mjs']],
   ['SQL: meetings', NODE, ['scripts/test-local-meetings.mjs']],
+  ['SQL: coverage markets', NODE, ['scripts/test-local-coverage.mjs']],
 ];
 
 const only = process.argv[2];

@@ -13,7 +13,8 @@ const NEW = fs.readdirSync('supabase/migrations').filter((f) => /^202610\d{8}_/.
 check(NEW.length >= 10, 'expected the new migrations, found ' + NEW.length);
 
 // Functions that guests (anon) may execute: only public, member-state-free reference reads.
-const ANON_OK = new Set(['resolve_resource_needs', 'search_resources', 'get_resource_detail', 'resource_location_open_now', 'resource_freshness']);
+const ANON_OK = new Set(['resolve_resource_needs', 'search_resources', 'get_resource_detail', 'resource_location_open_now', 'resource_freshness',
+  'get_market_coverage']);
 
 for (const f of NEW) {
   const sql = strip(read('supabase/migrations/' + f));
