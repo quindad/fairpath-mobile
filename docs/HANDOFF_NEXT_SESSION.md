@@ -2,6 +2,55 @@
 
 Nothing here is pushed. DEV project only (`znvhmuhojvwvjzmaqwff`). Production untouched.
 
+## Update 5 (full signed-in integration marathon, real member journey)
+Drove a disposable DEV member through Opportunity Profile (8/8) → Easy Apply → Housing FastTrack → Resources →
+Documents → Credit → FairPath AI → Privacy, live in the Browser pane. Found and fixed 4 real bugs no offline check
+had caught:
+1. **`createResume`/`createMeeting` never set `user_id`** — RLS correctly rejected every insert; Resume Studio and
+   Meetings creation were completely broken. Local SQL tests insert with an explicit `user_id` and never exercise the
+   client service layer, so this was invisible until a real signed-in click. Fixed; new audit `test-client-user-id.mjs`.
+2. **Every client-side (device-fallback) PDF/DOCX export was broken on web** — Metro's `unstable_enablePackageExports`
+   resolved `tslib` to its ESM build (no `default` export) while `docx`'s CJS bundle expected the CJS shape. Affected
+   Credit dispute letters, Record Relief packets, and Resume Studio project-wide. Fixed with `metro.config.js`
+   (`unstable_enablePackageExports = false`). **Needs a dev-server restart to take effect** — done on both 8090 and
+   the QA server; confirmed live (PDF + DOCX resume export, 4-document dispute packet zip).
+3. **Easy Apply autofill read only the legacy `profile_answers` questionnaire** — skills/certifications/desired
+   roles/education were silently blank for anyone using the real Opportunity Profile (the only flow the app
+   surfaces). Fixed to prefer `member_skills`/`member_credentials`/`member_education`/`member_job_preferences`,
+   legacy as fallback only. Regression check in `audit-jobs.mjs`.
+4. **`window.confirm`/`alert` on web silently no-op** in this Browser-pane environment (confirmed via console:
+   "native JavaScript dialogs are disabled ... confirm() returned false"), which is exactly why "Replace with
+   profile" and similar confirm-gated actions did nothing when clicked. Replaced with a themed in-app modal
+   (`NotifyHost` + `setNotifyHandler` in `notify.ts`) — same call sites, no other code changes, and now part of the
+   real DOM so it's both on-brand and actually testable. Verified on a real delete confirmation.
+
+**Verified working end to end, live, as one continuous member (not just guest, not just code-read):**
+Opportunity Profile all 8 sections (skills, work experience incl. "I still work here", education incl. GED/incarcerated-
+work framing, job preferences, availability, transportation) → Easy Apply with correct autofill and a **verified
+server-built employer snapshot containing exactly the opted-in sections, confirmed by reading the raw stored row
+directly** (no DOB, no home address, no justice data, no pay) → Housing FastTrack's full 5-step flow with real
+validation and **required-document enforcement that genuinely blocks submission** (the historical bug area) →
+Resources save/start with cross-module consistency on Saved Resources → both document generation paths (server via
+render-document, device via generateFromSpec) producing real files with correct source labels → My Documents
+correctly categorizing everything from Credit, Resume Studio and Resources, with working deletion → Credit's full
+stage model (needs-review → possible-inaccuracy → member-disputes → confirmed) including the new dispute-reason
+chips and identity-correction letter → FairPath AI's deterministic next-steps, food-search and dispute-status intents
+returning real, correctly-prioritized state → Privacy's deletion request/cancel with correct idempotency and honest
+"NOT been deleted" language.
+
+**One real architecture finding, not patched blind:** the legacy "FairPath Readiness" score on Home (`/complete-profile`,
+`profile_answers` table) is fed by different write paths than the new Opportunity Profile (`member_*` tables) — it
+moved from 0%→20% purely from a Housing FastTrack draft, which writes DOB/address into the legacy table. The two
+systems are real and separately useful today, but need an explicit merge/retire decision, not a silent rename.
+
+**Session boundary note:** the QA dev server (port 8091) hit a Metro heap-limit crash after ~71 minutes of continuous
+use — restarted cleanly, no code issue. A later environment reset (usage-limit boundary) cleared the Browser pane's
+session entirely; testing stopped there since re-entering needs a fresh `qa:dev-ui` callback link. Sign-out/sign-in
+session-restore was therefore not explicitly exercised (though the same underlying mechanism was implicitly proven
+correct dozens of times via reloads and navigation all session).
+
+39/39 offline checks pass after every fix. 4 new commits this pass, all local, clean tree.
+
 ## State
 - Applied to DEV: resources migrations (`20261001100000`..`20261001120000`).
 - Written and tested locally only (PGlite): `20261001130000` opportunity_profile, `140000` generated_documents, `150000` privacy_and_member_summary, `160000` credit_workspace, `170000` record_relief, `180000` ai_provenance, `190000` member_reminders.
