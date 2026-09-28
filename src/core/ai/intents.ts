@@ -5,8 +5,9 @@
 // "here is what I can help with" answer.
 
 export type IntentId =
-  | 'safety' | 'need_shelter' | 'find_resources' | 'finish_profile' | 'credit_review' | 'credit_why_flagged' | 'credit_build_dispute'
-  | 'relief_can_i_clear' | 'relief_when_eligible' | 'relief_paperwork' | 'housing_requirements' | 'next_steps' | 'documents' | 'help';
+  | 'safety' | 'need_shelter' | 'find_resources' | 'finish_profile' | 'credit_review' | 'credit_why_flagged' | 'credit_build_dispute' | 'credit_dispute_status'
+  | 'relief_can_i_clear' | 'relief_when_eligible' | 'relief_paperwork' | 'relief_coverage' | 'housing_requirements' | 'find_jobs' | 'my_jobs' | 'find_housing' | 'my_housing'
+  | 'next_steps' | 'documents' | 'help';
 
 export type Intent = { id: IntentId; task: string; label: string; patterns: RegExp[]; priority: number };
 
@@ -32,6 +33,18 @@ export const INTENTS: Intent[] = [
     patterns: [/\b(finish|complete|fill|update|improve|build)\b.*\bprofile\b/i, /\b(my )?profile\b.*\b(help|incomplete|done)\b/i] },
   { id: 'housing_requirements', task: 'resource_search', label: T('Housing program requirements'), priority: 68,
     patterns: [/\bwhat do i need\b.*\b(housing|program|apply)\b/i, /\b(required|requirements|what to bring)\b.*\b(housing|program|documents?)\b/i] },
+  { id: 'credit_dispute_status', task: 'dispute_status', label: T('Check my dispute status'), priority: 74,
+    patterns: [/\b(dispute)\b.*\b(status|update|where|track|progress)\b/i, /\b(response|reply)\b.*\b(dispute|bureau|furnisher)\b/i] },
+  { id: 'relief_coverage', task: 'relief_coverage', label: T('Which states are covered'), priority: 82,
+    patterns: [/\b(which|what)\b.*\b(states?|jurisdictions?)\b.*\bcover/i, /\bcoverage\b.*\b(state|record relief)\b/i] },
+  { id: 'find_jobs', task: 'jobs_search', label: T('Find jobs'), priority: 65,
+    patterns: [/\b(find|search|look for|show)\b.*\bjobs?\b/i, /\bjob (search|opening|listing)s?\b/i] },
+  { id: 'my_jobs', task: 'jobs_status', label: T('My applications'), priority: 66,
+    patterns: [/\b(my|saved)\b.*\b(job )?applications?\b/i, /\bsaved jobs?\b/i, /\bapplication status\b/i] },
+  { id: 'find_housing', task: 'housing_search', label: T('Find housing'), priority: 64,
+    patterns: [/\b(find|search|look for|show)\b.*\bhousing\b/i, /\b(apartment|rental)s?\b.*\b(find|search|near)\b/i] },
+  { id: 'my_housing', task: 'housing_status', label: T('My housing applications'), priority: 65,
+    patterns: [/\b(my|saved)\b.*\bhousing\b.*\bapplications?\b/i, /\bsaved (homes?|housing)\b/i] },
   { id: 'next_steps', task: 'next_steps', label: T('Show my next steps'), priority: 60,
     patterns: [/\b(next steps?|what (should|do) i do|what now|where do i start|show my next)\b/i] },
   { id: 'documents', task: 'document_help', label: T('My documents'), priority: 55,

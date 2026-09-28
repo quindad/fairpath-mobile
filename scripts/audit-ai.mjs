@@ -75,11 +75,35 @@ r = await answer('Show my next steps', gw({ signedIn: async () => false }));
 check(routes(r)[0] === '/sign-in' && r.provenance.confidence === 'unavailable', 'signed-out members are asked to sign in before any personal data is read');
 check(!calls.slice(calls.lastIndexOf('signedIn')).includes('summary') || true, 'sign-in check first');
 
+// ---------- new deterministic navigation intents (jobs, housing, dispute status, relief coverage) ----------
+check(matchIntent('Find jobs near me').intent?.id === 'find_jobs', 'find jobs');
+check(matchIntent('Show my job applications').intent?.id === 'my_jobs', 'my jobs');
+check(matchIntent('Find housing').intent?.id === 'find_housing', 'find housing');
+check(matchIntent('Show my saved homes').intent?.id === 'my_housing', 'my housing');
+check(matchIntent('What is my dispute status?').intent?.id === 'credit_dispute_status', 'dispute status');
+check(matchIntent('Which states does record relief cover?').intent?.id === 'relief_coverage', 'relief coverage');
+
+r = await answer('Find jobs near me', gw());
+check(r.intent === 'find_jobs' && routes(r)[0] === '/find-jobs', 'find jobs routes to search (guest-safe, no sign-in needed)');
+r = await answer('Show my job applications', gw());
+check(r.intent === 'my_jobs' && routes(r).includes('/job-applications') && routes(r).includes('/saved-jobs'), 'my jobs deep-links to applications and saved jobs');
+r = await answer('Find housing', gw());
+check(r.intent === 'find_housing' && routes(r)[0] === '/find-housing', 'find housing routes to search (guest-safe)');
+r = await answer('Show my saved homes', gw());
+check(r.intent === 'my_housing' && routes(r).includes('/housing-applications') && routes(r).includes('/saved-homes'), 'my housing deep-links');
+r = await answer('What is my dispute status?', gw());
+check(r.intent === 'credit_dispute_status' && routes(r)[0] === '/credit', 'dispute status routes to the tracker');
+r = await answer('Which states does record relief cover?', gw());
+check(r.intent === 'relief_coverage' && routes(r)[0] === '/record-relief/coverage', 'relief coverage routes to the coverage screen');
+for (const rr of [r]) check(!bad(rr), 'no overclaim/promise language');
+
 // ---------- permissions: signed-out means NO personal reads ----------
 const reads = [];
 const spy = gw({ signedIn: async () => false, summary: async () => { reads.push('summary'); return {}; }, creditItems: async () => { reads.push('credit'); return []; }, reliefCases: async () => { reads.push('cases'); return []; }, profileCompletion: async () => { reads.push('profile'); return []; } });
-for (const q of ['Show my next steps', 'Review my credit report', 'Can I clear this record?', 'Help me finish my profile', 'Build my dispute letter', 'When might I become eligible?']) await answer(q, spy);
+for (const q of ['Show my next steps', 'Review my credit report', 'Can I clear this record?', 'Help me finish my profile', 'Build my dispute letter', 'When might I become eligible?', 'Show my job applications', 'Show my saved homes', 'What is my dispute status?']) await answer(q, spy);
 check(reads.length === 0, 'a signed-out caller triggers zero personal data reads: ' + reads);
+check((await answer('Show my job applications', spy)).actions[0].route === '/sign-in', 'my_jobs requires sign-in before reading data');
+check((await answer('Show my saved homes', spy)).actions[0].route === '/sign-in', 'my_housing requires sign-in before reading data');
 
 // ---------- graceful fallback ----------
 r = await answer('Show my next steps', gw({ summary: async () => { throw new Error('network'); } }));

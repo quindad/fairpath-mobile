@@ -234,6 +234,46 @@ async function build(id: IntentId, task: string, text: string, gw: AiGateway, ct
         provenance: base('next_steps', id, steps[0].route, { sourceRefs: [{ kind: 'summary', id: 'home' }] }) };
     }
 
+    case 'credit_dispute_status': {
+      if (!(await gw.signedIn())) return signInNeeded(id, 'dispute_status');
+      return { intent: id, title: 'Your disputes', modelAssisted: false,
+        parts: [{ text: 'The dispute tracker shows each dispute\'s status, when you sent it, and whether a response is due soon. You record what happened; FairPath never sends or checks anything for you.', basis: 'app_state' }],
+        actions: [{ label: 'Open Credit Builder', route: '/credit', primary: true }], provenance: base('dispute_status', id, '/credit') };
+    }
+
+    case 'relief_coverage':
+      return { intent: id, title: 'Coverage by jurisdiction', modelAssisted: false,
+        parts: [{ text: 'FairPath is built to eventually cover every state, DC and the territories, plus federal relief as its own branch, but it only shows a result where a rule has been verified from an official source. The coverage page lists exactly which jurisdictions have one loaded today.', basis: 'app_state' }],
+        actions: [{ label: 'See coverage', route: '/record-relief/coverage', primary: true }], provenance: base('relief_coverage', id, '/record-relief/coverage') };
+
+    case 'find_jobs':
+      return { intent: id, title: 'Let\'s find work', modelAssisted: false,
+        parts: [{ text: 'I will open job search. You can filter by second-chance-friendly employers, location and more.', basis: 'app_state' }],
+        actions: [{ label: 'Search jobs', route: '/find-jobs', primary: true }], provenance: base('jobs_search', id, '/find-jobs') };
+
+    case 'my_jobs': {
+      if (!(await gw.signedIn())) return signInNeeded(id, 'jobs_status');
+      const s = await gw.summary();
+      return { intent: id, title: 'Your job activity', modelAssisted: false,
+        parts: [{ text: `You have applied to ${s.jobs?.applied ?? 0} job(s) and saved ${s.jobs?.saved ?? 0}.`, basis: 'app_state' }],
+        actions: [{ label: 'My applications', route: '/job-applications', primary: true }, { label: 'Saved jobs', route: '/saved-jobs' }],
+        provenance: base('jobs_status', id, '/job-applications', { sourceRefs: [{ kind: 'summary', id: 'jobs' }] }) };
+    }
+
+    case 'find_housing':
+      return { intent: id, title: 'Let\'s find housing', modelAssisted: false,
+        parts: [{ text: 'I will open housing search. You can filter by location, price and second-chance-friendly listings.', basis: 'app_state' }],
+        actions: [{ label: 'Search housing', route: '/find-housing', primary: true }], provenance: base('housing_search', id, '/find-housing') };
+
+    case 'my_housing': {
+      if (!(await gw.signedIn())) return signInNeeded(id, 'housing_status');
+      const s = await gw.summary();
+      return { intent: id, title: 'Your housing activity', modelAssisted: false,
+        parts: [{ text: `You have ${s.housing?.applications ?? 0} application(s) and saved ${s.housing?.saved_homes ?? 0} home(s).`, basis: 'app_state' }],
+        actions: [{ label: 'My applications', route: '/housing-applications', primary: true }, { label: 'Saved homes', route: '/saved-homes' }],
+        provenance: base('housing_status', id, '/housing-applications', { sourceRefs: [{ kind: 'summary', id: 'housing' }] }) };
+    }
+
     case 'housing_requirements':
       return { intent: id, title: 'What to bring', modelAssisted: false,
         parts: [{ text: 'Every resource and housing program lists what to bring on its page. Save the ones you like and FairPath combines the required documents into one checklist you can print.', basis: 'app_state' }],
