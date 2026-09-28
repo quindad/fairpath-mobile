@@ -2,20 +2,20 @@
 
 One item at a time. Everything not listed here has already been done, verified, or doesn't need you.
 
-## 1. Record Relief TEST fixtures are partially missing (state rules), federal TEST is present
-- **What I found, precisely:** `record_relief_federal_pathways` has its TEST rows loaded (Presidential pardon (TEST),
-  Youth offender set-aside (TEST) both showed up correctly on a federal case). But `record_relief_jurisdictions` has
-  **no** `TEST-A`/`TEST-B`/`TEST-C`/`TEST-D` rows at all — they don't even appear in the jurisdiction picker — so the
-  state-rules engine (waiting periods, exclusions, countdowns) cannot be exercised end to end right now. Everything
-  that CAN be tested without them passed cleanly: honest "rule not verified" outcomes, case create/edit, the 4-document
-  filing packet, status tracking, AI deep links.
-- **Command:**
-  ```bash
-  npm run seed:dev:relief
-  ```
-- **Risk:** low. DEV only, fictional TEST data, idempotent (deletes-by-fixture_set then re-inserts).
-- **Expected result:** the 4 TEST jurisdictions appear in the "Where was the case heard?" picker on `/record-relief/add`.
-- **Unblocks:** testing the actual rules engine (waiting periods, countdowns, exclusions) signed-in.
+## 1. Record Relief TEST fixtures — DONE, confirmed live
+TEST-A..D now appear in the jurisdiction picker, clearly labeled "(TEST DATA)". Verified two deliberately different
+fact patterns against the real engine live: an eligible misdemeanor (sentence completed 2022-06-15, 3-year rule) →
+`POTENTIALLY ELIGIBLE NOW`, and an identical rule with a 2025-06-18 completion date → `WAITING PERIOD`, with an
+exact, correctly computed countdown (`2028-06-18 · 1 year, 8 months, 21 days remaining`). The engine is proven
+correct on these two paths; more fact patterns (restitution, exclusions, manual-review flags, stale rule C, no-rule
+jurisdiction D) are queued as ongoing QA, not blocked on you.
+
+## 1a. Stripe test-mode key (unblocks FairPath+ checkout testing)
+- **What:** create a free Stripe account, stay in test mode, get the publishable key (`pk_test_...`).
+- **Where it goes:** a local `.env` file (never committed) as `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...`.
+- **Full walkthrough:** `docs/STERLING_INTEGRATION_SETUP.md`, priority 1.
+- **Risk:** none — test mode never touches real money.
+- **Unblocks:** actually testing FairPath+ checkout, which is currently uninitialized (no `.env` exists at all).
 
 ## 2. Decide on credit-report extraction (product/privacy decision, not a command)
 - **Why:** `extract-credit-report` is built, tested offline, and disabled by default. Enabling it means member-consented credit reports get sent to an external model provider (currently wired for Anthropic).
