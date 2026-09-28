@@ -11,6 +11,7 @@ export function isPublicRoute(path: string): boolean {
   return (
     path === '/' ||
     path === '/find-jobs' ||
+    path === '/early-access' ||
     path.startsWith('/job/') ||
     path === '/find-housing' ||
     path === '/housing-filters' ||

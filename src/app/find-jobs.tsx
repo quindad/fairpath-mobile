@@ -9,6 +9,7 @@ import { JobMap } from '@/components/JobMap';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { isZip, JOB_PAGE_SIZE, normalizePlace, loadSavedJobIds, resolveZipCenter, saveJob, searchJobs, unsaveJob, type Job } from '@/core/opportunities/opportunity-service';
 import { DEFAULT_SEARCH_RADIUS_MILES, loadLocationSettings } from '@/core/profile/location-service';
+import { getMarketCoverage, isLowCoverage, type MarketCoverage } from '@/core/coverage/coverage-service';
 import { supabase } from '@/lib/supabase';
 
 type Lane='all'|'second';
@@ -36,6 +37,7 @@ export default function FindJobs(){
  const [loadingMore,setLoadingMore]=useState(false);
  const [error,setError]=useState('');
  const [zipUnplaced,setZipUnplaced]=useState(false);
+ const [coverage,setCoverage]=useState<MarketCoverage|null>(null);
  // ui
  const [viewMode,setViewMode]=useState<'list'|'map'>('list');
  const [controlsOpen,setControlsOpen]=useState(false);
@@ -131,6 +133,18 @@ export default function FindJobs(){
   if(zip)resolveZipCenter(zip).then(c=>{if(active)setZipUnplaced(!c)}).catch(()=>{});
   return()=>{active=false};
  },[zip]);
+
+ // Distinguishes "these filters matched nothing" from "FairPath does not have enough coverage here yet" —
+ // only checked when there's a ZIP and a genuinely empty result, never guessed client-side from the count alone.
+ useEffect(()=>{
+  let active=true;
+  if(!loading&&zip&&total===0){
+   getMarketCoverage(zip).then(c=>{if(active)setCoverage(c)}).catch(()=>{});
+  }else{
+   setCoverage(null);
+  }
+  return()=>{active=false};
+ },[loading,zip,total]);
 
  const shownCount=lane==='second'?secondCount:total;
  const activeFilterCount=(remote?1:0)+(employment!=='any'?1:0)+(lane==='second'?1:0)+(zip&&radius!==DEFAULT_SEARCH_RADIUS_MILES?1:0);
@@ -310,9 +324,18 @@ export default function FindJobs(){
   </Pressable>;
  }
 
+ const lowCoverage=zip&&coverage&&isLowCoverage(coverage.status);
  const statusBlock=<>
   {error?<Text style={s.error}>{error}</Text>:null}
-  {!loading&&jobs.length===0&&!error?<View style={s.empty}>
+  {!loading&&jobs.length===0&&!error&&lowCoverage?<View style={s.empty}>
+   <Text style={s.emptyTitle}>FairPath does not have enough verified opportunities near {zip} yet.</Text>
+   <Text style={s.emptyBody}>That's different from these filters finding nothing — the market itself is still building. FairPath can notify you when it's ready.</Text>
+   <Pressable style={s.earlyAccessBtn} onPress={()=>router.push(('/early-access?zip='+zip) as never)}>
+    <Text style={s.earlyAccessBtnText}>JOIN EARLY ACCESS</Text>
+    <Lucide name="arrow-right" color={C.black} size={14}/>
+   </Pressable>
+  </View>:null}
+  {!loading&&jobs.length===0&&!error&&!lowCoverage?<View style={s.empty}>
    <Text style={s.emptyTitle}>No jobs match these filters.</Text>
    <Text style={s.emptyBody}>{zip?'Try a larger radius, remove a filter, or switch back to All Jobs.':'Try a wider location, remove a filter, or switch back to All Jobs.'}</Text>
   </View>:null}
@@ -465,6 +488,8 @@ const s=StyleSheet.create({
  empty:{borderTopWidth:1,borderTopColor:C.border,paddingVertical:28},
  emptyTitle:{color:C.white,fontFamily:F.extraBold,fontSize:18},
  emptyBody:{color:C.muted,fontSize:13,lineHeight:20,marginTop:7},
+ earlyAccessBtn:{height:46,backgroundColor:C.lime,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:8,marginTop:16,paddingHorizontal:16,alignSelf:'flex-start'},
+ earlyAccessBtnText:{color:C.black,fontFamily:F.extraBold,fontSize:9,letterSpacing:.8},
  error:{color:C.danger,fontSize:12,paddingVertical:12},
  radiusRow:{flexDirection:'row',alignItems:'center',gap:7,marginBottom:10},radiusLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:1.2,width:46},radiusCell:{flex:1},
  zipNote:{color:C.muted,fontSize:10,lineHeight:15,marginBottom:10},
