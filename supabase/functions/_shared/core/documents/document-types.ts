@@ -4,7 +4,7 @@ import type { DocAudience, DocFormat, DocKind, DocSensitivity } from './spec.ts'
 
 export type DocumentTypeInfo = {
   type: string;
-  module: 'resources' | 'profile' | 'credit' | 'record_relief' | 'housing' | 'jobs';
+  module: 'resources' | 'profile' | 'credit' | 'record_relief' | 'housing' | 'jobs' | 'resume';
   label: string;
   description: string;
   sensitivity: DocSensitivity;
@@ -46,6 +46,12 @@ export const DOCUMENT_TYPES: Record<string, DocumentTypeInfo> = {
     description: 'Your work history, education, skills and availability. You choose what is included.',
     sensitivity: 'standard', kind: 'summary', formats: ['pdf', 'docx'], allowedAudiences: ['self', 'employer', 'caseworker'],
     templateId: 'opportunity_profile', templateVersion: '1', defaultPersist: 'history_only', retentionChoices: STD_RETENTION,
+  },
+  resume: {
+    type: 'resume', module: 'resume', label: 'Resume',
+    description: 'A resume you built in Resume Studio, exported as a clean, ATS-friendly document.',
+    sensitivity: 'standard', kind: 'summary', formats: ['pdf', 'docx'], allowedAudiences: ['self', 'employer', 'caseworker'],
+    templateId: 'resume', templateVersion: '1', defaultPersist: 'history_only', retentionChoices: STD_RETENTION,
   },
   credit_review_summary: {
     type: 'credit_review_summary', module: 'credit', label: 'Credit review summary',

@@ -22,6 +22,7 @@ const steps = [
   ['SQL: record relief', NODE, ['scripts/test-local-relief.mjs']],
   ['SQL: record relief fixtures', NODE, ['scripts/test-relief-fixtures.mjs']],
   ['SQL: AI provenance + reminders', NODE, ['scripts/test-local-ai-reminders.mjs']],
+  ['SQL: resume studio', NODE, ['scripts/test-local-resume.mjs']],
 ];
 
 const only = process.argv[2];

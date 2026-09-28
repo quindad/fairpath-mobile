@@ -121,6 +121,7 @@ export default function MeScreen() {
 
             <View style={s.block}><SectionTitle>PROFILE</SectionTitle></View>
             <ListRow title="Opportunity Profile" body={`${summary.profile?.completed_sections ?? 0} of ${summary.profile?.total_sections ?? 8} sections complete`} onPress={() => router.push('/opportunity-profile' as never)} />
+            <ListRow title="Resume Studio" body="Build a clean, ATS-friendly resume" onPress={() => router.push('/resume-studio' as never)} />
             <ListRow title="Justice readiness" body="Your private readiness checklist. Never shared with employers." onPress={() => router.push('/profile-readiness' as never)} />
             <ListRow title="My Documents" body="Documents FairPath helped you prepare" onPress={() => router.push('/documents' as never)} />
             <ListRow title="Saved resources" body="Resources you saved or are working through" onPress={() => router.push('/saved-resources' as never)} />

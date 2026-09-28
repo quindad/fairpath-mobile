@@ -30,7 +30,8 @@ check(!/profile-readiness[\s\S]{0,120}Privacy|Privacy[\s\S]{0,120}profile-readin
 check(/'\/privacy'/.test(me) && /Privacy and account/.test(me), '/me links to the real Privacy screen');
 check(/loadMemberSummary/.test(me) && !/\.from\('/.test(me), '/me metrics come from the server summary, never client-side table counts');
 check(!/(fake|sample|lorem|placeholder)/i.test(me), 'no placeholder content on /me');
-check(!/Resume Studio|resume status/i.test(me), 'no fake resume status');
+// Resume Studio is now a real, built feature: the /me link must point at the actual screen, not a placeholder.
+check(!fs.existsSync('src/app/resume-studio') || (/'\/resume-studio'/.test(me) && fs.existsSync('src/app/resume-studio/index.tsx')), '/me\'s Resume Studio link must point at a screen that actually exists');
 
 // ---------- Privacy ----------
 const priv = read('src/app/privacy.tsx');
