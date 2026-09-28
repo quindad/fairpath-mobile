@@ -44,10 +44,17 @@ Status legend used throughout: **CONNECTED** / **DEV FIXTURE** / **MOCK** / **DI
   `app.json`/native config — I confirmed none is set anywhere in this repo, so an Android build today would show a
   blank gray map. Web (`HousingMap.tsx`/`JobMap.web.tsx`) intentionally has no interactive map — it's a coordinate-
   backed list instead, by design, not a bug.
+- **Checked against the actual SDK 57 docs (per AGENTS.md), not assumed:** Expo SDK 57 introduced a new native
+  `expo-maps` module. It looked like a candidate to replace `react-native-maps`, but two things rule that out right
+  now: it's **alpha** (breaking-change risk), and — decisively — **it has no web support at all**, while FairPath's
+  web build already ships a real, working map-adjacent experience (the coordinate list fallback) that a member can
+  use today. Moving to `expo-maps` would regress web to nothing. Staying on `react-native-maps` for native plus the
+  existing web fallback is the correct call, not a compromise.
 - **Provider options:** Google Maps Platform (what `react-native-maps` already expects on Android) vs. Apple Maps
   (iOS only, already free/working) vs. Mapbox (would mean replacing `react-native-maps` entirely — not worth it,
   the current library already works on iOS).
-- **Recommended:** Google Maps Platform, Android-only key. Keep `react-native-maps` as-is.
+- **Recommended:** Google Maps Platform, Android-only key. Keep `react-native-maps` as-is. Revisit `expo-maps` once
+  it leaves alpha and adds web support, not before.
 - **Free tier / cost:** Google Maps Platform gives $200/month free credit; map loads are billed per load beyond
   that. For DEV/testing volume this stays free.
 - **API key required:** yes, Android only. **OAuth:** no. **Webhook:** no. **Domain verification:** no.
@@ -58,6 +65,15 @@ Status legend used throughout: **CONNECTED** / **DEV FIXTURE** / **MOCK** / **DI
 - **Privacy:** no member PII sent to Google beyond map tile requests for a lat/lng already public in the listing.
 - **What breaks without it:** Android map mode for jobs/housing (iOS and web are unaffected).
 - **Sterling action required:** yes, but low priority — only blocks Android device QA, not iOS or web.
+
+## 2a. Geocoding / reverse geocoding — no new vendor needed
+Checked against SDK 57 docs directly: `expo-location`'s `Location.geocodeAsync()` / `reverseGeocodeAsync()` are real,
+supported on iOS, Android, **and web**, and require no API key or account — they use the OS's own geocoder (Apple/
+Google on native, a browser-appropriate provider on web via Expo's implementation). **Current state: NOT WIRED IN**
+(no import of `expo-location` anywhere in `src/`), but this is a zero-cost, zero-signup unlock whenever an address→
+lat/lng step is needed (e.g., a future direct-listing submission flow for jobs/housing). Note Expo's own caution:
+geocoding is rate-limited per-device and should not be called in a tight loop or in the background. No Sterling
+action needed — this is implementation work, not a credential.
 
 ## 3. Walkability / neighborhood data (Housing)
 - **Feature:** Sterling explicitly wants real walkability/transit/school-proximity context on housing listings.
