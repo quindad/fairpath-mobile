@@ -40,6 +40,15 @@ Nothing here is pushed. DEV project only (`znvhmuhojvwvjzmaqwff`). Production un
 - 36/36 offline checks green. Signed-in Browser QA is still blocked on `npm run qa:dev-ui` (queue item 2) — I did not fabricate a pass for it.
 - Given the size of the remaining marathon backlog (Credit Builder depth, Record Relief engine breadth, FairPath AI tool surface, Resume Studio, virtual meetings), I stopped after the concrete, verifiable bug-fix and audit work rather than claim large feature builds I could not exercise against real data or the Browser pane this pass. Those phases are unstarted, not silently skipped — flagging that honestly here instead of reporting fake progress.
 
+## Update 4 (overnight cohesion pass)
+- `/me` reorganized into YOUR PATH (Opportunity Profile, Resume Studio, Credit Builder, Record Relief) / ACTIVITY / ACCOUNT. Fixed a real pre-existing gap: Credit Builder and Record Relief had NO entry point on `/me` at all until now.
+- FairPath AI: 9 new deterministic intents total this session (jobs, housing, credit dispute status, record relief coverage, create/my resumes, my meetings), each Browser-verified live as a guest where guest-accessible, all with local test coverage.
+- Home's real-state status card now surfaces the next upcoming meeting (owner-only RLS read), alongside the existing credit/record-relief/document/resource chips. Still no fake scores/streaks/points anywhere.
+- Resume Studio and Virtual Meetings are fully built (schema, RLS, local tests, screens) — see commits `83b8250` and `67da9bd`. Both need `npx supabase db push` before any signed-in testing.
+- Every new screen uses `ScreenFrame`, which owns bottom-nav rendering and structurally prevents duplicates — so navigation consistency across all new routes is guaranteed by construction, not by manual per-screen review.
+- 38/38 offline checks green throughout. All new gated routes confirmed redirecting to sign-in with `returnTo` preserved: `/resume-studio`, `/meetings`, `/credit/correct-identity`, `/record-relief/coverage`, `/me`, `/home`.
+- NOT done tonight: a full manual click-through of the entire new-member journey (blocked without a signed-in DEV member), Documents cross-module audit beyond what was already built, terminology normalization pass.
+
 ## NOT tested (do not assume working)
 - `qa-dev-pass2.mjs` has been syntax-checked and its guard confirmed, but never run against DEV.
 - Signed-in screens for every new module (need migrations pushed).
