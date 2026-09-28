@@ -120,3 +120,19 @@ export function sortAccountsForReview<T extends { extraction_state: string; furn
   const rank = (s: string) => (s === 'needs_review' || s === 'extracted' ? 0 : 1);
   return [...accounts].sort((a, b) => rank(a.extraction_state) - rank(b.extraction_state) || a.furnisher_name.localeCompare(b.furnisher_name));
 }
+
+/**
+ * Structured starting points for a dispute reason. FairPath never decides WHICH of these applies — the member picks
+ * one (or none) as a starting sentence, in their own words, that they can then edit freely. This is a client-side
+ * convenience only: the database still just stores whatever free text the member ends up sending (10-1500 chars).
+ */
+export const DISPUTE_REASON_CATEGORIES: { value: string; label: string; starter: string }[] = [
+  { value: 'not_mine', label: 'Not mine', starter: 'This account is not mine.' },
+  { value: 'incorrect_balance', label: 'Incorrect balance', starter: 'The balance shown is not correct.' },
+  { value: 'incorrect_payment_history', label: 'Incorrect payment history', starter: 'The payment history shown is not correct.' },
+  { value: 'duplicate', label: 'Duplicate account', starter: 'This account is a duplicate of another account already reported.' },
+  { value: 'incorrect_dates', label: 'Incorrect dates', starter: 'A date on this account (such as when it opened or was last active) is not correct.' },
+  { value: 'incorrect_status', label: 'Status is wrong', starter: 'The status shown for this account is not correct.' },
+  { value: 'identity_info', label: 'Personal info issue', starter: 'My personal information tied to this record is not correct.' },
+  { value: 'other', label: 'Other', starter: '' },
+];

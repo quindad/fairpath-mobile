@@ -5,7 +5,7 @@ import { FormScrollView } from '@/components/FormScrollView';
 import { PageHeader, ScreenFrame, SectionTitle } from '@/components/ProductChrome';
 import { BodyText, ChipGroup, EmptyState, Field, Panel, PrimaryButton, StatusLine } from '@/components/ui-kit';
 import { FairPathLayout as L } from '@/constants/fairpath';
-import { disputableItems } from '@/core/credit/credit-format';
+import { DISPUTE_REASON_CATEGORIES, disputableItems } from '@/core/credit/credit-format';
 import { createDispute, creditErrorMessage, loadAccounts, loadItems, type CreditAccount, type ReviewItem } from '@/core/credit/credit-service';
 import { useFairPathTheme } from '@/core/theme/ThemeProvider';
 import { notify } from '@/core/ui/notify';
@@ -21,6 +21,7 @@ export default function NewDispute() {
   const [furnisher, setFurnisher] = useState('');
   const [reason, setReason] = useState('');
   const [reasonTouched, setReasonTouched] = useState(false);
+  const [reasonCategory, setReasonCategory] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -36,6 +37,15 @@ export default function NewDispute() {
   const reasonText = reasonTouched ? reason : suggestedReason;
   const targetName = kind[0] === 'bureau' ? ({ equifax: 'Equifax', experian: 'Experian', transunion: 'TransUnion' } as Record<string, string>)[bureau[0] ?? ''] ?? '' : furnisher.trim();
   const ready = chosen.length > 0 && targetName.length >= 2 && reasonText.trim().length >= 10;
+
+  function pickCategory(values: string[]) {
+    const value = values[0] ?? '';
+    setReasonCategory(values);
+    const cat = DISPUTE_REASON_CATEGORIES.find((c) => c.value === value);
+    if (!cat || !cat.starter) return;
+    // Only prepend when the member hasn't already written their own reason, so a category pick never clobbers edits.
+    if (!reasonTouched || reason.trim().length === 0) { setReasonTouched(true); setReason(cat.starter + (suggestedReason ? '\n' + suggestedReason : '')); }
+  }
 
   async function create() {
     setBusy(true);
@@ -57,7 +67,8 @@ export default function NewDispute() {
             <ChipGroup label="ISSUES TO INCLUDE" options={items.map((i) => ({ value: i.id, label: (accountName(i.account_id)?.furnisher_name ?? i.title).slice(0, 28) }))} selected={chosen} onChange={setChosen} />
             <ChipGroup single label="WHO WILL YOU SEND IT TO?" options={[{ value: 'bureau', label: 'A credit bureau' }, { value: 'furnisher', label: 'The company that reported it' }]} selected={kind} onChange={(n) => setKind(n.length ? n : kind)} />
             {kind[0] === 'bureau' ? <ChipGroup single options={[{ value: 'equifax', label: 'Equifax' }, { value: 'experian', label: 'Experian' }, { value: 'transunion', label: 'TransUnion' }]} selected={bureau} onChange={setBureau} /> : <Field label="COMPANY NAME" value={furnisher} onChangeText={setFurnisher} autoCapitalize="words" />}
-            <Field label="WHY YOU ARE DISPUTING (EDITABLE)" value={reasonText} onChangeText={(v) => { setReasonTouched(true); setReason(v); }} multiline maxLength={1500} hint="Built from your own statements. Edit anything that is not exactly right." />
+            <ChipGroup single label="WHAT KIND OF ISSUE IS THIS? (OPTIONAL STARTING POINT)" options={DISPUTE_REASON_CATEGORIES.map((c) => ({ value: c.value, label: c.label }))} selected={reasonCategory} onChange={pickCategory} />
+            <Field label="WHY YOU ARE DISPUTING (EDITABLE)" value={reasonText} onChangeText={(v) => { setReasonTouched(true); setReason(v); }} multiline maxLength={1500} hint="Built from your own statements. Edit anything that is not exactly right. FairPath does not decide what is inaccurate — you do." />
             {!ready ? <StatusLine tone="muted">Choose at least one issue, who you are sending it to, and a reason.</StatusLine> : null}
             <PrimaryButton label="CREATE DISPUTE" onPress={() => void create()} busy={busy} disabled={!ready} />
           </>
