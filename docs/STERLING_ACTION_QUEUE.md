@@ -25,6 +25,17 @@ One item at a time, in order. Each blocks something specific; everything else co
 - **Expected result:** the push includes this migration with no errors.
 - **Unblocks:** signed-in Resume Studio testing.
 
+## 1c. Restart the stalled dev server on port 8090
+- **What happened:** you signed in on `localhost:8090` (the magic-link callback landed and returned 200), but the app bundle never finished compiling — `/home` stayed blank for 2+ minutes and the bundle request never resolved. No session ever got saved to the browser (localStorage is empty), so from my side it's as if sign-in never happened.
+- **Command:** in the terminal running `npm run` on 8090, stop it (Ctrl+C) and restart:
+  ```bash
+  npm run web
+  ```
+  (or whatever script starts your local dev server — check `.claude/launch.json`'s `expo-web` entry, port 8090)
+- **Why:** tonight's diff is large (Resume Studio, Meetings, AI routing, /me rewrite); a stale Metro cache from before those changes can cause exactly this kind of stall on first bundle.
+- **Expected result:** `/home` renders within ~30-60s of the restart, signed in as you.
+- **Alternative:** if you'd rather I drive a fresh session myself, run `npm run qa:dev-ui` and paste me the sign-in URL/credentials it prints — I'll sign in on my own QA server (port 8091) instead of touching 8090.
+
 ## 2. Create a disposable signed-in DEV UI member for Browser QA
 - **Command:**
   ```bash

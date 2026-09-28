@@ -91,6 +91,7 @@ await tenant.client.from('saved_housing').insert({ user_id: tenant.id, listing_i
 const s = tenant.session;
 console.log(`\nDisposable DEV member created: ${tenant.email}`);
 console.log('Seeded: 1 unread inquiry reply (bell), 1 SENT-only inquiry, correctional FairPath+ (90 days), FastTrack draft, one test payment record, 1 saved home.\n');
-console.log('Open this URL in the Expo web preview (http://localhost:8090 must be running) to sign in as that member:\n');
-console.log(`http://localhost:8090/auth/callback#access_token=${s.access_token}&refresh_token=${s.refresh_token}&expires_in=${s.expires_in}&token_type=bearer&type=magiclink\n`);
+const port = process.env.QA_UI_PORT || '8090';
+console.log(`Open this URL in the Expo web preview (http://localhost:${port} must be running) to sign in as that member:\n`);
+console.log(`http://localhost:${port}/auth/callback#access_token=${s.access_token}&refresh_token=${s.refresh_token}&expires_in=${s.expires_in}&token_type=bearer&type=magiclink\n`);
 console.log('When finished:  node scripts/qa-dev-ui-session.mjs --cleanup --confirm-dev');
