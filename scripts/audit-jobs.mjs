@@ -99,8 +99,17 @@ check(/setViewMode\('list'\)/.test(find) && !/setJobs\(\[\]\)/.test(find), 'LIST
 const detail = read('src/app/job/[id].tsx');
 check(!/position:\s*'absolute'/.test(detail), 'job details CTA must be in normal flow above the global nav, not absolutely positioned');
 
+// Regression: Easy Apply's skills/certifications/desired-roles/education autofill must read the Opportunity Profile
+// tables FIRST (member_skills, member_credentials, member_education, member_job_preferences) — the profile screens
+// the app actually surfaces — with the legacy profile_answers questionnaire only as a fallback. Reading legacy-only
+// silently left Easy Apply blank for anyone who only filled out the new Opportunity Profile (found in signed-in
+// Browser testing: a member with 3 skills and a credential saw an empty Easy Apply form).
+const jobsService = read('src/core/jobs/jobs-service.ts');
+check(/member_skills/.test(jobsService) && /member_credentials/.test(jobsService) && /member_job_preferences/.test(jobsService) && /member_education/.test(jobsService), 'loadJobApplicationAutofill must read the Opportunity Profile tables');
+check(/skillsText\|\|text\('employment\.skills'\)/.test(jobsService), 'Opportunity Profile skills must be preferred over the legacy questionnaire, with legacy as fallback only');
+
 if (failures.length) {
   console.error('Jobs audit failed:\n- ' + failures.join('\n- '));
   process.exit(1);
 }
-console.log('Jobs audit passed: server-side ZIP/radius search + pagination, RPC-only applications, event trail, minimum-field apply gate, no DOB/address/justice data to employers.');
+console.log('Jobs audit passed: server-side ZIP/radius search + pagination, RPC-only applications, event trail, minimum-field apply gate, no DOB/address/justice data to employers, Easy Apply autofill prefers the Opportunity Profile.');

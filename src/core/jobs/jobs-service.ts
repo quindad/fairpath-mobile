@@ -102,17 +102,41 @@ export async function loadSavedJobs():Promise<Job[]>{
 }
 
 export type JobApplicationAutofill={first_name:string;last_name:string;email:string;phone:string;education:string;skills:string;certifications:string;desired_roles:string;resume_ready:string};
+/**
+ * Skills/certifications/desired roles/education prefer the Opportunity Profile tables (member_skills,
+ * member_credentials, member_education, member_job_preferences) — the profile screens the app actually surfaces —
+ * and fall back to the legacy profile_answers questionnaire only for a field the Opportunity Profile left empty, so
+ * a member who filled out the older flow doesn't lose that data either. Without the fallback-first-then-legacy
+ * order, members using only the new Opportunity Profile got a silently blank Easy Apply skills/certifications
+ * section, because the legacy questionnaire was never filled in.
+ */
 export async function loadJobApplicationAutofill():Promise<JobApplicationAutofill>{
  const user=await currentUser();
- const [{data:profile,error:profileError},{data:rows,error:answersError}]=await Promise.all([
+ const [{data:profile,error:profileError},{data:rows,error:answersError},{data:skills},{data:creds},{data:edu},{data:prefs}]=await Promise.all([
   supabase.from('profiles').select('first_name,last_name,phone').eq('id',user.id).single(),
-  supabase.from('profile_answers').select('question_id,answer').eq('user_id',user.id)
+  supabase.from('profile_answers').select('question_id,answer').eq('user_id',user.id),
+  supabase.from('member_skills').select('skill').order('skill'),
+  supabase.from('member_credentials').select('name').order('name'),
+  supabase.from('member_education').select('credential,school_name').order('end_year',{ascending:false,nullsFirst:true}).limit(1),
+  supabase.from('member_job_preferences').select('desired_titles').maybeSingle(),
  ]);
  if(profileError||answersError)throw profileError??answersError;
  const answers:Record<string,unknown>={};
  for(const row of rows??[])answers[row.question_id]=row.answer;
  const text=(id:string)=>{const v=answers[id];return Array.isArray(v)?v.join(', '):v==null?'':String(v)};
- return {first_name:profile?.first_name??'',last_name:profile?.last_name??'',email:user.email??'',phone:text('identity.phone')||(profile?.phone??''),education:text('employment.education_level'),skills:text('employment.skills'),certifications:text('employment.licenses_certifications'),desired_roles:text('employment.desired_roles'),resume_ready:answers['documents.resume']===true?'Yes':answers['documents.resume']===false?'No':''};
+ const skillsText=(skills??[]).map(s=>s.skill).join(', ');
+ const credsText=(creds??[]).map(c=>c.name).join(', ');
+ const desiredText=((prefs?.desired_titles??[]) as string[]).join(', ');
+ const eduRow=(edu??[])[0] as {credential:string;school_name:string}|undefined;
+ const eduText=eduRow?[eduRow.credential,eduRow.school_name].filter(Boolean).join(' — '):'';
+ return {
+  first_name:profile?.first_name??'',last_name:profile?.last_name??'',email:user.email??'',phone:text('identity.phone')||(profile?.phone??''),
+  education:eduText||text('employment.education_level'),
+  skills:skillsText||text('employment.skills'),
+  certifications:credsText||text('employment.licenses_certifications'),
+  desired_roles:desiredText||text('employment.desired_roles'),
+  resume_ready:answers['documents.resume']===true?'Yes':answers['documents.resume']===false?'No':'',
+ };
 }
 export async function saveJobApplicationProfile(form:JobApplicationAutofill){
  const user=await currentUser();
