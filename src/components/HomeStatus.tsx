@@ -5,6 +5,7 @@ import { Pressable, Text, View } from 'react-native';
 import { FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { loadMemberSummary } from '@/core/profile/member-summary';
 import { nextSteps, type MemberSummary, type NextStep } from '@/core/profile/next-step';
+import { myEarlyAccessEnrollments } from '@/core/coverage/coverage-service';
 import { supabase } from '@/lib/supabase';
 import { useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
@@ -33,10 +34,12 @@ export function HomeStatus() {
   const s = useThemedStyles(styles);
   const [summary, setSummary] = useState<MemberSummary | null>(null);
   const [nextMeeting, setNextMeeting] = useState<NextMeeting | null>(null);
+  const [waitlistZip, setWaitlistZip] = useState<string | null>(null);
   useFocusEffect(useCallback(() => {
     let live = true;
     loadMemberSummary().then((x) => live && setSummary(x)).catch(() => live && setSummary(null));
     loadNextMeeting().then((x) => live && setNextMeeting(x)).catch(() => live && setNextMeeting(null));
+    myEarlyAccessEnrollments().then((x) => live && setWaitlistZip(x.find((e) => e.status === 'waitlisted')?.zip ?? null)).catch(() => live && setWaitlistZip(null));
     return () => { live = false; };
   }, []));
 
@@ -52,6 +55,7 @@ export function HomeStatus() {
   if ((r?.countdowns_due_soon ?? 0) > 0) chips.push({ label: 'A waiting period ends soon', route: '/record-relief' });
   if ((summary.documents?.expiring_soon ?? 0) > 0) chips.push({ label: 'A stored document expires soon', route: '/documents' });
   if ((summary.resources?.unavailable_saved ?? 0) > 0) chips.push({ label: 'A saved resource is unavailable', route: '/saved-resources' });
+  if (waitlistZip) chips.push({ label: `On the Early Access list for ${waitlistZip}`, route: '/early-access?zip=' + waitlistZip });
   if (!steps.length && !chips.length) return null;
 
   return (
