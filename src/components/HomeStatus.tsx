@@ -5,8 +5,24 @@ import { Pressable, Text, View } from 'react-native';
 import { FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { loadMemberSummary } from '@/core/profile/member-summary';
 import { nextSteps, type MemberSummary, type NextStep } from '@/core/profile/next-step';
+import { supabase } from '@/lib/supabase';
 import { useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
+
+type NextMeeting = { id: string; title: string; start_at: string };
+/** Owner-only (RLS) read of the soonest non-cancelled upcoming meeting. A load failure just omits the chip. */
+async function loadNextMeeting(): Promise<NextMeeting | null> {
+  const { data } = await supabase.from('member_meetings').select('id,title,start_at').neq('status', 'cancelled').gte('start_at', new Date().toISOString()).order('start_at', { ascending: true }).limit(1).maybeSingle();
+  return (data as NextMeeting | null) ?? null;
+}
+function meetingWhen(iso: string): string {
+  const d = new Date(iso);
+  const days = Math.round((d.getTime() - Date.now()) / 86400000);
+  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  if (days <= 0) return 'Today, ' + time;
+  if (days === 1) return 'Tomorrow, ' + time;
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ', ' + time;
+}
 
 /**
  * Real, server-derived status for the Home screen: shows only what actually needs attention (credit items, dispute
@@ -16,13 +32,20 @@ import type { ThemeTokens } from '@/core/theme/tokens';
 export function HomeStatus() {
   const s = useThemedStyles(styles);
   const [summary, setSummary] = useState<MemberSummary | null>(null);
-  useFocusEffect(useCallback(() => { let live = true; loadMemberSummary().then((x) => live && setSummary(x)).catch(() => live && setSummary(null)); return () => { live = false; }; }, []));
+  const [nextMeeting, setNextMeeting] = useState<NextMeeting | null>(null);
+  useFocusEffect(useCallback(() => {
+    let live = true;
+    loadMemberSummary().then((x) => live && setSummary(x)).catch(() => live && setSummary(null));
+    loadNextMeeting().then((x) => live && setNextMeeting(x)).catch(() => live && setNextMeeting(null));
+    return () => { live = false; };
+  }, []));
 
   if (!summary) return null;
   const steps: NextStep[] = nextSteps(summary).slice(0, 3);
   const chips: { label: string; route: string }[] = [];
   const c = summary.credit;
   const r = summary.record_relief;
+  if (nextMeeting) chips.push({ label: `${nextMeeting.title} — ${meetingWhen(nextMeeting.start_at)}`, route: '/meetings/' + nextMeeting.id });
   if ((c?.items_to_review ?? 0) > 0) chips.push({ label: `${c?.items_to_review} credit item${c?.items_to_review === 1 ? '' : 's'} to review`, route: '/credit' });
   if ((c?.response_due_soon ?? 0) > 0) chips.push({ label: 'Dispute response due soon', route: '/credit' });
   if ((r?.eligible_now ?? 0) > 0) chips.push({ label: 'Case may be ready for review', route: '/record-relief' });
