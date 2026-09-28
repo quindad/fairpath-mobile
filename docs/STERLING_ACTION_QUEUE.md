@@ -15,6 +15,16 @@ One item at a time, in order. Each blocks something specific; everything else co
 - **Expected result:** `qa:dev-render` reports 12/12 against the deployed function (PDF/DOCX/CSV, versioning, private storage, isolation, malformed/unauthorized requests).
 - **Unblocks:** signed-in Browser QA (queue item 2).
 
+## 1b. Push the Resume Studio migration
+- **Command:**
+  ```bash
+  npx supabase db push
+  ```
+- **Why:** `20261002100000_resume_studio.sql` (member_resumes table, owner-only RLS, duplicate_resume()) is written and tested locally (6/6, `npm run test:sql:resume`) but not yet applied to DEV.
+- **Risk:** low. New table only, no changes to existing schema.
+- **Expected result:** the push includes this migration with no errors.
+- **Unblocks:** signed-in Resume Studio testing.
+
 ## 2. Create a disposable signed-in DEV UI member for Browser QA
 - **Command:**
   ```bash

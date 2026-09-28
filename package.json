@@ -86,6 +86,7 @@
     "test:extraction": "node scripts/test-credit-extraction.mjs",
     "test:relief-fixtures": "node scripts/test-relief-fixtures.mjs",
     "test:sql:resume": "node scripts/test-local-resume.mjs",
+    "test:sql:meetings": "node scripts/test-local-meetings.mjs",
     "test:sql:ai": "node scripts/test-local-ai-reminders.mjs",
     "test:sql": "node scripts/local-sql-check.mjs",
     "test:sql:resources": "node scripts/test-local-resources.mjs",
