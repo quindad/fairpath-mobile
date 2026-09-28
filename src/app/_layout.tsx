@@ -3,6 +3,7 @@ import { router, Stack, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { NotifyHost } from '@/components/NotifyHost';
 import { PaymentsProvider } from '@/components/PaymentsProvider';
 import { isPublicRoute } from '@/core/auth/public-routes';
 import { ThemeProvider, useFairPathTheme } from '@/core/theme/ThemeProvider';
@@ -54,6 +55,7 @@ export default function RootLayout() {
     <ThemeProvider>
       <PaymentsProvider>
         <ThemedStack />
+        <NotifyHost />
       </PaymentsProvider>
     </ThemeProvider>
   );

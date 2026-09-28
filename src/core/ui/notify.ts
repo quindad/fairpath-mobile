@@ -6,15 +6,29 @@ export type NotifyAction = {
   style?: 'default' | 'cancel' | 'destructive';
 };
 
+type Handler = (title: string, message: string | undefined, actions: NotifyAction[]) => void;
+let webHandler: Handler | null = null;
+
+/** Registered by <NotifyHost/> (mounted once at the app root) so notify() can route to the themed modal on web. */
+export function setNotifyHandler(h: Handler | null) {
+  webHandler = h;
+}
+
 /**
  * Cross-platform replacement for RN's Alert.alert. Same call signature
  * (title, message?, actions?) so existing call sites migrate by swapping
- * the function name. React Native Web's Alert.alert is a no-op, so this
- * falls back to window.alert/window.confirm on web.
+ * the function name. On web this renders as a themed in-app modal via
+ * <NotifyHost/> when mounted; if it isn't (e.g. a standalone tool render),
+ * it falls back to window.alert/window.confirm so nothing silently no-ops.
  */
 export function notify(title: string, message?: string, actions?: NotifyAction[]) {
   if (Platform.OS !== 'web') {
     Alert.alert(title, message, actions);
+    return;
+  }
+
+  if (webHandler) {
+    webHandler(title, message, actions && actions.length ? actions : [{ text: 'OK' }]);
     return;
   }
 

@@ -15,6 +15,13 @@ export function resumeErrorMessage(e: unknown): string {
 
 const toResume = (r: ResumeRow): Resume => ({ ...r, content: parseResumeContent(r.content) });
 
+/** ISO date (from the profile) -> "Mar 2019" for a resume, which shows month/year text, not full dates. */
+function monthYear(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const d = new Date(iso + 'T00:00:00');
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+}
+
 export async function loadResumes(): Promise<Resume[]> {
   const { data, error } = await supabase.from('member_resumes').select('*').order('updated_at', { ascending: false });
   if (error) throw error;
@@ -70,7 +77,7 @@ export async function importFromProfile(current: ResumeContent, overwrite = fals
   const next: ResumeContent = {
     contact: overwrite || !current.contact.name ? { name, email: auth.data.user?.email ?? '', phone: prof?.phone ?? '', location: prof?.zip_code ?? '' } : current.contact,
     summary: current.summary,
-    experience: overwrite || !current.experience.length ? (work ?? []).map((w) => ({ title: w.job_title, employer: w.employer_name, location: w.location_text ?? '', start: w.start_date ?? '', end: w.end_date ?? '', current: w.is_current, bullets: [] })) : current.experience,
+    experience: overwrite || !current.experience.length ? (work ?? []).map((w) => ({ title: w.job_title, employer: w.employer_name, location: w.location_text ?? '', start: monthYear(w.start_date), end: monthYear(w.end_date), current: w.is_current, bullets: [] })) : current.experience,
     education: overwrite || !current.education.length ? (edu ?? []).map((e) => ({ school: e.school_name, credential: e.credential ?? '', field: e.field_of_study ?? '', endYear: e.end_year ? String(e.end_year) : '' })) : current.education,
     skills: overwrite || !current.skills.length ? (skills ?? []).map((s) => s.skill) : current.skills,
     credentials: overwrite || !current.credentials.length ? (cred ?? []).map((c) => ({ name: c.name, issuer: c.issuer ?? '', year: c.issued_date ? String(c.issued_date).slice(0, 4) : '' })) : current.credentials,
