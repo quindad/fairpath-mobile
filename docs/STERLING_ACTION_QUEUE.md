@@ -2,14 +2,20 @@
 
 One item at a time. Everything not listed here has already been done, verified, or doesn't need you.
 
-## 1. Get me back into a signed-in session (only remaining blocker)
+## 1. Record Relief TEST fixtures are partially missing (state rules), federal TEST is present
+- **What I found, precisely:** `record_relief_federal_pathways` has its TEST rows loaded (Presidential pardon (TEST),
+  Youth offender set-aside (TEST) both showed up correctly on a federal case). But `record_relief_jurisdictions` has
+  **no** `TEST-A`/`TEST-B`/`TEST-C`/`TEST-D` rows at all — they don't even appear in the jurisdiction picker — so the
+  state-rules engine (waiting periods, exclusions, countdowns) cannot be exercised end to end right now. Everything
+  that CAN be tested without them passed cleanly: honest "rule not verified" outcomes, case create/edit, the 4-document
+  filing packet, status tracking, AI deep links.
 - **Command:**
   ```bash
-  npm run qa:dev-ui
+  npm run seed:dev:relief
   ```
-- **Why:** I completed a full signed-in integration pass tonight (Opportunity Profile, Easy Apply, Housing FastTrack, Resources, Documents, Credit, FairPath AI, Privacy — all verified live, 4 real bugs found and fixed). The session ended when the Browser pane's storage was cleared by an environment reset, not by anything in the app. I don't have credentials to sign back in myself.
-- **Expected result:** prints a `http://localhost:8091/auth/callback#...` URL. Open it in the Claude Browser pane (not your own browser — the token is single-use and I need to see it land). Then tell me you're signed in.
-- **Unblocks:** Record Relief signed-in testing (untested this pass), Meetings retest, sign-out/session-restore, and continuing the marathon into Resume Studio polish / Record Relief / FairPath AI expansion.
+- **Risk:** low. DEV only, fictional TEST data, idempotent (deletes-by-fixture_set then re-inserts).
+- **Expected result:** the 4 TEST jurisdictions appear in the "Where was the case heard?" picker on `/record-relief/add`.
+- **Unblocks:** testing the actual rules engine (waiting periods, countdowns, exclusions) signed-in.
 
 ## 2. Decide on credit-report extraction (product/privacy decision, not a command)
 - **Why:** `extract-credit-report` is built, tested offline, and disabled by default. Enabling it means member-consented credit reports get sent to an external model provider (currently wired for Anthropic).
