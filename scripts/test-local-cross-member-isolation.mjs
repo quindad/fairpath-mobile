@@ -108,4 +108,17 @@ await test('saved housing: B cannot read, delete, or forge-insert A\'s saved lis
   denied(await tryAs(db, B, `insert into public.saved_housing (user_id, listing_id) values ($1,$2)`, [A, listingId]), 'B forging a saved-housing row for A');
 });
 
+// ---------------- Early Access enrollments (no isolation test existed for this module before now) ----------------
+await test('early access: B cannot read A\'s waitlist enrollment, and join_early_access has no forgeable owner parameter', async () => {
+  const joinA = must(await rpc(A, 'join_early_access', '90210', true, null), 'A joins');
+  ok(joinA[0].join_early_access.status === 'waitlisted', 'A should be waitlisted (90210 is not a seeded coverage market)');
+
+  const bList = must(await rpc(B, 'my_early_access_enrollments'), 'B lists own enrollments');
+  ok(bList.length === 0, 'B should see zero enrollments (has not joined)');
+  denied(await tryAs(db, B, `select * from public.market_waitlist_enrollments where user_id=$1`, [A]), 'B direct read of A\'s enrollment');
+
+  const aList = must(await rpc(A, 'my_early_access_enrollments'), 'A lists own enrollments');
+  ok(aList.length === 1 && aList[0].zip === '90210', 'A sees exactly their own enrollment');
+});
+
 done();
