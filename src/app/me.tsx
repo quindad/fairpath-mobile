@@ -149,6 +149,7 @@ export default function MeScreen() {
         {ACCOUNT_LINKS.map((l) => <ListRow key={l.route} title={l.title} body={l.body} onPress={() => router.push(l.route as never)} />)}
         <ListRow title="Appearance" body="Dark, light or system" onPress={() => router.push('/appearance' as never)} />
         <ListRow title="Privacy and account" body="What FairPath shares, your data, and deleting your account" onPress={() => router.push('/privacy' as never)} />
+        {__DEV__ ? <ListRow title="Integration health (DEV)" body="Live + static status of every external system" onPress={() => router.push('/dev-integration-health' as never)} /> : null}
 
         <SecondaryButton label="SIGN OUT" onPress={() => void signOut()} />
       </ScrollView>
