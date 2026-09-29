@@ -172,6 +172,10 @@ status: `NO_MODEL` adapter — by design, no model connected, deterministic answ
 
 ## NOTIFICATIONS — 🟢 PROVEN (in-app), 🟡 (push), 🔴 (email/SMS)
 
+**Update:** `src/core/notifications/events.ts` now defines the canonical 14-event vocabulary (channel eligibility,
+privacy level, dedupe pattern, urgency, marketing-consent requirement) referenced by the Command Center contracts
+doc, with its own invariant audit (`test:notification-events`). Delivery status unchanged — nothing sends yet.
+
 In-app (`user_notifications`), read/unread, reminders (entitlement expiry cron already scheduled): 🟢, used
 correctly by this session's own Early Access work. **Push: corrected this session** — real server-side delivery
 architecture exists (`push_tokens`, `register_push_token()` RPC, `notification_deliveries` queue, an automatic
@@ -219,10 +223,17 @@ new work and required a fix before merge — the audit is doing its job), member
 including this session for coverage markets), guest boundaries, private uploads/signed URLs, no secrets
 client-side, no service-role in client. `audit-security.mjs` PASS.
 
-## OBSERVABILITY — 🔴 INCOMPLETE
+## OBSERVABILITY — 🔴 INCOMPLETE, moved meaningfully closer to 🟡
 
-No Sentry/crash reporting, no product analytics, no integration-health diagnostic screen, no DEV/PROD distinction
-tooling. Confirmed zero references anywhere in the codebase. Not started.
+Still no real provider (Sentry, PostHog, etc.) connected — that stays 🔴 until a vendor decision is made. **But**
+provider-neutral interfaces now exist and are tested: `src/core/observability/analytics.ts` (track/screen/
+identify with a strict privacy denylist proven to strip DOB/SSN/address/justice/credit/dispute/PII fields —
+`test:observability`, includes a regression test against a realistic leaked-Record-Relief-case-fact scenario) and
+`error-monitor.ts` (captureException/captureMessage/setUser/setContext/addBreadcrumb, same sanitization,
+applied at the single call boundary so every future adapter is protected automatically — a real bug found and
+fixed while building this: sanitization was originally only inside the console adapter, meaning a swapped-in real
+adapter would have gotten zero filtering). DEV integration-health screen (built last pass) still exists and works.
+Connecting a real vendor later is now a one-file adapter swap, not a redesign.
 
 ## PHYSICAL DEVICE — 🔴 INCOMPLETE (untested by definition)
 
