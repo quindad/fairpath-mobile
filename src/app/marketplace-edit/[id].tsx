@@ -1,5 +1,5 @@
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { FormScrollView } from '@/components/FormScrollView';
 import { notify } from '@/core/ui/notify';
@@ -22,7 +22,10 @@ export default function MarketplaceEdit(){
  const [media,setMedia]=useState<MarketplaceMedia[]>([]);const [saving,setSaving]=useState(false);const [loading,setLoading]=useState(true);const [error,setError]=useState('');
 
  const load=useCallback(()=>{if(!id)return;setLoading(true);setError('');Promise.all([loadMarketplaceItem(id),loadMarketplacePickupDetailsForSeller(id)]).then(([a,b])=>{setItem(a);setPickup(b);setTitle(a.title);setDescription(a.description);setCategory(a.category);setCondition(a.condition??'');setQuantity(String(a.quantity));setCity(a.city);setState(a.state);setPostal(a.postal_code??'');setPickupArea(a.pickup_area??'');setSafePickup(a.safe_pickup);setSellerType(a.seller_type);setMedia(a.marketplace_media?.slice().sort((x,y)=>x.sort_order-y.sort_order)??[]);setLocationName(b?.location_name??'');setAddress1(b?.address_line1??'');setAddress2(b?.address_line2??'');setPickupCity(b?.city??a.city);setPickupState(b?.state??a.state);setPickupPostal(b?.postal_code??'');setInstructions(b?.instructions??'');setContactPhone(b?.contact_phone??'')}).catch(()=>setError('This listing could not be loaded for editing.')).finally(()=>setLoading(false))},[id]);
- useFocusEffect(useCallback(()=>{load()},[load]));
+ // Load once on mount only, not on every refocus: this is an edit form with in-progress local field state
+ // (title/description/etc.), and a refocus-triggered refetch would silently overwrite unsaved typed changes.
+ // Handlers that need a real refresh (toggleAvailability, a failed reorder) already call load() explicitly.
+ useEffect(()=>{load()},[load]);
 
  async function save(){
   if(!id||saving)return;if(title.trim().length<3||description.trim().length<10||!category||!condition||!city.trim()||state.length<2||!pickupCity.trim()||pickupState.length<2){notify('Finish the listing','Complete the required title, description, category, condition and pickup location fields.');return}

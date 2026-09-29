@@ -49,7 +49,7 @@ export default function PrivacyScreen() {
       setExports(((ev.data ?? []) as { id: string; document_id: string; action: string; platform: string; created_at: string }[]).map((e) => ({ id: e.id, title: titles[e.document_id] ?? 'A document', action: e.action, platform: e.platform, created_at: e.created_at })));
     } catch (e) {
       if (e instanceof Error && e.message.includes('SIGNED_OUT')) router.replace(('/sign-in?returnTo=' + encodeURIComponent('/privacy')) as never);
-      else setError('We could not load your privacy settings. Check your connection and try again.');
+      else { setConsent(null); setError('We could not load your privacy settings. Check your connection and try again.'); }
     }
   }, []);
   useFocusEffect(useCallback(() => { void load(); }, [load]));

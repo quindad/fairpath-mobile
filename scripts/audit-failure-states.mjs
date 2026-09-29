@@ -18,6 +18,7 @@ const checks = [
   ['src/app/me.tsx', /catch\(\(\) => \{ setSummary\(null\); setError\(/],
   ['src/app/saved-resources.tsx', /setRows\(\[\]\);\s*setError\('We could not load your resources/],
   ['src/app/opportunity-profile/index.tsx', /setSections\(null\); setError\(profileErrorMessage\(e\)\)/],
+  ['src/app/privacy.tsx', /setConsent\(null\); setError\('We could not load your privacy settings/],
 ];
 
 const failures = [];
