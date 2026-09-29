@@ -121,4 +121,22 @@ await test('early access: B cannot read A\'s waitlist enrollment, and join_early
   ok(aList.length === 1 && aList[0].zip === '90210', 'A sees exactly their own enrollment');
 });
 
+// ---------------- Payments (member-facing surface is read-only + service-role-driven writes) ----------------
+await test('payments: B cannot read or forge-insert A\'s payment transaction', async () => {
+  const txRows = must(await tryAs(db, 'service',
+    `insert into public.payment_transactions (user_id, purpose, purpose_ref, product_code, amount_cents, idempotency_key)
+     values ($1,'housing_fasttrack',gen_random_uuid(),'fasttrack_application',7500,'iso-test-key-1') returning id`,
+    [A]), 'seed transaction as service_role (real writes are webhook/service-driven, not member RPC)');
+  const txId = txRows[0].id;
+
+  denied(await tryAs(db, B, `select id from public.payment_transactions where id=$1`, [txId]), 'B direct read');
+  const forged = await tryAs(db, B,
+    `insert into public.payment_transactions (user_id, purpose, purpose_ref, product_code, amount_cents, idempotency_key)
+     values ($1,'housing_fasttrack',gen_random_uuid(),'fasttrack_application',1,'iso-test-key-2')`, [A]);
+  ok(forged.error !== undefined, 'B should not be able to insert a transaction at all (member-facing writes are not a table-level grant path)');
+
+  const aRead = must(await tryAs(db, A, `select id from public.payment_transactions where id=$1`, [txId]), 'A reads own transaction');
+  ok(aRead.length === 1, 'A should see their own transaction');
+});
+
 done();
