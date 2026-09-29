@@ -28,7 +28,7 @@ export function usePlusStatus(): { status: PlusStatus; loading: boolean; reload:
   useFocusEffect(useCallback(() => {
     let active = true;
     setLoading(true);
-    loadPlusStatus().then((s) => { if (active) setStatus(s); }).finally(() => { if (active) setLoading(false); });
+    loadPlusStatus().then((s) => { if (active) setStatus(s); }).catch(() => { if (active) setStatus(NO_PLUS); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [nonce]));
   return { status, loading, reload: () => setNonce((n) => n + 1) };
