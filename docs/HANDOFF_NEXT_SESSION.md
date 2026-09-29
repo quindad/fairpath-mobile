@@ -3,6 +3,85 @@
 Nothing here is pushed to GitHub. DEV Supabase project only (`znvhmuhojvwvjzmaqwff`) — migrations ARE pushed there
 (that's expected; it's the DEV database, not production). Production untouched.
 
+## Update 7 (boardroom-sprint marathon: org ownership, Marketplace V1, exhaustive failure-state sweep, cross-member security, Ohio candidate-data pipeline)
+
+**Starting scoreboard:** ~77% engineering complete, 4 P0 blockers, 20/31 exit gates. **This pass added 24 commits**
+to `feat/v1-canonical-profile` (all local, nothing pushed, DEV migrations applied, production untouched), took the
+offline suite from 42/42 to **47/47**, and closed real gaps across nine separate workstreams. No DEV member
+credentials were available this session, so everything below is SQL/RLS/RPC-level adversarial proof + typecheck +
+static audit — not independently Browser-verified live. That gap is named explicitly everywhere it applies.
+
+**1. Jobs/Housing Organization ownership** — extended the REAL existing `resource_organizations`/
+`organization_members` model (built for Resources) to `jobs`/`housing_listings` via a new nullable
+`organization_id` column and additive RLS policies, instead of inventing a second model. Caught and fixed a real
+security gap in my own draft before it shipped: the pre-existing individual `employer_id`/`owner_id` policies
+didn't know about the new column, so anyone could forge a job claiming membership in a real org they don't belong
+to. Fixed by scoping individual-owner policies to `organization_id is null`. 6/6 adversarial tests (cross-org
+isolation, forged organization_id, role-gated writes). Applied to DEV, Browser-verified live in an earlier part of
+this same session (Jobs 109 results, Housing 76 homes, unaffected).
+
+**2. Marketplace V1 lifecycle** — grew from 0 to 17/17 adversarial SQL tests: claim/duplicate/quota (free=1,
+FairPath+=7)/already-claimed/forged-verify-attempt/cross-claimant isolation/decline/mark-ready/deadline-expiry
+(auto no_show + item released)/anonymous claim-candidate view (claimant identity never leaks to the seller)/
+cancel-before-approval. No product bugs found — the existing implementation was already correct; this closed a
+real test-coverage gap.
+
+**3. Record Relief — Ohio candidate-data pipeline, built and proven, NO real data loaded.** Built the full
+candidate-data contract (`docs/RECORD_RELIEF_CANDIDATE_DATA_CONTRACT.md`) and a working importer
+(`scripts/lib/record-relief-importer.mjs`, VALIDATE/DRY-RUN/IMPORT, always inserts `status='draft'`, no code
+path can ever publish) with 16/16 adversarial fixture tests. Then Sterling delivered the actual Ohio research
+package (`docs/research/record-relief/ohio/`, ~180KB). Read two representative pathways in full (Adult Conviction
+Sealing R.C. 2953.32, Not Guilty/Dismissal/No Bill R.C. 2953.33) against the real schema — **both surfaced
+genuine schema gaps** the contract says to stop on rather than flatten: `manual_review_flags` is 2 hardcoded
+values wired to specific case columns, not a generic mechanism (Ohio alone plausibly needs 6-10+), and the
+red-team's own HIGH-severity finding (`OH-RT-012`) requires tracking requested/statutory/court-ordered relief as
+three separate concepts the schema doesn't have. **Zero Ohio rules imported — correct, evidence-based outcome,
+not a stall.** One real, well-scoped gap WAS found and closed: `court_discretion` boolean (named explicitly by
+red-team finding `RT-CONF-002`), added to `record_relief_rules` + the evaluation engine, with a real near-miss
+caught and corrected (an early draft guessed the wrong function signature — `p_case_id` instead of the real
+`p_case` — caught by reading the actual definition before running anything). Full record:
+`docs/OHIO_RECORD_RELIEF_INGESTION_HANDOFF.md`.
+
+**4. Exhaustive failure-state sweep** — found and fixed the stale-data-under-error bug class (a failed refetch
+leaves the PRIOR successful data rendered under the new error banner) across **10 screens**: Meetings, Credit,
+Resume Studio, Documents, Record Relief, Home, Me, Saved Resources, Opportunity Profile, Privacy. Systematically
+checked **all 31** `useFocusEffect`-based screens in the app (not spot-checked — every one read), confirming the
+other 21 already used the safe render pattern. Found one different, arguably more serious bug in
+`marketplace-edit/[id].tsx`: it refetched on every refocus and silently overwrote unsaved in-progress form edits
+— fixed by loading once on mount instead. `scripts/audit-failure-states.mjs` (new) regresses all 10.
+
+**5. Cross-member/cross-org security pass** — completed adversarial coverage for every module named in the
+priority list: Meetings, Resume Studio, Opportunity Profile (5 tables), saved Jobs, saved Housing, and Early
+Access enrollments all went from "RLS exists, never adversarially proven" to real forged-id/cross-member
+read-write-delete test coverage (`scripts/test-local-cross-member-isolation.mjs`, 11/11). Re-audited Credit's 18
+SECURITY DEFINER functions and Documents' isolation tests — both already excellent from prior sessions, corrected
+an inaccurate "gap" note in the exit criteria rather than leave it stale. No new product bugs found anywhere in
+this pass — every module's RLS/RPC design was already sound; this was entirely about proving it, not fixing it.
+
+**6. Home/Me/AI cohesion** — Marketplace (V1) and Meetings had zero representation in `get_member_home_summary()`
+despite its own documented extension pattern existing exactly for this. Added `member_summary_marketplace`/
+`member_summary_meetings`, wired into Home's summary type, added two new tiles to Me, and added a
+`my_marketplace_claims` FairPath AI intent (Marketplace was the only major module with no AI intent at all).
+
+**7. Performance** — `marketplace.tsx` ran 3 independent queries sequentially instead of parallel (same pattern
+already fixed in Documents/Home in a prior session); parallelized with `Promise.all`. Re-confirmed the known,
+still-unfixed `auth.getUser()` duplication (13 call sites, no caching layer exists) — correctly judged too broad
+a change to make safely in one pass, documented rather than rushed.
+
+**8. Notification catalog reconciliation** — three-way matrix (canonical event / real DB producer / real client
+consumer) in `docs/NOTIFICATION_EVENT_RECONCILIATION.md`. Closed the Marketplace catalog gap found earlier
+(added `MARKETPLACE_CLAIM_UPDATE`). Honest finding, not fabricated: the client inbox doesn't consume the catalog
+at all today (renders raw DB rows directly) — the catalog is a reference vocabulary for a future push/email/SMS
+worker, not live-wired to current behavior. 5 catalog events have no producer; 2 producers have no catalog entry.
+
+**9. Documentation recalibration** — `MOBILE_BUILD_EXIT_CRITERIA.md` and `MOBILE_PERFORMANCE_AUDIT.md` updated
+from this pass's actual evidence only (never bumped a percentage without a specific new PASS gate met).
+
+**What's still explicitly open, honestly:** the full signed-in Browser member journey (blocked all session on no
+DEV credentials — everything above is DB-layer proof, not click-through proof), Ohio real content (blocked on
+deliberate schema work, not urgency), the `auth.getUser()` performance consolidation (flagged, not fixed), 5
+speculative notification producers (not built), and a demo runbook (not started this pass).
+
 ## Update 6 (Record Relief full engine QA + Early Access architecture, built and live-verified)
 **Record Relief engine: comprehensively proven, not just seeded.** Drove 8 deliberately distinct fact patterns
 through the real TEST-A..D rules live in the Browser pane, all 8 correct: eligible-now, waiting-period (exact
