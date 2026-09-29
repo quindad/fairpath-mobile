@@ -62,7 +62,7 @@ changed underneath it.
 | Application state | 🟢 | RPC-only writes, event trail (`job_application_events`) |
 | Zero-inventory handling | 🟢 | **New this session**, Browser-verified live: ZIP 99999 + no-match query correctly shows "FairPath does not have enough verified opportunities" with a working JOIN EARLY ACCESS button, distinct from a genuine filter miss |
 | Inventory provenance architecture | 🟠 | Exists in schema (`opportunity_sources`, `external_opportunities`, `jobs.source_id`/`external_opportunity_id`) but **entirely dormant** — zero code references it (found and corrected this session) |
-| Real inventory source | 🔴 | 100% DEV fixture (`FairPath DEV Seed`/`FairPath DEV QA` labels). No employer posting flow, no ATS integration, no feed exists |
+| Real inventory source | 🔴 | 100% DEV fixture (`FairPath DEV Seed`/`FairPath DEV QA` labels). **Correction:** owner-scoped RLS write access for employers already exists (`jobs.employer_id` FK + RLS policies) — no ATS integration and no employer-facing UI exist, but the backend ownership/permission foundation is real, not absent. See `COMMAND_CENTER_MOBILE_CONTRACTS.md` |
 
 ## HOUSING — 🟠 BUILT — REAL DATA REQUIRED (core mechanics 🟢, location intelligence 🟡, inventory 🟠)
 

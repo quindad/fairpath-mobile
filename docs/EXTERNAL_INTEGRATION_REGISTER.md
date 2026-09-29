@@ -268,10 +268,14 @@ action needed — this is implementation work, not a credential.
   verification history) is real and already in active use (built and verified in a prior session), which is
   different from Jobs/Housing's unused pipeline.
 - **Real-data path for each (architecture, not yet built):**
-  - **Jobs:** direct FairPath employer postings (an employer-facing submission flow, not built) is the right first
-    source — no licensing risk, no scraping. ATS integrations (Greenhouse, Lever) are a plausible phase 2 once
-    there are enough direct employer partners to justify it.
-  - **Housing:** direct landlord/property-manager listings (same reasoning as jobs) is the only source that avoids
+  - **Jobs:** direct FairPath employer postings is the right first source — no licensing risk, no scraping.
+    **Correction found this pass:** the employer-facing submission path is further along than "not built" — the
+    RLS/ownership foundation already exists and works today (`jobs.employer_id` FK to `auth.users`, owner-scoped
+    insert/update/delete policies, plus an "Employers read applications for own jobs" policy). Only the UI and an
+    employer identity/verification layer are missing, not the backend. See `COMMAND_CENTER_MOBILE_CONTRACTS.md`.
+    ATS integrations (Greenhouse, Lever) are a plausible phase 2 once there are enough direct employer partners.
+  - **Housing:** direct landlord/property-manager listings (same reasoning as jobs, same correction —
+    `housing_listings.owner_id` has the identical working RLS foundation) is the only source that avoids
     MLS/IDX licensing complexity entirely, and matches FairPath's actual value prop (second-chance-friendly
     landlords opting in), not general rental inventory.
   - **Resources:** a blend of FairPath-verified entries (manual, high-trust) plus 211/government open-data feeds
