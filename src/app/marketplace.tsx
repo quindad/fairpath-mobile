@@ -34,10 +34,16 @@ export default function Marketplace(){
  const run=useCallback(async(nextCategory=category)=>{
   setLoading(true);setError('');
   try{
-   const rows=await loadMarketplace({search:query,category:nextCategory,location,safePickup:safeOnly,condition,sort});
+   // Three independent queries - run in parallel instead of one-after-another (same fix class as Documents'
+   // readiness dedup and Home's featured-jobs limit earlier this session).
+   const [rows,idsResult,quotaResult]=await Promise.all([
+    loadMarketplace({search:query,category:nextCategory,location,safePickup:safeOnly,condition,sort}),
+    loadSavedMarketplaceIds().catch(()=>[] as string[]),
+    loadMarketplaceQuota().catch(()=>null),
+   ]);
    setItems(rows);
-   try{const ids=await loadSavedMarketplaceIds();setSaved(Object.fromEntries(ids.map(id=>[id,true])))}catch{}
-   try{setQuota(await loadMarketplaceQuota())}catch{setQuota(null)}
+   setSaved(Object.fromEntries(idsResult.map(id=>[id,true])));
+   setQuota(quotaResult);
   }catch{
    // Same fix as Jobs/Housing/Resources: never leave a prior successful search's results on screen next to a fresh error.
    setItems([]);
