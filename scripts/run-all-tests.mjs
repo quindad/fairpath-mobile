@@ -26,6 +26,7 @@ const steps = [
   ['SQL: resume studio', NODE, ['scripts/test-local-resume.mjs']],
   ['SQL: meetings', NODE, ['scripts/test-local-meetings.mjs']],
   ['SQL: org ownership', NODE, ['scripts/test-local-org-ownership.mjs']],
+  ['SQL: marketplace', NODE, ['scripts/test-local-marketplace.mjs']],
   ['SQL: coverage markets', NODE, ['scripts/test-local-coverage.mjs']],
 ];
 
