@@ -25,7 +25,7 @@ const RULE_ALL_FIELDS = new Set([
   'summary', 'excluded_offense_classes', 'waiting_years', 'waiting_months', 'waiting_days',
   'requires_fines_paid', 'requires_restitution_paid', 'requires_no_pending_charges', 'max_other_convictions',
   'manual_review_flags', 'fees', 'filing', 'required_documents', 'steps', 'form_keys',
-  'effective_to', 'next_review_at', 'staff_notes', 'reviewed_by', 'data_origin', 'fixture_set',
+  'effective_to', 'next_review_at', 'staff_notes', 'reviewed_by', 'data_origin', 'fixture_set', 'court_discretion',
 ]);
 
 const FORM_REQUIRED_FIELDS = ['kind', 'jurisdiction_code', 'form_key', 'name', 'form_kind'];
@@ -198,8 +198,8 @@ export async function importBatch(db, candidates, { allowWarnings = false, dryRu
               requires_fines_paid, requires_restitution_paid, requires_no_pending_charges, max_other_convictions,
               manual_review_flags, fees, filing, required_documents, steps, form_keys,
               source_authority, source_url, citation_text, effective_from, effective_to,
-              researched_by, next_review_at, staff_notes, data_origin, fixture_set, status)
-           values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,'draft')
+              researched_by, next_review_at, staff_notes, data_origin, fixture_set, court_discretion, status)
+           values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,'draft')
            returning id`,
           [input.rule_key, input.rule_version, input.jurisdiction_code, input.remedy, input.title, input.summary ?? null,
             input.applies_dispositions, input.applies_offense_classes, input.excluded_offense_classes ?? [],
@@ -209,7 +209,7 @@ export async function importBatch(db, candidates, { allowWarnings = false, dryRu
             JSON.stringify(input.fees ?? {}), JSON.stringify(input.filing ?? {}), JSON.stringify(input.required_documents ?? []),
             JSON.stringify(input.steps ?? []), input.form_keys ?? [], input.source_authority, input.source_url, input.citation_text,
             input.effective_from, input.effective_to ?? null, input.researched_by, input.next_review_at ?? null,
-            input.staff_notes ?? null, input.data_origin ?? 'production', input.fixture_set ?? null],
+            input.staff_notes ?? null, input.data_origin ?? 'production', input.fixture_set ?? null, input.court_discretion ?? false],
         );
         inserted.push({ kind: 'rule', id: r.rows[0].id, rule_key: input.rule_key, rule_version: input.rule_version });
       } else if (input.kind === 'form') {

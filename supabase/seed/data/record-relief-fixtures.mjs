@@ -13,6 +13,7 @@ export const RULE_DEFAULTS = {
   summary: null, applies_dispositions: [], applies_offense_classes: [], excluded_offense_classes: [], waiting_years: 0, waiting_months: 0, waiting_days: 0,
   waiting_anchor: 'latest_completion', requires_fines_paid: false, requires_restitution_paid: false, requires_no_pending_charges: false, max_other_convictions: null,
   manual_review_flags: [], fees: {}, filing: {}, required_documents: [], steps: [], form_keys: [], effective_to: null, last_verified_at: null, status: 'draft',
+  court_discretion: false,
 };
 export const FORM_DEFAULTS = { revision: null, effective_date: null, official_source_url: null, last_verified_at: null, remedies: [], auto_fillable: false, field_map: null, status: 'draft' };
 export const PATHWAY_DEFAULTS = { pathway_version: 1, is_general_expungement: false, applies_to: null, last_verified_at: null, status: 'draft' };

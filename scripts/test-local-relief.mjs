@@ -164,6 +164,18 @@ await test('history is append-only per evaluation; rule versions change results 
   ok(now2.rule.citation_text.includes('amended'), 'the new version\'s citation is shown');
 });
 
+await test('court_discretion rules always carry the court-decides reason, even when potentially eligible now', async () => {
+  // A separate TEST jurisdiction (not TEST-A..D) so this doesn't disturb TEST-D's "zero verified rules" assumption
+  // relied on by the "drafts and unverified rules are never used" test below.
+  await db.query(`insert into public.record_relief_jurisdictions (code, name, kind, data_origin, fixture_set) values ('TEST-E','Court discretion test','test','dev_fixture','${RR_FIXTURE_SET}')`);
+  await db.query(`insert into public.record_relief_rules (rule_key, jurisdiction_code, remedy, title, applies_dispositions, applies_offense_classes, waiting_years, waiting_anchor, source_authority, source_url, citation_text, effective_from, last_verified_at, status, court_discretion, data_origin, fixture_set)
+                  values ('test-e-court-discretion','TEST-E','sealing','Court discretion rule (TEST)','{conviction}','{misdemeanor}',0,'disposition_date','test_fixture','https://x.test','TEST','2024-01-01',current_date,'verified',true,'dev_fixture','${RR_FIXTURE_SET}')`);
+  const c = must(await save(M, { jurisdiction_code: 'TEST-E', label: 'Court discretion case', disposition_date: yearsAgo(1) }), 'save')[0].c;
+  const ev = one(await evals(c.id), 'test-e-court-discretion');
+  ok(ev.outcome === 'potentially_eligible_now', 'expected potentially_eligible_now, got ' + ev.outcome);
+  ok(ev.reasons.some((r) => r.code === 'court_discretion'), 'a court_discretion rule must carry an explicit court_discretion reason: ' + JSON.stringify(ev.reasons));
+});
+
 await test('drafts and unverified rules are never used', async () => {
   await db.query(`insert into public.record_relief_rules (rule_key, jurisdiction_code, remedy, title, applies_dispositions, applies_offense_classes, waiting_years, waiting_anchor, source_authority, source_url, citation_text, effective_from, status, data_origin, fixture_set)
                   values ('test-d-draft','TEST-D','expungement','Draft rule (TEST)','{conviction}','{misdemeanor}',0,'disposition_date','test_fixture','https://x.test','TEST','2024-01-01','draft','dev_fixture','${RR_FIXTURE_SET}')`);
