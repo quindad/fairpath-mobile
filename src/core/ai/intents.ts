@@ -7,7 +7,7 @@
 export type IntentId =
   | 'safety' | 'need_shelter' | 'find_resources' | 'finish_profile' | 'credit_review' | 'credit_why_flagged' | 'credit_build_dispute' | 'credit_dispute_status'
   | 'relief_can_i_clear' | 'relief_when_eligible' | 'relief_paperwork' | 'relief_coverage' | 'housing_requirements' | 'find_jobs' | 'my_jobs' | 'find_housing' | 'my_housing'
-  | 'create_resume' | 'my_resumes' | 'my_meetings' | 'next_steps' | 'documents' | 'market_coverage' | 'fairpath_plus_status' | 'help';
+  | 'create_resume' | 'my_resumes' | 'my_meetings' | 'my_marketplace_claims' | 'next_steps' | 'documents' | 'market_coverage' | 'fairpath_plus_status' | 'help';
 
 export type Intent = { id: IntentId; task: string; label: string; patterns: RegExp[]; priority: number };
 
@@ -47,6 +47,8 @@ export const INTENTS: Intent[] = [
     patterns: [/\b(my|edit|download|export)\b.*\bresume/i, /\bresumes?\b.*\b(saved|list|versions?)\b/i] },
   { id: 'my_meetings', task: 'meetings_status', label: T('My meetings'), priority: 68,
     patterns: [/\b(my|next|upcoming|schedule)\b.*\b(meeting|appointment|interview)s?\b/i, /\b(meeting|appointment)s?\b.*\b(coming up|scheduled)\b/i, /\bdo i have\b.*\b(meeting|appointment|interview)s?\b/i] },
+  { id: 'my_marketplace_claims', task: 'marketplace_status', label: T('My marketplace claims'), priority: 68,
+    patterns: [/\b(my|do i have any)\b.*\b(marketplace )?claims?\b/i, /\bmarketplace\b.*\b(claim|item|pickup)s?\b/i, /\bwhen('?s| is)\b.*\bpick ?up\b/i] },
   { id: 'find_housing', task: 'housing_search', label: T('Find housing'), priority: 64,
     patterns: [/\b(find|search|look for|show)\b.*\bhousing\b/i, /\b(apartment|rental)s?\b.*\b(find|search|near)\b/i] },
   { id: 'my_housing', task: 'housing_status', label: T('My housing applications'), priority: 65,

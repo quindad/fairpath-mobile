@@ -303,6 +303,19 @@ async function build(id: IntentId, task: string, text: string, gw: AiGateway, ct
         provenance: base('meetings_status', id, '/meetings/' + next.id, { sourceRefs: [{ kind: 'meeting', id: next.id }] }) };
     }
 
+    case 'my_marketplace_claims': {
+      if (!(await gw.signedIn())) return signInNeeded(id, 'marketplace_status');
+      const s = await gw.summary();
+      const active = s.marketplace?.active_claims ?? 0;
+      const ready = s.marketplace?.ready_for_pickup ?? 0;
+      if (!active) return { intent: id, title: 'No active claims', modelAssisted: false, parts: [{ text: 'You have no active Marketplace claims right now. Browse free items donated by the FairPath community.', basis: 'app_state' }], actions: [{ label: 'Browse Marketplace', route: '/marketplace', primary: true }], provenance: base('marketplace_status', id, '/marketplace') };
+      const text = ready > 0
+        ? `You have ${active} active Marketplace claim${active === 1 ? '' : 's'}, and ${ready} item${ready === 1 ? ' is' : 's are'} ready for pickup. Open your claims for the pickup code and details.`
+        : `You have ${active} active Marketplace claim${active === 1 ? '' : 's'}. Open your claims to see the current status.`;
+      return { intent: id, title: 'Your Marketplace claims', modelAssisted: false, parts: [{ text, basis: 'member' }],
+        actions: [{ label: 'My claims', route: '/marketplace-claims', primary: true }], provenance: base('marketplace_status', id, '/marketplace-claims') };
+    }
+
     case 'housing_requirements':
       return { intent: id, title: 'What to bring', modelAssisted: false,
         parts: [{ text: 'Every resource and housing program lists what to bring on its page. Save the ones you like and FairPath combines the required documents into one checklist you can print.', basis: 'app_state' }],

@@ -25,7 +25,7 @@ check(new Set(INTENTS.map((i) => i.id)).size === INTENTS.length, 'unique intent 
 const calls = [];
 const gw = (over = {}) => ({
   signedIn: async () => { calls.push('signedIn'); return true; },
-  summary: async () => { calls.push('summary'); return { profile: { completed_sections: 3, total_sections: 8, next_section: 'skills' }, credit: { reports: 2, items_to_review: 3 }, resources: { saved: 0, started: 0 }, jobs: { applied: 0 }, documents: { expiring_soon: 0 } }; },
+  summary: async () => { calls.push('summary'); return { profile: { completed_sections: 3, total_sections: 8, next_section: 'skills' }, credit: { reports: 2, items_to_review: 3 }, resources: { saved: 0, started: 0 }, jobs: { applied: 0 }, documents: { expiring_soon: 0 }, marketplace: { active_claims: 1, ready_for_pickup: 1 } }; },
   profileCompletion: async () => { calls.push('profileCompletion'); return [{ section_key: 'contact', label: 'Contact details', is_complete: true, sort_order: 1 }, { section_key: 'skills', label: 'Skills', is_complete: false, sort_order: 5 }]; },
   needs: async (t) => { calls.push('needs'); return /food|hungry/i.test(t) ? [{ need_slug: 'food_today', label: 'Food today', urgent: true }] : []; },
   creditItems: async () => { calls.push('creditItems'); return [
@@ -114,6 +114,12 @@ check(r.intent === 'my_meetings' && /Interview with Acme/.test(r.parts[0].text) 
 r = await answer('What is my next meeting?', gw({ upcomingMeetings: async () => [] }));
 check(routes(r)[0] === '/meetings/add', 'no meetings -> offer to add one');
 
+check(matchIntent('Do I have any marketplace claims?').intent?.id === 'my_marketplace_claims', 'my marketplace claims');
+r = await answer('Do I have any marketplace claims?', gw());
+check(r.intent === 'my_marketplace_claims' && /1 active Marketplace claim/.test(r.parts[0].text) && /ready for pickup/.test(r.parts[0].text) && routes(r)[0] === '/marketplace-claims' && !bad(r), 'marketplace claims reports the real active/ready counts');
+r = await answer('Do I have any marketplace claims?', gw({ summary: async () => ({ marketplace: { active_claims: 0, ready_for_pickup: 0 } }) }));
+check(routes(r)[0] === '/marketplace', 'no active claims -> offer to browse Marketplace, never invents a claim');
+
 check(matchIntent('Do I have FairPath+?').intent?.id === 'fairpath_plus_status', 'fairpath+ status: direct phrasing');
 r = await answer('Do I have FairPath+?', gw());
 check(r.intent === 'fairpath_plus_status' && /free plan/.test(r.parts[0].text) && !/you have fairpath\+/i.test(r.parts[0].text) && !bad(r), 'inactive status is reported honestly, never overclaimed as active');
@@ -132,12 +138,13 @@ check(/now active/.test(r.parts[0].text), 'a converted enrollment reports the ma
 // ---------- permissions: signed-out means NO personal reads ----------
 const reads = [];
 const spy = gw({ signedIn: async () => false, summary: async () => { reads.push('summary'); return {}; }, creditItems: async () => { reads.push('credit'); return []; }, reliefCases: async () => { reads.push('cases'); return []; }, profileCompletion: async () => { reads.push('profile'); return []; }, myEarlyAccessEnrollments: async () => { reads.push('earlyAccess'); return []; }, fairPathPlusStatus: async () => { reads.push('plusStatus'); return { active: false, source: null, daysRemaining: null, complimentary: false }; } });
-for (const q of ['Show my next steps', 'Review my credit report', 'Can I clear this record?', 'Help me finish my profile', 'Build my dispute letter', 'When might I become eligible?', 'Show my job applications', 'Show my saved homes', 'What is my dispute status?', 'Download my resume', 'What is my next meeting?', 'Am I on the waitlist?', 'Do I have FairPath+?']) await answer(q, spy);
+for (const q of ['Show my next steps', 'Review my credit report', 'Can I clear this record?', 'Help me finish my profile', 'Build my dispute letter', 'When might I become eligible?', 'Show my job applications', 'Show my saved homes', 'What is my dispute status?', 'Download my resume', 'What is my next meeting?', 'Do I have any marketplace claims?', 'Am I on the waitlist?', 'Do I have FairPath+?']) await answer(q, spy);
 check(reads.length === 0, 'a signed-out caller triggers zero personal data reads: ' + reads);
 check((await answer('Do I have FairPath+?', spy)).actions[0].route === '/sign-in', 'fairpath_plus_status requires sign-in before reading real status');
 check((await answer('Am I on the waitlist?', spy)).actions[0].route === '/sign-in', 'market_coverage requires sign-in before reading enrollments');
 check((await answer('Show my job applications', spy)).actions[0].route === '/sign-in', 'my_jobs requires sign-in before reading data');
 check((await answer('Show my saved homes', spy)).actions[0].route === '/sign-in', 'my_housing requires sign-in before reading data');
+check((await answer('Do I have any marketplace claims?', spy)).actions[0].route === '/sign-in', 'my_marketplace_claims requires sign-in before reading data');
 
 // ---------- graceful fallback ----------
 r = await answer('Show my next steps', gw({ summary: async () => { throw new Error('network'); } }));
