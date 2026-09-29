@@ -60,13 +60,13 @@ export function buildRecordReliefFixtures(now = new Date()) {
 
   const forms = [
     { form_key: 'test-a-petition', jurisdiction_code: 'TEST-A', name: 'Petition for Expungement (TEST FORM)', kind: 'official_form', revision: 'TEST-2026-01', effective_date: '2026-01-01',
-      official_source_url: 'https://forms.example.test/a/petition.pdf', last_verified_at: daysAgo(now, 30), remedies: ['expungement', 'sealing'], auto_fillable: false, status: 'verified', ...fx },
+      official_source_url: 'https://forms.example.test/a/petition.pdf', last_verified_at: daysAgo(now, 30), remedies: ['expungement', 'sealing'], scope: 'statewide', auto_fillable: false, status: 'verified', ...fx },
     { form_key: 'test-a-fee-waiver', jurisdiction_code: 'TEST-A', name: 'Fee Waiver Request (TEST FORM)', kind: 'fee_waiver_form', revision: 'TEST-2025-06', effective_date: '2025-06-01',
-      official_source_url: 'https://forms.example.test/a/fee-waiver.pdf', last_verified_at: daysAgo(now, 30), remedies: ['expungement'], auto_fillable: false, status: 'verified', ...fx },
+      official_source_url: 'https://forms.example.test/a/fee-waiver.pdf', last_verified_at: daysAgo(now, 30), remedies: ['expungement'], scope: 'statewide', auto_fillable: false, status: 'verified', ...fx },
     { form_key: 'test-a-instructions', jurisdiction_code: 'TEST-A', name: 'Filing Instructions (TEST)', kind: 'instructions', revision: null, effective_date: null,
-      official_source_url: 'https://forms.example.test/a/instructions.html', last_verified_at: daysAgo(now, 30), remedies: ['expungement', 'sealing'], auto_fillable: false, status: 'verified', ...fx },
+      official_source_url: 'https://forms.example.test/a/instructions.html', last_verified_at: daysAgo(now, 30), remedies: ['expungement', 'sealing'], scope: 'statewide', auto_fillable: false, status: 'verified', ...fx },
     { form_key: 'test-a-draft-form', jurisdiction_code: 'TEST-A', name: 'Unverified draft form (TEST)', kind: 'official_form', revision: null, effective_date: null,
-      official_source_url: null, last_verified_at: null, remedies: ['expungement'], auto_fillable: false, status: 'draft', ...fx },
+      official_source_url: null, last_verified_at: null, remedies: ['expungement'], scope: 'statewide', auto_fillable: false, status: 'draft', ...fx },
   ];
 
   const pathways = [
