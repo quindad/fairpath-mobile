@@ -81,4 +81,31 @@ for (const [table, insertShape, updateShape] of OPP_TABLES) {
   });
 }
 
+// ---------------- Saved Jobs / Saved Housing (composite PK, no id column) ----------------
+await test('saved jobs: B cannot read, delete, or forge-insert A\'s saved job', async () => {
+  const jobRows = must(await tryAs(db, A,
+    `insert into public.jobs (employer_id, title, description, company_name, employment_type, status) values ($1,'Iso test job','desc','Acme','full_time','published') returning id`,
+    [A]), 'seed job');
+  const jobId = jobRows[0].id;
+  must(await tryAs(db, A, `insert into public.saved_jobs (user_id, job_id) values ($1,$2)`, [A, jobId]), 'A saves job');
+
+  denied(await tryAs(db, B, `select * from public.saved_jobs where user_id=$1 and job_id=$2`, [A, jobId]), 'B direct read');
+  const delByB = must(await tryAs(db, B, `delete from public.saved_jobs where user_id=$1 and job_id=$2 returning job_id`, [A, jobId]), 'B delete attempt');
+  ok(delByB.length === 0, 'B could delete A\'s saved job');
+  denied(await tryAs(db, B, `insert into public.saved_jobs (user_id, job_id) values ($1,$2)`, [A, jobId]), 'B forging a saved-job row for A');
+});
+
+await test('saved housing: B cannot read, delete, or forge-insert A\'s saved listing', async () => {
+  const listingRows = must(await tryAs(db, A,
+    `insert into public.housing_listings (owner_id, title, description, property_type, city, state, postal_code, rent_monthly, status) values ($1,'Iso test listing','desc','apartment','Cleveland','OH','44113',900,'published') returning id`,
+    [A]), 'seed listing');
+  const listingId = listingRows[0].id;
+  must(await tryAs(db, A, `insert into public.saved_housing (user_id, listing_id) values ($1,$2)`, [A, listingId]), 'A saves listing');
+
+  denied(await tryAs(db, B, `select * from public.saved_housing where user_id=$1 and listing_id=$2`, [A, listingId]), 'B direct read');
+  const delByB = must(await tryAs(db, B, `delete from public.saved_housing where user_id=$1 and listing_id=$2 returning listing_id`, [A, listingId]), 'B delete attempt');
+  ok(delByB.length === 0, 'B could delete A\'s saved listing');
+  denied(await tryAs(db, B, `insert into public.saved_housing (user_id, listing_id) values ($1,$2)`, [A, listingId]), 'B forging a saved-housing row for A');
+});
+
 done();
