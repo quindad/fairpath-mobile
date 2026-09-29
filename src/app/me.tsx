@@ -84,6 +84,8 @@ export default function MeScreen() {
     { label: 'SAVED HOMES', value: summary.housing?.saved_homes ?? 0, route: '/saved-homes' },
     { label: 'RESOURCES SAVED', value: summary.resources?.saved ?? 0, route: '/saved-resources' },
     { label: 'DOCUMENTS', value: summary.documents?.generated ?? 0, route: '/documents' },
+    { label: 'MARKETPLACE CLAIMS', value: summary.marketplace?.active_claims ?? 0, route: '/marketplace-claims' },
+    { label: 'UPCOMING MEETINGS', value: summary.meetings?.upcoming ?? 0, route: '/meetings' },
   ] : [];
 
   return (

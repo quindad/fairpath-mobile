@@ -14,6 +14,8 @@ export type MemberSummary = {
   deletion_request?: { status?: string; scheduled_for?: string } | null;
   credit?: { reports?: number; accounts_to_confirm?: number; items_to_review?: number; disputes_active?: number; disputes_awaiting_response?: number; response_due_soon?: number; overdue?: number };
   record_relief?: { cases?: number; eligible_now?: number; countdowns_due_soon?: number; rule_updates?: number; needs_information?: number };
+  marketplace?: { active_claims?: number; ready_for_pickup?: number; pending_requests_on_my_items?: number; active_listings?: number };
+  meetings?: { upcoming?: number; next_start_at?: string | null };
 };
 
 export type NextStep = { key: string; title: string; body: string; route: string; reason: string };

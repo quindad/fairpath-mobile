@@ -62,6 +62,21 @@ await test('unavailable saved resources are counted for the "needs attention" hi
   await db.query(`update public.resources set publish_status='published' where id=$1`, [rid('pantry-cle-44113')]);
 });
 
+await test('module extension point: marketplace and meetings summaries reflect real per-member state (Home/Me cohesion gap closed this session)', async () => {
+  const seller = await addUser(db, 'summary-seller@test.local');
+  const item = await one(`insert into public.marketplace_items (seller_id, title, description, category, city, state) values ($1,'Summary test item','desc','furniture','Cleveland','OH') returning id`, [seller]);
+  must(await tryAs(db, seller, 'select public.set_marketplace_item_availability($1, true)', [item.id]), 'publish item');
+  must(await tryAs(db, M, 'select public.request_marketplace_claim($1, null)', [item.id]), 'M claims item');
+  let s = await summary(M);
+  ok(s.marketplace && s.marketplace.active_claims === 1, 'marketplace.active_claims should reflect the real claim: ' + JSON.stringify(s.marketplace));
+  const sellerSummary = await summary(seller);
+  ok(sellerSummary.marketplace.pending_requests_on_my_items === 1 && sellerSummary.marketplace.active_listings === 1, 'seller summary: ' + JSON.stringify(sellerSummary.marketplace));
+
+  await db.query(`insert into public.member_meetings (user_id, title, meeting_type, start_at) values ($1,'Summary test meeting','other', now() + interval '2 days')`, [M]);
+  s = await summary(M);
+  ok(s.meetings && s.meetings.upcoming === 1 && s.meetings.next_start_at, 'meetings.upcoming should reflect the real meeting: ' + JSON.stringify(s.meetings));
+});
+
 await test('module extension point: credit and record-relief summaries are merged, real and per-member', async () => {
   const s = await summary(M);
   ok(s.credit && s.credit.reports === 0 && s.credit.items_to_review === 0 && s.credit.disputes_active === 0, 'credit block for a member with no reports: ' + JSON.stringify(s.credit));
