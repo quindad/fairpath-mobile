@@ -16,6 +16,7 @@ const checks = [
   ['src/app/record-relief/index.tsx', /catch \(err\) \{[\s\S]{0,200}?setCases\(null\)[\s\S]{0,80}?setError\(/],
   ['src/app/home.tsx', /catch\(\(\)=>\{if\(active\)\{setFeatured\(\[\]\);setJobsState\('error'\)\}\}\)/],
   ['src/app/me.tsx', /catch\(\(\) => \{ setSummary\(null\); setError\(/],
+  ['src/app/saved-resources.tsx', /setRows\(\[\]\);\s*setError\('We could not load your resources/],
 ];
 
 const failures = [];

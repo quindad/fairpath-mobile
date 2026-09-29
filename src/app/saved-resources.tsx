@@ -51,6 +51,7 @@ export default function SavedResourcesScreen() {
         router.replace(('/sign-in?returnTo=' + encodeURIComponent('/saved-resources')) as never);
         return;
       }
+      setRows([]);
       setError('We could not load your resources. Check your connection and try again.');
     } finally {
       setLoading(false);
