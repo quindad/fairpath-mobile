@@ -29,6 +29,7 @@ const steps = [
   ['SQL: marketplace', NODE, ['scripts/test-local-marketplace.mjs']],
   ['SQL: record relief importer', NODE, ['scripts/test-local-relief-importer.mjs']],
   ['SQL: cross-member isolation', NODE, ['scripts/test-local-cross-member-isolation.mjs']],
+  ['SQL: legal source monitoring', NODE, ['scripts/test-local-legal-monitoring.mjs']],
   ['SQL: coverage markets', NODE, ['scripts/test-local-coverage.mjs']],
 ];
 
