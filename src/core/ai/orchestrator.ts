@@ -40,6 +40,7 @@ export type AiGateway = {
   upcomingMeetings(): Promise<{ id: string; title: string; start_at: string }[]>;
   resumeCount(): Promise<number>;
   myEarlyAccessEnrollments(): Promise<{ id: string; zip: string; status: 'waitlisted' | 'notified' | 'converted' }[]>;
+  fairPathPlusStatus(): Promise<{ active: boolean; source: string | null; daysRemaining: number | null; complimentary: boolean }>;
 };
 
 export type ModelAdapter = {
@@ -324,6 +325,22 @@ async function build(id: IntentId, task: string, text: string, gw: AiGateway, ct
         parts: [{ text: line, basis: 'member' }],
         actions: [{ label: 'View Early Access', route: '/early-access?zip=' + active.zip, primary: true }],
         provenance: base('market_coverage_status', id, '/early-access?zip=' + active.zip) };
+    }
+
+    case 'fairpath_plus_status': {
+      if (!(await gw.signedIn())) return signInNeeded(id, 'fairpath_plus_status');
+      const p = await gw.fairPathPlusStatus();
+      if (!p.active) {
+        return { intent: id, title: 'FairPath+ is not active', modelAssisted: false,
+          parts: [{ text: 'You are on the free plan. FairPath+ is not connected to real payments yet in this build, so it can only come from a grant (like an Early Access or institution benefit).', basis: 'member' }],
+          actions: [{ label: 'See FairPath+', route: '/plus', primary: true }], provenance: base('fairpath_plus_status', id, '/plus') };
+      }
+      const line = p.complimentary
+        ? `Yes — you have complimentary FairPath+ access${p.daysRemaining != null ? `, ${p.daysRemaining} day${p.daysRemaining === 1 ? '' : 's'} remaining` : ''}. No payment was made.`
+        : `Yes — FairPath+ is active on your account${p.daysRemaining != null ? `, ${p.daysRemaining} day${p.daysRemaining === 1 ? '' : 's'} remaining` : ''}.`;
+      return { intent: id, title: 'Your FairPath+ status', modelAssisted: false,
+        parts: [{ text: line, basis: 'member' }], actions: [{ label: 'See FairPath+', route: '/plus', primary: true }],
+        provenance: base('fairpath_plus_status', id, '/plus') };
     }
 
     case 'documents':

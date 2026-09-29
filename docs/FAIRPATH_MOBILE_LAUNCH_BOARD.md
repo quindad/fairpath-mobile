@@ -233,6 +233,22 @@ in the entire board and cannot be closed without Sterling's physical hardware.
 
 ---
 
+## Architectural sweep: "resolve relationship at creation, never reconcile later" (time-boxed)
+
+Searched every nullable foreign key across all migrations for the exact pattern that caused the Early Access
+bug: a lookup resolved once at insert time, cached as a possibly-null FK, with a LATER batch/activation process
+that only matches rows already carrying that FK (never re-deriving the match). Found candidates:
+`credit_reports.upload_id`, `credit_dispute_evidence.generated_document_id`, `supervision_records.conviction_id`,
+`corrections_migration_events.grant_id`, `generated_documents.supersedes_id`,
+`record_relief_evaluations.rule_id`. Inspected each: all are the different, legitimate "this hasn't happened yet"
+pattern (e.g. `upload_id` is null by design for manually-entered/fixture credit reports — the schema's own check
+constraint allows `source in ('manual','fixture')` with no upload) — none has a batch process downstream that
+ONLY looks for rows already carrying the FK while silently ignoring unmatched rows forever. Record Relief's
+`rule_id` looked like the closest analog (a case's evaluation caches the matched rule), but re-evaluation is
+member-triggered via a visible "RE-CHECK THIS CASE" button — confirmed working live earlier this session (edited
+a case's facts, re-check correctly recalculated) — so there's no silent dead-end the way Early Access had one.
+**No second instance of the bug class found.** Sweep complete, no further action needed.
+
 ## Counts by major capability (not sub-row)
 
 | Status | Count | Capabilities |

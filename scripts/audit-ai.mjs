@@ -37,6 +37,7 @@ const gw = (over = {}) => ({
   upcomingMeetings: async () => [{ id: 'mt1', title: 'Interview with Acme', start_at: '2028-01-07T14:00:00Z' }],
   resumeCount: async () => 1,
   myEarlyAccessEnrollments: async () => [],
+  fairPathPlusStatus: async () => { calls.push('fairPathPlusStatus'); return { active: false, source: null, daysRemaining: null, complimentary: false }; },
   ...over,
 });
 
@@ -113,6 +114,12 @@ check(r.intent === 'my_meetings' && /Interview with Acme/.test(r.parts[0].text) 
 r = await answer('What is my next meeting?', gw({ upcomingMeetings: async () => [] }));
 check(routes(r)[0] === '/meetings/add', 'no meetings -> offer to add one');
 
+check(matchIntent('Do I have FairPath+?').intent?.id === 'fairpath_plus_status', 'fairpath+ status: direct phrasing');
+r = await answer('Do I have FairPath+?', gw());
+check(r.intent === 'fairpath_plus_status' && /free plan/.test(r.parts[0].text) && !/you have fairpath\+/i.test(r.parts[0].text) && !bad(r), 'inactive status is reported honestly, never overclaimed as active');
+r = await answer('Do I have FairPath+?', gw({ fairPathPlusStatus: async () => ({ active: true, source: 'early_access_market', daysRemaining: 45, complimentary: true }) }));
+check(/45 days remaining/.test(r.parts[0].text) && /complimentary/.test(r.parts[0].text) && !bad(r), 'active complimentary status reports the real days remaining, never a fake guarantee');
+
 check(matchIntent('Is FairPath available in my area?').intent?.id === 'market_coverage', 'market coverage: availability phrasing');
 check(matchIntent('Am I on the waitlist?').intent?.id === 'market_coverage', 'market coverage: waitlist phrasing');
 r = await answer('Is FairPath available in my area?', gw());
@@ -124,9 +131,10 @@ check(/now active/.test(r.parts[0].text), 'a converted enrollment reports the ma
 
 // ---------- permissions: signed-out means NO personal reads ----------
 const reads = [];
-const spy = gw({ signedIn: async () => false, summary: async () => { reads.push('summary'); return {}; }, creditItems: async () => { reads.push('credit'); return []; }, reliefCases: async () => { reads.push('cases'); return []; }, profileCompletion: async () => { reads.push('profile'); return []; }, myEarlyAccessEnrollments: async () => { reads.push('earlyAccess'); return []; } });
-for (const q of ['Show my next steps', 'Review my credit report', 'Can I clear this record?', 'Help me finish my profile', 'Build my dispute letter', 'When might I become eligible?', 'Show my job applications', 'Show my saved homes', 'What is my dispute status?', 'Download my resume', 'What is my next meeting?', 'Am I on the waitlist?']) await answer(q, spy);
+const spy = gw({ signedIn: async () => false, summary: async () => { reads.push('summary'); return {}; }, creditItems: async () => { reads.push('credit'); return []; }, reliefCases: async () => { reads.push('cases'); return []; }, profileCompletion: async () => { reads.push('profile'); return []; }, myEarlyAccessEnrollments: async () => { reads.push('earlyAccess'); return []; }, fairPathPlusStatus: async () => { reads.push('plusStatus'); return { active: false, source: null, daysRemaining: null, complimentary: false }; } });
+for (const q of ['Show my next steps', 'Review my credit report', 'Can I clear this record?', 'Help me finish my profile', 'Build my dispute letter', 'When might I become eligible?', 'Show my job applications', 'Show my saved homes', 'What is my dispute status?', 'Download my resume', 'What is my next meeting?', 'Am I on the waitlist?', 'Do I have FairPath+?']) await answer(q, spy);
 check(reads.length === 0, 'a signed-out caller triggers zero personal data reads: ' + reads);
+check((await answer('Do I have FairPath+?', spy)).actions[0].route === '/sign-in', 'fairpath_plus_status requires sign-in before reading real status');
 check((await answer('Am I on the waitlist?', spy)).actions[0].route === '/sign-in', 'market_coverage requires sign-in before reading enrollments');
 check((await answer('Show my job applications', spy)).actions[0].route === '/sign-in', 'my_jobs requires sign-in before reading data');
 check((await answer('Show my saved homes', spy)).actions[0].route === '/sign-in', 'my_housing requires sign-in before reading data');
