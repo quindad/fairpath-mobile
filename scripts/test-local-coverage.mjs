@@ -12,7 +12,7 @@ const must = (r, what) => { if (r.error) throw new Error(`${what}: ${r.error}`);
 const denied = (r, text, what) => ok(r.error && r.error.includes(text), `${what}: expected "${text}", got ${JSON.stringify(r.error ?? r.rows).slice(0, 220)}`);
 
 await test('an unconfigured ZIP honestly reports coming_soon, never a fabricated full/growing status', async () => {
-  const r = must(await tryAs(db, 'anon', 'select public.get_market_coverage($1) as c', ['99999']), 'guest coverage read')[0];
+  const r = must(await tryAs(db, 'anon', 'select public.get_market_coverage($1) as c', ['00001']), 'guest coverage read')[0];
   ok(r.c.status === 'coming_soon' && r.c.market_code === null, 'unconfigured ZIP defaults honestly');
 });
 
@@ -81,6 +81,30 @@ await test('a market with no benefit configured activates without issuing any gr
 
 await test('activating an unknown market code fails loudly, not silently', async () => {
   denied(await tryAs(db, 'service', `select public.activate_coverage_market('does-not-exist', 'full', 'test-admin')`), 'MARKET_NOT_FOUND', 'unknown market rejected');
+});
+
+await test('a member who enrolled BEFORE any market existed for their ZIP still gets the grant once one is configured and activated', async () => {
+  // real-world sequence: member joins a ZIP with zero configured markets (market_id resolves to null), and only
+  // LATER does FairPath configure + activate a market for that ZIP. Found as a real bug via a live DEV lifecycle
+  // test: the original activate_coverage_market only matched enrollments already stamped with market_id = this
+  // market, so a late-bound market never picked up an enrollment created before it existed.
+  const late = await addUser(db, 'late@test.local');
+  const before = must(await tryAs(db, 'anon', 'select public.get_market_coverage($1) as c', ['54321']), 'coverage before market exists')[0].c;
+  ok(before.market_code === null && before.status === 'coming_soon', 'no market exists yet for this zip');
+  const join = must(await tryAs(db, late, `select public.join_early_access($1, true, null) as r`, ['54321']), 'late joins before any market exists')[0].r;
+  ok(join.status === 'waitlisted', 'enrollment created with no market to link');
+  const stored = await one('select market_id from public.market_waitlist_enrollments where user_id = $1 and zip = $2', [late, '54321']);
+  ok(stored.market_id === null, "the enrollment's market_id is null, exactly as it would be in production before this market is configured");
+
+  await must(await tryAs(db, 'service', `select public.upsert_coverage_market('late-bound-market','Late-Bound Market', array['543'], 'waitlist', 45, null)`), 'configure the market AFTER the member already joined');
+  const activation = must(await tryAs(db, 'service', `select public.activate_coverage_market('late-bound-market', 'full', 'test-admin') as r`), 'activate the late-bound market')[0].r;
+  ok(activation.grants_issued === 1, 'the pre-existing, previously-unmatched enrollment gets picked up and granted');
+
+  const status = must(await tryAs(db, late, `select (public.my_fairpath_plus_status()->>'active')::boolean as active, my_fairpath_plus_status()->>'source' as src`), "late's FairPath+ status")[0];
+  ok(status.active === true && status.src === 'early_access_market', 'the member now genuinely has the benefit, not just a converted-looking row');
+
+  const rerun = must(await tryAs(db, 'service', `select public.activate_coverage_market('late-bound-market', 'full', 'test-admin') as r`), 're-run activation')[0].r;
+  ok(rerun.grants_issued === 0, 're-running the now-fixed activation still issues zero duplicate grants');
 });
 
 await test('deleting a member cascades their waitlist enrollments', async () => {
