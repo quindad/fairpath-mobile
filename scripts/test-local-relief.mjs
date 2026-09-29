@@ -203,6 +203,27 @@ await test('isolation, checklist, status tracking, reminders, deletion', async (
   for (const t of ['record_relief_evaluations', 'record_relief_case_checklist', 'record_relief_case_events']) ok((await q(`select 1 from public.${t} where case_id=$1`, [c.id])).length === 0, t + ' cascade');
 });
 
+await test('staff-only rule metadata (staff_notes, researched_by, reviewed_by, next_review_at) cannot be read by a member at all, even by direct table access bypassing the app', async () => {
+  // Real gap found via a targeted permission sweep this pass: RLS restricts which ROWS a member can read
+  // (status = 'verified'), but the original table grant was column-blind, so `staff_notes` was selectable
+  // through the exact same grant that legitimately exposes `title`/`summary`/etc. Fixed with column-level
+  // grants. Proven here at the privilege layer, not just "the app doesn't query it" (which was never the
+  // actual protection).
+  const direct = await tryAs(db, M, `select staff_notes from public.record_relief_rules where jurisdiction_code = 'TEST-A' limit 1`);
+  ok(direct.error && /permission denied/i.test(direct.error), 'direct select of staff_notes is rejected at the grant level: ' + JSON.stringify(direct));
+  for (const col of ['researched_by', 'reviewed_by', 'next_review_at']) {
+    const r = await tryAs(db, M, `select ${col} from public.record_relief_rules limit 1`);
+    ok(r.error && /permission denied/i.test(r.error), `${col} is also rejected: ` + JSON.stringify(r));
+  }
+  // the same public reference columns members actually need still work fine
+  const ok1 = must(await tryAs(db, M, `select title, summary, source_url from public.record_relief_rules where jurisdiction_code = 'TEST-A' limit 1`), 'legitimate columns still readable');
+  ok(ok1.length >= 0, 'legitimate public columns are unaffected by the fix');
+
+  // the RPC path fixed earlier this pass stays fixed: a member cannot call the internal function directly either
+  const rpcAttempt = await tryAs(db, M, `select * from public.record_relief_active_rules('TEST-A')`);
+  ok(rpcAttempt.error && /permission denied/i.test(rpcAttempt.error), 'record_relief_active_rules is still not directly callable by a member: ' + JSON.stringify(rpcAttempt));
+});
+
 await test('validation: bad jurisdiction, oversize input, case limit, and deleting a member removes everything', async () => {
   denied(await save(M, { jurisdiction_code: 'ZZ-NOPE' }), 'INVALID_JURISDICTION', 'jurisdiction');
   denied(await save(M, { conviction_date: '1850-01-01' }), 'violates check', 'date range');
