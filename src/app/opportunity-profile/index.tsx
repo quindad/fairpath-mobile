@@ -21,7 +21,7 @@ export default function OpportunityProfileHub() {
       .then(setSections)
       .catch((e) => {
         if (e instanceof Error && e.message.includes('SIGNED_OUT')) router.replace(('/sign-in?returnTo=' + encodeURIComponent('/opportunity-profile')) as never);
-        else setError(profileErrorMessage(e));
+        else { setSections(null); setError(profileErrorMessage(e)); }
       });
   }, []);
   useFocusEffect(load);

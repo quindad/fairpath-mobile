@@ -17,6 +17,7 @@ const checks = [
   ['src/app/home.tsx', /catch\(\(\)=>\{if\(active\)\{setFeatured\(\[\]\);setJobsState\('error'\)\}\}\)/],
   ['src/app/me.tsx', /catch\(\(\) => \{ setSummary\(null\); setError\(/],
   ['src/app/saved-resources.tsx', /setRows\(\[\]\);\s*setError\('We could not load your resources/],
+  ['src/app/opportunity-profile/index.tsx', /setSections\(null\); setError\(profileErrorMessage\(e\)\)/],
 ];
 
 const failures = [];
