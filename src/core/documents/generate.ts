@@ -51,10 +51,23 @@ export async function buildSpec(type: RenderableType, profileOptions: Opportunit
   return buildRequiredDocumentsChecklist(resources);
 }
 
+// Documents' readiness check calls readinessFor() once per RENDERABLE type in parallel, and 3 of the 4 types
+// resolve to the identical question ("does this member have any saved resources?"). Without this, that's 3
+// separate network round-trips for the same data in a single screen load. Deduplicated here (not at the call
+// site) so every caller benefits automatically: concurrent calls within one "batch" share a single in-flight
+// request; the cache clears once it resolves, so a later, separate load() still gets fresh data.
+let savedResourceDetailsInFlight: ReturnType<typeof loadSavedResourceDetails> | null = null;
+function loadSavedResourceDetailsDeduped() {
+  if (!savedResourceDetailsInFlight) {
+    savedResourceDetailsInFlight = loadSavedResourceDetails().finally(() => { savedResourceDetailsInFlight = null; });
+  }
+  return savedResourceDetailsInFlight;
+}
+
 /** Can this document be produced right now? Reasons are shown to the member; nothing is faked as ready. */
 export async function readinessFor(type: RenderableType): Promise<{ ready: boolean; reason: string }> {
   if (type === 'opportunity_profile') return profileExportReady(await loadProfileForDocument());
-  const details = await loadSavedResourceDetails();
+  const details = await loadSavedResourceDetailsDeduped();
   return details.length ? { ready: true, reason: '' } : { ready: false, reason: 'Save at least one resource first.' };
 }
 
