@@ -134,7 +134,10 @@ export default function ReliefCaseScreen() {
             {detail.pathways.map((p) => (
               <Panel key={p.title}>
                 <Text style={s.ruleTitle}>{p.title}</Text>{p.data_origin === 'dev_fixture' ? <InlineBadge>TEST DATA</InlineBadge> : null}
-                <BodyText>{p.description}</BodyText><BodyText muted>{p.citation_text} · last verified {p.last_verified_at ?? 'unknown'}</BodyText>
+                <BodyText>{p.description}</BodyText>
+                {p.effect_summary ? <BodyText muted>What this actually does: {p.effect_summary}</BodyText> : null}
+                {p.rights_not_restored ? <BodyText muted>What this does NOT do: {p.rights_not_restored}</BodyText> : null}
+                <BodyText muted>{p.citation_text} · last verified {p.last_verified_at ?? 'unknown'}</BodyText>
                 <TextButton label="OPEN THE SOURCE" onPress={() => openLink(p.source_url)} />
               </Panel>
             ))}

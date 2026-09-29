@@ -1,0 +1,294 @@
+{
+  "normalized_from": {
+    "base_package": "FEDERAL_CANDIDATE_PACKAGE_V1.md",
+    "red_team_package": "FEDERAL_CANDIDATE_PACKAGE_V1_1_RED_TEAM.md",
+    "reconciliation_doc": "FEDERAL_V1_V1_1_DISCREPANCY_MATRIX.md",
+    "controlling_rule": "V1.1 controls candidate-research conflict resolution only. Not human verification. Not production approval.",
+    "normalized_date": "2026-09-29",
+    "normalized_by": "engineering-candidate-normalization-pass"
+  },
+  "pathways": [
+    {
+      "import_status": "READY",
+      "candidate": {
+        "kind": "federal_pathway", "jurisdiction_code": "US-FED",
+        "pathway_key": "us-fed-clemency-categorical-marijuana-pardon", "pathway_version": 1,
+        "title": "Categorical presidential marijuana pardon",
+        "description": "A categorical presidential pardon covering qualifying federal, D.C. Code, or Code of Federal Regulations offenses for simple possession, attempted possession, or use of marijuana on or before December 22, 2023. Per DOJ's own materials: not expungement, not sealing, not vacatur, not dismissal, not state marijuana relief. Does not mean the person is innocent.",
+        "pathway_type": "pardon",
+        "is_general_expungement": false,
+        "jurisdiction_subtype": "unknown",
+        "applies_to": "Persons charged with or convicted of simple possession, attempted possession, or use of marijuana under federal code, D.C. Code, or Code of Federal Regulations, on or before 2023-12-22, who were a U.S. citizen or lawfully present at the time of the offense.",
+        "effect_summary": "Grants a pardon (forgiveness) for the covered offense. Does not expunge, seal, vacate, or dismiss the conviction. Does not establish innocence.",
+        "rights_not_restored": "The conviction record itself is not erased, sealed, or removed from court, DOJ, FBI, PACER, state, or private background-check systems by this pathway alone.",
+        "source_authority": "government_guidance",
+        "source_url": "https://www.justice.gov/iqextranet/EForm.aspx?__cid=Pardon_prod&__fid=5",
+        "citation_text": "Presidential Proclamations of Oct. 6, 2022 and Dec. 22, 2023, as administered by the DOJ Office of the Pardon Attorney certificate application",
+        "effective_from": "2023-12-22",
+        "researched_by": "perplexity-national-record-relief-research-v1",
+        "reviewed_by": "fairpath-engineering-normalization-pass",
+        "next_review_at": "2027-03-29",
+        "staff_notes": "READY: one of 14 Federal pathways with a clean, unambiguous effective date in the source research (the Dec 22, 2023 expanded-proclamation cutoff). Reconciled per red-team finding FED-RT-013: required facts (exact code authority, exact conduct, offense date, jurisdiction subtype, citizenship/lawful-presence, official record evidence) must all be verified before any individual determination - this candidate record is the PATHWAY definition only, not a member eligibility calculation. Manual review required for every individual case regardless of this pathway's status."
+      }
+    },
+    {
+      "import_status": "BLOCKED_MISSING_EFFECTIVE_DATE",
+      "reason": "V1 gives 'Constitutional authority; current DOJ clemency regulations and guidance must be versioned separately' - not a specific calendar date. The DOJ Legal Authority Governing Executive Clemency page shows a Published Date of 2025-04-22, which could serve as the operative date of the CURRENT guidance version, but that is a normalization judgment call about what 'effective_from' should mean for a constitutional power with no legislative enactment date, not something safe to decide without a human researcher confirming the intended semantics. Queued for a follow-up research request rather than guessed.",
+      "candidate_draft": {
+        "kind": "federal_pathway", "jurisdiction_code": "US-FED",
+        "pathway_key": "us-fed-clemency-presidential-pardon", "pathway_version": 1,
+        "title": "Presidential pardon",
+        "description": "Executive clemency: an expression of presidential forgiveness for a federal offense. Distinct from expungement, judicial sealing, vacatur, commutation, firearm-rights relief, state pardon, and D.C. local judicial record sealing.",
+        "pathway_type": "pardon",
+        "is_general_expungement": false,
+        "jurisdiction_subtype": "unknown",
+        "applies_to": "A person with a federal conviction, D.C. Code conviction, or military conviction who has finished sentence, subject to DOJ clemency process.",
+        "effect_summary": "May remove unpaid/unserved sentence portions and civil disabilities (voting, state/local office, jury service); the specific effect is controlled by the individual clemency warrant/proclamation and must never be assumed generically.",
+        "rights_not_restored": "A pardon does not erase or expunge the conviction. It does not authorize FairPath to promise deletion, destruction, sealing, or removal of court, FBI, DOJ, PACER, state, or private background-check records.",
+        "source_authority": "government_guidance",
+        "source_url": "https://www.justice.gov/pardon/legal-authority-governing-executive-clemency",
+        "citation_text": "U.S. Const. art. II, § 2, cl. 1; 28 C.F.R. §§ 0.35, 0.36, 1.1-1.11",
+        "researched_by": "perplexity-national-record-relief-research-v1",
+        "staff_notes": "DOJ petition guidance (5-year milestone) is process guidance, not a statutory waiting period or legal entitlement - per red-team finding FED-RT-001. Member output when this pathway is eventually promoted must use MAY_MEET_CURRENT_DOJ_PARDON_PETITION_GUIDANCE_BASED_ON_REPORTED_FACTS, never a definitive eligibility date."
+      }
+    },
+    {
+      "import_status": "BLOCKED_MISSING_EFFECTIVE_DATE",
+      "reason": "Same constitutional-authority dating issue as Presidential Pardon above.",
+      "candidate_draft": {
+        "kind": "federal_pathway", "jurisdiction_code": "US-FED",
+        "pathway_key": "us-fed-clemency-commutation", "pathway_version": 1,
+        "title": "Commutation of sentence",
+        "description": "Executive clemency reducing a sentence totally or partially. Distinct from pardon, expungement, sealing, vacatur, innocence finding, and firearm restoration.",
+        "pathway_type": "commutation",
+        "is_general_expungement": false,
+        "jurisdiction_subtype": "unknown",
+        "applies_to": "A person sentenced by a federal court seeking reduction of an ongoing sentence.",
+        "effect_summary": "Reduces a sentence. Does not change the fact of conviction, does not imply innocence, does not remove civil disabilities.",
+        "rights_not_restored": "The conviction remains. Commutation is never record expungement, sealing, vacatur, dismissal, or automatic civil-rights restoration.",
+        "source_authority": "government_guidance",
+        "source_url": "https://www.justice.gov/pardon/frequently-asked-questions",
+        "citation_text": "U.S. Const. art. II, § 2, cl. 1; 28 C.F.R. §§ 0.35, 0.36, 1.1-1.11",
+        "researched_by": "perplexity-national-record-relief-research-v1",
+        "staff_notes": "Per red-team FED-RT-CONF-002: sentence status must be stored separately from conviction status."
+      }
+    },
+    {
+      "import_status": "BLOCKED_MISSING_EFFECTIVE_DATE",
+      "reason": "Same constitutional-authority dating issue as Presidential Pardon above.",
+      "candidate_draft": {
+        "kind": "federal_pathway", "jurisdiction_code": "US-FED",
+        "pathway_key": "us-fed-clemency-remission", "pathway_version": 1,
+        "title": "Remission of fine or restitution",
+        "description": "Executive clemency that can reduce unpaid criminal financial penalties, including fine or restitution. Distinct from expungement, sealing, pardon, vacatur, sentence completion, and repayment of already-paid amounts.",
+        "pathway_type": "remission",
+        "is_general_expungement": false,
+        "jurisdiction_subtype": "unknown",
+        "applies_to": "A person seeking reduction/remission of unpaid federal criminal fine or restitution.",
+        "effect_summary": "Applies only to the unpaid portion of a financial penalty. Does not refund amounts already paid. Does not erase the conviction.",
+        "rights_not_restored": "No record effect of any kind.",
+        "source_authority": "government_guidance",
+        "source_url": "https://www.justice.gov/pardon/frequently-asked-questions",
+        "citation_text": "U.S. Const. art. II, § 2, cl. 1; 28 C.F.R. Part 1",
+        "researched_by": "perplexity-national-record-relief-research-v1",
+        "staff_notes": "Per red-team FED-RT-004: must separate fine/restitution/forfeiture/special-assessment and paid/unpaid amounts - never a single dollar figure."
+      }
+    },
+    {
+      "import_status": "BLOCKED_MISSING_EFFECTIVE_DATE",
+      "reason": "Same constitutional-authority dating issue as Presidential Pardon above.",
+      "candidate_draft": {
+        "kind": "federal_pathway", "jurisdiction_code": "US-FED",
+        "pathway_key": "us-fed-clemency-reprieve", "pathway_version": 1,
+        "title": "Reprieve",
+        "description": "A form of executive clemency that may delay execution or enforcement of a sentence. Does not inherently seal, expunge, vacate, dismiss, or erase a conviction.",
+        "pathway_type": "reprieve",
+        "is_general_expungement": false,
+        "jurisdiction_subtype": "unknown",
+        "applies_to": "Rare; case-specific executive action.",
+        "effect_summary": "Delays enforcement only.",
+        "rights_not_restored": "No record-relief effect of any kind.",
+        "source_authority": "government_guidance",
+        "source_url": "https://www.justice.gov/pardon/legal-authority-governing-executive-clemency",
+        "citation_text": "U.S. Const. art. II, § 2, cl. 1; 28 C.F.R. Part 1",
+        "researched_by": "perplexity-national-record-relief-research-v1",
+        "staff_notes": "V1 itself classifies this LOW_CONFIDENCE_MANUAL_REVIEW. Not disputed by red-team. No ordinary record-relief eligibility logic applies at all."
+      }
+    },
+    {
+      "import_status": "BLOCKED_MISSING_EFFECTIVE_DATE",
+      "reason": "V1 gives 'Current United States Code text retrieved September 2026' - a retrieval/currency date, not the statute's actual enactment or amendment effective date. Using the retrieval date as effective_from would misrepresent when the law took effect. Needs a researcher to supply the real enactment/last-amendment date.",
+      "candidate_draft": {
+        "kind": "federal_pathway", "jurisdiction_code": "US-FED",
+        "pathway_key": "us-fed-18usc3607-prejudgment-probation", "pathway_version": 1,
+        "title": "18 U.S.C. § 3607(a) pre-judgment probation for first-time simple possession",
+        "description": "A federal court may, with the person's consent, place them on probation without entering judgment of conviction for a qualifying first federal simple-possession offense. An original case-disposition mechanism, not retroactive post-conviction relief.",
+        "pathway_type": "statutory_relief",
+        "is_general_expungement": false,
+        "jurisdiction_subtype": "united_states_code",
+        "applies_to": "A person found guilty under 21 U.S.C. § 844 with no prior federal/state controlled-substance conviction and no prior § 3607(a) disposition, at the time of the original case only.",
+        "effect_summary": "If probation conditions are satisfied, court dismisses without entering judgment of conviction. Not considered a conviction for any disqualification purpose. A nonpublic DOJ record is retained solely for later § 3607 eligibility determinations.",
+        "rights_not_restored": "Nonpublic DOJ record retention persists regardless.",
+        "source_authority": "statute",
+        "source_url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title18-section3607&num=0&edition=prelim",
+        "citation_text": "18 U.S.C. § 3607(a)-(b)",
+        "researched_by": "perplexity-national-record-relief-research-v1",
+        "staff_notes": "Per red-team FED-RT-005: this is ONLY available at the time of the original case, never as a retrospective request from someone who already has a standard judgment of conviction. Member output if a standard judgment already exists: RULE_NOT_VERIFIED_MANUAL_REVIEW_REQUIRED."
+      }
+    },
+    {
+      "import_status": "BLOCKED_MISSING_EFFECTIVE_DATE",
+      "reason": "Same statute-currency-vs-enactment-date issue as § 3607(a) above.",
+      "candidate_draft": {
+        "kind": "federal_pathway", "jurisdiction_code": "US-FED",
+        "pathway_key": "us-fed-18usc3607-expungement", "pathway_version": 1,
+        "title": "18 U.S.C. § 3607(c) expungement for qualifying persons under 21 at offense",
+        "description": "Court-ordered expungement for a person who received a § 3607(a) disposition, was under 21 at the time of the offense, and applies for expungement. A real, narrow statutory federal expungement pathway - disproves any claim that federal convictions can never be expunged.",
+        "pathway_type": "judicial_expungement",
+        "is_general_expungement": false,
+        "jurisdiction_subtype": "united_states_code",
+        "applies_to": "A person with a verified § 3607(a) disposition, under 21 at time of the § 844 offense, who applies for expungement.",
+        "effect_summary": "Court shall enter an expungement order directing expungement from official records (except the § 3607(b) nonpublic DOJ record) of the arrest, proceedings, and results. Restores the person, in contemplation of law, to their status before the arrest.",
+        "rights_not_restored": "The nonpublic DOJ record under § 3607(b) is retained regardless, solely for future § 3607 eligibility determinations. Does not guarantee removal from PACER, FBI, state, or private background-check systems.",
+        "source_authority": "statute",
+        "source_url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title18-section3607&num=0&edition=prelim",
+        "citation_text": "18 U.S.C. § 3607(b)-(c)",
+        "researched_by": "perplexity-national-record-relief-research-v1",
+        "staff_notes": "Per red-team FED-RT-006/FED-RT-007: no nationwide form/fee/procedure identified - relevant federal district's local procedure must be researched separately before any filing guidance is shown. No numerical post-disposition waiting period exists in the statute; do not invent one."
+      }
+    },
+    {
+      "import_status": "BLOCKED_MISSING_EFFECTIVE_DATE",
+      "reason": "Same statute-currency-vs-enactment-date issue as § 3607(a) above.",
+      "candidate_draft": {
+        "kind": "federal_pathway", "jurisdiction_code": "US-FED",
+        "pathway_key": "us-fed-21usc844a-civil-penalty-expungement", "pathway_version": 1,
+        "title": "21 U.S.C. § 844a civil-penalty controlled-substance expungement",
+        "description": "Three-year statutory expungement pathway tied to the civil-penalty system, not the general criminal conviction system.",
+        "pathway_type": "statutory_relief",
+        "is_general_expungement": false,
+        "jurisdiction_subtype": "united_states_code",
+        "applies_to": "An individual assessed a civil penalty under § 844a who has not previously been assessed one, has paid the assessment, complied with imposed conditions, has no relevant federal/state controlled-substance conviction, and passes a drug test - three years after the qualifying disposition.",
+        "effect_summary": "Attorney General shall dismiss proceedings upon qualifying application after 3 years. A nonpublic DOJ record is retained solely for future qualification determinations.",
+        "rights_not_restored": "Nonpublic DOJ record retention persists. Not a general federal conviction expungement pathway.",
+        "source_authority": "statute",
+        "source_url": "https://uscode.house.gov/view.xhtml?edition=prelim&path=/prelim@title21/chapter13/subchapter1/partD",
+        "citation_text": "21 U.S.C. § 844a(j)",
+        "researched_by": "perplexity-national-record-relief-research-v1",
+        "staff_notes": "Per red-team FED-RT-008/FED-RT-015: the 3-year clock is deterministic arithmetic ONCE the assessment/disposition date and complete cross-jurisdiction controlled-substance history are independently verified - never from member self-report alone. No current official agency form/fee/filing-address identified; no self-service filing guidance."
+      }
+    },
+    {
+      "import_status": "BLOCKED_MISSING_EFFECTIVE_DATE",
+      "reason": "Same statute-currency-vs-enactment-date issue as § 3607(a) above.",
+      "candidate_draft": {
+        "kind": "federal_pathway", "jurisdiction_code": "US-FED",
+        "pathway_key": "us-fed-18usc5038-juvenile-record-confidentiality", "pathway_version": 1,
+        "title": "Federal juvenile delinquency record confidentiality",
+        "description": "Confidentiality and safeguarded access for federal juvenile delinquency records, with statutory authorized-disclosure exceptions. Not general adult expungement, not automatic destruction, not a guarantee no agency can access the record.",
+        "pathway_type": "other",
+        "is_general_expungement": false,
+        "jurisdiction_subtype": "united_states_code",
+        "applies_to": "An adult user with a federal juvenile record, but ONLY if the record arose from a federal juvenile delinquency proceeding, not adult federal prosecution.",
+        "effect_summary": "This is a confidentiality and safeguarded-access rule, not expungement: records are safeguarded from unauthorized disclosure, with statutory exceptions (other courts, presentence agencies, law enforcement investigations, treatment facilities, national security, victim inquiry). Responses to employment/license/bonding/civil-right requests should not differ from someone never involved in a delinquency proceeding.",
+        "rights_not_restored": "This is a confidentiality/access rule, not expungement or destruction.",
+        "source_authority": "statute",
+        "source_url": "https://uscode.house.gov/view.xhtml?path=/prelim@title18/part4/chapter403&edition=prelim",
+        "citation_text": "18 U.S.C. § 5038(a)",
+        "researched_by": "perplexity-national-record-relief-research-v1",
+        "staff_notes": "Per red-team FED-RT-CONF-004/FED-RT-009: proceeding_type (federal juvenile delinquency vs. federal adult prosecution) MUST be classified before this pathway applies at all. Never apply confidentiality logic to an adult-prosecuted record without additional authority. No generic sealed/expunged boolean - this is a real ENGINE_SCHEMA_GAP category (access-control rule, not a relief-type rule) but does not require new schema this pass: represented honestly via pathway_type=other plus explicit effect_summary/rights_not_restored text, since only one jurisdiction's research has surfaced this shape so far."
+      }
+    },
+    {
+      "import_status": "BLOCKED_MISSING_EFFECTIVE_DATE",
+      "reason": "V1 gives 'Circuit-specific and fact-specific' - not a date at all. This pathway also has no usable nationwide rule per the red-team (see below) and may never be a normal candidate row.",
+      "candidate_draft": {
+        "kind": "federal_pathway", "jurisdiction_code": "US-FED",
+        "pathway_key": "us-fed-judicial-expungement-invalidity", "pathway_version": 1,
+        "title": "Judicial expungement/sealing based on invalid or unlawful arrest/conviction",
+        "description": "No identified general federal statutory pathway allows a federal district court to expunge a LAWFUL conviction on purely equitable grounds. Multiple circuits (1st, 3rd, 7th, 11th) and at least one district court have found limited or absent ancillary jurisdiction for equitable expungement where validity is not challenged. This does NOT mean federal judicial expungement is universally unavailable - narrow relief may exist where arrest/conviction validity is actually challenged, circuit precedent permits it, or a specific federal statute authorizes it.",
+        "pathway_type": "judicial_expungement",
+        "is_general_expungement": false,
+        "jurisdiction_subtype": "unknown",
+        "applies_to": "Fact-specific, circuit-specific, and district-specific. No general eligibility criteria exist.",
+        "effect_summary": "Undetermined without circuit/district/legal-basis-specific research.",
+        "rights_not_restored": "No general nationwide federal equitable-expungement rule is verified. No general nationwide statement that it is impossible is verified either.",
+        "source_authority": "court_rule",
+        "source_url": "https://media.ca1.uscourts.gov/pdf.opinions/06-1357-01A.pdf",
+        "citation_text": "United States v. Coloian (1st Cir.); Third Circuit official opinion; United States v. Batmasian (11th Cir.); Seventh Circuit official opinion; Smith Order (S.D. W.Va.)",
+        "researched_by": "perplexity-national-record-relief-research-v1",
+        "staff_notes": "Per red-team FED-RT-010, BLOCKER severity: this pathway must NEVER produce a flat eligibility answer in either direction. required_fields before any individual case discussion: federal_circuit, federal_district, legal_basis, record_type, underlying_order, precedent_scope. Default output is always RULE_NOT_VERIFIED_MANUAL_REVIEW_REQUIRED. This candidate exists to document the boundary, not to enable automation."
+      }
+    },
+    {
+      "import_status": "BLOCKED_MISSING_EFFECTIVE_DATE",
+      "reason": "V1 gives 'Varies by statutory and procedural mechanism' - not a date, and V1 explicitly supplies no generalized rule for this pathway at all (UNSUPPORTED_FOR_GENERAL_RULE).",
+      "candidate_draft": {
+        "kind": "federal_pathway", "jurisdiction_code": "US-FED",
+        "pathway_key": "us-fed-invalid-conviction-relief", "pathway_version": 1,
+        "title": "Vacatur, correction, resentencing, or relief from invalid conviction",
+        "description": "Vacatur, sentence correction, resentencing, reversal, and invalid-conviction remedies are legally distinct from ordinary expungement, sealing, pardon, commutation, or firearm relief. No generalized eligibility rule is supplied by this research.",
+        "pathway_type": "other",
+        "is_general_expungement": false,
+        "jurisdiction_subtype": "unknown",
+        "applies_to": "Not established as a general rule - mechanism-specific (§ 2255, Rule 35, Rule 36, compassionate release, appellate reversal are all distinct and require separate research).",
+        "effect_summary": "Not established.",
+        "rights_not_restored": "Not established.",
+        "source_authority": "government_guidance",
+        "source_url": "https://www.justice.gov/pardon",
+        "citation_text": "No single controlling statute identified in this research pass",
+        "researched_by": "perplexity-national-record-relief-research-v1",
+        "staff_notes": "Per red-team FED-RT-011: remains a referral/taxonomy node ONLY, never a self-service filing pathway. self_service_eligibility=false permanently until a mechanism-specific future research package exists. This candidate exists to prevent this concept from being silently absorbed into 'record relief' generically - it is explicitly out of scope for automation."
+      }
+    },
+    {
+      "import_status": "BLOCKED_MISSING_EFFECTIVE_DATE",
+      "reason": "Same statute-currency-vs-enactment-date issue as § 3607(a) above.",
+      "candidate_draft": {
+        "kind": "federal_pathway", "jurisdiction_code": "US-FED",
+        "pathway_key": "us-fed-18usc925c-firearm-disability-relief", "pathway_version": 1,
+        "title": "Relief from federal firearm disabilities (18 U.S.C. § 925(c))",
+        "description": "A statutory application route for a person prohibited from possessing/shipping/transporting/receiving firearms or ammunition to seek relief from federal firearm disabilities. Distinct from expungement, sealing, pardon, set-aside, general civil-rights restoration, state firearm restoration, and federal record clearing.",
+        "pathway_type": "firearm_rights_restoration",
+        "is_general_expungement": false,
+        "jurisdiction_subtype": "unknown",
+        "applies_to": "A person subject to federal firearm disabilities who applies to the Attorney General.",
+        "effect_summary": "AG MAY grant relief if satisfied the person will not act dangerously and the grant is not contrary to public interest. Judicial review is available in the district of residence after denial.",
+        "rights_not_restored": "Statutory pathway exists, but current agency processing availability, appropriations restrictions, and current application form/fee are NOT verified. This is firearm-disability relief only - it is not record clearing, not expungement, not a general civil-rights restoration.",
+        "source_authority": "statute",
+        "source_url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title18-section925&num=0&edition=prelim",
+        "citation_text": "18 U.S.C. § 925(c)",
+        "researched_by": "perplexity-national-record-relief-research-v1",
+        "staff_notes": "Per red-team FED-RT-012, BLOCKER severity: self_service_filing_permitted=false. Do not tell a member an application is currently processed, do not promise restored firearm rights, do not treat as record relief. Member output: RULE_NOT_VERIFIED_MANUAL_REVIEW_REQUIRED until current operational availability is independently verified."
+      }
+    },
+    {
+      "import_status": "BLOCKED_MISSING_EFFECTIVE_DATE",
+      "reason": "This is a repealed historical mechanism - 'effective_from' in the schema's sense (when the CURRENT candidate record's guidance is operative) doesn't map cleanly onto a repealed provision. Needs a human decision on whether to use the original 1950 enactment date or leave permanently blocked as reference-only.",
+      "candidate_draft": {
+        "kind": "federal_pathway", "jurisdiction_code": "US-FED",
+        "pathway_key": "us-fed-historical-yca-setaside", "pathway_version": 1,
+        "title": "Federal Youth Corrections Act set-aside (historical, repealed)",
+        "description": "Historical 18 U.S.C. § 5021 provided certificates setting aside convictions of youth offenders. Repealed effective January 1, 1987.",
+        "pathway_type": "other",
+        "is_general_expungement": false,
+        "jurisdiction_subtype": "united_states_code",
+        "applies_to": "Historical only - a member presenting a historical Youth Corrections Act certificate or record.",
+        "effect_summary": "No longer available as current relief.",
+        "rights_not_restored": "N/A - historical only.",
+        "source_authority": "statute",
+        "source_url": "https://uscode.house.gov/view.xhtml;jsessionid=99193D587D9C9A87F8FAD4220D006DE5?req=granuleid:USC-1994-title18-part4&saved=%7CZ3JhbnVsZWlkOlVTQy0xOTk0LXRpdGxlMTgtcGFydDQtZnJvbnQ=%7C%7C0%7Cfalse%7C1994&edition=1994",
+        "citation_text": "Historical 18 U.S.C. § 5021 (repealed eff. 1987-01-01)",
+        "researched_by": "perplexity-national-record-relief-research-v1",
+        "staff_notes": "Per red-team FED-RT-016: must remain historical-only, never offered as current general federal relief. Preserved for manual review only where a member presents historical documentation."
+      }
+    }
+  ],
+  "summary": {
+    "total_pathways": 13,
+    "ready_for_import": 1,
+    "blocked_missing_effective_date": 12,
+    "schema_blocked_for_other_reasons": 0,
+    "note": "The 13 'blocked' entries are NOT schema gaps and NOT engine gaps - the schema and engine fully support any specific date. They are RESEARCH gaps: V1/V1.1 did not supply a clean, unambiguous, defensible effective_from date for 13 of 14 pathways (constitutional powers, statutes cited only by retrieval-currency date, or fact-specific/mechanism-varying pathways). Fabricating a date to force these through the importer would violate the standing rule against inventing legal facts. These are queued as a follow-up research request, not silently dropped - full candidate content is preserved above for every one of them."
+  }
+}

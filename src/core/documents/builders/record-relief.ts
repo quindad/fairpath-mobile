@@ -23,7 +23,7 @@ export type ReliefEvaluationForDoc = {
 };
 export type ReliefFormForDoc = { form_key: string; name: string; kind: string; revision: string | null; effective_date: string | null; official_source_url: string | null; last_verified_at: string | null; auto_fillable: boolean; data_origin: string };
 export type ReliefDetailForDoc = {
-  evaluations: ReliefEvaluationForDoc[]; forms: ReliefFormForDoc[]; pathways: { title: string; description: string; source_url: string; citation_text: string; last_verified_at: string | null; data_origin: string }[];
+  evaluations: ReliefEvaluationForDoc[]; forms: ReliefFormForDoc[]; pathways: { title: string; description: string; source_url: string; citation_text: string; last_verified_at: string | null; data_origin: string; jurisdiction_subtype?: string; pathway_type?: string; effect_summary?: string | null; rights_not_restored?: string | null }[];
   checklist: { kind: string; key: string; done: boolean }[];
 };
 
@@ -86,7 +86,7 @@ export function buildCaseSummary(c: ReliefCaseForDoc, d: ReliefDetailForDoc, now
   }
   if (d.pathways.length) {
     blocks.push({ type: 'heading', text: 'Federal pathways listed by FairPath', level: 2 }, { type: 'notice', tone: 'info', text: 'These are not state expungement. None of them is a general federal expungement.' });
-    for (const p of d.pathways) blocks.push({ type: 'paragraph', text: `${p.title}${test(p.data_origin)}: ${p.description} Source: ${p.citation_text} (${p.source_url}). Last verified ${p.last_verified_at ?? 'unknown'}.` });
+    for (const p of d.pathways) blocks.push({ type: 'paragraph', text: `${p.title}${test(p.data_origin)}: ${p.description}${p.effect_summary ? ` What this actually does: ${p.effect_summary}` : ''}${p.rights_not_restored ? ` What this does NOT do: ${p.rights_not_restored}` : ''} Source: ${p.citation_text} (${p.source_url}). Last verified ${p.last_verified_at ?? 'unknown'}.` });
   }
   blocks.push({ type: 'heading', text: 'Filing status you entered', level: 2 }, { type: 'keyvalue', items: [{ label: 'Status', value: c.filing_status.replace(/_/g, ' ') }, { label: 'Filed on', value: dt(c.filed_on) }] });
   return base('record_relief_case_summary', 'Record Relief Case Summary', 'Record relief case summary', c, blocks,
