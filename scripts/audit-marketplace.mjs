@@ -40,5 +40,13 @@ if(!service.includes("send_marketplace_pickup_message"))failures.push('Donor pic
 if(!service.includes("status:'draft'"))failures.push('New Marketplace listings must start as private drafts before publish.');
 if(!read('src/app/marketplace-list-item.tsx').includes('setMarketplaceItemAvailability(itemId,true)'))failures.push('Listing create flow does not explicitly publish after media upload.');
 
+// Regression: same fix/finding as Jobs/Housing/Resources - a failed fresh search must clear items before setting
+// the error, never leave a prior successful search's results rendered under a fresh error banner.
+{
+  const browseSrc=read('src/app/marketplace.tsx');
+  const runCatch=(browseSrc.match(/catch\{[\s\S]*?setLoading\(false\)\}/)||[''])[0];
+  if(!/catch\{[\s\S]*?setItems\(\[\]\)[\s\S]*?setError\(/.test(runCatch))failures.push('a failed fresh marketplace search must clear items before setting the error, not leave stale results visible under it');
+}
+
 if(failures.length){console.error('Marketplace audit failed:\n- '+failures.join('\n- '));process.exit(1)}
 console.log('Marketplace audit passed: '+required.length+' critical files + Marketplace invariants checked.');

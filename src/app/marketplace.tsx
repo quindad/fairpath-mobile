@@ -38,7 +38,11 @@ export default function Marketplace(){
    setItems(rows);
    try{const ids=await loadSavedMarketplaceIds();setSaved(Object.fromEntries(ids.map(id=>[id,true])))}catch{}
    try{setQuota(await loadMarketplaceQuota())}catch{setQuota(null)}
-  }catch{setError('Marketplace could not load. Check your connection and try again.')}
+  }catch{
+   // Same fix as Jobs/Housing/Resources: never leave a prior successful search's results on screen next to a fresh error.
+   setItems([]);
+   setError('Marketplace could not load. Check your connection and try again.')
+  }
   finally{setLoading(false)}
  },[query,location,category,safeOnly,condition,sort]);
 
