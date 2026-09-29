@@ -1,0 +1,13 @@
+-- Security fix found while adding staff-only review metadata (20261003160000): record_relief_active_rules()
+-- returns `setof public.record_relief_rules` (the FULL row type) and was granted EXECUTE directly to
+-- `authenticated`, with no client code anywhere ever calling it (confirmed: every usage is internal, inside
+-- evaluate_record_relief_case() and its sibling SECURITY DEFINER functions in this same file). That grant meant
+-- ANY signed-in member could call `supabase.rpc('record_relief_active_rules', {p_jurisdiction: 'OH'})` directly
+-- and receive every column back, including the staff_notes column just added — internal research notes were
+-- never meant to be member-visible under any circumstance.
+--
+-- Revoking the authenticated grant. Internal callers (evaluate_record_relief_case and friends) are themselves
+-- SECURITY DEFINER and execute as their owner, which retains implicit privilege on functions it owns regardless
+-- of grants to authenticated — this does not change their behavior, only removes direct client access to the
+-- raw row type. Re-verified via the full Record Relief test suite and a live signed-in evaluation after applying.
+revoke execute on function public.record_relief_active_rules(text) from authenticated;
