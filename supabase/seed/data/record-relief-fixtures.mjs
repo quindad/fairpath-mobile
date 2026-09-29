@@ -16,7 +16,7 @@ export const RULE_DEFAULTS = {
   court_discretion: false,
 };
 export const FORM_DEFAULTS = { revision: null, effective_date: null, official_source_url: null, last_verified_at: null, remedies: [], auto_fillable: false, field_map: null, status: 'draft' };
-export const PATHWAY_DEFAULTS = { pathway_version: 1, is_general_expungement: false, applies_to: null, last_verified_at: null, status: 'draft', pathway_type: 'other', effect_summary: null, rights_not_restored: null };
+export const PATHWAY_DEFAULTS = { pathway_version: 1, is_general_expungement: false, applies_to: null, last_verified_at: null, status: 'draft', pathway_type: 'other', effect_summary: null, rights_not_restored: null, jurisdiction_subtype: 'unknown' };
 export const JURISDICTION_DEFAULTS = { sort_order: 100 };
 const complete = (defaults, rows) => rows.map((r) => ({ ...defaults, ...r }));
 
@@ -72,13 +72,13 @@ export function buildRecordReliefFixtures(now = new Date()) {
 
   const pathways = [
     { pathway_key: 'test-fed-pardon', pathway_version: 1, title: 'Presidential pardon (TEST)', description: 'TEST entry: a discretionary executive process. It does not erase a conviction. Not real guidance.', is_general_expungement: false,
-      pathway_type: 'pardon', effect_summary: 'TEST: forgives the offense and restores certain civil rights; does not erase or seal the record.', rights_not_restored: 'TEST: the conviction record itself is not erased or sealed.',
+      pathway_type: 'pardon', effect_summary: 'TEST: forgives the offense and restores certain civil rights; does not erase or seal the record.', rights_not_restored: 'TEST: the conviction record itself is not erased or sealed.', jurisdiction_subtype: 'united_states_code',
       applies_to: 'Federal convictions', source_authority: 'test_fixture', source_url: 'https://law.example.test/fed/pardon', citation_text: 'TEST-FED 1 (not real law)', effective_from: '2024-01-01', last_verified_at: daysAgo(now, 30), status: 'verified', ...fx },
     { pathway_key: 'test-fed-youth-set-aside', pathway_version: 1, title: 'Youth offender set-aside (TEST)', description: 'TEST entry: narrow relief for certain offenses committed as a youth. Not real guidance.', is_general_expungement: false,
-      pathway_type: 'judicial_expungement', effect_summary: 'TEST: a court sets aside a qualifying youth conviction.', rights_not_restored: null,
+      pathway_type: 'judicial_expungement', effect_summary: 'TEST: a court sets aside a qualifying youth conviction.', rights_not_restored: null, jurisdiction_subtype: 'united_states_code',
       applies_to: 'Certain federal youth offenses', source_authority: 'test_fixture', source_url: 'https://law.example.test/fed/youth', citation_text: 'TEST-FED 2 (not real law)', effective_from: '2024-01-01', last_verified_at: daysAgo(now, 30), status: 'verified', ...fx },
     { pathway_key: 'test-fed-draft', pathway_version: 1, title: 'Unverified draft pathway (TEST)', description: 'Draft that must never be shown.', is_general_expungement: false,
-      pathway_type: 'other', effect_summary: null, rights_not_restored: null,
+      pathway_type: 'other', effect_summary: null, rights_not_restored: null, jurisdiction_subtype: 'unknown',
       applies_to: null, source_authority: 'test_fixture', source_url: 'https://law.example.test/fed/draft', citation_text: 'TEST-FED 3', effective_from: '2024-01-01', last_verified_at: null, status: 'draft', ...fx },
   ];
   return {

@@ -34,6 +34,21 @@ const FORM_ALL_FIELDS = new Set([
   'auto_fillable', 'field_map', 'data_origin', 'fixture_set',
 ]);
 
+// Federal pathways are structurally distinct from state rules (see docs/RECORD_RELIEF_NATIONWIDE_CAPABILITY_MATRIX.md
+// and the Federal red-team package): they never drive the deterministic waiting-period engine, they're purely
+// informational reference data. pathway_type/jurisdiction_subtype exist specifically so "pardon" never collapses
+// into "expungement" and "United States Code" never collapses into "D.C. Code."
+const PATHWAY_TYPES = ['pardon', 'commutation', 'remission', 'reprieve', 'judicial_expungement', 'statutory_relief', 'firearm_rights_restoration', 'other'];
+const JURISDICTION_SUBTYPES = ['united_states_code', 'district_of_columbia_code', 'code_of_federal_regulations', 'uniform_code_of_military_justice', 'unknown'];
+const PATHWAY_REQUIRED_FIELDS = [
+  'kind', 'jurisdiction_code', 'pathway_key', 'pathway_version', 'title', 'description', 'pathway_type',
+  'source_authority', 'source_url', 'citation_text', 'effective_from', 'researched_by',
+];
+const PATHWAY_ALL_FIELDS = new Set([
+  ...PATHWAY_REQUIRED_FIELDS, 'is_general_expungement', 'applies_to', 'jurisdiction_subtype', 'effect_summary',
+  'rights_not_restored', 'next_review_at', 'staff_notes', 'reviewed_by', 'data_origin', 'fixture_set',
+]);
+
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const isoDate = (v) => (typeof v === 'string' && ISO_DATE.test(v) && !Number.isNaN(Date.parse(v))) ? v : null;
 const subsetOf = (arr, allowed) => Array.isArray(arr) && arr.every((v) => allowed.includes(v));
@@ -48,7 +63,7 @@ export function validateCandidate(input) {
 
   if (input.kind === 'rule') return validateRule(input, report);
   if (input.kind === 'form') return validateForm(input, report);
-  if (input.kind === 'federal_pathway') { reject(report, 'kind', 'federal_pathway validation not yet implemented - reject rather than guess.'); return report; }
+  if (input.kind === 'federal_pathway') return validateFederalPathway(input, report);
   reject(report, 'kind', `Unknown kind "${input.kind}". Must be "rule", "form", or "federal_pathway".`);
   return report;
 }
@@ -143,6 +158,51 @@ function validateForm(input, report) {
   return report;
 }
 
+function validateFederalPathway(input, report) {
+  rejectUnknownFields(input, PATHWAY_ALL_FIELDS, report);
+  for (const f of PATHWAY_REQUIRED_FIELDS) if (input[f] === undefined || input[f] === null || input[f] === '') reject(report, f, `Required field "${f}" is missing.`);
+  if (report.status === 'REJECTED') return report;
+
+  const isTest = input.data_origin === 'dev_fixture';
+  if (!PATHWAY_TYPES.includes(input.pathway_type)) reject(report, 'pathway_type', `"${input.pathway_type}" is not a known pathway_type (${PATHWAY_TYPES.join(', ')}). Never default to "other" merely because the research didn't state one - if genuinely ambiguous, flag SCHEMA_LIMITATION.`);
+  if (input.jurisdiction_subtype !== undefined && !JURISDICTION_SUBTYPES.includes(input.jurisdiction_subtype)) reject(report, 'jurisdiction_subtype', `"${input.jurisdiction_subtype}" is not a known jurisdiction_subtype (${JURISDICTION_SUBTYPES.join(', ')}).`);
+  if (typeof input.title !== 'string' || input.title.trim().length < 3) reject(report, 'title', 'title must be at least 3 characters.');
+  if (typeof input.pathway_key !== 'string' || !/^[a-z0-9][a-z0-9-]{2,80}$/.test(input.pathway_key)) reject(report, 'pathway_key', 'pathway_key must match ^[a-z0-9][a-z0-9-]{2,80}$.');
+  if (typeof input.pathway_version !== 'number' || !Number.isInteger(input.pathway_version) || input.pathway_version < 1) reject(report, 'pathway_version', 'pathway_version must be a positive integer.');
+
+  if (!isTest) {
+    if (!input.source_url || typeof input.source_url !== 'string') reject(report, 'source_url', 'Official source URL is required for production candidate data.');
+    else {
+      let parsed = null;
+      try { parsed = new URL(input.source_url); } catch { /* invalid */ }
+      if (!parsed) reject(report, 'source_url', `"${input.source_url}" is not a well-formed URL.`);
+      else if (parsed.protocol !== 'https:') reject(report, 'source_url', 'source_url must be https://.');
+      else if (!/\.gov$/i.test(parsed.hostname) && !/courts?\./i.test(parsed.hostname)) reject(report, 'source_url', `"${parsed.hostname}" does not look like an official .gov or court domain.`);
+    }
+    if (!input.citation_text || typeof input.citation_text !== 'string' || !input.citation_text.trim()) reject(report, 'citation_text', 'citation_text is required for production candidate data.');
+  }
+  if (!SOURCE_AUTHORITIES.includes(input.source_authority)) reject(report, 'source_authority', `"${input.source_authority}" is not a known source_authority.`);
+
+  const from = isoDate(input.effective_from);
+  if (!from) reject(report, 'effective_from', `"${input.effective_from}" is not a valid ISO date (YYYY-MM-DD).`);
+  else {
+    const oneYearOut = new Date(); oneYearOut.setFullYear(oneYearOut.getFullYear() + 1);
+    if (new Date(from) > oneYearOut) reject(report, 'effective_from', 'effective_from is more than 1 year in the future - likely a data-entry error.');
+  }
+
+  // Pathway-specific dangerous-equivalence guard, directly from the Federal red-team package: a pardon/
+  // commutation/firearm-rights-restoration pathway must never carry is_general_expungement=true - that field
+  // means "this IS a general expungement mechanism," and collapsing distinct clemency concepts into it is
+  // exactly the failure mode the red-team named (PARDON = EXPUNGEMENT, COMMUTATION = RECORD CLEARING, etc.).
+  const NEVER_GENERAL_EXPUNGEMENT = ['pardon', 'commutation', 'remission', 'reprieve', 'firearm_rights_restoration'];
+  if (NEVER_GENERAL_EXPUNGEMENT.includes(input.pathway_type) && input.is_general_expungement === true) {
+    reject(report, 'is_general_expungement', `pathway_type "${input.pathway_type}" can never have is_general_expungement=true - that would collapse a legally distinct clemency mechanism into "this is an expungement," exactly the dangerous equivalence the candidate-data contract prohibits.`);
+  }
+  if (input.pathway_type !== 'other' && !input.effect_summary) warn(report, 'effect_summary', 'No effect_summary provided - members will see only a title/description with no explicit "what this does and does not do" statement.');
+
+  return report;
+}
+
 /** Database-dependent checks the pure validator above cannot do alone. db must expose db.query(sql, params). */
 export async function validateAgainstDb(db, input, report) {
   if (report.status === 'REJECTED') return report; // structural failure already fatal, don't run DB checks on garbage
@@ -170,6 +230,18 @@ export async function validateAgainstDb(db, input, report) {
   if (input.kind === 'form') {
     const jur = await db.query('select code from public.record_relief_jurisdictions where code = $1', [input.jurisdiction_code]);
     if (jur.rows.length === 0) reject(report, 'jurisdiction_code', `"${input.jurisdiction_code}" is not a known jurisdiction.`);
+  }
+  if (input.kind === 'federal_pathway') {
+    const jur = await db.query('select kind from public.record_relief_jurisdictions where code = $1', [input.jurisdiction_code]);
+    if (jur.rows.length === 0) { reject(report, 'jurisdiction_code', `"${input.jurisdiction_code}" is not a known jurisdiction.`); return report; }
+    const jurKind = jur.rows[0].kind;
+    const isTestImport = input.data_origin === 'dev_fixture';
+    if (isTestImport && jurKind !== 'test') reject(report, 'jurisdiction_code', `dev_fixture candidate data targets jurisdiction "${input.jurisdiction_code}" (kind=${jurKind}), which is not a TEST jurisdiction. TEST/real mismatch.`);
+    if (!isTestImport && jurKind === 'test') reject(report, 'jurisdiction_code', `Production candidate data targets a TEST jurisdiction ("${input.jurisdiction_code}"). TEST/real mismatch.`);
+    if (!isTestImport && jurKind !== 'federal') reject(report, 'jurisdiction_code', `federal_pathway candidates must target a jurisdiction of kind='federal' (got kind=${jurKind}). Federal pathways are never state rules.`);
+
+    const dup = await db.query('select 1 from public.record_relief_federal_pathways where pathway_key = $1 and pathway_version = $2', [input.pathway_key, input.pathway_version]);
+    if (dup.rows.length > 0) reject(report, 'pathway_version', `(${input.pathway_key}, v${input.pathway_version}) already exists. A new version must increment pathway_version, never overwrite.`);
   }
   return report;
 }
@@ -225,6 +297,23 @@ export async function importBatch(db, candidates, { allowWarnings = false, dryRu
             input.data_origin ?? 'production', input.fixture_set ?? null],
         );
         inserted.push({ kind: 'form', id: r.rows[0].id, form_key: input.form_key });
+      } else if (input.kind === 'federal_pathway') {
+        const r = await db.query(
+          `insert into public.record_relief_federal_pathways
+             (pathway_key, pathway_version, title, description, is_general_expungement, applies_to,
+              source_authority, source_url, citation_text, effective_from, jurisdiction_subtype, pathway_type,
+              effect_summary, rights_not_restored, next_review_at, reviewed_by, staff_notes, data_origin, fixture_set, status)
+           values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,'draft')
+           returning id`,
+          [input.pathway_key, input.pathway_version, input.title, input.description,
+            input.is_general_expungement ?? false, input.applies_to ?? null,
+            input.source_authority, input.source_url, input.citation_text, input.effective_from,
+            input.jurisdiction_subtype ?? 'unknown', input.pathway_type,
+            input.effect_summary ?? null, input.rights_not_restored ?? null,
+            input.next_review_at ?? null, input.reviewed_by ?? null, input.staff_notes ?? null,
+            input.data_origin ?? 'production', input.fixture_set ?? null],
+        );
+        inserted.push({ kind: 'federal_pathway', id: r.rows[0].id, pathway_key: input.pathway_key, pathway_version: input.pathway_version });
       }
     }
     await db.query('commit');
