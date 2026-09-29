@@ -2,6 +2,18 @@
 
 One item at a time. Everything not listed here has already been done, verified, or doesn't need you.
 
+## 0. One signed-in DEV member session, whenever convenient
+This session (the boardroom-sprint marathon) had no DEV member login available at all, so a large amount of real
+work — 24 commits, 47/47 offline checks, adversarial security proof at the database layer for every V1 module —
+was done and verified at the SQL/RLS level but NOT re-driven live in the Browser pane. That's a real, named gap:
+"proven at the database boundary" and "proven in the actual app" are different things, and the second one still
+needs to happen before full confidence. Per your own instruction from earlier tonight: rather than repeatedly
+interrupting you for one-off logins, the ask is ONE consolidated signed-in session next time you're free, so a
+future pass can drive the full member journey (Home → Jobs → Housing → Marketplace → Credit → Record Relief →
+Resume Studio → Meetings → AI → Documents → Me) and the cross-member adversarial tests through the real UI in
+one sitting, instead of trickling in blocked work over many separate asks. Not urgent — everything independent
+kept moving all session without it.
+
 ## 1. Record Relief TEST fixtures — DONE, confirmed live, engine proven correct
 TEST-A..D appear in the jurisdiction picker, clearly labeled "(TEST DATA)". Four deliberately different fact
 patterns verified live against the real engine, all four came back correct:
