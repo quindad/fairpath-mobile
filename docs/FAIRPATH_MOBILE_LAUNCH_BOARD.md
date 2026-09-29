@@ -268,7 +268,7 @@ a case's facts, re-check correctly recalculated) — so there's no silent dead-e
 | 🟡 EXTERNAL SETUP REQUIRED | 6 | Apple Sign-In, Google Sign-In (unconfirmed config), Android Maps key, Credit Extraction (undeployed), Push (unwired), Payments (undeployed + no key) |
 | 🟠 REAL DATA REQUIRED | 5 | Jobs inventory, Housing inventory, Resources inventory, Housing walkability/schools, Record Relief 50-state coverage |
 | 🔴 INCOMPLETE | 4 | Email/SMS, Observability, Physical Device (all), FairPath+ actual member value (see separate doc) |
-| ⚪ DEFERRED FROM V1 | 2 | Marketplace, Staffing (per Sterling's own scope note — kept outside V1 unless a strong reason emerges; none found) |
+| ⚪ DEFERRED FROM V1 | 1 | Staffing. **Marketplace moved IN to V1 scope per Sterling's explicit decision** — no longer deferred. Its exit-criteria gates (real inventory N/A — Marketplace is member-to-member, not FairPath-sourced; claim-quota/FastTrack-discount entitlement behavior already PASSED this session) need the same failure-state/security review pass as the rest of V1 before engineering-complete, not yet separately audited |
 
 ## TOP 10 MOBILE LAUNCH BLOCKERS (ranked by member value / trust / credibility, not ease)
 
