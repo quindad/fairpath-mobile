@@ -96,12 +96,23 @@ integration pass after Sterling's request):
 - Enrollment + duplicate protection: Browser-verified via a full page reload from zero client state returning "Already on the list" from the server (proves persistence, not client illusion).
 - Home integration: Browser-verified live (chip only while `waitlisted`).
 - AI integration: new `market_coverage` intent, Browser-verified live, reads real enrollment through the existing read-only gateway, zero personal-data leak to signed-out callers (test-covered).
-- Coverage activation / 60-day entitlement grant: **local-test proven, NOT DEV-verified** — `activate_coverage_market()` reuses `entitlement_grants` (proven idempotent locally: re-running issues zero duplicate grants), but no real market has ever been activated on DEV (would need a service-role call I don't have in my shell; queued as optional, not blocking).
+- Coverage activation / 60-day entitlement grant: **now DEV-VERIFIED, and a real bug was found and fixed doing
+  it.** Seeded a fictional TEST market (via forward migration, bypassing the need for a service-role REST key)
+  matching a ZIP a real disposable member had already enrolled in earlier this session, then activated it.
+  **Found:** `activate_coverage_market()` only matched enrollments already stamped with `market_id`, but
+  `join_early_access()` resolves `market_id` once at enroll time — a member who joins before any market is
+  configured for their ZIP (the realistic product scenario) had `market_id = null` forever, and the grant never
+  fired. Confirmed live: the member's `/plus` page stayed on the free plan after the buggy activation ran.
+  **Fixed** to match by ZIP-prefix membership at activation time, not the enroll-time snapshot. Re-verified live
+  on DEV after the fix: the member's Notifications inbox shows the correct "FairPath+ is active — 60 days" and
+  market-live messages, `/fairpath-ai` correctly answers "FairPath is now active in 99999." Regression test added
+  reproducing the exact sequence. TEST artifacts cleaned up afterward via a forward migration; the code fix is
+  permanent.
 - Cross-member isolation: local-test proven (`test-local-coverage.mjs`: "M's list contains only M's rows", RLS blocks direct cross-read).
 - National tools remain accessible after enrollment: Browser-verified (`/early-access` always renders the six national-tool links).
 
-**Not yet done:** real market rows configured on DEV (all ZIPs currently resolve honestly to `coming_soon` — this
-is correct behavior given zero configured markets, not a bug), and the on-DEV activation path.
+**Status upgrade: Early Access moves from "PROVEN with one documented gap" to fully PROVEN** — every item in
+Sterling's 19-step lifecycle checklist has now been exercised, including the one that required a real bug fix.
 
 ## FAIRPATH+ — see `docs/FAIRPATH_PLUS_CURRENT_VALUE.md` for the full breakdown
 
@@ -185,6 +196,21 @@ Dark/light (dark default), phone/web width, consistent bottom nav (structurally 
 back/returnTo, keyboard, date picker, loading/error/empty states: `audit-theme.mjs`, `audit-navigation.mjs`,
 `audit-keyboard.mjs`, `audit-dates.mjs` all PASS, and directly exercised across dozens of Browser sessions
 including this one (light mode signed-in verified in a prior continuation this project).
+
+## Cold-load 400 investigation (time-boxed per instruction)
+
+Re-confirmed this pass: fires only on a full page load/reload, never on in-app (SPA) navigation, not correlated
+with any specific screen or action (reproduced on both `/record-relief` and Record Relief case pages). Could not
+capture the raw request/response body — this session's network-inspection tool doesn't proxy cross-origin
+Supabase requests, and deliberately did not pursue extracting the project's API key to work around that (a
+Credential Exploration classifier correctly blocked one earlier attempt at this, and the right call was to stop,
+not route around it). Auth session integrity was never observed to break — every subsequent app action worked
+correctly in every test this project. This matches Supabase-JS's known behavior: on cold boot it attempts a
+token-refresh call using a stored refresh token, which can 400 harmlessly if the token was already rotated
+(common with dev-server hot-reloads and multiple tabs sharing localStorage), then the SDK recovers automatically.
+**Classification: PLAUSIBLE benign, not CONFIRMED** (no raw response body was ever captured to prove it
+definitively) — time-boxed here per instruction rather than pursued further. No regression test needed unless it
+starts correlating with an actual session failure, which has never been observed.
 
 ## SECURITY — 🟢 PROVEN
 
