@@ -61,7 +61,7 @@ export default function MeScreen() {
         setSummary(sum);
         if (contact) { setName(`${contact.first_name} ${contact.last_name}`.trim()); setEmail(contact.email); }
       })
-      .catch(() => setError('We could not load your summary. Check your connection and try again.'))
+      .catch(() => { setSummary(null); setError('We could not load your summary. Check your connection and try again.'); })
       .finally(() => setLoading(false));
   }, []);
   useFocusEffect(load);

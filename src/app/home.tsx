@@ -17,7 +17,7 @@ export default function Home(){
  useEffect(()=>{let active=true;
   setJobsState(prev=>prev==='ready'?prev:'loading');
   loadFairPathReadiness().then(x=>{if(active)setReadiness(x.readiness.overallPercentage)}).catch(()=>{if(active)setReadiness(null)});
-  loadJobs('','',{},2).then(x=>{if(active){setFeatured(x.slice(0,2));setJobsState('ready')}}).catch(()=>{if(active)setJobsState('error')});
+  loadJobs('','',{},2).then(x=>{if(active){setFeatured(x.slice(0,2));setJobsState('ready')}}).catch(()=>{if(active){setFeatured([]);setJobsState('error')}});
   loadSavedJobIds().then(ids=>{if(active)setSavedJobs(Object.fromEntries(ids.map(id=>[id,true])))}).catch(()=>{});
   return()=>{active=false}
  },[pathname,reloadKey]);

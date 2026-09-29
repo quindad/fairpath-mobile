@@ -46,7 +46,7 @@ export default function DocumentsScreen() {
       setStale(flags);
     } catch (e) {
       if (e instanceof Error && e.message.includes('SIGNED_OUT')) router.replace(('/sign-in?returnTo=' + encodeURIComponent('/documents')) as never);
-      else setError('We could not load your documents. Check your connection and try again.');
+      else { setItems(null); setError('We could not load your documents. Check your connection and try again.'); }
     }
   }, []);
   useFocusEffect(useCallback(() => { void load(); }, [load]));

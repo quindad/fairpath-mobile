@@ -19,7 +19,7 @@ export default function ResumeStudio() {
     try { setResumes(await loadResumes()); }
     catch (e) {
       if (e instanceof Error && e.message.includes('SIGNED_OUT')) router.replace(('/sign-in?returnTo=' + encodeURIComponent('/resume-studio')) as never);
-      else setError('We could not load your resumes. Check your connection and try again.');
+      else { setResumes(null); setError('We could not load your resumes. Check your connection and try again.'); }
     }
   }, []);
   useFocusEffect(useCallback(() => { void load(); }, [load]));

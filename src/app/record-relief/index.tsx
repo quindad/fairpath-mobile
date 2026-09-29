@@ -25,7 +25,7 @@ export default function RecordReliefHome() {
       setCases(c); setEvals(e); setJurisdictions(j); setCovered(cov);
     } catch (err) {
       if (err instanceof Error && err.message.includes('SIGNED_OUT')) router.replace(('/sign-in?returnTo=' + encodeURIComponent('/record-relief')) as never);
-      else setError('We could not load your cases. Check your connection and try again.');
+      else { setCases(null); setError('We could not load your cases. Check your connection and try again.'); }
     }
   }, []);
   useFocusEffect(useCallback(() => { void load(); }, [load]));

@@ -41,7 +41,7 @@ export default function CreditWorkspace() {
       setReports(r); setAccounts(a); setItems(i); setDisputes(d); setUploads(u); setLoaded(true);
     } catch (e) {
       if (e instanceof Error && e.message.includes('SIGNED_OUT')) router.replace(('/sign-in?returnTo=' + encodeURIComponent('/credit')) as never);
-      else setError('We could not load your credit workspace. Check your connection and try again.');
+      else { setLoaded(false); setError('We could not load your credit workspace. Check your connection and try again.'); }
     }
   }, []);
   useFocusEffect(useCallback(() => { void load(); }, [load]));

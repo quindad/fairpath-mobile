@@ -20,7 +20,7 @@ export default function Meetings() {
     try { setMeetings(await loadMeetings()); }
     catch (e) {
       if (e instanceof Error && e.message.includes('SIGNED_OUT')) router.replace(('/sign-in?returnTo=' + encodeURIComponent('/meetings')) as never);
-      else setError('We could not load your meetings. Check your connection and try again.');
+      else { setMeetings(null); setError('We could not load your meetings. Check your connection and try again.'); }
     }
   }, []);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
