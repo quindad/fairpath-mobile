@@ -7,7 +7,7 @@ const NODE = process.execPath;
 const steps = [
   ['TypeScript', 'npx', ['tsc', '--noEmit']],
   ...['baseline', 'canonical-profile', 'seed', 'navigation', 'housing', 'marketplace', 'jobs', 'keyboard', 'dates', 'notifications', 'auth', 'payments', 'entitlements',
-    'theme', 'resources', 'profile', 'member', 'credit', 'relief', 'ai', 'security'].map((n) => [`audit: ${n}`, NODE, [`scripts/audit-${n}.mjs`]]),
+    'theme', 'resources', 'profile', 'member', 'credit', 'relief', 'ai', 'security', 'notification-events', 'observability'].map((n) => [`audit: ${n}`, NODE, [`scripts/audit-${n}.mjs`]]),
   ['documents render', NODE, ['scripts/test-documents-render.mjs']],
   ['client user_id checks', NODE, ['scripts/test-client-user-id.mjs']],
   ['resource availability contract', NODE, ['scripts/test-resource-availability-contract.mjs']],
