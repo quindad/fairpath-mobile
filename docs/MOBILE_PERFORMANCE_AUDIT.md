@@ -59,6 +59,26 @@ separate screen, not a bug — and `loadContact()`). No waterfall, no N+1.
 | **Fix** | **Applied**: `readinessFor()` now dedupes concurrent `loadSavedResourceDetails()` calls internally (a shared in-flight promise, cleared once resolved) rather than each of the 3 resource-type checks firing its own request — no call-site changes needed, `create.tsx`'s single-type usage is unaffected |
 | **Before/after** | Before: 3x redundant `loadSavedResourceDetails()` calls per Documents screen load. After: 1x, shared across the three checks that need it. (Verification pending a shell-tooling outage during this pass — see commit for confirmation status) |
 
+## MARKETPLACE (browse)
+
+| | |
+|---|---|
+| **Request count** | 3 independent queries per search/filter change: `loadMarketplace(...)`, `loadSavedMarketplaceIds()`, `loadMarketplaceQuota()` |
+| **Duplicate requests — found, real** | The three ran **sequentially** (`await` one after another), not in parallel, despite having zero data dependency between them - the same shape as the Documents/Home findings above |
+| **Fix** | **Applied**: `Promise.all`, preserving the original error semantics exactly (the two secondary calls already failed soft internally; a real `loadMarketplace` failure still propagates to the same outer catch) |
+| **Before/after** | Before: 3 sequential round-trips. After: 1 round-trip's worth of latency (the slowest of the three), not measured with real timing instrumentation this pass |
+
+## AUTH — re-confirmed, still not fixed
+
+Re-checked this pass: 13 call sites across the app call `supabase.auth.getUser()` directly (a real network
+round-trip, not a local cache read - by Supabase's own design, for security). `src/core/supabase/current-user.ts`
+exists as a thin wrapper but does **not** cache or memoize anything - routing more call sites through it would
+not reduce the actual number of round-trips, only improve code consistency. This remains the same real,
+previously-flagged finding from a prior session (see the Home section above): fixing it for real requires an
+actual memoized/context-based `currentUser()`, which touches a shared primitive used across roughly a dozen
+files. Still judged too broad a change to make safely in a single pass without dedicated regression testing
+across every affected screen - not attempted again this pass for the same reason.
+
 ## Summary
 
 The one measured, fixed improvement this pass: Home's featured-jobs fetch cut from 20 rows to 2 (a real ~90%
