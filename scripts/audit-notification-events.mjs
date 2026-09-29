@@ -5,7 +5,7 @@ const failures = [];
 const check = (c, m) => { if (!c) failures.push(m); };
 
 const ids = Object.keys(NOTIFICATION_EVENTS);
-check(ids.length === 14, 'expected all 14 canonical events, found ' + ids.length);
+check(ids.length === 15, 'expected all 15 canonical events, found ' + ids.length);
 
 for (const [id, def] of Object.entries(NOTIFICATION_EVENTS)) {
   check(def.id === id, `${id}: def.id must match its key`);
@@ -30,4 +30,4 @@ if (failures.length) {
   console.error('Notification event catalog audit failed:\n- ' + failures.join('\n- '));
   process.exit(1);
 }
-console.log('Notification event catalog audit passed: 14 canonical events, all internally consistent, account-critical events never gated by marketing consent.');
+console.log('Notification event catalog audit passed: 15 canonical events, all internally consistent, account-critical events never gated by marketing consent.');

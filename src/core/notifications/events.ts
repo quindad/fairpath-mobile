@@ -18,7 +18,7 @@ export type NotificationEventId =
   | 'MARKET_OPENED' | 'EARLY_ACCESS_GRANTED' | 'FAIRPATH_PLUS_EXPIRING'
   | 'NEW_MATCHING_JOB' | 'NEW_MATCHING_HOUSING' | 'SAVED_JOB_CHANGED' | 'SAVED_HOUSING_CHANGED'
   | 'APPLICATION_UPDATED' | 'HOUSING_APPLICATION_UPDATED' | 'INQUIRY_RESPONSE'
-  | 'MEETING_REMINDER' | 'CREDIT_DISPUTE_FOLLOW_UP' | 'RECORD_RELIEF_DATE' | 'DOCUMENT_EXPIRING';
+  | 'MEETING_REMINDER' | 'CREDIT_DISPUTE_FOLLOW_UP' | 'RECORD_RELIEF_DATE' | 'DOCUMENT_EXPIRING' | 'MARKETPLACE_CLAIM_UPDATE';
 
 export type Channel = 'in_app' | 'push' | 'email' | 'sms';
 
@@ -100,5 +100,13 @@ export const NOTIFICATION_EVENTS: Record<NotificationEventId, NotificationEventD
   DOCUMENT_EXPIRING: {
     id: 'DOCUMENT_EXPIRING', allowedChannels: ['in_app', 'push', 'email'], privacy: 'safe', route: '/documents',
     dedupeKeyPattern: 'document_expiring:{document_id}', urgency: 'low', requiresMarketingConsent: false,
+  },
+  // Added to close a real catalog/producer mismatch found in the boardroom sprint's notification audit:
+  // approve_marketplace_claim() and related Marketplace claim-lifecycle functions were already the most fully-
+  // built notification producer in the schema (baseline_constraints_security_logic.sql), inserting directly
+  // under the 'marketplace_claim' DB category, but had no entry here at all.
+  MARKETPLACE_CLAIM_UPDATE: {
+    id: 'MARKETPLACE_CLAIM_UPDATE', allowedChannels: ['in_app', 'push'], privacy: 'safe', route: '/marketplace-claim',
+    dedupeKeyPattern: 'marketplace_claim_update:{claim_id}:{status}', urgency: 'normal', requiresMarketingConsent: false,
   },
 };
