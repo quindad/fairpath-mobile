@@ -93,7 +93,10 @@ check(/if\(viewMode==='map'\)return/.test(find) && /<JobMap[^>]*fill/.test(find)
 const nativeMap = read('src/components/JobMap.native.tsx');
 check(/onPress=\{e=>\{e\.stopPropagation/.test(nativeMap) && /JobMapCard/.test(nativeMap) && /fitToCoordinates/.test(nativeMap), 'native map must support pin selection, a job card and fit-to-pins');
 check(/onOpen=\{onOpenJob\}/.test(nativeMap) && /onOpen=\{onOpenJob\}/.test(read('src/components/JobMap.web.tsx')), 'selected pin must be able to open Job Details on native and web');
-check(/setViewMode\('list'\)/.test(find) && !/setJobs\(\[\]\)/.test(find), 'LIST/MAP switching must not reset search results');
+{
+  const viewToggleLine = (find.match(/onPress=\{\(\)=>setViewMode\('list'\)\}/) || [''])[0];
+  check(/setViewMode\('list'\)/.test(find) && viewToggleLine && !/setJobs/.test(viewToggleLine), 'LIST/MAP switching must not reset search results');
+}
 
 // Job details CTA must sit above the global nav
 const detail = read('src/app/job/[id].tsx');
@@ -108,8 +111,18 @@ const jobsService = read('src/core/jobs/jobs-service.ts');
 check(/member_skills/.test(jobsService) && /member_credentials/.test(jobsService) && /member_job_preferences/.test(jobsService) && /member_education/.test(jobsService), 'loadJobApplicationAutofill must read the Opportunity Profile tables');
 check(/skillsText\|\|text\('employment\.skills'\)/.test(jobsService), 'Opportunity Profile skills must be preferred over the legacy questionnaire, with legacy as fallback only');
 
+// Regression: a failed search must never leave a PRIOR successful search's results on screen next to the error
+// (found via a live failure-injection test — stale jobs rendered under a fresh "Jobs could not load" banner,
+// reading as if they were the current results). The fresh-search catch block must clear jobs/total/etc, not just
+// set the error string.
+{
+  const findJobs = read('src/app/find-jobs.tsx');
+  const runCatch = (findJobs.match(/async function run\(\)\{[\s\S]*?\n \}/) || [''])[0];
+  check(/catch\{[\s\S]*?setJobs\(\[\]\)[\s\S]*?setError\(/.test(runCatch), 'a failed fresh search must clear jobs/total/etc before setting the error, not leave stale results visible under it');
+}
+
 if (failures.length) {
   console.error('Jobs audit failed:\n- ' + failures.join('\n- '));
   process.exit(1);
 }
-console.log('Jobs audit passed: server-side ZIP/radius search + pagination, RPC-only applications, event trail, minimum-field apply gate, no DOB/address/justice data to employers, Easy Apply autofill prefers the Opportunity Profile.');
+console.log('Jobs audit passed: server-side ZIP/radius search + pagination, RPC-only applications, event trail, minimum-field apply gate, no DOB/address/justice data to employers, Easy Apply autofill prefers the Opportunity Profile, failed search never shows stale results under the error.');

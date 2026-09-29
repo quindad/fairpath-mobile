@@ -160,6 +160,15 @@ const seed = read('scripts/seed-dev-resources.mjs');
 check(/assertDevTarget/.test(seed) && /--confirm-dev/.test(seed) && /SUPABASE_SERVICE_ROLE_KEY/.test(seed), 'Seed script must use the DEV guards and read the key only from the environment.');
 check(!/eyJ[A-Za-z0-9_-]{20,}/.test(seed) && !/sb_secret_/.test(seed.replace(/startsWith/g, '')), 'No keys in the seed script.');
 
+// Regression: same fix/finding as Jobs/Housing — a failed FRESH search must clear results/total/etc, never leave
+// a prior successful search's results rendered under a fresh error banner. A failed load-more is different (the
+// first page stays visible) so the fix only applies to the `!append` branch.
+{
+  const resourcesSrc = read('src/app/resources.tsx');
+  const catchBlock = (resourcesSrc.match(/\} catch \{[\s\S]*?\n(?:    \}|\s{4}\})/) || [''])[0];
+  check(/if \(!append\) \{ setResults\(\[\]\); setTotal\(0\); setHasMore\(false\); \}/.test(catchBlock), 'a failed fresh resources search must clear results/total/etc before setting the error, not leave stale results visible under it (load-more failures correctly keep the first page)');
+}
+
 if (failures.length) {
   console.error('Resources audit FAILED:\n - ' + failures.join('\n - '));
   process.exit(1);

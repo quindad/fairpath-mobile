@@ -104,7 +104,13 @@ export default function ResourcesScreen() {
       setSearched(true);
       void refreshStates(page.resources.map((r) => r.id));
     } catch {
-      if (id === requestId.current) setError('We could not load resources right now. Check your connection and try again.');
+      if (id === requestId.current) {
+        // A fresh search failure must never leave a prior successful search's results on screen next to the
+        // error (same fix as Jobs/Housing). A load-more failure is different: the first page already loaded
+        // successfully, so it stays visible — only the error banner reports the "more" attempt failed.
+        if (!append) { setResults([]); setTotal(0); setHasMore(false); }
+        setError('We could not load resources right now. Check your connection and try again.');
+      }
     } finally {
       if (id === requestId.current) setLoading(false);
     }

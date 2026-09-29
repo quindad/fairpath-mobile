@@ -71,6 +71,8 @@ export default function Housing(){
    void trackProductEvent('housing_search','housing',null,{query:query.trim(),location:where.trim(),radius:zip?radius:null,result_count:r.total}).catch(()=>{});
   }catch{
    if(mine!==requestId.current)return;
+   // Same fix as Jobs: never leave a prior successful search's results on screen next to a new failure.
+   setHomes([]);setTotal(0);setHasMore(false);
    setError('Housing could not load. Check your connection and try again.');
   }finally{
    if(mine===requestId.current)setLoading(false);

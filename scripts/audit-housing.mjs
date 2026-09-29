@@ -96,7 +96,10 @@ if(!/if\(viewMode==='map'\)return/.test(findSrc)||!/<HousingMap /.test(findSrc))
 const nativeMap=read('src/components/HousingMap.native.tsx');
 if(!/onPress=\{e=>\{e\.stopPropagation/.test(nativeMap)||!/HousingMapCard/.test(nativeMap)||!/fitToCoordinates/.test(nativeMap)||!/onOpen=\{onOpen\}/.test(nativeMap))failures.push('Native housing map needs selectable pins, a preview card, fit-to-pins and an open action.');
 if(!/onOpen=\{onOpen\}/.test(read('src/components/HousingMap.web.tsx')))failures.push('Web housing map must open the selected home.');
-if(!/nonce/.test(findSrc)||/setHomes\(\[\]\)/.test(findSrc))failures.push('LIST/MAP switching must keep search state and results.');
+{
+ const viewToggleLine=(findSrc.match(/onPress=\{\(\)=>setViewMode\('list'\)\}/)||[''])[0];
+ if(!/nonce/.test(findSrc)||!viewToggleLine||/setHomes/.test(viewToggleLine))failures.push('LIST/MAP switching must keep search state and results.');
+}
 {
  const { EMPTY_HOUSING_FILTERS, countHousingFilters, housingFiltersFromRecord } = await import('../src/core/housing/housing-filters.ts');
  const { normalizePlace } = await import('../src/core/jobs/location-utils.ts');
@@ -175,6 +178,12 @@ if(!/nonce/.test(findSrc)||/setHomes\(\[\]\)/.test(findSrc))failures.push('LIST/
  // fake data / overlap
  for(const f of ['src/app/housing/[id].tsx','src/app/housing-apply/[id].tsx','src/app/housing-application/[id].tsx','src/app/find-housing.tsx'])if(/DEMO_|demo-media|mockListings|sampleHomes/i.test(read(f)))failures.push(f+' contains fake fallback data.');
  for(const f of ['src/app/housing/[id].tsx','src/app/housing-apply/[id].tsx','src/app/housing-application/[id].tsx'])if(/position:\s*'absolute'[^}]*bottom:\s*0/.test(read(f)))failures.push(f+' has a bottom-pinned bar that would sit behind the global nav.');
+
+ // Regression: same fix/finding as Jobs — a failed fresh search must clear homes/total/etc, never leave a prior
+ // successful search's results rendered under a fresh error banner.
+ const findHousing=read('src/app/find-housing.tsx');
+ const runCatch=(findHousing.match(/async function run\(\)\{[\s\S]*?\n \}/)||[''])[0];
+ if(!/catch\{[\s\S]*?setHomes\(\[\]\)[\s\S]*?setError\(/.test(runCatch))failures.push('a failed fresh housing search must clear homes/total/etc before setting the error, not leave stale results visible under it');
 }
 
 if(failures.length){

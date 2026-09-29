@@ -76,6 +76,10 @@ export default function FindJobs(){
    setJobs(r.jobs);setTotal(r.total);setSecondCount(r.secondChanceCount);setHasMore(r.hasMore);
   }catch{
    if(mine!==requestId.current)return;
+   // A failed search must never leave a PRIOR successful search's results on screen next to the error: that
+   // reads as "these are today's results" when they are stale. Error state replaces result state, it never
+   // stacks on top of it.
+   setJobs([]);setTotal(0);setSecondCount(0);setHasMore(false);
    setError('Jobs could not load. Check your connection and try again.');
   }finally{
    if(mine===requestId.current)setLoading(false);
