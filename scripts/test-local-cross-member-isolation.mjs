@@ -139,4 +139,18 @@ await test('payments: B cannot read or forge-insert A\'s payment transaction', a
   ok(aRead.length === 1, 'A should see their own transaction');
 });
 
+// ---------------- Entitlements / FairPath+ subscriptions (last table in the app-wide sweep) ----------------
+await test('entitlements: B cannot read A\'s entitlement grant or subscription row', async () => {
+  await db.query(`insert into public.fairpath_subscriptions (user_id, plan, status, current_period_end) values ($1,'fairpath_plus','active',now()+interval '30 days')`, [A]);
+  const grantRows = await db.query(`select column_name from information_schema.columns where table_name='entitlement_grants' and table_schema='public'`);
+  ok(grantRows.rows.length > 0, 'entitlement_grants table should exist');
+
+  denied(await tryAs(db, B, `select * from public.fairpath_subscriptions where user_id=$1`, [A]), 'B direct read of A\'s subscription');
+  const aRead = must(await tryAs(db, A, `select plan from public.fairpath_subscriptions where user_id=$1`, [A]), 'A reads own subscription');
+  ok(aRead.length === 1 && aRead[0].plan === 'fairpath_plus', 'A should see their own subscription');
+
+  const forged = await tryAs(db, B, `insert into public.fairpath_subscriptions (user_id, plan, status) values ($1,'fairpath_plus','active')`, [A]);
+  ok(forged.error !== undefined, 'B should not be able to insert a subscription row for A');
+});
+
 done();
