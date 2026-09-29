@@ -96,4 +96,64 @@ await test('claimant identity stays isolated: B cannot read or act on A\'s claim
   denied(await rpc(B, 'cancel_marketplace_claim', claimId), 'CLAIM_NOT_CANCELLABLE', 'B cancels A\'s claim');
 });
 
+await test('seller can decline a requested claim; declined claims do not count toward quota', async () => {
+  const A = await freshClaimant();
+  const item = await makeItem('Decline test');
+  const claimRows = must(await rpc(A, 'request_marketplace_claim', item, null), 'A claims');
+  must(await rpc(SELLER, 'decline_marketplace_claim', claimRows[0].id), 'seller declines');
+  const row = (await db.query(`select status, counts_toward_quota from public.marketplace_claims where id=$1`, [claimRows[0].id])).rows[0];
+  ok(row.status === 'declined' && row.counts_toward_quota === false, `expected declined + not counted, got ${JSON.stringify(row)}`);
+});
+
+await test('a non-seller cannot decline, mark-ready, or mark-no-show someone else\'s claim', async () => {
+  const A = await freshClaimant(), OUTSIDER = await freshClaimant();
+  const item = await makeItem('Non-seller action test');
+  const claimRows = must(await rpc(A, 'request_marketplace_claim', item, null), 'A claims');
+  const claimId = claimRows[0].id;
+  denied(await rpc(OUTSIDER, 'decline_marketplace_claim', claimId), 'CLAIM_NOT_DECLINABLE', 'outsider decline');
+  must(await rpc(SELLER, 'approve_marketplace_claim', claimId), 'seller approves');
+  denied(await rpc(OUTSIDER, 'mark_marketplace_claim_ready', claimId), 'CLAIM_NOT_READY', 'outsider mark-ready');
+  must(await rpc(SELLER, 'mark_marketplace_claim_ready', claimId), 'seller marks ready');
+  const row = (await db.query(`select status from public.marketplace_claims where id=$1`, [claimId])).rows[0];
+  ok(row.status === 'ready', 'seller mark-ready did not take effect');
+});
+
+await test('a claim past its pickup deadline auto-expires to no_show and the item becomes available again', async () => {
+  const A = await freshClaimant(), B = await freshClaimant();
+  const item = await makeItem('Expiry test');
+  const claimRows = must(await rpc(A, 'request_marketplace_claim', item, null), 'A claims');
+  must(await rpc(SELLER, 'approve_marketplace_claim', claimRows[0].id), 'seller approves');
+  // Force the deadline into the past (service-role direct write, simulating time passing - not a client-reachable path).
+  await db.query(`update public.marketplace_claims set pickup_deadline = now() - interval '1 hour' where id=$1`, [claimRows[0].id]);
+  const expired = must(await tryAs(db, 'service', `select public.expire_marketplace_pickups()`), 'expire sweep');
+  ok(expired[0].expire_marketplace_pickups >= 1, 'expected at least 1 claim to expire');
+  const claim = (await db.query(`select status from public.marketplace_claims where id=$1`, [claimRows[0].id])).rows[0];
+  ok(claim.status === 'no_show', `expected no_show after deadline passed, got ${claim.status}`);
+  const itemRow = (await db.query(`select status from public.marketplace_items where id=$1`, [item])).rows[0];
+  ok(itemRow.status === 'available', 'item should become available again after an expired pickup');
+
+  // The item is available again - a different claimant should now be able to claim it.
+  must(await rpc(B, 'request_marketplace_claim', item, null), 'B claims after expiry');
+});
+
+await test('a non-seller cannot view claim candidates for someone else\'s item, and identities stay anonymous to the seller', async () => {
+  const A = await freshClaimant(), OUTSIDER = await freshClaimant();
+  const item = await makeItem('Candidates anonymity test');
+  await rpc(A, 'request_marketplace_claim', item, null);
+  denied(await rpc(OUTSIDER, 'marketplace_claim_candidates', item), 'NOT_SELLER', 'outsider viewing candidates');
+  const candidates = must(await rpc(SELLER, 'marketplace_claim_candidates', item), 'seller views candidates');
+  ok(candidates.length === 1, 'expected 1 candidate');
+  ok(candidates[0].claimant_label.startsWith('CLAIM #') && !JSON.stringify(candidates[0]).includes(A), 'claimant identity leaked to the seller - must stay anonymous (CLAIM #XXXX only)');
+});
+
+await test('cancelling a requested (not yet approved) claim frees it up without penalty', async () => {
+  const A = await freshClaimant(), B = await freshClaimant();
+  const item = await makeItem('Cancel-before-approval test');
+  const claimRows = must(await rpc(A, 'request_marketplace_claim', item, null), 'A claims');
+  must(await rpc(A, 'cancel_marketplace_claim', claimRows[0].id), 'A cancels own claim');
+  const row = (await db.query(`select status, counts_toward_quota from public.marketplace_claims where id=$1`, [claimRows[0].id])).rows[0];
+  ok(row.status === 'cancelled' && row.counts_toward_quota === false, `a pre-approval cancel should not count toward quota, got ${JSON.stringify(row)}`);
+  must(await rpc(B, 'request_marketplace_claim', item, null), 'B claims after A cancelled');
+});
+
 done();
