@@ -75,17 +75,98 @@ one. `record_relief_jurisdictions.kind` has an explicit `'test'` value distinct 
 confirmed DEV target. A researcher entering real data should never set `data_origin = 'dev_fixture'`, and the
 existing constraint makes that combination structurally impossible to get backwards by accident.
 
-## Structured import format — NOT built this pass
+## Structured import format — concrete design (not yet implemented as code)
 
-Sterling asked for a canonical JSON/CSV import format with a dry-run validator (VALID/WARNING/REJECTED) rejecting
-missing jurisdiction, missing source, malformed URLs, invalid dates, TEST/real mixing, etc. **This was not built
-tonight** — it's real, valuable, bounded work, but building a validator thorough enough to actually catch the
-listed failure modes (impossible waiting periods, invalid conviction bounds, duplicate active versions, TEST/real
-mixing) needs real test coverage against real edge cases to be trustworthy, and that was a larger scope than
-remaining time allowed for tonight without producing something half-tested. Recommended shape for later: a Node
-CLI (`scripts/import-record-relief-rule.mjs`) that reads one rule as JSON matching the `record_relief_rules`
-column shape, validates every constraint the database itself already enforces (offense classes, dispositions,
-waiting-period bounds, required-field presence) PLUS the process-level rules the database can't check alone
-(second-reviewer distinct from researcher, `next_review_at` after `last_verified_at`, no duplicate active
-`rule_key` for a jurisdiction+remedy), and only inserts as `status = 'draft'` — verification/publish stays a
-separate, deliberate step never done by the importer itself.
+Not implemented as executable code this pass (a shell-tooling outage made that unsafe to attempt blind), but
+specified concretely enough to build directly from. This is the exact contract, field by field, matching what
+already exists in `record_relief_rules` plus the metadata added this session.
+
+### Canonical JSON shape (one rule)
+
+```json
+{
+  "kind": "rule",
+  "jurisdiction_code": "OH",
+  "rule_key": "oh-misdemeanor-expungement",
+  "rule_version": 1,
+  "remedy": "expungement",
+  "title": "Misdemeanor expungement",
+  "summary": "Member-facing plain-language explanation.",
+  "applies_dispositions": ["conviction"],
+  "applies_offense_classes": ["misdemeanor"],
+  "excluded_offense_classes": ["dui_dwi"],
+  "waiting_years": 3, "waiting_months": 0, "waiting_days": 0,
+  "waiting_anchor": "sentence_completion_date",
+  "requires_fines_paid": true,
+  "requires_restitution_paid": false,
+  "requires_no_pending_charges": true,
+  "max_other_convictions": 1,
+  "manual_review_flags": ["juvenile", "out_of_state_conviction"],
+  "fees": { "court_fee_cents": 5000, "fee_waiver_available": true },
+  "filing": { "court_type": "Court of Common Pleas", "where_text": "...", "instructions_text": "..." },
+  "required_documents": [{ "key": "id", "label": "Government ID" }],
+  "steps": [{ "key": "gather", "title": "Gather your documents" }],
+  "form_keys": ["oh-petition-expungement"],
+  "source_authority": "statute",
+  "source_url": "https://codes.ohio.gov/...",
+  "citation_text": "Ohio Rev. Code § 2953.32",
+  "effective_from": "2024-01-01",
+  "effective_to": null,
+  "researched_by": "researcher-opaque-id-1",
+  "next_review_at": "2027-01-01",
+  "staff_notes": "Optional internal notes; never member-facing."
+}
+```
+
+A second `"kind": "form"` shape mirrors `record_relief_forms`' columns; a third `"kind": "federal_pathway"`
+mirrors `record_relief_federal_pathways`. All three share the same importer and validation pipeline described
+below — the importer dispatches on `kind`.
+
+### Importer modes
+
+- **VALIDATE** — checks the input against every rule below, returns `VALID` / `WARNING` / `REJECTED` with a
+  reasoned message per field. Touches no database rows.
+- **DRY RUN** — VALIDATE, plus shows exactly what row would be inserted/would conflict, still touches nothing.
+- **IMPORT** — only runs if VALIDATE returned `VALID` (warnings may be allowed through with an explicit
+  `--allow-warnings` flag; `REJECTED` never proceeds under any flag). Inserts as `status = 'draft'` ALWAYS —
+  the importer can never set `verified` itself, no matter what the input claims; that stays a deliberate, separate
+  step a human takes through the review process.
+
+### Validation rules (REJECTED conditions — any one fails the whole batch, nothing partially imports)
+
+| Check | Rejection condition |
+|---|---|
+| Jurisdiction exists | `jurisdiction_code` not found in `record_relief_jurisdictions` |
+| Jurisdiction kind matches intent | Importing a `kind: 'rule'` with `data_origin: 'production'` intent against a jurisdiction whose `kind = 'test'` (or vice versa) — this is the exact "TEST/real mismatch" Sterling named |
+| Official source present | `source_url` missing or empty for a production import (TEST fixtures are exempt, matching existing schema behavior) |
+| Source URL well-formed | `source_url` fails a strict URL parse, or isn't `https://`, or isn't a `.gov`/known-official-court domain for a first pass (a stricter allowlist is a P2 refinement, not required for V1 rejection) |
+| Citation present | `citation_text` empty for a production import |
+| Effective date sane | `effective_from` unparseable, or more than 1 year in the future (a rule can't take effect before it's actually adopted; a modest future-dated grace window is fine, an absurd one is a data-entry error) |
+| Waiting period sane | Any of `waiting_years`/`waiting_months`/`waiting_days` negative, or all three simultaneously implying a period the schema's own CHECK bounds already reject (`waiting_years` outside 0-50, etc.) — the importer should catch this BEFORE the database does, with a human-readable message instead of a raw constraint-violation error |
+| Disposition/offense values valid | Any value outside the existing enum arrays (`applies_dispositions`, `applies_offense_classes`, `excluded_offense_classes`) |
+| Conviction bounds sane | `max_other_convictions` negative or absurdly large (matches the existing 0-50 CHECK) |
+| Fee sane | `fees.court_fee_cents` negative |
+| Duplicate active version | An existing `(rule_key, rule_version)` pair already exists (matches the schema's own UNIQUE constraint — again, the importer should give a clear message instead of surfacing a raw constraint error) |
+| Duplicate active rule for the same coverage | A different `rule_key` already covers the same `(jurisdiction_code, remedy, applies_offense_classes)` combination with an overlapping effective window and `status = 'verified'` — this is a process-level check the database schema does NOT enforce alone (two different rules could otherwise both claim to be the current answer for the same case) |
+| Official form without provenance | A `kind: 'form'` import with `kind: 'official_form'` but missing `official_source_url`/`revision`/`effective_date` — this exactly matches the existing DB CHECK (`kind <> 'official_form' or status <> 'verified' or (...)`), surfaced earlier and more clearly by the importer |
+| Second-reviewer distinct from researcher | For any import attempting to set `reviewed_by`, it must differ from `researched_by` — the database can't enforce this alone (both are just opaque text columns), so the importer must |
+| next_review_at after last_verified_at | If both are present, `next_review_at` must be later — a database CHECK doesn't exist for this today, so the importer is the only enforcement point until one is added |
+
+### WARNING conditions (importer proceeds only with an explicit override flag)
+
+- `next_review_at` more than 3 years out (unusually long for a legal-data recheck interval — not wrong, but
+  worth a human's attention).
+- `manual_review_flags` empty AND the offense/disposition combination looks unusual (e.g. `sex_offense` with no
+  flags) — the importer can suggest but never force a flag, since that's a legal judgment call, not the
+  importer's to make.
+- `staff_notes` empty on a first-time import — not required, but a second reviewer likely wants SOME context.
+
+### What the importer must NEVER do
+
+- Never set `status = 'verified'` itself.
+- Never guess a missing required field from an LLM or any inference — every required field must come from the
+  input file, or the row is rejected.
+- Never partially import a batch — if importing 10 rules and row 7 fails validation, 0 rows are written, not 6.
+- Never overwrite an existing `verified` row — a new version is always a NEW row with an incremented
+  `rule_version`, never an in-place edit (matches the existing immutability the evaluation history already
+  depends on).
