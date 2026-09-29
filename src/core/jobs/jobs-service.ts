@@ -61,10 +61,12 @@ export async function resolveZipCenter(zip:string):Promise<{latitude:number;long
  const row=(data??[])[0] as {latitude:number;longitude:number}|undefined;
  return row?{latitude:row.latitude,longitude:row.longitude}:null;
 }
-/** Small unpaginated list (Home featured jobs). */
-export async function loadJobs(search='',location='',filters:{remote?:boolean;fullTime?:boolean;partTime?:boolean;secondChance?:boolean}={}){
+/** Small unpaginated list (Home featured jobs). `limit` defaults to 20 for callers that want a fuller list, but
+ * Home only ever displays 2 — pass limit:2 there so the server (and the network payload) doesn't do 10x the
+ * work for rows that are immediately discarded client-side. */
+export async function loadJobs(search='',location='',filters:{remote?:boolean;fullTime?:boolean;partTime?:boolean;secondChance?:boolean}={},limit=20){
  const zip=isZip(location)?location.trim():null;
- const r=await searchJobs({query:search,zip,location:zip?'':location,remote:filters.remote,employmentType:filters.fullTime?'full_time':filters.partTime?'part_time':null,secondChance:filters.secondChance,limit:20});
+ const r=await searchJobs({query:search,zip,location:zip?'':location,remote:filters.remote,employmentType:filters.fullTime?'full_time':filters.partTime?'part_time':null,secondChance:filters.secondChance,limit});
  return r.jobs as Job[];
 }
 export async function loadJob(id:string){
