@@ -55,3 +55,4 @@ supabase/production_baseline.sql
 
 # DEV QA harness output
 qa-dev-platform-results.json
+incident-manifest.json
