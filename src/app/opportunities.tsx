@@ -4,7 +4,7 @@ import { ScrollView, StyleSheet, Text, View, Pressable, Linking } from 'react-na
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, InlineBadge, SharpChip, FilterStrip } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
-import { BENEFIT_TYPE_LABELS, DOMAIN_LABELS, EconomicOpportunity, groupByDomain, loadMyEconomicOpportunities } from '@/core/economic-opportunities/economic-opportunities-service';
+import { BENEFIT_TYPE_LABELS, DOMAIN_LABELS, MATCH_STATUS_LABELS, EconomicOpportunity, groupByDomain, loadMyEconomicOpportunities } from '@/core/economic-opportunities/economic-opportunities-service';
 
 export default function OpportunitiesScreen(){
  const [opportunities,setOpportunities]=useState<EconomicOpportunity[]>([]);
@@ -38,7 +38,7 @@ export default function OpportunitiesScreen(){
     </FilterStrip>:null}
 
     {!visible.length?<View style={s.state}><Lucide name="search" color={C.mutedStrong} size={20}/><Text style={s.stateTitle}>NO VERIFIED PROGRAMS YET</Text><Text style={s.stateBody}>FairPath hasn't verified a program covering your jurisdiction in this category yet. This list grows as more states and programs are researched - it's never a sign that nothing exists.</Text></View>
-     :<View style={s.list}>{visible.map(o=><OpportunityCard key={o.id} o={o}/>)}</View>}
+     :<View style={s.list}>{visible.map(o=><OpportunityCard key={o.matchId} o={o}/>)}</View>}
    </>}
   </ScrollView>
  </ScreenFrame>;
@@ -47,18 +47,20 @@ export default function OpportunitiesScreen(){
 function OpportunityCard({o}:{o:EconomicOpportunity}){
  const [open,setOpen]=useState(false);
  const valueText = o.max_value ? 'Up to $'+o.max_value.toLocaleString() : o.min_value ? 'From $'+o.min_value.toLocaleString() : 'Amount varies';
+ const isNew = Date.now()-new Date(o.assessedAt).getTime() < 24*3600*1000;
  return <Pressable style={s.card} onPress={()=>setOpen(v=>!v)}>
   <View style={s.cardTop}>
-   <InlineBadge>{(DOMAIN_LABELS[o.program_domain]??o.program_domain).toUpperCase()}</InlineBadge>
-   <Text style={s.status}>POTENTIAL MATCH</Text>
+   <View style={{flexDirection:'row',gap:6,alignItems:'center'}}>
+    <InlineBadge>{(DOMAIN_LABELS[o.program_domain]??o.program_domain).toUpperCase()}</InlineBadge>
+    {isNew?<InlineBadge tone="lime">NEW</InlineBadge>:null}
+   </View>
+   <Text style={s.status}>{(MATCH_STATUS_LABELS[o.matchStatus]??o.matchStatus).toUpperCase()}</Text>
   </View>
   <Text style={s.title}>{o.program_name}</Text>
   <Text style={s.sub}>{BENEFIT_TYPE_LABELS[o.benefit_type]??o.benefit_type} · {o.jurisdiction_level==='federal'?'Federal':o.jurisdiction_state} · {valueText}</Text>
   {open?<View style={s.detail}>
    <Text style={s.detailBody}>FairPath matched this because its jurisdiction covers where you live. This is not an eligibility decision - FairPath has not evaluated your specific facts against this program's actual rules yet.</Text>
-   {o.requires_member_documentation?<Text style={s.detailLine}>• You may need to provide documentation to apply.</Text>:null}
-   {o.requires_government_certification?<Text style={s.detailLine}>• This program requires government certification before it can be claimed.</Text>:null}
-   {o.requires_employer_application?<Text style={s.detailLine}>• An employer application is part of this program - FairPath cannot submit this for you.</Text>:null}
+   {o.missingInformation.length?<Text style={s.detailLine}>• Still needed: {o.missingInformation.join(', ')}</Text>:null}
    {o.source_url?<Pressable style={s.sourceLink} onPress={()=>Linking.openURL(o.source_url!)}><Lucide name="external-link" color={C.lime} size={12}/><Text style={s.sourceLinkText}>View official source</Text></Pressable>:null}
   </View>:null}
  </Pressable>;

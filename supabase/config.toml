@@ -22,6 +22,9 @@ major_version = 17
 [functions.claim-correctional-transition]
 verify_jwt = false
 
+[functions.program-scout-worker]
+verify_jwt = false
+
 [functions.stripe-webhook]
 verify_jwt = false
 
