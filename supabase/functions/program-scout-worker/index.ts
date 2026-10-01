@@ -40,7 +40,7 @@ Deno.serve(async (req: Request) => {
   const deps: WorkerDeps = {
     extractionEnabled: () => requireEnv('PROGRAM_SCOUT_EXTRACTION_ENABLED') === 'true' && Boolean(apiKey),
     async loadSource(sourceId) {
-      const { data } = await admin.from('program_sources').select('id,official_url,crawl_strategy,fixture_content,active,name,check_cadence,last_content_hash,failure_count').eq('id', sourceId).maybeSingle();
+      const { data } = await admin.from('program_sources').select('id,official_url,crawl_strategy,fixture_content,active,name,check_cadence,last_content_hash,failure_count,fixture_extraction').eq('id', sourceId).maybeSingle();
       return (data as SourceRow) ?? null;
     },
     async selectDueSources(limit) {
@@ -74,6 +74,12 @@ Deno.serve(async (req: Request) => {
       if (candidate?.id) {
         const { error: queueError } = await admin.from('program_scout_review_queue').insert({ item_type: 'change_event', reference_id: candidate.id, reason: 'Source content changed since last retrieval - re-verification required before relying on the existing candidate/program.', priority: 'high' });
         if (queueError) throw new Error('review_queue_insert_failed: ' + queueError.message);
+      }
+      // Never silently preserve stale money claims - if this source already backs a promoted, live program,
+      // mark every member/employer-facing match relying on it as stale so it can be flagged for re-verification.
+      if (candidate?.promoted_program_id) {
+        const { error: staleError } = await admin.rpc('program_scout_mark_matches_stale', { p_program_id: candidate.promoted_program_id, p_reason: 'source content changed since last retrieval' });
+        if (staleError) throw new Error('mark_stale_failed: ' + staleError.message);
       }
     },
     async runExtraction(text) {

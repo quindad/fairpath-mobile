@@ -7,7 +7,7 @@
 import { retrieve, contentHash, type SourceForRetrieval } from '../_shared/core/program-scout/adapters.ts';
 import { validateCandidateExtraction, type CandidateExtraction } from '../_shared/core/program-scout/extraction.ts';
 
-export type SourceRow = SourceForRetrieval & { id: string; active: boolean; name: string; check_cadence: string; last_content_hash: string | null; failure_count: number };
+export type SourceRow = SourceForRetrieval & { id: string; active: boolean; name: string; check_cadence: string; last_content_hash: string | null; failure_count: number; fixture_extraction: unknown | null };
 export type SourceResult = {
   source_id: string;
   outcome: 'skipped_inactive' | 'retrieval_failed' | 'retrieved_no_extraction' | 'extraction_failed' | 'extraction_invalid' | 'candidate_created';
@@ -15,6 +15,7 @@ export type SourceResult = {
   changed?: boolean;
   candidate_id?: string;
   gate_result?: 'rule_verified' | 'needs_review';
+  extraction_source?: 'live_ai' | 'deterministic_fixture';
   detail?: string;
 };
 
@@ -50,11 +51,17 @@ export async function processSource(sourceId: string, deps: WorkerDeps): Promise
   const runId = await deps.recordRetrievalRun(sourceId, { status: 'success', httpStatus: retrieval.httpStatus, contentHash: hash, summary: retrieval.text.slice(0, 500) });
   await deps.updateSourceAfterRun(sourceId, { healthy: true, contentHash: hash, nextCheckAt: deps.cadenceToNextCheck(source.check_cadence, deps.now()) });
 
-  if (!deps.extractionEnabled()) return { source_id: sourceId, outcome: 'retrieved_no_extraction', retrieval_run_id: runId, changed };
+  // Deterministic fixture extraction proves the FULL candidate-creation/validation/gate/review-queue code path
+  // today, with no model call, using explicit DEV test data - distinct from "nothing extracted" (the honest
+  // state for every real source while no model credential is configured) and never used for a real source.
+  const usingFixtureExtraction = source.fixture_extraction !== null && source.fixture_extraction !== undefined;
+  if (!usingFixtureExtraction && !deps.extractionEnabled()) {
+    return { source_id: sourceId, outcome: 'retrieved_no_extraction', retrieval_run_id: runId, changed };
+  }
 
   let raw: unknown;
   try {
-    raw = await deps.runExtraction(retrieval.text);
+    raw = usingFixtureExtraction ? source.fixture_extraction : await deps.runExtraction(retrieval.text);
   } catch (e) {
     return { source_id: sourceId, outcome: 'extraction_failed', retrieval_run_id: runId, changed, detail: e instanceof Error ? e.message : String(e) };
   }
@@ -63,7 +70,7 @@ export async function processSource(sourceId: string, deps: WorkerDeps): Promise
 
   const candidateId = await deps.insertCandidate({ sourceId, retrievalRunId: runId, ...outcome.candidate });
   const gateResult = await deps.evaluateCandidate(candidateId);
-  return { source_id: sourceId, outcome: 'candidate_created', retrieval_run_id: runId, changed, candidate_id: candidateId, gate_result: gateResult };
+  return { source_id: sourceId, outcome: 'candidate_created', retrieval_run_id: runId, changed, candidate_id: candidateId, gate_result: gateResult, extraction_source: usingFixtureExtraction ? 'deterministic_fixture' : 'live_ai' };
 }
 
 export async function handleRun(sourceIds: string[], deps: WorkerDeps): Promise<SourceResult[]> {
