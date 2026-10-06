@@ -1,8 +1,9 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { notify } from '@/core/ui/notify';
+import { FormScrollView } from '@/components/FormScrollView';
 import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { CHECKPOINT_LABELS, RetentionCheckpoint, SUPPORT_CATEGORIES, confirmEnded, confirmStillWorking, loadMyCheckpoint, loadMyDueCheckpoints, requestSupport } from '@/core/retention/retention-service';
@@ -59,7 +60,7 @@ export default function RetentionCheckinScreen() {
 
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH" title="Job check-in" backTo="/home" />
-  <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+  <FormScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
    {loading ? <Text style={s.state}>Loading…</Text> : error ? <Text style={s.state}>{error}</Text> : !active ? (
     <View style={s.empty}><Lucide name="check-circle" color={C.lime} size={22} /><Text style={s.emptyTitle}>NOTHING DUE RIGHT NOW</Text><Text style={s.emptyBody}>We'll check back in with you when your next job check-in is due.</Text></View>
    ) : step === 'done' ? (
@@ -84,7 +85,7 @@ export default function RetentionCheckinScreen() {
     <TextInput style={s.textarea} value={detail} onChangeText={setDetail} multiline placeholder="What's going on? This stays private." placeholderTextColor={C.muted} />
     <Pressable style={s.optionPrimary} onPress={() => void submitSupport()} disabled={saving}><Text style={s.optionPrimaryText}>{saving ? 'SENDING…' : 'SEND'}</Text></Pressable>
    </>)}
-  </ScrollView>
+  </FormScrollView>
  </ScreenFrame>;
 }
 

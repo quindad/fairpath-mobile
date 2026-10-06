@@ -120,7 +120,8 @@
     "db:baseline:tables": "node supabase/baseline/generate-baseline-tables.mjs",
     "db:baseline:logic": "node supabase/baseline/generate-baseline-logic.mjs",
     "db:pull": "supabase db pull",
-    "db:types": "supabase gen types typescript --linked > src/core/supabase/database.types.ts"
+    "db:types": "supabase gen types typescript --linked > src/core/supabase/database.types.ts",
+    "test:pathways": "node --test --experimental-strip-types tests/pathway-registry.test.ts"
   },
   "private": true
 }

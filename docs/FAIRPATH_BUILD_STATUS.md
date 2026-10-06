@@ -2,6 +2,8 @@
 
 Last updated: 2026-09-20
 
+> **Superseded for current status on 2026-10-06.** Use [FAIRPATH_V2_PROGRESS_BOARD.md](FAIRPATH_V2_PROGRESS_BOARD.md) for BUILT / TESTED / BLOCKED / PLANNED. The offline baseline on 2026-10-06 was 28 of 49 checks passing; the sections below describe intent and history, not verified status.
+
 ## Source of truth
 Read this file and the latest commits on `main` before starting a new build chat. The repository is authoritative; chat memory is secondary.
 
