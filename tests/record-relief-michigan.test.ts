@@ -1,0 +1,14 @@
+import test from'node:test';import assert from'node:assert/strict';import{evaluateMichiganApplication,evaluateMichiganAutomatic}from'../src/core/record-relief/michigan.ts';import type{Charge}from'../src/core/record-relief/jurisdiction-engine.ts';
+const ch=(x:Partial<Charge>={}):Charge=>({id:'mi1',offenseName:'Example',degree:'misdemeanor',disposition:'conviction',...x});
+const app={today:'2026-10-07',applicationFelonyCount:0,seriousMisdemeanor:false,assaultiveCrime:false,firstOwi:false,pendingCharges:false,newConvictionDuringWait:false,sentenceImposedDate:'2020-01-01'};
+test('MI ordinary application misdemeanor uses three years',()=>{const r=evaluateMichiganApplication(ch(),app);assert.equal(r.eligibilityDate,'2023-01-01');assert.equal(r.outcome,'court_or_prosecutor_discretion')});
+test('MI serious misdemeanor uses five years',()=>{assert.equal(evaluateMichiganApplication(ch(),{...app,seriousMisdemeanor:true}).eligibilityDate,'2025-01-01')});
+test('MI one felony uses five years',()=>{assert.equal(evaluateMichiganApplication(ch({degree:'felony'}),{...app,applicationFelonyCount:1}).eligibilityDate,'2025-01-01')});
+test('MI multiple felonies use seven years',()=>{assert.equal(evaluateMichiganApplication(ch({degree:'felony'}),{...app,applicationFelonyCount:2}).eligibilityDate,'2027-01-01')});
+test('MI application uses latest statutory anchor',()=>{assert.equal(evaluateMichiganApplication(ch({degree:'felony'}),{...app,applicationFelonyCount:1,imprisonmentCompletionDate:'2023-06-01'}).eligibilityDate,'2028-06-01')});
+test('MI pending charges block application',()=>{assert.equal(evaluateMichiganApplication(ch(),{...app,pendingCharges:true}).outcome,'likely_excluded_verified')});
+const auto={today:'2035-01-01',pendingCharges:false,newConvictionDuringWait:false,automaticDisqualifyingCategory:false,maxJailDays:93,sentenceImposedDate:'2020-01-01'};
+test('MI automatic misdemeanor waits seven years',()=>{assert.equal(evaluateMichiganAutomatic(ch(),auto).eligibilityDate,'2027-01-01')});
+test('MI automatic felony waits ten years from later sentence/prison event',()=>{const r=evaluateMichiganAutomatic(ch({degree:'felony'}),{...auto,imprisonmentCompletionDate:'2022-01-01'});assert.equal(r.eligibilityDate,'2032-01-01')});
+test('MI automatic excluded category fails closed',()=>{assert.equal(evaluateMichiganAutomatic(ch(),{...auto,automaticDisqualifyingCategory:true}).outcome,'likely_excluded_verified')});
+test('MI automatic pending case waits',()=>{assert.equal(evaluateMichiganAutomatic(ch(),{...auto,pendingCharges:true}).outcome,'waiting_period')});
