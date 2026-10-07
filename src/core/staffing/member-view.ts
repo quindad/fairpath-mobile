@@ -18,7 +18,7 @@ export type InternalAssignment = {
   expectedDurationWeeks: number | null;
   status: AssignmentStatus;
   interviewScheduledAt: string | null;
-  screeningStatus: 'not_started' | 'consent_pending' | 'in_progress' | 'complete' | null;
+  screeningStatus: 'not_started' | 'consent_pending' | 'in_progress' | 'complete' | 'manual_review' | null;
   onboardingStatus: 'not_started' | 'pending' | 'complete' | null;
   startDate: string | null;
   timePayrollHandoffAvailable: boolean;

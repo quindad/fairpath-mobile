@@ -58,6 +58,6 @@ export const DEMO_ASSIGNMENT_IN_REVIEW: InternalAssignment = {
   id: 'demo-assign-review', clientDisplayName: DEMO_REQUISITION.clientDisplayName, roleTitle: DEMO_REQUISITION.roleTitle,
   locationText: DEMO_REQUISITION.location, payRateHourly: 19.5, payRatePeriodLabel: 'hr', shiftScheduleText: 'Mon-Fri, 7am-3:30pm',
   assignmentType: 'temp_to_hire', expectedDurationWeeks: 12, status: 'screening', interviewScheduledAt: '2026-10-10T14:00:00Z',
-  screeningStatus: 'in_progress', onboardingStatus: 'not_started', startDate: null, timePayrollHandoffAvailable: false,
+  screeningStatus: 'manual_review', onboardingStatus: 'not_started', startDate: null, timePayrollHandoffAvailable: false,
   retentionCheckpointDueAt: null,
 };

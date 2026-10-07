@@ -15,9 +15,19 @@ test('every assignment type has a plain-language explanation', () => {
 test('employer-of-record note never claims the arrangement is finalized before it is', () => {
   const pending = employerOfRecordNote('Acme Co.', false);
   assert.equal(/finalizing/i.test(pending.note), true);
+  assert.equal(pending.workerEmployer, 'pending_confirmation');
   const finalized = employerOfRecordNote('Acme Co.', true);
+  assert.equal(finalized.workerEmployer, 'eor_partner');
   assert.equal(/finalizing/i.test(finalized.note), false);
   assert.ok(finalized.note.includes('Acme Co.'));
+});
+
+test('manual review is an explicit screening state, not inferred from ordinary in-progress screening', () => {
+  const memberView = readFileSync(fileURLToPath(new URL('../src/core/staffing/member-view.ts', import.meta.url)), 'utf8');
+  const assignmentScreen = readFileSync(fileURLToPath(new URL('../src/app/my-assignment.tsx', import.meta.url)), 'utf8');
+  assert.match(memberView, /'manual_review'/);
+  assert.match(assignmentScreen, /a\.screeningStatus === 'manual_review'/);
+  assert.equal(assignmentScreen.includes("a.screeningStatus === 'in_progress' &&"), false);
 });
 
 test('timeline marks every prior step done, the current step current, and later steps upcoming', () => {

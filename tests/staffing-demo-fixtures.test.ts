@@ -37,8 +37,8 @@ test('every demo assignment passes cleanly through the member-safe view with no 
   }
 });
 
-test('the in-review fixture demonstrates screening in progress with onboarding not started', () => {
-  assert.equal(DEMO_ASSIGNMENT_IN_REVIEW.screeningStatus, 'in_progress');
+test('the in-review fixture uses the explicit manual-review state with onboarding not started', () => {
+  assert.equal(DEMO_ASSIGNMENT_IN_REVIEW.screeningStatus, 'manual_review');
   assert.equal(DEMO_ASSIGNMENT_IN_REVIEW.onboardingStatus, 'not_started');
 });
 

@@ -63,8 +63,8 @@ export default function MyAssignmentScreen() {
 
 function AssignmentDetail({ a }: { a: MemberAssignmentView }) {
   const s = useThemedStyles(styles);
-  const manualReview = a.screeningStatus === 'in_progress' && a.onboardingStatus === 'not_started';
-  const screeningState = manualReview ? 'manual_review' : (a.screeningStatus ?? 'not_started');
+  const manualReview = a.screeningStatus === 'manual_review';
+  const screeningState = a.screeningStatus ?? 'not_started';
   const next = buildNextAction(a.status, a.screeningStatus, a.onboardingStatus, a.retentionCheckpointDueAt);
   const contactAvailable = a.onboardingStatus === 'complete';
 

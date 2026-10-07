@@ -14,13 +14,13 @@ export const ASSIGNMENT_TYPE_EXPLANATION: Record<AssignmentType, string> = {
   temp_to_hire: 'A trial period working for this client. If it goes well, the client may offer you a direct position with them.',
 };
 
-export type EmployerOfRecordNote = { workerEmployer: 'fairpath_eor_partner'; worksite: string; note: string };
+export type EmployerOfRecordNote = { workerEmployer: 'pending_confirmation' | 'eor_partner'; worksite: string; note: string };
 
 /** Who legally employs the worker vs. where they physically work. Never claims an EOR relationship is finalized
  * before it actually is — the note text is the only place this is ever described to a member. */
 export function employerOfRecordNote(worksite: string, eorFinalized: boolean): EmployerOfRecordNote {
   return {
-    workerEmployer: 'fairpath_eor_partner',
+    workerEmployer: eorFinalized ? 'eor_partner' : 'pending_confirmation',
     worksite,
     note: eorFinalized
       ? `You work at ${worksite}. Your employer of record handles your pay and tax paperwork.`
