@@ -139,3 +139,31 @@ Test command: `npm run test:veterans-membership` (9 tests... see file for count)
 - Blocked on source licensing. Coursera, and most course platforms, do not permit scraping, and their API access requires a partnership agreement. Each catalog source needs written permission or an official API with terms that allow this use. **Do not ingest any source without its verified terms.**
 - Planned design, reusing the existing Program Scout pattern: a source registry with terms status per source, an hourly worker that writes candidates for review, and no publication until a human approves each course.
 - Status: PLANNED. Needs founder approval of the first sources and their terms.
+
+---
+
+## Pass 3 (partial) — Academy core, credit ledger, document contract (2026-10-06)
+
+| Item | Status | Evidence |
+|---|---|---|
+| Academy canonical course contract and cost classification (never free when unknown or paid-certificate) | BUILT, TESTED | `src/core/academy/catalog-contract.ts` |
+| Provider adapter contract; no permission means no fetch; refresh gated by provider minimum | BUILT, TESTED | `src/core/academy/provider-adapters.ts` |
+| Course search, filters, sorting; stale and unverified courses excluded | BUILT, TESTED | `src/core/academy/catalog-search.ts` |
+| DEV fixtures, clearly labeled, not real courses | BUILT (fixtures only) | `src/core/academy/fixtures.ts` |
+| Credit ledger: monthly first, earliest-expiry purchased, idempotent, never negative, 12-month expiry | BUILT, TESTED | `src/core/credits/ledger.ts` |
+| Document extraction contract: proposed until reviewed, consent per audience, donors never receive | BUILT, TESTED | `src/core/documents/extraction-contract.ts` |
+| Test file | 35 tests pass | `tests/academy-credits-documents.test.ts` |
+| Native course enrollment, lessons, progress UI | PLANNED | Next Academy pass |
+| Veterans screens (six branches, profile, translation UI) | PLANNED | Not built this pass |
+| Secure upload UI, PDF/image extraction service | PLANNED | Contract only; no upload or OCR built |
+| Credit Studio UI | PLANNED | Ledger logic only |
+| Hourly refresh scheduler | PLANNED | Design only; gated by provider permission |
+
+### API verification (secret store and live providers)
+
+- Four server secret names (`ANTHROPIC_API_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`): **BLOCKED.** No authorized access to the DEV secret store from this environment. Not read, not printed.
+- Anthropic DEV smoke test: **BLOCKED** by the same access gap.
+- Stripe test-mode verification: **BLOCKED** by the same access gap.
+- No live charge, donation, subscription or production write was made.
+
+Test command for this pass: `node --test --experimental-strip-types tests/academy-credits-documents.test.ts` (35 pass). Typecheck clean.
