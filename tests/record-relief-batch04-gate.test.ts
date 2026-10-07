@@ -1,0 +1,1 @@
+import test from'node:test';import assert from'node:assert/strict';import{BATCH04_CODES,batch04CalculationGate}from'../src/core/record-relief/batch04.ts';test('batch04 list',()=>assert.equal(BATCH04_CODES.length,10));test('AL on',()=>assert.equal(batch04CalculationGate('US-AL'),true));test('MS off',()=>assert.equal(batch04CalculationGate('US-MS'),false));
