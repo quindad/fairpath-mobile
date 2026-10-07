@@ -167,3 +167,23 @@ Test command: `npm run test:veterans-membership` (9 tests... see file for count)
 - No live charge, donation, subscription or production write was made.
 
 Test command for this pass: `node --test --experimental-strip-types tests/academy-credits-documents.test.ts` (35 pass). Typecheck clean.
+
+---
+
+## Pass 4 — Screens (2026-10-06)
+
+| Item | Status | Evidence |
+|---|---|---|
+| Veterans dashboard screen (`/veterans`): six branches, optional branch selection, component labels, dashboard sections, occupation lookup that shows only reviewed translations | BUILT, typecheck pass, navigation and keyboard audits pass | `src/app/veterans.tsx` |
+| Veterans pathway status | IN DEVELOPMENT (kept) | Banner on screen |
+| Academy screen (`/academy`): search, cost filters, course cards with cost labels, fixture banner | BUILT, typecheck pass, audits pass | `src/app/academy.tsx` |
+| Screen copy safety (no affiliation, endorsement or guarantee claims) | TESTED | `tests/screen-copy.test.ts` |
+| Device rendering, dark/light modes, large text, screen-reader pass | NOT TESTED | No device available |
+| Navigation links from Home or Explore to these screens | PARTIAL | Routes exist; not yet linked from tabs |
+| Academy enrollment, lessons, progress, bookmarks | PLANNED | — |
+| Document upload screens, Credit Studio screens | PLANNED | — |
+| Food Rescue, Giving, matching, Entrepreneurship, Privacy Center | PLANNED | — |
+| Marketplace two-account QA and device QA | BLOCKED | Needs test accounts and device |
+| Pathway RLS migration (proposed, not applied) | PLANNED | — |
+
+Test commands: `npm run typecheck`; `node scripts/audit-keyboard.mjs`; `node scripts/audit-navigation.mjs`; `node --test --experimental-strip-types tests/screen-copy.test.ts`.
