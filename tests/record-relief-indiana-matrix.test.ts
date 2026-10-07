@@ -1,0 +1,12 @@
+import test from'node:test';import assert from'node:assert/strict';import{classifyIndiana,indianaWait}from'../src/core/record-relief/indiana-matrix.ts';import type{Charge}from'../src/core/record-relief/jurisdiction-engine.ts';const c=(degree:Charge['degree']='felony',disposition:Charge['disposition']='conviction'):Charge=>({id:'in',offenseName:'x',degree,disposition});
+test('IN nonconviction section 1',()=>assert.equal(classifyIndiana(c('misdemeanor','dismissal'),{}),1));
+test('IN misdemeanor section 2',()=>assert.equal(classifyIndiana(c('misdemeanor'),{}),2));
+test('IN converted L6 section 2',()=>assert.equal(classifyIndiana(c(),{convertedDOrL6ToMisdemeanor:true}),2));
+test('IN L6 no bodily injury section 3',()=>assert.equal(classifyIndiana(c(),{classDOrLevel6:true,bodilyInjuryElement:false}),3));
+test('IN perjury cannot use section 3',()=>assert.notEqual(classifyIndiana(c(),{classDOrLevel6:true,bodilyInjuryElement:false,perjury:true,seriousBodilyInjuryElement:false}),3));
+test('IN serious bodily injury routes section 5',()=>assert.equal(classifyIndiana(c(),{seriousBodilyInjuryElement:true}),5));
+test('IN homicide excluded',()=>assert.equal(classifyIndiana(c(),{homicide:true}),'excluded'));
+test('IN sex violent offender excluded globally',()=>assert.equal(classifyIndiana(c('misdemeanor'),{sexOrViolentOffender:true}),'excluded'));
+test('IN section 4 later-of clock',()=>assert.equal(indianaWait(4,'2018-01-01','2024-01-01'),'2027-01-01'));
+test('IN section 5 later-of clock',()=>assert.equal(indianaWait(5,'2018-01-01','2024-01-01'),'2029-01-01'));
+test('IN section 2 clock is conviction plus five',()=>assert.equal(indianaWait(2,'2020-01-01'),'2025-01-01'));
