@@ -108,3 +108,34 @@ Status key: **BUILT** = code exists in repo · **TESTED** = an automated check p
 3. Veterans dashboard shell and MOS translation contract, reviewed before any branding.
 4. Credit Studio mobile foundation: document wallet contract and report-comparison types, no paid features.
 5. Shared contracts for Food and Giving, documented, no activation.
+
+---
+
+## Pass 2 — Veterans foundation and frozen V1 membership (2026-10-06)
+
+| Item | Status | Evidence |
+|---|---|---|
+| Frozen V1 membership and AI debit schedule, single source | BUILT, TESTED | `src/core/membership/frozen-v1.ts`; values pinned to `FAIRPATH-V1-MEMBERSHIP-PRICING-FROZEN.md` (membership-v1.0, public-site commit c4c9e2c) |
+| Six branches with official names, no insignia, accent pending review | BUILT, TESTED | `src/core/veterans/branches.ts` |
+| Consent-gated service profile (13 fields), browse needs no profile | BUILT, TESTED | `src/core/veterans/service-profile.ts` |
+| Occupation translation: reviewed mappings only, empty table | BUILT, TESTED (no reviewed data yet) | `src/core/veterans/translation.ts` |
+| Veterans dashboard sections with honest status; benefit determinations disabled | BUILT, TESTED (all sections not usable) | `src/core/veterans/dashboard.ts` |
+| Veterans UI screens | PLANNED | No screens added this pass |
+| Reviewed MOS / AFSC / rating translation data | BLOCKED | Needs subject-matter review and a reviewed import |
+| Pathway RLS and consent enforcement in database | PLANNED | Proposed migration not yet written |
+
+Test command: `npm run test:veterans-membership` (9 tests... see file for count). Combined with pathway tests: 29 of 29 pass. Typecheck clean.
+
+### Conflicts found in pass 2
+
+1. **Dispute letters.** The frozen spec gates AI dispute-letter drafting to Premium. The founder directive asks for free-first Credit Studio dispute drafting. The spec controls the current build; this needs founder decision.
+2. **Veterans status.** The founder says all six pathways are in the approved launch blueprint. The registry shows Veterans as `in_development`. The directive asks for a launch-blocker flag rather than removal. Veterans remains a launch-blocker item until reviewed.
+3. **Organization pricing.** The public site shows proposals ($79/$199 employer, $19/$49/$99 housing, $39/$119 reentry). The frozen spec says these are not founder-frozen. Mobile employer pricing ($79/$179/$349) still conflicts with the website. Employer billing stays disabled.
+4. **Frozen spec commit location.** The spec lives in the public-site repo (`c4c9e2c`), not in the mobile repo. Mobile code mirrors it; a future drift check should compare against that file.
+
+### Education and course catalog (planned, not started)
+
+- Requested: an hourly API that pulls free and low-cost courses, better than Coursera.
+- Blocked on source licensing. Coursera, and most course platforms, do not permit scraping, and their API access requires a partnership agreement. Each catalog source needs written permission or an official API with terms that allow this use. **Do not ingest any source without its verified terms.**
+- Planned design, reusing the existing Program Scout pattern: a source registry with terms status per source, an hourly worker that writes candidates for review, and no publication until a human approves each course.
+- Status: PLANNED. Needs founder approval of the first sources and their terms.

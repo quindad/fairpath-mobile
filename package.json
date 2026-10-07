@@ -121,7 +121,8 @@
     "db:baseline:logic": "node supabase/baseline/generate-baseline-logic.mjs",
     "db:pull": "supabase db pull",
     "db:types": "supabase gen types typescript --linked > src/core/supabase/database.types.ts",
-    "test:pathways": "node --test --experimental-strip-types tests/pathway-registry.test.ts"
+    "test:pathways": "node --test --experimental-strip-types tests/pathway-registry.test.ts",
+    "test:veterans-membership": "node --test --experimental-strip-types tests/veterans-and-membership.test.ts"
   },
   "private": true
 }
