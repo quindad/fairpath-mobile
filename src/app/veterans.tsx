@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { FormScrollView } from '@/components/FormScrollView';
@@ -36,6 +37,10 @@ export default function VeteransScreen() {
             Some features are still being built and verified. FairPath is not affiliated with, endorsed by, or acting for the Department of Defense or the Department of Veterans Affairs.
           </Text>
         </View>
+
+        <Pressable style={s.button} accessibilityRole="link" accessibilityLabel="Open your Veterans service profile" onPress={() => router.push('/veterans/profile' as never)}>
+          <Text style={s.buttonText}>Service profile and consent</Text>
+        </Pressable>
 
         <SectionTitle>Your branch</SectionTitle>
         <Text style={s.help}>Optional. Choose a branch to personalize this page. Browsing needs no personal information.</Text>
