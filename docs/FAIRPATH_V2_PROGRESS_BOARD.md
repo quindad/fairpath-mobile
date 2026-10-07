@@ -187,3 +187,27 @@ Test command for this pass: `node --test --experimental-strip-types tests/academ
 | Pathway RLS migration (proposed, not applied) | PLANNED | — |
 
 Test commands: `npm run typecheck`; `node scripts/audit-keyboard.mjs`; `node scripts/audit-navigation.mjs`; `node --test --experimental-strip-types tests/screen-copy.test.ts`.
+
+---
+
+## Pass 5 — Navigation, Explore, Academy enrollment, Credit Studio (2026-10-06)
+
+| Item | Status | Evidence |
+|---|---|---|
+| Bottom navigation aligned to approved five tabs: Home, Explore, AI, My Path, Profile | BUILT, navigation audit passes | `src/components/ProductChrome.tsx` |
+| Explore: real discovery hub replacing Expo starter screen; Academy and Veterans marked In development; Food and Giving marked Planned | BUILT, audits pass | `src/app/explore.tsx` |
+| Home shortcuts to Academy and Veterans | BUILT | `src/app/home.tsx` |
+| My Path placeholder screen with honest in-development status | BUILT (placeholder only) | `src/app/my-path.tsx` |
+| Academy native enrollment, lesson completion, progress, assessment scoring, certificate eligibility (FairPath-authored only) | BUILT, TESTED logic | `src/core/academy/enrollment.ts` |
+| Academy course detail and enrollment screen | PLANNED (logic exists; no screen yet) | — |
+| Credit Studio manual utilization calculator and Premium-gated dispute drafting copy | BUILT, TESTED logic and screen | `src/core/credit-studio/utilization.ts`, `src/app/credit-studio.tsx` |
+| Credit Studio tier source | PARTIAL: hard-coded to Free until the entitlement service is connected | Commented in screen |
+| Credit report upload, extraction, dispute workflow | PLANNED | Not connected |
+| Document upload and member review screens | PLANNED | Contract exists; no screen |
+| Veterans profile form and My Path integration | PLANNED | — |
+| Test file | 14 new tests pass; all targeted suites pass | `tests/academy-enrollment-credit-studio.test.ts` |
+
+### Conflicts and notes
+- The app's bottom bar had Find and Market; the approved set is Home, Explore, AI, My Path, Profile. Marketplace and Jobs/Housing remain reachable from Explore. `/find` still exists as a route.
+- Credit Studio cannot read the member's tier yet, so it shows the Free state.
+- Pass 5 screens have not been run on a device or in a browser. Verification so far is typecheck, navigation audit and keyboard audit.

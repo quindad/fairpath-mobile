@@ -1,180 +1,107 @@
-import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
-import { Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { Pressable, Text, View } from 'react-native';
+import { Lucide } from '@react-native-vector-icons/lucide';
+import { PageHeader, ScreenFrame, SectionTitle } from '@/components/ProductChrome';
+import { useThemedStyles } from '@/core/theme/ThemeProvider';
+import type { ThemeTokens } from '@/core/theme/tokens';
+import { FairPathColors as C } from '@/constants/fairpath';
 
-import { ExternalLink } from '@/components/external-link';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Collapsible } from '@/components/ui/collapsible';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+type Destination = {
+  id: string;
+  title: string;
+  body: string;
+  icon: string;
+  route: string | null;
+  status: 'live' | 'in_development' | 'planned';
+};
 
-export default function TabTwoScreen() {
-  const safeAreaInsets = useSafeAreaInsets();
-  const insets = {
-    ...safeAreaInsets,
-    bottom: safeAreaInsets.bottom + BottomTabInset + Spacing.three,
-  };
-  const theme = useTheme();
+const SECTIONS: { title: string; items: Destination[] }[] = [
+  {
+    title: 'Work and housing',
+    items: [
+      { id: 'jobs', title: 'Jobs', body: 'Fair-chance job search and applications.', icon: 'briefcase', route: '/find-jobs', status: 'live' },
+      { id: 'housing', title: 'Housing', body: 'Listings, filters and applications.', icon: 'house', route: '/find-housing', status: 'live' },
+    ],
+  },
+  {
+    title: 'Learn',
+    items: [
+      { id: 'academy', title: 'Academy', body: 'Free and affordable courses, matched to your goals.', icon: 'graduation-cap', route: '/academy', status: 'in_development' },
+    ],
+  },
+  {
+    title: 'Pathways',
+    items: [
+      { id: 'veterans', title: 'Veterans', body: 'Transition, careers, housing and benefits navigation.', icon: 'flag', route: '/veterans', status: 'in_development' },
+      { id: 'food', title: 'Food & Food Rescue', body: 'Free and discounted food near you.', icon: 'gift', route: null, status: 'planned' },
+      { id: 'giving', title: 'Giving', body: 'Verified needs and community support.', icon: 'gift', route: null, status: 'planned' },
+    ],
+  },
+  {
+    title: 'Support',
+    items: [
+      { id: 'resources', title: 'Resources', body: 'Emergency help and local services. Free, no sign-up.', icon: 'life-buoy', route: '/resources', status: 'live' },
+      { id: 'record-relief', title: 'Record Relief', body: 'Check possible relief paths and filing steps.', icon: 'scale', route: '/record-relief', status: 'live' },
+      { id: 'market', title: 'Free Marketplace', body: 'Free goods, claimed with your monthly allowance.', icon: 'store', route: '/marketplace', status: 'live' },
+    ],
+  },
+];
 
-  const contentPlatformStyle = Platform.select({
-    android: {
-      paddingTop: insets.top,
-      paddingLeft: insets.left,
-      paddingRight: insets.right,
-      paddingBottom: insets.bottom,
-    },
-    web: {
-      paddingTop: Spacing.six,
-      paddingBottom: Spacing.four,
-    },
-  });
+const STATUS_LABEL: Record<Destination['status'], string> = {
+  live: 'Available',
+  in_development: 'In development',
+  planned: 'Planned, not open',
+};
 
+export default function ExploreScreen() {
+  const s = useThemedStyles(styles);
   return (
-    <ScrollView
-      style={[styles.scrollView, { backgroundColor: theme.background }]}
-      contentInset={insets}
-      contentContainerStyle={[styles.contentContainer, contentPlatformStyle]}>
-      <ThemedView style={styles.container}>
-        <ThemedView style={styles.titleContainer}>
-          <ThemedText type="subtitle">Explore</ThemedText>
-          <ThemedText style={styles.centerText} themeColor="textSecondary">
-            This starter app includes example{'\n'}code to help you get started.
-          </ThemedText>
-
-          <ExternalLink href="https://docs.expo.dev" asChild>
-            <Pressable style={({ pressed }) => pressed && styles.pressed}>
-              <ThemedView type="backgroundElement" style={styles.linkButton}>
-                <ThemedText type="link">Expo documentation</ThemedText>
-                <SymbolView
-                  tintColor={theme.text}
-                  name={{ ios: 'arrow.up.right.square', android: 'link', web: 'link' }}
-                  size={12}
-                />
-              </ThemedView>
-            </Pressable>
-          </ExternalLink>
-        </ThemedView>
-
-        <ThemedView style={styles.sectionsWrapper}>
-          <Collapsible title="File-based routing">
-            <ThemedText type="small">
-              This app has two screens: <ThemedText type="code">src/app/index.tsx</ThemedText> and{' '}
-              <ThemedText type="code">src/app/explore.tsx</ThemedText>
-            </ThemedText>
-            <ThemedText type="small">
-              The layout file in <ThemedText type="code">src/app/_layout.tsx</ThemedText> sets up
-              the tab navigator.
-            </ThemedText>
-            <ExternalLink href="https://docs.expo.dev/router/introduction">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
-
-          <Collapsible title="Android, iOS, and web support">
-            <ThemedView type="backgroundElement" style={styles.collapsibleContent}>
-              <ThemedText type="small">
-                You can open this project on Android, iOS, and the web. To open the web version,
-                press <ThemedText type="smallBold">w</ThemedText> in the terminal running this
-                project.
-              </ThemedText>
-              <Image
-                source={require('@/assets/images/tutorial-web.png')}
-                style={styles.imageTutorial}
-              />
-            </ThemedView>
-          </Collapsible>
-
-          <Collapsible title="Images">
-            <ThemedText type="small">
-              For static images, you can use the <ThemedText type="code">@2x</ThemedText> and{' '}
-              <ThemedText type="code">@3x</ThemedText> suffixes to provide files for different
-              screen densities.
-            </ThemedText>
-            <Image source={require('@/assets/images/react-logo.png')} style={styles.imageReact} />
-            <ExternalLink href="https://reactnative.dev/docs/images">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
-
-          <Collapsible title="Light and dark mode components">
-            <ThemedText type="small">
-              This template has light and dark mode support. The{' '}
-              <ThemedText type="code">useColorScheme()</ThemedText> hook lets you inspect what the
-              user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-            </ThemedText>
-            <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
-
-          <Collapsible title="Animations">
-            <ThemedText type="small">
-              This template includes an example of an animated component. The{' '}
-              <ThemedText type="code">src/components/ui/collapsible.tsx</ThemedText> component uses
-              the powerful <ThemedText type="code">react-native-reanimated</ThemedText> library to
-              animate opening this hint.
-            </ThemedText>
-          </Collapsible>
-        </ThemedView>
-        {Platform.OS === 'web' && <WebBadge />}
-      </ThemedView>
-    </ScrollView>
+    <ScreenFrame>
+      <PageHeader eyebrow="DISCOVER" title="Explore" onBack={false} />
+      <View style={s.content}>
+        {SECTIONS.map((section) => (
+          <View key={section.title} style={s.section}>
+            <SectionTitle>{section.title}</SectionTitle>
+            {section.items.map((item) => {
+              const open = item.route !== null && item.status !== 'planned';
+              return (
+                <Pressable
+                  key={item.id}
+                  accessibilityRole={open ? 'link' : 'text'}
+                  accessibilityLabel={`${item.title}. ${STATUS_LABEL[item.status]}. ${item.body}`}
+                  accessibilityState={{ disabled: !open }}
+                  disabled={!open}
+                  onPress={() => {
+                    if (item.route) router.push(item.route as never);
+                  }}
+                  style={[s.card, !open && s.cardMuted]}
+                >
+                  <View style={s.iconWrap}>
+                    <Lucide name={item.icon as never} color={C.lime} size={18} />
+                  </View>
+                  <View style={s.copy}>
+                    <Text style={s.cardTitle}>{item.title}</Text>
+                    <Text style={s.cardBody}>{item.body}</Text>
+                    <Text style={s.status}>{STATUS_LABEL[item.status]}</Text>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        ))}
+      </View>
+    </ScreenFrame>
   );
 }
 
-const styles = StyleSheet.create({
-  scrollView: {
-    flex: 1,
-  },
-  contentContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  container: {
-    maxWidth: MaxContentWidth,
-    flexGrow: 1,
-  },
-  titleContainer: {
-    gap: Spacing.three,
-    alignItems: 'center',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.six,
-  },
-  centerText: {
-    textAlign: 'center',
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-  linkButton: {
-    flexDirection: 'row',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-    borderRadius: Spacing.five,
-    justifyContent: 'center',
-    gap: Spacing.one,
-    alignItems: 'center',
-  },
-  sectionsWrapper: {
-    gap: Spacing.five,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.three,
-  },
-  collapsibleContent: {
-    alignItems: 'center',
-  },
-  imageTutorial: {
-    width: '100%',
-    aspectRatio: 296 / 171,
-    borderRadius: Spacing.three,
-    marginTop: Spacing.two,
-  },
-  imageReact: {
-    width: 100,
-    height: 100,
-    alignSelf: 'center',
-  },
+const styles = (t: ThemeTokens) => ({
+  content: { padding: 16, gap: 20, paddingBottom: 120 },
+  section: { gap: 10 },
+  card: { flexDirection: 'row' as const, gap: 12, borderWidth: 1, borderColor: t.border, backgroundColor: t.surface, padding: 14, alignItems: 'center' as const },
+  cardMuted: { opacity: 0.6 },
+  iconWrap: { width: 36, height: 36, alignItems: 'center' as const, justifyContent: 'center' as const, borderWidth: 1, borderColor: t.accent },
+  copy: { flex: 1, gap: 2 },
+  cardTitle: { color: t.text, fontWeight: '700' as const, fontSize: 16 },
+  cardBody: { color: t.textSecondary, fontSize: 14, lineHeight: 20 },
+  status: { color: t.accent, fontSize: 12, fontWeight: '700' as const, letterSpacing: 0.4, marginTop: 2 },
 });
