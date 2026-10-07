@@ -1,0 +1,12 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {evaluateOhio295332} from '../src/core/record-relief/ohio.ts';import type {Charge} from '../src/core/record-relief/jurisdiction-engine.ts';
+const c=(x:Partial<Charge>={}):Charge=>({id:'1',offenseName:'Example',degree:'misdemeanor',disposition:'conviction',sentenceCompletionDate:'2024-01-01',...x});
+const facts={today:'2026-10-07',pendingProceeding:false};
+test('Ohio F1/F2 excluded',()=>{assert.equal(evaluateOhio295332(c({degree:'felony',degreeLevel:2}),facts).outcome,'likely_excluded_verified')});
+test('Ohio excluded traffic chapter',()=>{assert.equal(evaluateOhio295332(c({statute:'4511.19'}),facts).outcome,'likely_excluded_verified')});
+test('Ohio ordinary misdemeanor sealing reaches court-discretion branch after one year',()=>{assert.equal(evaluateOhio295332(c(),facts).outcome,'court_or_prosecutor_discretion')});
+test('Ohio F3 sealing waits three years',()=>{const r=evaluateOhio295332(c({degree:'felony',degreeLevel:3,sentenceCompletionDate:'2025-01-01'}),{...facts,otherFelonyConvictions:0});assert.equal(r.outcome,'waiting_period');assert.equal(r.eligibilityDate,'2028-01-01')});
+test('Ohio minor misdemeanor waits six months',()=>{const r=evaluateOhio295332(c({degree:'minor_misdemeanor',sentenceCompletionDate:'2026-06-01'}),facts);assert.equal(r.eligibilityDate,'2026-12-01')});
+test('Ohio felony expungement adds ten years after sealing filing time',()=>{const r=evaluateOhio295332(c({degree:'felony',degreeLevel:4,sentenceCompletionDate:'2020-01-01'}),facts,'expungement');assert.equal(r.eligibilityDate,'2031-01-01');assert.equal(r.outcome,'waiting_period')});
+test('Ohio M3/M4 domestic violence branch is sealing only',()=>{assert.equal(evaluateOhio295332(c({degreeLevel:3}),{...facts,domesticViolenceStatute:'2919.25'},'expungement').outcome,'likely_excluded_verified')});
+test('unknown final degree fails closed',()=>{assert.equal(evaluateOhio295332(c({degree:'unknown'}),facts).outcome,'additional_facts_required')});
+test('pending criminal proceeding does not become a positive result',()=>{assert.equal(evaluateOhio295332(c(),{today:'2026-10-07',pendingProceeding:true}).outcome,'court_or_prosecutor_discretion')});
