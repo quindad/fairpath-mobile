@@ -83,6 +83,12 @@ export default function MyPathScreen() {
               </Pressable>
             )}
 
+            <SectionTitle>FairPath Staffing</SectionTitle>
+            <Pressable style={s.card} accessibilityRole="link" onPress={() => router.push('/my-assignment' as never)}>
+              <Text style={s.cardTitle}>My Assignment</Text>
+              <Text style={s.body}>DEV demo. Once placed on a FairPath Staffing assignment, it shows up here.</Text>
+            </Pressable>
+
             <SectionTitle>Veterans</SectionTitle>
             <Pressable style={s.card} accessibilityRole="link" onPress={() => router.push('/veterans/profile' as never)}>
               <Text style={s.cardTitle}>Service profile</Text>
