@@ -44,7 +44,8 @@ export default function RecordReliefHome() {
 
         {cases ? (
           <>
-            <PrimaryButton label="ADD A CASE" onPress={() => router.push('/record-relief/add' as never)} />
+            <PrimaryButton label="SCAN MY CASE WITH FAIRPATH AI" onPress={() => router.push('/record-relief/scan' as never)} />
+            <SecondaryButton label="ENTER CASE MANUALLY" onPress={() => router.push('/record-relief/add' as never)} />
             <View style={s.block}><SectionTitle>MY CASES</SectionTitle></View>
             {cases.length === 0 ? <EmptyState title="No cases yet" body="Add a case to see whether any verified rule may apply, track a waiting period, and prepare your paperwork. You enter the details, and you can edit or delete them any time." /> : null}
             {cases.map((c) => {
