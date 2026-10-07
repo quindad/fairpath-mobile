@@ -1,30 +1,130 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { computeEconomics, GROSS_SPREAD_LABEL, INTERNAL_ONLY_FIELDS, type RateCard } from '../src/core/staffing/economics.ts';
+import { computeEconomics, validateRateCard, buildEconomicsCardRows, GROSS_SPREAD_LABEL, INTERNAL_ONLY_FIELDS, type RateCard } from '../src/core/staffing/economics.ts';
 import { toMemberView, type InternalAssignment } from '../src/core/staffing/member-view.ts';
 import { canAdvance, advance, screeningAuthorized, AUTO_REJECT_STAGES, type StaffingStage } from '../src/core/staffing/workflow.ts';
 import { resolveListingKind, LISTING_KIND_LABEL } from '../src/core/staffing/listing-kind.ts';
 import { canTransition as foxhireCanTransition, createMockFoxHireAdapter, type FoxHireState } from '../src/core/staffing/foxhire-adapter.ts';
 import { canTransition as screeningCanTransition, mayRequestScreening, createMockScreeningAdapter, FORBIDDEN_FUNCTION_NAME_PATTERNS, type ScreeningState } from '../src/core/staffing/checkr-adapter.ts';
 import { EXPERIAN_STATUS, BANNED_EXPORT_PATTERNS } from '../src/core/staffing/experian-adapter.ts';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 // ---- Economics: gross spread is never called profit, math is correct ----
 
-const RC: RateCard = { payRateHourly: 20, billRateHourly: 32, eorCostHourly: 2, screeningCostFlat: 60, statutoryBurdenPercent: 12, expectedWeeklyHours: 40, expectedAssignmentWeeks: 12 };
+const RC: RateCard = {
+  payRateHourly: 20, billRateHourly: 32, overtimePayRateHourly: null, overtimeBillRateHourly: null,
+  eorCostHourly: 2, screeningCostFlat: 60, statutoryBurdenPercent: 12, otherAssignmentCostFlat: 0,
+  expectedWeeklyRegularHours: 40, expectedWeeklyOvertimeHours: 0, expectedAssignmentWeeks: 12,
+};
 
 test('gross spread is bill minus pay minus EOR cost, and is explicitly labeled not profit', () => {
   const r = computeEconomics(RC);
-  assert.equal(r.grossSpreadHourly, 10);
-  assert.equal(r.label, GROSS_SPREAD_LABEL);
-  assert.ok(/not profit/i.test(r.label));
+  assert.equal(r.ok, true);
+  if (r.ok) {
+    assert.equal(r.result.grossSpreadHourly, 10);
+    assert.equal(r.result.label, GROSS_SPREAD_LABEL);
+    assert.ok(/not profit/i.test(r.result.label));
+  }
 });
 
 test('statutory burden and amortized screening reduce estimated contribution correctly', () => {
   const r = computeEconomics(RC);
-  assert.equal(r.statutoryBurdenHourly, 2.4);
-  assert.equal(r.amortizedScreeningHourly, 0.13); // 60 / (40*12) = 0.125 -> rounds to 0.13
-  assert.equal(r.estimatedContributionHourly, r.grossSpreadHourly - r.statutoryBurdenHourly - r.amortizedScreeningHourly);
+  assert.equal(r.ok, true);
+  if (r.ok) {
+    assert.equal(r.result.statutoryBurdenHourly, 2.4);
+    assert.equal(r.result.amortizedScreeningHourly, 0.13); // 60 / (40*12) = 0.125 -> rounds to 0.13
+    assert.equal(r.result.estimatedContributionHourly, round2sum(r.result));
+  }
+});
+
+function round2sum(r: { grossSpreadHourly: number; statutoryBurdenHourly: number; amortizedScreeningHourly: number; amortizedOtherCostHourly: number }) {
+  return Math.round((r.grossSpreadHourly - r.statutoryBurdenHourly - r.amortizedScreeningHourly - r.amortizedOtherCostHourly) * 100) / 100;
+}
+
+test('zero expected hours never divides by zero; amortization falls back to the flat cost', () => {
+  const r = computeEconomics({ ...RC, expectedWeeklyRegularHours: 0, expectedAssignmentWeeks: 0 });
+  assert.equal(r.ok, true);
+  if (r.ok) assert.equal(r.result.amortizedScreeningHourly, 60); // totalHours floors at 1
+});
+
+test('a negative or zero rate is rejected before any computation', () => {
+  assert.deepEqual(validateRateCard({ ...RC, payRateHourly: -5 }), { ok: false, error: 'invalid_rate' });
+  assert.deepEqual(validateRateCard({ ...RC, payRateHourly: 0 }), { ok: false, error: 'invalid_rate' });
+  assert.deepEqual(computeEconomics({ ...RC, billRateHourly: Number.NaN }), { ok: false, error: 'invalid_rate' });
+});
+
+test('a bill rate below the pay rate is rejected, regular and overtime', () => {
+  assert.deepEqual(validateRateCard({ ...RC, billRateHourly: 15 }), { ok: false, error: 'bill_below_pay' });
+  assert.deepEqual(
+    validateRateCard({ ...RC, overtimePayRateHourly: 30, overtimeBillRateHourly: 25 }),
+    { ok: false, error: 'bill_below_pay' },
+  );
+});
+
+test('missing costs (zero) are valid and simply contribute zero', () => {
+  const r = computeEconomics({ ...RC, eorCostHourly: 0, screeningCostFlat: 0, otherAssignmentCostFlat: 0, statutoryBurdenPercent: 0 });
+  assert.equal(r.ok, true);
+  if (r.ok) {
+    assert.equal(r.result.statutoryBurdenHourly, 0);
+    assert.equal(r.result.amortizedScreeningHourly, 0);
+    assert.equal(r.result.amortizedOtherCostHourly, 0);
+  }
+});
+
+test('overtime input produces a separate overtime gross spread when both overtime rates are supplied', () => {
+  const r = computeEconomics({ ...RC, overtimePayRateHourly: 30, overtimeBillRateHourly: 45, expectedWeeklyOvertimeHours: 5 });
+  assert.equal(r.ok, true);
+  if (r.ok) assert.equal(r.result.overtimeGrossSpreadHourly, 13); // 45 - 30 - 2 EOR
+});
+
+test('overtime is null when not configured, never guessed from regular rates', () => {
+  const r = computeEconomics(RC);
+  assert.equal(r.ok, true);
+  if (r.ok) assert.equal(r.result.overtimeGrossSpreadHourly, null);
+});
+
+test('an assignment extension (more weeks) lowers the amortized screening cost per hour', () => {
+  const short = computeEconomics({ ...RC, expectedAssignmentWeeks: 4 });
+  const long = computeEconomics({ ...RC, expectedAssignmentWeeks: 20 });
+  assert.equal(short.ok && long.ok, true);
+  if (short.ok && long.ok) assert.ok(long.result.amortizedScreeningHourly < short.result.amortizedScreeningHourly);
+});
+
+test('an EOR cost change flows straight through to gross spread without touching other fields', () => {
+  const base = computeEconomics(RC);
+  const higherEor = computeEconomics({ ...RC, eorCostHourly: 5 });
+  assert.equal(base.ok && higherEor.ok, true);
+  if (base.ok && higherEor.ok) {
+    assert.equal(base.result.grossSpreadHourly - higherEor.result.grossSpreadHourly, 3);
+    assert.equal(base.result.statutoryBurdenHourly, higherEor.result.statutoryBurdenHourly);
+  }
+});
+
+test('results round to the cent consistently', () => {
+  const r = computeEconomics({ ...RC, screeningCostFlat: 100, expectedWeeklyRegularHours: 37, expectedAssignmentWeeks: 7 });
+  assert.equal(r.ok, true);
+  if (r.ok) assert.equal(Number.isInteger(r.result.amortizedScreeningHourly * 100), true);
+});
+
+test('the economics card builder never crashes on a valid result and includes the not-profit note', () => {
+  const r = computeEconomics(RC);
+  assert.equal(r.ok, true);
+  if (r.ok) {
+    const rows = buildEconomicsCardRows(RC, r.result);
+    assert.ok(rows.some((row) => row.label === 'Gross spread' && row.note === GROSS_SPREAD_LABEL));
+    assert.ok(rows.some((row) => row.label === 'Estimated contribution' && /not guaranteed profit/i.test(row.note ?? '')));
+  }
+});
+
+test('economics.ts is never imported from a member-facing route', () => {
+  const appDirPath = fileURLToPath(new URL('../src/app/', import.meta.url));
+  const walk = (dir: string): string[] => readdirSync(dir).flatMap((name) => {
+    const p = dir + '/' + name;
+    return statSync(p).isDirectory() ? walk(p) : p.endsWith('.tsx') || p.endsWith('.ts') ? [p] : [];
+  });
+  const files = walk(appDirPath);
+  for (const f of files) assert.equal(/staffing\/economics/.test(readFileSync(f, 'utf8')), false, f);
 });
 
 test('no economics field or function anywhere in the module is literally named profit', () => {
