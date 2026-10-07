@@ -3,6 +3,7 @@ import type { Outcome } from '@/core/record-relief/relief-format';
 import type { ReliefDetailForDoc, ReliefCaseForDoc } from '@/core/documents/builders/record-relief';
 import { RECORD_RELIEF_ENGINE_VERSION, daysUntil, getRuleFreshness } from '@/core/record-relief/shared-engine';
 import { planRecordReliefEvaluation } from '@/core/record-relief/engine-registry';
+import { executeRecordRelief, type EngineFacts } from '@/core/record-relief/engine-executor';
 import type { CaseBundle } from '@/core/record-relief/jurisdiction-engine';
 
 /** Record Relief data access. Cases are owner-only; rules/forms/pathways are verified-only reference data. */
@@ -54,6 +55,8 @@ export const saveCase = (id: string | null, payload: Record<string, unknown>) =>
 export const reevaluateCase = (id: string) => call<unknown>('evaluate_record_relief_case', { p_case: id });
 /** Plans a substantive evaluation through the shared 57-authority registry before persistence/RPC reconciliation. */
 export const planSharedEvaluation = (caseBundle: CaseBundle, facts: Record<string, unknown> = {}) => planRecordReliefEvaluation(caseBundle, facts);
+/** Executes the same substantive engine intended for mobile, web API, and Command Center consumers. */
+export const executeSharedEvaluation = (caseBundle: CaseBundle, facts: EngineFacts = {}) => executeRecordRelief(caseBundle, facts);
 export const setCaseStatus = (id: string, status: string, filedOn?: string | null) => call<ReliefCase>('set_record_relief_case_status', { p_id: id, p_status: status, p_filed_on: filedOn ?? null });
 export const toggleChecklist = (id: string, kind: 'step' | 'document', key: string, done: boolean) => call<void>('toggle_record_relief_checklist', { p_case: id, p_kind: kind, p_key: key, p_done: done });
 export const deleteCase = (id: string) => call<void>('delete_record_relief_case', { p_id: id });
