@@ -28,7 +28,7 @@ export function evaluateOhio295332(c:Charge,f:OhioFacts,remedy:'sealing'|'expung
  if(missing.length)return result(c,remedy,'additional_facts_required',[],missing);
  if(remedy==='sealing'&&f.chapter2950EndedDate){const eligibility=years(f.chapter2950EndedDate,5);if(f.today<eligibility)return result(c,remedy,'waiting_period',['Chapter 2950 requirements ended, but the special five-year sealing period has not elapsed.'],[],eligibility);return result(c,remedy,'court_or_prosecutor_discretion',['The special Chapter 2950 five-year timing gate has elapsed; the court still applies the statutory hearing, rehabilitation and interest-balancing requirements.'],[],eligibility)}
  let wait=1;if(remedy==='sealing'){if(level===3)wait=3;else if(c.degree==='minor_misdemeanor')wait=.5;if(f.solicitingImproperCompensation)wait=7;}else{if(c.degree==='minor_misdemeanor')wait=.5;else if(c.degree==='felony'){const sealWait=level===3?3:f.solicitingImproperCompensation?7:1;wait=sealWait+10;}}
- const eligibility=wait===.5?(()=>{const d=new Date(discharge+'T00:00:00Z');d.setUTCMonth(d.getUTCMonth()+6);return d.toISOString().slice(0,10)})():years(discharge,wait);
+ const eligibility=wait===.5?(()=>{const d=new Date(discharge+'T00:00:00Z');d.setUTCMonth(d.getUTCMonth()+6);return d.toISOString().slice(0,10)})():years(discharge!,wait);
  if(f.today<eligibility)return result(c,remedy,'waiting_period',['The verified waiting period has not elapsed from final discharge.'],[],eligibility);
  return result(c,remedy,'court_or_prosecutor_discretion',['The entered facts clear this rule branch, but the statute still requires a court hearing, rehabilitation finding, and balancing of the applicant and government interests.'],[],eligibility);
 }

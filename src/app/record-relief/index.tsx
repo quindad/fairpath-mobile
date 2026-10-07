@@ -44,7 +44,7 @@ export default function RecordReliefHome() {
 
         {cases ? (
           <>
-            <PrimaryButton label="SCAN MY CASE WITH FAIRPATH AI" onPress={() => router.push('/record-relief/scan' as never)} />
+            <PrimaryButton label="SCAN MY CASE WITH FAIRPATH AI" onPress={() => router.push('/record-relief/scan-packet' as never)} />
             <SecondaryButton label="FIND MY COURT RECORD" onPress={() => router.push('/record-relief/court-finder' as never)} />
             <SecondaryButton label="ENTER CASE MANUALLY" onPress={() => router.push('/record-relief/add' as never)} />
             <View style={s.block}><SectionTitle>MY CASES</SectionTitle></View>

@@ -1,7 +1,7 @@
 import type { CaseBundle } from './jurisdiction-engine';
 export type ReliefOutcome='likely_eligible_verified'|'waiting_period'|'likely_excluded_verified'|'automatic_relief_may_apply'|'court_or_prosecutor_discretion'|'additional_facts_required'|'rule_not_verified'|'legal_review_recommended';
-export type Remedy='sealing'|'expungement'|'set_aside'|'limited_access'|'automatic_clearing'|'pardon'|'certificate'|'other';
-export type AuthoritySource={authority:'statute'|'court_rule'|'judiciary'|'government';citation:string;url:string;effectiveFrom:string;effectiveTo?:string;verifiedOn:string};
+export type Remedy='sealing'|'expungement'|'set_aside'|'limited_access'|'automatic_clearing'|'pardon'|'certificate'|'vacatur'|'dismissal'|'other';
+export type AuthoritySource={authority:'statute'|'court_rule'|'judiciary'|'government';citation:string;url:string;effectiveFrom?:string;effectiveTo?:string;verifiedOn:string};
 export type RuleResult={jurisdictionCode:string;remedy:Remedy;outcome:ReliefOutcome;reasons:string[];missingFacts:string[];source:AuthoritySource;chargeIds:string[];eligibilityDate?:string;courtSpecificFilingReady:boolean};
 export type RuleVersion={key:string;version:number;jurisdictionCode:string;remedy:Remedy;effectiveFrom:string;effectiveTo?:string;verifiedOn:string;source:AuthoritySource;status:'draft'|'verified'|'superseded'|'retired'};
 export type JurisdictionCompleteness={jurisdictionCode:string;remedies:boolean;substantiveRules:boolean;historicalVersions:boolean;courtHierarchy:boolean;localFilingProfiles:boolean;forms:boolean;tests:boolean;mayCalculate:boolean;verifiedOn?:string;notes:string[]};

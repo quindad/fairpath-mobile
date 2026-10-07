@@ -98,3 +98,5 @@ export async function extractRecordReliefCase(uploadId: string, consent: true): 
   return body as RecordReliefExtractionResult;
 }
 
+
+export async function evaluateSharedCaseServer(caseId:string,caseBundle:CaseBundle,facts:EngineFacts={},consumer:'mobile'|'web'|'command_center'='mobile'){const{data:{session}}=await supabase.auth.getSession();if(!session?.access_token)throw new Error('SIGNED_OUT');const base=process.env.EXPO_PUBLIC_SUPABASE_URL;if(!base)throw new Error('SUPABASE_URL_MISSING');const res=await fetch(`${base}/functions/v1/evaluate-record-relief`,{method:'POST',headers:{Authorization:`Bearer ${session.access_token}`,'Content-Type':'application/json'},body:JSON.stringify({apiVersion:'v1',consumer,caseId,caseBundle,facts})});const body=await res.json();if(!res.ok)throw new Error(String(body?.error??'EVALUATION_FAILED'));return body as ReturnType<typeof executeSharedEvaluation>&{apiVersion:'v1';consumer:string}}
