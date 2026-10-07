@@ -1,0 +1,1 @@
+export const MISSISSIPPI_CURRENT={misdemeanor:{statute:'Miss. Code §99-19-71(1)',firstOffense:true},felony:{statute:'§99-19-71(2)',oneFelonyExpunction:true,commonNucleusAggregates:true,waitYearsAfterSentenceCompletion:5},nonadjudication:{statute:'§99-15-26',successfulCompletion:true},nonconviction:{dismissalOrNoBill:true},verifiedOn:'2026-10-07'}as const;
