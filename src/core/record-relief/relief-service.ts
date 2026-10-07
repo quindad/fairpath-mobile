@@ -1,6 +1,9 @@
 import { supabase } from '@/lib/supabase';
 import type { Outcome } from '@/core/record-relief/relief-format';
 import type { ReliefDetailForDoc, ReliefCaseForDoc } from '@/core/documents/builders/record-relief';
+import { RECORD_RELIEF_ENGINE_VERSION, daysUntil, getRuleFreshness } from '@/core/record-relief/shared-engine';
+import { planRecordReliefEvaluation } from '@/core/record-relief/engine-registry';
+import type { CaseBundle } from '@/core/record-relief/jurisdiction-engine';
 
 /** Record Relief data access. Cases are owner-only; rules/forms/pathways are verified-only reference data. */
 export type Jurisdiction = { code: string; name: string; kind: 'state' | 'district' | 'territory' | 'federal' | 'test'; sort_order: number };
@@ -49,6 +52,8 @@ async function call<T>(fn: string, args: Record<string, unknown>): Promise<T> {
 export const loadCaseDetail = (id: string) => call<ReliefDetail>('get_record_relief_case_detail', { p_case: id });
 export const saveCase = (id: string | null, payload: Record<string, unknown>) => call<ReliefCase>('save_record_relief_case', { p_id: id, p: payload });
 export const reevaluateCase = (id: string) => call<unknown>('evaluate_record_relief_case', { p_case: id });
+/** Plans a substantive evaluation through the shared 57-authority registry before persistence/RPC reconciliation. */
+export const planSharedEvaluation = (caseBundle: CaseBundle, facts: Record<string, unknown> = {}) => planRecordReliefEvaluation(caseBundle, facts);
 export const setCaseStatus = (id: string, status: string, filedOn?: string | null) => call<ReliefCase>('set_record_relief_case_status', { p_id: id, p_status: status, p_filed_on: filedOn ?? null });
 export const toggleChecklist = (id: string, kind: 'step' | 'document', key: string, done: boolean) => call<void>('toggle_record_relief_checklist', { p_case: id, p_kind: kind, p_key: key, p_done: done });
 export const deleteCase = (id: string) => call<void>('delete_record_relief_case', { p_id: id });
@@ -59,4 +64,18 @@ export async function loadCurrentEvaluations(): Promise<Record<string, { outcome
   const out: Record<string, { outcome: Outcome; eligibility_date: string | null }[]> = {};
   for (const r of rows) (out[r.case_id] ??= []).push({ outcome: r.outcome, eligibility_date: r.eligibility_date });
   return out;
+}
+
+/** Shared lifecycle metadata used by mobile now and by web/API consumers of the same engine contract. */
+export function enrichEvaluationLifecycle(e: ReliefEvaluation, jurisdictionCode: string, asOf = new Date()) {
+  const freshness = getRuleFreshness(jurisdictionCode, asOf);
+  const eligibilityDate = e.eligibility_date;
+  return {
+    ...e,
+    days_remaining: daysUntil(eligibilityDate, asOf),
+    rule_stale: e.rule_stale || freshness?.stale === true,
+    engine_version: RECORD_RELIEF_ENGINE_VERSION,
+    next_rule_review_on: freshness?.nextReviewOn ?? null,
+    needs_recalculation: e.rule_changed || e.rule_stale || freshness?.stale === true || (eligibilityDate ? daysUntil(eligibilityDate, asOf) === 0 : false),
+  };
 }

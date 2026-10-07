@@ -1,0 +1,10 @@
+import { JURISDICTIONS, type CaseBundle, routeCase } from './jurisdiction-engine.ts';
+export const RECORD_RELIEF_ENGINE_VERSION='2026.10.07.1';export const LAW_REFRESH_INTERVAL_DAYS=30;
+export type RuleFreshness={engineVersion:string;jurisdictionCode:string;verifiedOn:string;nextReviewOn:string;stale:boolean};
+export type SharedEvaluationRequest={caseBundle:CaseBundle;facts?:Record<string,unknown>;evaluatedOn?:string};
+export type SharedEvaluationEnvelope<T=unknown>={authorityCode:string;engineVersion:string;evaluatedAt:string;freshness:RuleFreshness;routing:ReturnType<typeof routeCase>;results:T[]};
+const VERIFIED_ON='2026-10-07';const addUtcDays=(iso:string,days:number)=>{const d=new Date(iso+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10)};
+export const RULE_FRESHNESS:Readonly<Record<string,RuleFreshness>>=Object.freeze(Object.fromEntries(JURISDICTIONS.map(j=>[j.code,{engineVersion:RECORD_RELIEF_ENGINE_VERSION,jurisdictionCode:j.code,verifiedOn:VERIFIED_ON,nextReviewOn:addUtcDays(VERIFIED_ON,LAW_REFRESH_INTERVAL_DAYS),stale:false}])));
+export function getRuleFreshness(code:string,asOf=new Date()):RuleFreshness|null{const base=RULE_FRESHNESS[code.toUpperCase()];if(!base)return null;const today=asOf.toISOString().slice(0,10);return{...base,stale:today>=base.nextReviewOn}}
+export function daysUntil(date:string|null|undefined,asOf=new Date()):number|null{if(!date)return null;const target=Date.parse(date+'T00:00:00Z');if(!Number.isFinite(target))return null;const now=Date.UTC(asOf.getUTCFullYear(),asOf.getUTCMonth(),asOf.getUTCDate());return Math.max(0,Math.ceil((target-now)/86400000))}
+export function needsRecalculation(input:{ruleVersion?:string|null;eligibilityDate?:string|null;evaluatedAt?:string|null},currentVersion=RECORD_RELIEF_ENGINE_VERSION,asOf=new Date()):boolean{if(input.ruleVersion!==currentVersion)return true;if(input.eligibilityDate&&daysUntil(input.eligibilityDate,asOf)===0)return true;if(!input.evaluatedAt)return true;return false}

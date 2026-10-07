@@ -1,0 +1,10 @@
+import test from 'node:test';import assert from 'node:assert/strict';import{RECORD_RELIEF_ENGINE_VERSION,LAW_REFRESH_INTERVAL_DAYS,RULE_FRESHNESS,getRuleFreshness,daysUntil,needsRecalculation}from'../src/core/record-relief/shared-engine.ts';
+test('shared engine covers all 57 authorities',()=>assert.equal(Object.keys(RULE_FRESHNESS).length,57));
+test('law review cadence is 30 days',()=>assert.equal(LAW_REFRESH_INTERVAL_DAYS,30));
+test('next review computed',()=>assert.equal(RULE_FRESHNESS['US-OH'].nextReviewOn,'2026-11-06'));
+test('fresh before review date',()=>assert.equal(getRuleFreshness('US-OH',new Date('2026-11-05T12:00:00Z'))?.stale,false));
+test('stale on review date',()=>assert.equal(getRuleFreshness('US-OH',new Date('2026-11-06T12:00:00Z'))?.stale,true));
+test('countdown calculates days',()=>assert.equal(daysUntil('2026-10-17',new Date('2026-10-07T12:00:00Z')),10));
+test('countdown bottoms at zero',()=>assert.equal(daysUntil('2026-10-01',new Date('2026-10-07T12:00:00Z')),0));
+test('version change forces recalc',()=>assert.equal(needsRecalculation({ruleVersion:'old'},RECORD_RELIEF_ENGINE_VERSION,new Date('2026-10-07T12:00:00Z')),true));
+test('eligibility date arrival forces recalc',()=>assert.equal(needsRecalculation({ruleVersion:RECORD_RELIEF_ENGINE_VERSION,eligibilityDate:'2026-10-07',evaluatedAt:'2026-10-01'},RECORD_RELIEF_ENGINE_VERSION,new Date('2026-10-07T12:00:00Z')),true));
