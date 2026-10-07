@@ -1,0 +1,11 @@
+import test from'node:test';import assert from'node:assert/strict';import{classifyMiAutomatic,classifyMiApplication}from'../src/core/record-relief/michigan-matrix.ts';import type{Charge}from'../src/core/record-relief/jurisdiction-engine.ts';const c=(degree:Charge['degree']='misdemeanor'):Charge=>({id:'mi',offenseName:'x',degree,disposition:'conviction'});const a={maxPenaltyYears:5,assaultive:false,serious:false,dishonesty:false,protectedVictimOrHarm:false,trafficking:false,owi:false,commercialTraffic:false,trafficHarm:false};
+test('MI automatic short misdemeanor class',()=>assert.equal(classifyMiAutomatic(c(),{...a,maxJailDays:92}),'short_misdemeanor'));
+test('MI automatic long misdemeanor class',()=>assert.equal(classifyMiAutomatic(c(),{...a,maxJailDays:93}),'long_misdemeanor'));
+test('MI automatic felony class',()=>assert.equal(classifyMiAutomatic(c('felony'),a),'felony'));
+test('MI automatic assaultive excluded',()=>assert.equal(classifyMiAutomatic(c(),{...a,maxJailDays:90,assaultive:true}),'excluded'));
+test('MI automatic 10-year offense excluded',()=>assert.equal(classifyMiAutomatic(c(),{...a,maxJailDays:90,maxPenaltyYears:10}),'excluded'));
+test('MI automatic unknown exclusion fact fails closed',()=>assert.equal(classifyMiAutomatic(c(),{maxPenaltyYears:5,maxJailDays:90}),'needs_review'));
+test('MI application first OWI special',()=>assert.equal(classifyMiApplication(c(),{owi:true,firstOwi:true}),'first_owi'));
+test('MI application later OWI excluded',()=>assert.equal(classifyMiApplication(c(),{owi:true,firstOwi:false}),'excluded'));
+test('MI application trafficking special separate',()=>assert.equal(classifyMiApplication(c(),{traffickingVictimSpecial:true}),'trafficking_special'));
+test('MI application life maximum excluded',()=>assert.equal(classifyMiApplication(c('felony'),{lifeMaximum:true}),'excluded'));

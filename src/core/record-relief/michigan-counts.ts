@@ -1,0 +1,3 @@
+import type{Charge}from'./jurisdiction-engine';export type MiTransactionFacts={within24Hours?:boolean;sameTransaction?:boolean;assaultive?:boolean;dangerousWeapon?:boolean;maxPenaltyYears?:number};
+export function miCountsAsSingleConviction(charges:readonly Charge[],facts:readonly MiTransactionFacts[]){if(charges.length<2||charges.length!==facts.length)return false;return facts.every(f=>f.within24Hours===true&&f.sameTransaction===true&&f.assaultive===false&&f.dangerousWeapon===false&&f.maxPenaltyYears!==undefined&&f.maxPenaltyYears<10)}
+export function miAutomaticCountGate(felonyCount:number,longMisdemeanorCount:number){return{feloniesOk:felonyCount<=2,longMisdemeanorsOk:longMisdemeanorCount<=4,eligible:felonyCount<=2&&longMisdemeanorCount<=4}}

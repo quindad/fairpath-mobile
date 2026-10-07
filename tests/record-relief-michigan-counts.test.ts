@@ -1,0 +1,6 @@
+import test from'node:test';import assert from'node:assert/strict';import{miCountsAsSingleConviction,miAutomaticCountGate}from'../src/core/record-relief/michigan-counts.ts';import type{Charge}from'../src/core/record-relief/jurisdiction-engine.ts';const cs:Charge[]=[{id:'1',offenseName:'a',degree:'felony',disposition:'conviction'},{id:'2',offenseName:'b',degree:'felony',disposition:'conviction'}];const ok={within24Hours:true,sameTransaction:true,assaultive:false,dangerousWeapon:false,maxPenaltyYears:5};
+test('MI same transaction qualifying counts as one',()=>assert.equal(miCountsAsSingleConviction(cs,[ok,ok]),true));
+test('MI assaultive transaction cannot aggregate',()=>assert.equal(miCountsAsSingleConviction(cs,[ok,{...ok,assaultive:true}]),false));
+test('MI dangerous weapon transaction cannot aggregate',()=>assert.equal(miCountsAsSingleConviction(cs,[ok,{...ok,dangerousWeapon:true}]),false));
+test('MI 10-year offense cannot aggregate',()=>assert.equal(miCountsAsSingleConviction(cs,[ok,{...ok,maxPenaltyYears:10}]),false));
+test('MI automatic caps two felony four long misdemeanor',()=>{assert.equal(miAutomaticCountGate(2,4).eligible,true);assert.equal(miAutomaticCountGate(3,4).eligible,false);assert.equal(miAutomaticCountGate(2,5).eligible,false)});
