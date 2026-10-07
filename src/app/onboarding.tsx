@@ -26,53 +26,67 @@ type Step = {
 
 const steps: Step[] = [
   {
-    eyebrow: 'YOUR GOALS',
-    title: 'What brings you to FairPath?',
-    body: 'Choose everything you want help with. You can change this later.',
+    eyebrow: 'START WITH YOU',
+    title: 'What do you want to move forward?',
+    body: 'Pick every area that matters right now. FairPath uses this to shape your home screen and next steps — not to put you in a box.',
     type: 'choices',
-    choices: ['Find a job', 'Find housing', 'Reentry resources', 'FairPath AI', 'Free Marketplace'],
+    choices: ['Work & income', 'Housing', 'Food & essentials', 'Reentry', 'Veteran transition', 'Safety & recovery', 'Give or help someone', 'Learn new skills', 'Build a business'],
   },
   {
     eyebrow: 'YOUR LOCATION',
-    title: 'Where are you building your next chapter?',
-    body: 'Your location helps FairPath surface nearby opportunities and resources.',
+    title: 'Where should FairPath look first?',
+    body: 'Enter your city, state or ZIP. We use location to find nearby jobs, housing, resources and jurisdiction-specific tools. It is not shared publicly by default.',
     type: 'text',
-    placeholder: 'City, State or ZIP code',
+    placeholder: 'Columbus, OH or 43215',
   },
   {
-    eyebrow: 'YOUR PATH',
-    title: 'Are you justice-impacted?',
-    body: 'This helps us filter opportunities around real eligibility requirements. Your answer is private.',
+    eyebrow: 'PRIVATE REENTRY SETUP',
+    title: 'Should FairPath turn on reentry tools for you?',
+    body: 'This can unlock fair-chance job help, record-relief tools and reentry resources. Your answer stays private and is never used as an employer label.',
     type: 'choices',
-    choices: ['Yes', 'No', 'Prefer not to say'],
+    choices: ['Yes — turn on reentry tools', 'No', 'Not right now'],
   },
   {
-    eyebrow: 'OPPORTUNITY MATCHING',
-    title: 'What should FairPath prioritize?',
-    body: 'Pick the areas you want us to put first in your personalized feed.',
+    eyebrow: 'VETERANS',
+    title: 'Should FairPath turn on veteran tools?',
+    body: 'Veteran tools can help translate military experience, organize transition goals and find civilian opportunities. Service history is not shared with employers unless you choose to share it.',
     type: 'choices',
-    choices: ['Jobs', 'Housing', 'Benefits', 'Education & training', 'Transportation', 'Legal & rights resources'],
+    choices: ['Yes — turn on veteran tools', 'No', 'Not right now'],
   },
   {
     eyebrow: 'WORK',
-    title: 'What kind of work are you open to?',
-    body: 'Choose as many as you want. We’ll use this to improve job matching.',
+    title: 'How do you want to work?',
+    body: 'Direct hire and FairPath Staffing can live in the same job experience. Pick everything you would consider.',
     type: 'choices',
-    choices: ['Full-time', 'Part-time', 'Temporary', 'Gig work', 'Remote', 'Open to anything'],
+    choices: ['Direct hire', 'Temporary staffing', 'Contract work', 'Temp-to-hire', 'Part-time', 'Remote', 'Open to anything'],
   },
   {
     eyebrow: 'HOUSING',
-    title: 'What housing help do you need?',
-    body: 'FairPath can prioritize rentals and housing resources that fit your situation.',
+    title: 'What housing should we prioritize?',
+    body: 'Choose what fits today. Emergency and stability resources stay separate from ordinary rental browsing so urgent needs do not get buried.',
     type: 'choices',
-    choices: ['Apartment', 'House', 'Room', 'Transitional housing', 'Emergency housing', 'Not looking right now'],
+    choices: ['Apartment', 'House', 'Room', 'Transitional housing', 'Emergency housing', 'Housing stability help', 'Not looking right now'],
+  },
+  {
+    eyebrow: 'HELP TODAY',
+    title: 'Anything you need help with right now?',
+    body: 'These choices help FairPath bring practical resources forward. Choosing one does not automatically share the need with another organization.',
+    type: 'choices',
+    choices: ['Food', 'Transportation', 'Identification documents', 'Benefits', 'Legal help', 'Safety support', 'Recovery support', 'Nothing urgent'],
+  },
+  {
+    eyebrow: 'YOUR NEXT MOVE',
+    title: 'What should FairPath put first?',
+    body: 'This controls what rises to the top of your experience. You can change it anytime.',
+    type: 'choices',
+    choices: ['Jobs & staffing', 'Housing', 'Resources', 'Record relief', 'Academy', 'Entrepreneurship', 'Marketplace', 'My plan'],
   },
   {
     eyebrow: 'FAIRPATH AI',
-    title: 'Make FairPath work around you.',
-    body: 'FairPath AI can use your profile to help with matches, applications, résumés, explanations and next steps.',
+    title: 'Choose how AI can help.',
+    body: 'AI can help you do the work, but it does not make hiring, housing, legal or eligibility decisions. Nothing is submitted or changed without your action.',
     type: 'choices',
-    choices: ['Personalized matches', 'Application help', 'Résumé help', 'Interview prep', 'Resource guidance'],
+    choices: ['Job matching help', 'Résumé help', 'Interview prep', 'Resource guidance', 'Personal plan', 'Record-relief explanations', 'Do not personalize AI yet'],
   },
 ];
 
@@ -98,7 +112,7 @@ export default function OnboardingScreen() {
   );
 
   function toggleChoice(choice: string) {
-    const singleChoice = stepIndex === 2;
+    const singleChoice = stepIndex === 2 || stepIndex === 3;
     setAnswers((current) => {
       const currentSelected = current[stepIndex] ?? [];
       const next = singleChoice
@@ -138,13 +152,13 @@ export default function OnboardingScreen() {
       const { error } = await supabase
         .from('profiles')
         .update({
-          goals: answers[0] ?? [],
+          goals: Array.from(new Set([...(answers[0] ?? []), ...(answers[3]?.[0]?.startsWith('Yes') ? ['Veteran transition'] : [])])),
           location_text: textAnswers[1]?.trim() ?? '',
-          justice_impacted: answers[2]?.[0] ?? null,
-          opportunity_priorities: answers[3] ?? [],
+          justice_impacted: answers[2]?.[0]?.startsWith('Yes') ? 'Yes' : answers[2]?.[0] === 'No' ? 'No' : 'Prefer not to say',
+          opportunity_priorities: [...(answers[6] ?? []), ...(answers[7] ?? [])],
           work_preferences: answers[4] ?? [],
           housing_preferences: answers[5] ?? [],
-          ai_preferences: answers[6] ?? [],
+          ai_preferences: answers[8] ?? [],
           onboarding_completed: true,
           onboarding_completed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
