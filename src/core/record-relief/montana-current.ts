@@ -1,0 +1,1 @@
+export const MONTANA_CURRENT={misdemeanorExpungement:{statute:'MCA 46-18-1104',lifetimePetitionLimit:1,yearsAfterSentence:5,allMisdemeanorsMayBeInOnePetition:true},deferredSentence:{statute:'MCA 46-18-204',dismissalAfterSuccessfulDeferral:true},marijuana:{statute:'MCA 16-12-113',petitionForResentencingOrExpungement:true},verifiedOn:'2026-10-07'}as const;
