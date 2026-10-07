@@ -71,7 +71,7 @@ export const PATHWAYS: readonly Pathway[] = [
   },
   {
     id: 'food',
-    name: 'Food & Food Rescue',
+    name: 'Food & Essentials',
     status: 'planned',
     sensitiveScopes: ['food_need', 'location'],
     shareableWith: ['partner_org'],
@@ -80,7 +80,7 @@ export const PATHWAYS: readonly Pathway[] = [
   },
   {
     id: 'giving',
-    name: 'Giving',
+    name: 'Giving & Community Support',
     status: 'planned',
     sensitiveScopes: ['food_need', 'housing_situation'],
     shareableWith: [],

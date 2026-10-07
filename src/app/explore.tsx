@@ -33,8 +33,8 @@ const SECTIONS: { title: string; items: Destination[] }[] = [
     title: 'Pathways',
     items: [
       { id: 'veterans', title: 'Veterans', body: 'Transition, careers, housing and benefits navigation.', icon: 'flag', route: '/veterans', status: 'in_development' },
-      { id: 'food', title: 'Food & Food Rescue', body: 'Free and discounted food near you.', icon: 'gift', route: null, status: 'planned' },
-      { id: 'giving', title: 'Giving', body: 'Verified needs and community support.', icon: 'gift', route: null, status: 'planned' },
+      { id: 'food', title: 'Food & Essentials', body: 'Free and discounted food near you.', icon: 'gift', route: null, status: 'planned' },
+      { id: 'giving', title: 'Giving & Community Support', body: 'Verified needs and community support.', icon: 'gift', route: null, status: 'planned' },
     ],
   },
   {
