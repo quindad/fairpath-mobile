@@ -1,0 +1,10 @@
+import test from'node:test';import assert from'node:assert/strict';import{classifyPaLimited}from'../src/core/record-relief/pennsylvania-matrix.ts';import type{Charge}from'../src/core/record-relief/jurisdiction-engine.ts';const c=(s:string,degree:Charge['degree']='misdemeanor',disposition:Charge['disposition']='conviction'):Charge=>({id:s,offenseName:'x',statute:s,degree,disposition});
+test('PA nonconviction separate class',()=>assert.equal(classifyPaLimited(c('x','misdemeanor','dismissal')),'nonconviction'));
+test('PA clean slate misdemeanor max two years',()=>assert.equal(classifyPaLimited(c('4101'),{maxPrisonYears:2}),'clean_slate_misdemeanor'));
+test('PA petition reaches max-five misdemeanor',()=>assert.equal(classifyPaLimited(c('4101'),{maxPrisonYears:5}),'petition_misdemeanor'));
+test('PA Article B exclusion and 2706 exception',()=>{assert.equal(classifyPaLimited(c('2701'),{maxPrisonYears:5,articleB:true}),'excluded');assert.equal(classifyPaLimited(c('2706'),{maxPrisonYears:5,articleB:true}),'petition_misdemeanor')});
+test('PA chapter 61 excluded',()=>assert.equal(classifyPaLimited(c('6105'),{maxPrisonYears:2}),'excluded'));
+test('PA qualifying felony classes',()=>{for(const s of ['3304','3503','3921','4101'])assert.equal(classifyPaLimited(c(s,'felony'),{felonyDegree:3}),'qualifying_felony')});
+test('PA F2 excluded',()=>assert.equal(classifyPaLimited(c('3921','felony'),{felonyDegree:2}),'excluded'));
+test('PA enumerated exception excluded',()=>assert.equal(classifyPaLimited(c('5510'),{maxPrisonYears:2}),'excluded'));
+test('PA summary separate class',()=>assert.equal(classifyPaLimited(c('x','minor_misdemeanor')),'summary'));
