@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Text, TextInput, View } from 'react-native';
+import { router } from 'expo-router';
+import { Pressable, Text, TextInput, View } from 'react-native';
+import { NATIVE_FIXTURE_COURSE } from '@/core/academy/native-fixtures';
 import { FormScrollView } from '@/components/FormScrollView';
 import { FilterStrip, PageHeader, ScreenFrame, SectionTitle, SharpChip } from '@/components/ProductChrome';
 import { useThemedStyles } from '@/core/theme/ThemeProvider';
@@ -48,6 +50,16 @@ export default function AcademyScreen() {
             These are development fixtures, not real courses. Live provider listings appear here only after written permission and verification.
           </Text>
         </View>
+
+        <Pressable
+          style={s.card}
+          accessibilityRole="link"
+          accessibilityLabel="Open the native FairPath development course"
+          onPress={() => router.push(`/academy/${NATIVE_FIXTURE_COURSE.id}` as never)}
+        >
+          <Text style={s.cardTitle}>{NATIVE_FIXTURE_COURSE.title}</Text>
+          <Text style={s.cost}>FairPath course · lessons, assessment, progress</Text>
+        </Pressable>
 
         <TextInput
           style={s.search}
