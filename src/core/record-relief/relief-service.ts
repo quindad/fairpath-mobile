@@ -5,6 +5,7 @@ import { RECORD_RELIEF_ENGINE_VERSION, daysUntil, getRuleFreshness } from '@/cor
 import { planRecordReliefEvaluation } from '@/core/record-relief/engine-registry';
 import { executeRecordRelief, type EngineFacts } from '@/core/record-relief/engine-executor';
 import type { CaseBundle } from '@/core/record-relief/jurisdiction-engine';
+import type { CaseDocumentExtraction } from '@/core/record-relief/ai-intake';
 
 /** Record Relief data access. Cases are owner-only; rules/forms/pathways are verified-only reference data. */
 export type Jurisdiction = { code: string; name: string; kind: 'state' | 'district' | 'territory' | 'federal' | 'test'; sort_order: number };
@@ -82,3 +83,18 @@ export function enrichEvaluationLifecycle(e: ReliefEvaluation, jurisdictionCode:
     needs_recalculation: e.rule_changed || e.rule_stale || freshness?.stale === true || (eligibilityDate ? daysUntil(eligibilityDate, asOf) === 0 : false),
   };
 }
+export type RecordReliefExtractionResult = { extraction: CaseDocumentExtraction; upload_id: string; model_version: string; extracted_at: string };
+/** Server-side AI document reader. Raw files stay behind authenticated storage; explicit consent is required per extraction. */
+export async function extractRecordReliefCase(uploadId: string, consent: true): Promise<RecordReliefExtractionResult> {
+  if (consent !== true) throw new Error('consent_required');
+  const { data: session } = await supabase.auth.getSession();
+  const token = session.session?.access_token;
+  if (!token) throw new Error('SIGNED_OUT');
+  const base = process.env.EXPO_PUBLIC_SUPABASE_URL;
+  if (!base) throw new Error('service_unavailable');
+  const res = await fetch(`${base}/functions/v1/extract-record-relief-case`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ upload_id: uploadId, consent: true }) });
+  const body = await res.json();
+  if (!res.ok) throw new Error(String(body?.error ?? 'engine_error'));
+  return body as RecordReliefExtractionResult;
+}
+
