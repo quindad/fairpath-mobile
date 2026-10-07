@@ -151,6 +151,7 @@ export default function CreditWorkspace() {
             <View style={s.block}><SectionTitle>DOCUMENTS</SectionTitle></View>
             <ListRow title="Dispute history" body="Export your disputes, dates and outcomes" onPress={() => router.push('/documents/create-credit' as never)} />
             <ListRow title="Correct my personal information" body="Name, address or other details a bureau has wrong (not an account issue)" onPress={() => router.push('/credit/correct-identity' as never)} />
+            <ListRow title="Utilization & payoff calculator" body="See how your balances compare to your limits, from numbers you enter" onPress={() => router.push('/credit-studio' as never)} />
           </>
         ) : null}
 

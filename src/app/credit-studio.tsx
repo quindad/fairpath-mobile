@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { FormScrollView } from '@/components/FormScrollView';
@@ -53,8 +54,11 @@ export default function CreditStudioScreen() {
         <View style={s.banner} accessibilityRole="summary">
           <Text style={s.bannerTitle}>Enter your numbers</Text>
           <Text style={s.body}>
-            Report upload is not connected yet. For now, enter balances and limits from your own statements. FairPath does not pull your credit report and does not guarantee any score change.
+            This calculator works from numbers you enter; it does not read your report. To upload and review your actual credit report, with disputes and AI extraction, use Credit Builder.
           </Text>
+          <Pressable style={s.secondary} accessibilityRole="link" onPress={() => router.push('/credit' as never)}>
+            <Text style={s.secondaryText}>Open Credit Builder</Text>
+          </Pressable>
         </View>
 
         <SectionTitle>Revolving accounts</SectionTitle>
@@ -126,7 +130,7 @@ export default function CreditStudioScreen() {
         {tierLoading ? <Text style={s.body} accessibilityLiveRegion="polite">Checking your plan…</Text> : null}
         <View style={s.card}>
           <Text style={s.cardTitle}>Full credit-report analysis</Text>
-          <Text style={s.body}>Costs {AI_ACTION_CREDITS.full_credit_report_analysis} AI credits. Premium members get it included, subject to credit balance. Report upload is not connected yet.</Text>
+          <Text style={s.body}>Costs {AI_ACTION_CREDITS.full_credit_report_analysis} AI credits. Premium members get it included, subject to credit balance. Upload your report in Credit Builder to use this.</Text>
         </View>
         <View style={s.card} accessibilityLabel={disputeAllowed ? 'Dispute letter drafting available' : 'Dispute letter drafting is a Premium feature'}>
           <Text style={s.cardTitle}>Dispute letter drafting</Text>
