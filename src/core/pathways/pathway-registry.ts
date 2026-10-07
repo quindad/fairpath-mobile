@@ -123,3 +123,23 @@ export function activePathwaysFor(activated: readonly PathwayId[]): Pathway[] {
   const set = new Set(activated);
   return PATHWAYS.filter((p) => set.has(p.id) && canActivate(p));
 }
+
+export type PathwayExperience =
+  | { mode: 'single'; primary: PathwayId; visible: PathwayId[] }
+  | { mode: 'hybrid'; primary: PathwayId; visible: PathwayId[] };
+
+/**
+ * Pathway UI is isolated by default. A screen receives one pathway unless the member deliberately opens a hybrid view.
+ * Hybrid never widens sharing permissions; it only composes member-owned UI.
+ */
+export function pathwayExperience(primary: PathwayId, activated: readonly PathwayId[], hybrid = false): PathwayExperience {
+  const active = activePathwaysFor(activated).map((p) => p.id);
+  const safePrimary = active.includes(primary) ? primary : active[0] ?? primary;
+  return hybrid
+    ? { mode: 'hybrid', primary: safePrimary, visible: active }
+    : { mode: 'single', primary: safePrimary, visible: [safePrimary] };
+}
+
+export function pathwayDataMayCross(from: PathwayId, to: PathwayId): boolean {
+  return from === to;
+}

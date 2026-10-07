@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PATHWAYS, activePathwaysFor, canActivate, mayShareWith, pathwayById } from '../src/core/pathways/pathway-registry.ts';
+import { PATHWAYS, activePathwaysFor, canActivate, mayShareWith, pathwayById, pathwayExperience, pathwayDataMayCross } from '../src/core/pathways/pathway-registry.ts';
 
 test('six pathways with unique ids', () => {
   const ids = PATHWAYS.map((p) => p.id);
@@ -64,4 +64,12 @@ test('employers never receive Safety or Giving data', () => {
   for (const id of ['safety_recovery', 'giving'] as const) {
     assert.equal(mayShareWith(pathwayById(id)!, 'employer'), false, id);
   }
+});
+
+test('pathways stay isolated unless hybrid is explicitly requested', () => {
+  const single = pathwayExperience('reentry', ['reentry', 'veterans'], false);
+  assert.deepEqual(single, { mode: 'single', primary: 'reentry', visible: ['reentry'] });
+  const hybrid = pathwayExperience('reentry', ['reentry', 'veterans'], true);
+  assert.deepEqual(hybrid, { mode: 'hybrid', primary: 'reentry', visible: ['reentry', 'veterans'] });
+  assert.equal(pathwayDataMayCross('reentry', 'veterans'), false);
 });

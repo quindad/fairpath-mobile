@@ -59,33 +59,33 @@ export function HomeStatus() {
   if (!steps.length && !chips.length) return null;
 
   return (
-    <View style={s.wrap} accessibilityLabel="Your status">
-      <Text style={s.eyebrow}>YOUR STATUS</Text>
+    <View style={s.wrap} accessibilityLabel="Your next move">
+      <View style={s.head}><Text style={s.eyebrow}>NEXT MOVE</Text><Pressable onPress={() => router.push('/my-path' as never)}><Text style={s.plan}>MY PATH →</Text></Pressable></View>
       {steps[0] ? (
         <Pressable accessibilityRole="button" style={s.primary} onPress={() => router.push(steps[0].route as never)}>
-          <View style={s.copy}><Text style={s.title}>{steps[0].title}</Text><Text style={s.body}>{steps[0].body}</Text></View>
-          <Text style={s.arrow}>→</Text>
+          <View style={s.copy}><Text style={s.title}>{steps[0].title}</Text><Text style={s.body} numberOfLines={2}>{steps[0].body}</Text></View>
+          <View style={s.go}><Text style={s.goText}>→</Text></View>
         </Pressable>
       ) : null}
-      {chips.length ? <View style={s.chips}>{chips.map((k) => <Pressable key={k.label} accessibilityRole="button" style={s.chip} onPress={() => router.push(k.route as never)}><Text style={s.chipText}>{k.label}</Text></Pressable>)}</View> : null}
-      {steps.slice(1).map((st) => (
-        <Pressable key={st.key} accessibilityRole="button" style={s.row} onPress={() => router.push(st.route as never)}><Text style={s.rowText}>{st.title}</Text><Text style={s.arrow}>→</Text></Pressable>
-      ))}
+      {chips.length ? <View style={s.chips}>{chips.slice(0,2).map((k) => <Pressable key={k.label} accessibilityRole="button" style={s.chip} onPress={() => router.push(k.route as never)}><Text style={s.chipText} numberOfLines={1}>{k.label}</Text></Pressable>)}</View> : null}
+      {steps.length > 1 ? <Text style={s.more}>{steps.length - 1} more step{steps.length - 1 === 1 ? '' : 's'} in My Path</Text> : null}
     </View>
   );
 }
 
 const styles = (t: ThemeTokens) => ({
-  wrap: { marginHorizontal: L.mobileGutter, marginTop: 16, borderWidth: 1, borderColor: t.accentBorder, backgroundColor: t.accentSubtle, padding: 14 },
-  eyebrow: { color: t.accentText, fontFamily: F.extraBold, fontSize: 9, letterSpacing: 1.4, marginBottom: 8 },
-  primary: { flexDirection: 'row' as const, alignItems: 'center' as const },
+  wrap: { marginHorizontal: L.mobileGutter, marginTop: 10, borderTopWidth: 1, borderBottomWidth: 1, borderColor: t.borderStrong, paddingVertical: 12 },
+  head: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const, marginBottom: 9 },
+  eyebrow: { color: t.accentText, fontFamily: F.extraBold, fontSize: 8, letterSpacing: 1.4 },
+  plan: { color: t.textSecondary, fontFamily: F.extraBold, fontSize: 8, letterSpacing: 1 },
+  primary: { flexDirection: 'row' as const, alignItems: 'center' as const, backgroundColor: t.surface, borderLeftWidth: 3, borderLeftColor: t.accentText, paddingVertical: 11, paddingLeft: 12, paddingRight: 9 },
   copy: { flex: 1, paddingRight: 10 },
-  title: { color: t.text, fontFamily: F.extraBold, fontSize: 15, lineHeight: 19 },
-  body: { color: t.textSecondary, fontSize: 12, lineHeight: 17, marginTop: 3 },
-  arrow: { color: t.accentText, fontSize: 18 },
-  chips: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 6, marginTop: 10 },
-  chip: { borderWidth: 1, borderColor: t.accentBorder, paddingHorizontal: 9, paddingVertical: 6, backgroundColor: t.surface },
-  chipText: { color: t.text, fontFamily: F.bold, fontSize: 11 },
-  row: { flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'space-between' as const, borderTopWidth: 1, borderTopColor: t.accentBorder, marginTop: 10, paddingTop: 10 },
-  rowText: { color: t.textSecondary, fontFamily: F.semiBold, fontSize: 13, flex: 1, paddingRight: 8 },
+  title: { color: t.text, fontFamily: F.extraBold, fontSize: 14, lineHeight: 18 },
+  body: { color: t.textSecondary, fontSize: 10, lineHeight: 15, marginTop: 2 },
+  go: { width: 28, height: 28, alignItems: 'center' as const, justifyContent: 'center' as const, borderWidth: 1, borderColor: t.accentBorder },
+  goText: { color: t.accentText, fontSize: 16 },
+  chips: { flexDirection: 'row' as const, gap: 6, marginTop: 8 },
+  chip: { flex: 1, minWidth: 0, borderWidth: 1, borderColor: t.borderStrong, paddingHorizontal: 8, paddingVertical: 6 },
+  chipText: { color: t.textSecondary, fontFamily: F.semiBold, fontSize: 9 },
+  more: { color: t.textSecondary, fontFamily: F.semiBold, fontSize: 9, marginTop: 8 },
 });
