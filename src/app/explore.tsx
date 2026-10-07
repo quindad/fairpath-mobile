@@ -27,6 +27,7 @@ const SECTIONS: { title: string; items: Destination[] }[] = [
     title: 'Learn',
     items: [
       { id: 'academy', title: 'Academy', body: 'Free and affordable courses, matched to your goals.', icon: 'graduation-cap', route: '/academy', status: 'in_development' },
+      { id: 'entrepreneurship', title: 'Startup Academy', body: '15 practical steps to start a business, open to everyone.', icon: 'briefcase', route: '/entrepreneurship', status: 'in_development' },
     ],
   },
   {
