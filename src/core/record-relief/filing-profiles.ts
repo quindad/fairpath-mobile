@@ -6,3 +6,8 @@ export const MARYLAND_FILING_PROFILES:readonly FilingProfile[]=[
 {jurisdictionCode:'US-MD',branch:'eligible_guilty_cannabis',form:'CC-DC-CR-072D',feeCents:3000,feeWaiver:true,filingScope:'case',sourceUrl:'https://www.mdcourts.gov/legalhelp/expungement',verifiedOn:'2026-10-07',notes:['Cannabis-related eligible guilty disposition form.']}
 ];
 export function filingProfile(jurisdictionCode:string,branch:string){return MARYLAND_FILING_PROFILES.find(x=>x.jurisdictionCode===jurisdictionCode&&x.branch===branch)??null}
+
+export const PENNSYLVANIA_FILING_PROFILES:readonly FilingProfile[]=[
+{jurisdictionCode:'US-PA',branch:'criminal_history_access_review',form:'SP 4-170',feeCents:2000,feeWaiver:false,filingScope:'case',sourceUrl:'https://www.pa.gov/services/psp/apply-for-criminal-record-expungement',verifiedOn:'2026-10-07',notes:['PSP instructs the applicant to obtain the full arrest record, then contact the Clerk of Courts in the county where the arrest occurred for petition instructions. This $20 is the PSP access/review step, not a guessed county petition fee.']},
+{jurisdictionCode:'US-PA',branch:'petition_limited_access',form:'Petition for Limited Access Pursuant to 791',feeCents:null,feeWaiver:true,filingScope:'case',sourceUrl:'https://wwwsecure.pacourts.us/forms/for-the-public',verifiedOn:'2026-10-07',notes:['Filed in the Court of Common Pleas where the conviction occurred. Local filing cost must remain unknown until verified for that court/county.']}
+];
