@@ -1,0 +1,8 @@
+export type FilingProfile={jurisdictionCode:string;branch:string;form:string;feeCents:number|null;feeWaiver:boolean;filingScope:'case'|'charge';sourceUrl:string;verifiedOn:string;notes:string[]};
+export const MARYLAND_FILING_PROFILES:readonly FilingProfile[]=[
+{jurisdictionCode:'US-MD',branch:'favorable_disposition',form:'CC-DC-CR-072A',feeCents:0,feeWaiver:false,filingScope:'case',sourceUrl:'https://www.mdcourts.gov/legalhelp/expungement',verifiedOn:'2026-10-07',notes:['Acquittal, dismissal, PBJ, nolle prosequi, stet, or not criminally responsible branches use this form as applicable.']},
+{jurisdictionCode:'US-MD',branch:'early_all_favorable',form:'CC-DC-CR-072C',feeCents:0,feeWaiver:false,filingScope:'case',sourceUrl:'https://www.mdcourts.gov/legalhelp/expungement',verifiedOn:'2026-10-07',notes:['For an all-favorable case entered October 1, 2021 or later when requesting relief before automatic three-year expungement.']},
+{jurisdictionCode:'US-MD',branch:'eligible_guilty_non_cannabis',form:'CC-DC-CR-072B',feeCents:3000,feeWaiver:true,filingScope:'case',sourceUrl:'https://www.mdcourts.gov/legalhelp/expungement',verifiedOn:'2026-10-07',notes:['Maryland Courts states the $30 fee is per case, not per charge in a unit; waiver may be requested.']},
+{jurisdictionCode:'US-MD',branch:'eligible_guilty_cannabis',form:'CC-DC-CR-072D',feeCents:3000,feeWaiver:true,filingScope:'case',sourceUrl:'https://www.mdcourts.gov/legalhelp/expungement',verifiedOn:'2026-10-07',notes:['Cannabis-related eligible guilty disposition form.']}
+];
+export function filingProfile(jurisdictionCode:string,branch:string){return MARYLAND_FILING_PROFILES.find(x=>x.jurisdictionCode===jurisdictionCode&&x.branch===branch)??null}

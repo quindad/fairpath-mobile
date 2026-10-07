@@ -1,0 +1,12 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {evaluateMaryland} from '../src/core/record-relief/maryland.ts';import type{Charge}from'../src/core/record-relief/jurisdiction-engine.ts';
+const ch=(x:Partial<Charge>={}):Charge=>({id:'md1',offenseName:'Example',degree:'misdemeanor',disposition:'dismissal',dispositionDate:'2025-01-01',...x});
+const f={today:'2026-10-07',pendingProceeding:false};
+test('Maryland favorable all-charge case exposes automatic three-year branch',()=>{const r=evaluateMaryland(ch(),{...f,allCaseChargesFavorable:true});assert.equal(r.outcome,'automatic_relief_may_apply');assert.equal(r.eligibilityDate,'2028-01-01')});
+test('Maryland early favorable petition needs waiver or good cause',()=>{assert.equal(evaluateMaryland(ch(),f).outcome,'waiting_period')});
+test('Maryland waiver permits favorable branch before three years',()=>{assert.equal(evaluateMaryland(ch(),{...f,generalWaiverFiled:true}).outcome,'likely_eligible_verified')});
+test('Maryland pending proceeding blocks',()=>{assert.equal(evaluateMaryland(ch(),{today:'2026-10-07',pendingProceeding:true}).outcome,'likely_excluded_verified')});
+test('Maryland ordinary PBJ uses discharge plus three years',()=>{const r=evaluateMaryland(ch({disposition:'deferred_adjudication'}),{...f,probationDischargeDate:'2025-01-01'});assert.equal(r.outcome,'waiting_period');assert.equal(r.eligibilityDate,'2028-01-01')});
+test('Maryland DUI AB PBJ branch uses fifteen years',()=>{const r=evaluateMaryland(ch({disposition:'deferred_adjudication'}),{...f,probationDischargeDate:'2020-01-01',pbjDuiAB:true});assert.equal(r.eligibilityDate,'2035-01-01')});
+test('Maryland unit rule blocks otherwise eligible conviction',()=>{assert.equal(evaluateMaryland(ch({disposition:'conviction'}),{...f,unitHasIneligibleConviction:true}).outcome,'likely_excluded_verified')});
+test('Maryland guilty branch refuses to guess offense-specific wait',()=>{assert.equal(evaluateMaryland(ch({disposition:'conviction'}),f).outcome,'additional_facts_required')});
+test('Maryland verified guilty wait computes from sentence completion',()=>{const r=evaluateMaryland(ch({disposition:'conviction'}),{...f,guiltyWaitYears:10,sentenceCompletionDate:'2022-01-01'});assert.equal(r.outcome,'waiting_period');assert.equal(r.eligibilityDate,'2032-01-01')});
