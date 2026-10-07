@@ -1,0 +1,10 @@
+import test from'node:test';import assert from'node:assert/strict';import{classifyMaryland110,maryland110WaitYears}from'../src/core/record-relief/maryland-convictions.ts';import type{Charge}from'../src/core/record-relief/jurisdiction-engine.ts';
+const c=(s:string,degree:'misdemeanor'|'felony'='misdemeanor'):Charge=>({id:'md',offenseName:'x',statute:s,degree,disposition:'conviction'});
+test('MD ordinary listed misdemeanor is five years',()=>assert.equal(maryland110WaitYears(classifyMaryland110(c('CL 6-301'))),5));
+test('MD second degree assault is seven years',()=>assert.equal(maryland110WaitYears(classifyMaryland110(c('CL 3-203'))),7));
+test('MD domestically related offense is fifteen years',()=>assert.equal(maryland110WaitYears(classifyMaryland110(c('CL 6-301'),true)),15));
+test('MD cannabis PWID felony is three years',()=>assert.equal(maryland110WaitYears(classifyMaryland110(c('CL 5-602','felony'))),3));
+test('MD specified burglary felony is ten years',()=>assert.equal(maryland110WaitYears(classifyMaryland110(c('CL 6-203','felony'))),10));
+test('MD specified felony theft is ten years',()=>assert.equal(maryland110WaitYears(classifyMaryland110(c('CL 7-104','felony'))),10));
+test('MD other listed felony branch is seven years',()=>assert.equal(maryland110WaitYears(classifyMaryland110(c('CL 6-204','felony'))),7));
+test('MD unlisted statute never gets a guessed wait',()=>{const k=classifyMaryland110(c('CL 9-999'));assert.equal(k,'not_listed');assert.equal(maryland110WaitYears(k),null)});
