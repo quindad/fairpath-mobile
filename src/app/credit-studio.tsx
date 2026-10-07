@@ -5,9 +5,9 @@ import { FormScrollView } from '@/components/FormScrollView';
 import { PageHeader, ScreenFrame, SectionTitle } from '@/components/ProductChrome';
 import { useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
-import { AI_ACTION_CREDITS, tierMayUse, TIERS, type TierId } from '@/core/membership/frozen-v1';
+import { AI_ACTION_CREDITS, tierMayUse, TIERS } from '@/core/membership/frozen-v1';
 import { paydownToTarget, utilization, utilizationBand } from '@/core/credit-studio/utilization';
-import { usePlusStatus } from '@/core/membership/plus-access';
+import { useTier } from '@/core/membership/tier';
 
 type Row = { id: number; name: string; balance: string; limit: string };
 
@@ -17,11 +17,9 @@ export default function CreditStudioScreen() {
   const s = useThemedStyles(styles);
   const [rows, setRows] = useState<Row[]>([{ id: 1, name: 'Card 1', balance: '', limit: '' }]);
   const [nextId, setNextId] = useState(2);
-  const { status: plusStatus, loading: tierLoading } = usePlusStatus();
-  // The server's FairPath+ status is active/inactive only; it does not yet distinguish Plus from Premium.
-  // Until that distinction exists server-side, an active member is treated as Plus, the honest ceiling we can
-  // prove today. Premium-only actions (dispute drafting, full analysis) stay locked until Premium is a real signal.
-  const tier: TierId = plusStatus.active ? 'plus' : 'free';
+  // useTier() prefers the proposed three-tier server RPC and falls back to the existing boolean
+  // FairPath+ status (treated as Plus) until that migration is reviewed and applied.
+  const { tier, loading: tierLoading } = useTier();
 
   const accounts = useMemo(
     () =>

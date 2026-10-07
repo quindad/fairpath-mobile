@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { FormScrollView } from '@/components/FormScrollView';
 import { FairBackButton } from '@/components/ProductChrome';
 import { SocialAuthButtons } from '@/components/SocialAuthButtons';
@@ -81,6 +81,20 @@ export default function SignInScreen() {
             <Text style={styles.subtitle}>Sign in to your FairPath account and pick up where you left off.</Text>
           </View>
 
+          {returnTo?.startsWith('/record-relief') ? (
+            <Pressable
+              style={styles.noAccountBanner}
+              accessibilityRole="link"
+              accessibilityLabel="Open the free public Record Relief checker, no account needed"
+              onPress={() => Linking.openURL('https://www.fairpathfwd.com/record-relief')}
+            >
+              <Text style={styles.noAccountBannerTitle}>Just want a quick check?</Text>
+              <Text style={styles.noAccountBannerBody}>
+                Use the free public Record Relief checker on fairpathfwd.com — no account needed. Sign in here for the full workspace: saved cases, documents and tracked next steps.
+              </Text>
+            </Pressable>
+          ) : null}
+
           <View style={styles.form}>
             <Text style={styles.label}>Email</Text>
             <TextInput
@@ -144,6 +158,9 @@ const styles = StyleSheet.create({
   content: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 30 },
   backButton: { width: 44, height: 44, borderRadius: 14, backgroundColor: CARD, borderWidth: 1, borderColor: BORDER, alignItems: 'center', justifyContent: 'center' },
   backArrow: { color: '#F6F7F5', fontSize: 23, lineHeight: 25 },
+  noAccountBanner: { borderWidth: 1, borderColor: BORDER, borderLeftWidth: 3, borderLeftColor: LIME, backgroundColor: CARD, padding: 14, gap: 4, marginBottom: 16 },
+  noAccountBannerTitle: { color: '#F6F7F5', fontWeight: '700', fontSize: 15 },
+  noAccountBannerBody: { color: MUTED, fontSize: 13, lineHeight: 19 },
   heading: { marginTop: 70, marginBottom: 42 },
   kicker: { color: LIME, fontSize: 11, fontWeight: '800', letterSpacing: 1.6, marginBottom: 15 },
   title: { color: '#F7F8F6', fontSize: 46, lineHeight: 49, fontWeight: '800', letterSpacing: -2.1 },
