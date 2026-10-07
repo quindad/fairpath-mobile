@@ -28,3 +28,9 @@ already has a canonical route or module, extend it — do not start a second one
 - `/credit-studio` must never grow its own report upload. Report upload belongs to `/credit`.
 - Any future "review extracted fields" UI for a new document type should extend `extraction-contract.ts`, not invent a third state machine.
 - Entrepreneurship and Academy stay cross-pathway. They are never added to `src/core/pathways/pathway-registry.ts`.
+
+## Staffing (added 2026-10-07)
+
+| Domain | Canonical module(s) | Canonical route(s) | Notes |
+|---|---|---|---|
+| Staffing (FairPath Recruit vs. FairPath Staffing) | `src/core/staffing/{economics,member-view,workflow,listing-kind,foxhire-adapter,checkr-adapter,experian-adapter}.ts` | none yet | Flagship business line. Economics and provider state are logic + a draft migration only; no screens yet. **`economics.ts` must never be imported from a member-facing screen** — `member-view.ts`'s `toMemberView()` is the only allowed path from an internal assignment record to anything a member sees. Extends `jobs` and `job_placements` (see `docs/proposed-migrations/20261021100000_staffing_architecture_DRAFT.sql`); does not duplicate either. |

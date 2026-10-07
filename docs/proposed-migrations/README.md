@@ -32,3 +32,19 @@ and the tests described in the file's header written and passing against a local
    screen — not yet drafted. Any such table must enforce the never-shared-externally rule server-side.
 
 None of these are applied. None will be applied without a separate, explicit approval.
+
+## Staffing (flagship business line, prioritized above the remaining backlog)
+
+**`20261021100000_staffing_architecture_DRAFT.sql`** — written. Extends `jobs` (new `listing_kind`
+column) and `job_placements` (new 1:1 `staffing_assignments` row) rather than duplicating either.
+Adds requisitions, assignment stage history, FoxHire/Checkr provider state, and a strictly
+ops-only rate-card/economics pair with no authenticated RLS policy at all. See the file's own
+header for the full five-way isolation model (member / employer-client / FairPath ops / provider
+integration / financial).
+
+**Why no member-facing "Direct Hire vs. FairPath Staffing" badge was built yet:** `jobs.listing_kind`
+does not exist in the real database until this migration is reviewed and applied. Building a UI
+that reads a column that isn't there yet would mean faking the distinction client-side. The
+classifier (`src/core/staffing/listing-kind.ts`) is ready and defaults safely to `direct_hire`
+for any job that doesn't carry the field, so wiring the badge in is a small, low-risk follow-up
+the moment the column exists.
