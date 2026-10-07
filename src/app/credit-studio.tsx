@@ -4,8 +4,9 @@ import { FormScrollView } from '@/components/FormScrollView';
 import { PageHeader, ScreenFrame, SectionTitle } from '@/components/ProductChrome';
 import { useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
-import { AI_ACTION_CREDITS, tierMayUse, TIERS } from '@/core/membership/frozen-v1';
+import { AI_ACTION_CREDITS, tierMayUse, TIERS, type TierId } from '@/core/membership/frozen-v1';
 import { paydownToTarget, utilization, utilizationBand } from '@/core/credit-studio/utilization';
+import { usePlusStatus } from '@/core/membership/plus-access';
 
 type Row = { id: number; name: string; balance: string; limit: string };
 
@@ -15,8 +16,11 @@ export default function CreditStudioScreen() {
   const s = useThemedStyles(styles);
   const [rows, setRows] = useState<Row[]>([{ id: 1, name: 'Card 1', balance: '', limit: '' }]);
   const [nextId, setNextId] = useState(2);
-  // Membership tier is not yet read from the account. Shown as Free until the entitlement service is connected.
-  const tier = 'free' as const;
+  const { status: plusStatus, loading: tierLoading } = usePlusStatus();
+  // The server's FairPath+ status is active/inactive only; it does not yet distinguish Plus from Premium.
+  // Until that distinction exists server-side, an active member is treated as Plus, the honest ceiling we can
+  // prove today. Premium-only actions (dispute drafting, full analysis) stay locked until Premium is a real signal.
+  const tier: TierId = plusStatus.active ? 'plus' : 'free';
 
   const accounts = useMemo(
     () =>
@@ -119,6 +123,7 @@ export default function CreditStudioScreen() {
         )}
 
         <SectionTitle>AI tools</SectionTitle>
+        {tierLoading ? <Text style={s.body} accessibilityLiveRegion="polite">Checking your plan…</Text> : null}
         <View style={s.card}>
           <Text style={s.cardTitle}>Full credit-report analysis</Text>
           <Text style={s.body}>Costs {AI_ACTION_CREDITS.full_credit_report_analysis} AI credits. Premium members get it included, subject to credit balance. Report upload is not connected yet.</Text>
