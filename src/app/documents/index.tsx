@@ -70,6 +70,11 @@ export default function DocumentsScreen() {
       <PageHeader eyebrow="YOUR ACCOUNT" title="My Documents" backTo="/me" />
       <ScrollView contentContainerStyle={s.content}>
         <BodyText muted>Everything FairPath helped you prepare, in one place. Files stay private to you until you choose to download or share them.</BodyText>
+        <ListRow
+          title="Upload a document for review"
+          body="Court records, credit reports and other documents you already have. You review every detail before it is used."
+          onPress={() => router.push('/documents/upload' as never)}
+        />
         {!items && !error ? <ActivityIndicator color={tokens.accentText} style={s.spinner} /> : null}
         {error ? <View><StatusLine tone="error">{error}</StatusLine><SecondaryButton label="TRY AGAIN" onPress={() => void load()} /></View> : null}
 
