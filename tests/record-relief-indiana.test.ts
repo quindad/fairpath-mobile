@@ -1,0 +1,12 @@
+import test from'node:test';import assert from'node:assert/strict';import{evaluateIndiana}from'../src/core/record-relief/indiana.ts';import{courtSearchFallback,findCourts}from'../src/core/record-relief/court-directory.ts';import type{Charge}from'../src/core/record-relief/jurisdiction-engine.ts';
+const ch=(x:Partial<Charge>={}):Charge=>({id:'in1',offenseName:'Example',degree:'misdemeanor',disposition:'conviction',...x});
+const base={today:'2026-10-07',section:2 as const,pendingCharges:false,newConvictionDuringWait:false,allFinesFeesRestitutionPaid:true,convictionDate:'2018-01-01',sentenceCompletionDate:'2019-01-01'};
+test('IN misdemeanor branch waits five years from later conviction/sentence event',()=>{const r=evaluateIndiana(ch(),base);assert.equal(r.eligibilityDate,'2024-01-01');assert.equal(r.outcome,'court_or_prosecutor_discretion')});
+test('IN section 3 waits eight years',()=>{assert.equal(evaluateIndiana(ch({degree:'felony'}),{...base,section:3,sentenceCompletionDate:'2022-01-01'}).eligibilityDate,'2030-01-01')});
+test('IN section 5 waits ten years',()=>{assert.equal(evaluateIndiana(ch({degree:'felony'}),{...base,section:5,sentenceCompletionDate:'2022-01-01',prosecutorWrittenConsent:true}).eligibilityDate,'2032-01-01')});
+test('IN section 5 exclusion fails closed',()=>{assert.equal(evaluateIndiana(ch({degree:'felony'}),{...base,section:5,seriousViolentFelon:true}).outcome,'likely_excluded_verified')});
+test('IN pending charge blocks',()=>{assert.equal(evaluateIndiana(ch(),{...base,pendingCharges:true}).outcome,'likely_excluded_verified')});
+test('IN unpaid obligations require facts/status before positive result',()=>{assert.equal(evaluateIndiana(ch(),{...base,allFinesFeesRestitutionPaid:false}).outcome,'additional_facts_required')});
+test('IN qualifying dismissal routes to automatic branch',()=>{assert.equal(evaluateIndiana(ch({disposition:'dismissal'}),{today:'2026-10-07',allChargesDismissed:true}).outcome,'automatic_relief_may_apply')});
+test('IN court search fallback is official statewide MyCase',()=>{assert.match(courtSearchFallback('US-IN')!.url,/courts\.in\.gov\/mycase/)});
+test('court directory lookup does not invent a local court',()=>{assert.deepEqual(findCourts([],{jurisdictionCode:'US-IN',city:'Gary'}),[])});
