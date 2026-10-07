@@ -22,6 +22,7 @@ export function isPublicRoute(path: string): boolean {
     path === '/reset-password' ||
     path === '/check-email' ||
     path === '/appearance' ||
+    path === '/safety' ||
     path === '/fairpath-ai' ||
     path === '/resources' ||
     path.startsWith('/resource/') ||
