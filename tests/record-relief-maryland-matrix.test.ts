@@ -2,9 +2,15 @@ import test from'node:test';import assert from'node:assert/strict';import{classi
 const c=(s:string,degree:'misdemeanor'|'felony'='misdemeanor'):Charge=>({id:'md',offenseName:'x',statute:s,degree,disposition:'conviction'});
 test('MD ordinary listed misdemeanor is five years',()=>assert.equal(maryland110WaitYears(classifyMaryland110(c('CL 6-301'))),5));
 test('MD second degree assault is seven years',()=>assert.equal(maryland110WaitYears(classifyMaryland110(c('CL 3-203'))),7));
-test('MD domestically related offense is fifteen years',()=>assert.equal(maryland110WaitYears(classifyMaryland110(c('CL 6-301'),true)),15));
-test('MD cannabis PWID felony is three years',()=>assert.equal(maryland110WaitYears(classifyMaryland110(c('CL 5-602','felony'))),3));
+test('MD domestically related offense is fifteen years',()=>assert.equal(maryland110WaitYears(classifyMaryland110(c('CL 6-301'),{domesticallyRelated:true})),15));
+test('MD cannabis PWID felony is three years only when cannabis fact is verified',()=>{assert.equal(classifyMaryland110(c('CL 5-602','felony')),'needs_review');assert.equal(maryland110WaitYears(classifyMaryland110(c('CL 5-602','felony'),{cannabisInvolved:true})),3);assert.equal(maryland110WaitYears(classifyMaryland110(c('CL 5-602','felony'),{cannabisInvolved:false})),7)});
 test('MD specified burglary felony is ten years',()=>assert.equal(maryland110WaitYears(classifyMaryland110(c('CL 6-203','felony'))),10));
 test('MD specified felony theft is ten years',()=>assert.equal(maryland110WaitYears(classifyMaryland110(c('CL 7-104','felony'))),10));
 test('MD other listed felony branch is seven years',()=>assert.equal(maryland110WaitYears(classifyMaryland110(c('CL 6-204','felony'))),7));
-test('MD unlisted statute never gets a guessed wait',()=>{const k=classifyMaryland110(c('CL 9-999'));assert.equal(k,'not_listed');assert.equal(maryland110WaitYears(k),null)});
+test('MD 5-601 excludes cannabis and fails closed when drug unknown',()=>{assert.equal(classifyMaryland110(c('CL 5-601')),'needs_review');assert.equal(classifyMaryland110(c('CL 5-601'),{cannabisInvolved:true}),'not_listed');assert.equal(maryland110WaitYears(classifyMaryland110(c('CL 5-601'),{cannabisInvolved:false})),5)});
+test('MD 6-205 requires fourth-degree burglary fact',()=>{assert.equal(classifyMaryland110(c('CL 6-205')),'needs_review');assert.equal(maryland110WaitYears(classifyMaryland110(c('CL 6-205'),{fourthDegreeBurglary:true})),5)});
+test('MD unlisted statute never gets a guessed wait',()=>assert.equal(classifyMaryland110(c('CL 9-999')),'not_listed'));
+test('MD full catalog reaches non-Criminal-Law articles',()=>{for(const s of ['ABC 6-320','BOP 17-611','CJ 3-1508','CLAW 14-2903','EL 16-201','FL 4-509','HG 18-215','HCD 4-2005','INS 27-407.2','NR 10-907(A)','PS 14-114','RP 10-507','SG 9-124','TG 13-1024','TR 16-303'])assert.equal(maryland110WaitYears(classifyMaryland110(c(s))),5)});
+test('MD later Criminal Law groups are normalized',()=>{for(const s of ['CL 8-904','CL 9-506','CL 10-502','CL 11-307','CL 12-302'])assert.equal(maryland110WaitYears(classifyMaryland110(c(s))),5)});
+test('MD attempt conspiracy solicitation inherit listed offense eligibility',()=>{for(const p of ['ATTEMPT ','CONSPIRACY ','SOLICITATION OF '])assert.equal(maryland110WaitYears(classifyMaryland110(c(p+'CL 6-301'))),5)});
+test('MD unlisted attempt still fails closed',()=>assert.equal(classifyMaryland110(c('ATTEMPT CL 9-999')),'not_listed'));
