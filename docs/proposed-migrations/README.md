@@ -48,3 +48,14 @@ that reads a column that isn't there yet would mean faking the distinction clien
 classifier (`src/core/staffing/listing-kind.ts`) is ready and defaults safely to `direct_hire`
 for any job that doesn't carry the field, so wiring the badge in is a small, low-risk follow-up
 the moment the column exists.
+
+## Staffing backlog additions not yet in the draft migration
+
+The 2026-10-21 staffing draft covers requisitions, assignments, provider state, screening state, rate cards and
+economics. Not yet added to that draft, pending further design:
+- `staffing_audit_log` table matching `src/core/staffing/audit.ts`'s action types, same append-only pattern as
+  `entitlement_audit_log`.
+- `staffing_rate_card_templates` table matching `src/core/staffing/rate-card-template.ts`'s effective-dated shape.
+- `staffing_provider_events` table for the idempotent ingestion ledger `src/core/staffing/provider-events.ts`
+  models in memory (its `IngestionLedger` type is the row shape: `event_id` primary key, `assignment_id`,
+  `to_state`, `occurred_at`).

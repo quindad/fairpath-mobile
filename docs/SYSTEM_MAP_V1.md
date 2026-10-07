@@ -34,3 +34,21 @@ already has a canonical route or module, extend it — do not start a second one
 | Domain | Canonical module(s) | Canonical route(s) | Notes |
 |---|---|---|---|
 | Staffing (FairPath Recruit vs. FairPath Staffing) | `src/core/staffing/{economics,member-view,workflow,listing-kind,foxhire-adapter,checkr-adapter,experian-adapter}.ts` | none yet | Flagship business line. Economics and provider state are logic + a draft migration only; no screens yet. **`economics.ts` must never be imported from a member-facing screen** — `member-view.ts`'s `toMemberView()` is the only allowed path from an internal assignment record to anything a member sees. Extends `jobs` and `job_placements` (see `docs/proposed-migrations/20261021100000_staffing_architecture_DRAFT.sql`); does not duplicate either. |
+
+## Staffing — group 2–4 additions (2026-10-07)
+
+| Module | Purpose |
+|---|---|
+| `src/core/staffing/pipeline.ts` | Canonical 27-stage operational pipeline; supersedes `workflow.ts`'s coarse 12-stage version for new work. Documents which record (requisition / job_applications / staffing_assignments) each stage belongs on. |
+| `src/core/staffing/provider-events.ts` | Idempotent, replay-safe webhook ingestion shape for FoxHire/Checkr. No real payload fabricated. |
+| `src/core/staffing/matching.ts` | Staffing-specific fair-chance matching; wraps `src/core/matching/fair-chance.ts`, does not reimplement its disclosure rules. |
+| `src/core/staffing/evidence.ts` | Decides which pipeline stages produce real evidence for the existing impact evidence ledger. |
+| `src/core/staffing/audit.ts` | Audit event types mirroring `entitlement_audit_log`; `toClientSafeEvent()` is the only path from an audit event to a UI. |
+| `src/core/staffing/rate-card-template.ts` | Effective-dated client commercial terms. No real pricing invented. |
+| `src/core/staffing/demo-fixtures.ts` + `src/app/my-assignment.tsx` | DEV-only demo scenario and the member-facing My Assignment screen. |
+
+**Explicitly out of scope for this repo:** the Command Center staffing-ops workspace and the employer-facing
+staffing workspace (directive groups 5 and 6) are admin/employer surfaces that belong in the Partner/Command
+Center repository, not `fairpath-mobile`. Building them here would create a competing admin architecture. The
+shared types (`economics.ts`, `pipeline.ts`, `audit.ts`, `rate-card-template.ts`) are written so that repo can
+reuse them once that workstream reaches staffing.
