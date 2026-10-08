@@ -153,3 +153,12 @@ export function ruleChangedNotice(changed: boolean): string {
 export function staleRuleNotice(stale: boolean, verifiedAt: string | null): string {
   return stale ? `This rule was last verified ${verifiedAt ?? 'a long time ago'}. Confirm it is still current with the official source before relying on it.` : '';
 }
+
+// The engine has no cross-jurisdiction routing: a case flagged out-of-state is still evaluated under the chosen
+// jurisdiction's own rules, with no adjustment. This notice is the honest disclosure of that gap, shown before
+// any eligibility result, not a substitute for actually modeling 56 jurisdictions' cross-border rules.
+export function outOfStateNotice(outOfState: boolean, jurisdictionName: string): string {
+  return outOfState
+    ? `This conviction was marked as out-of-state. The result below was still checked against ${jurisdictionName}'s rules, because that is the only law FairPath has loaded for this case. It does not account for the state where the conviction actually happened, which can change what applies. Treat this case as needing manual review by a legal aid organization or the court clerk before relying on the result below.`
+    : '';
+}

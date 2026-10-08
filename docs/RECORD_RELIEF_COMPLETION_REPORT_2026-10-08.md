@@ -384,3 +384,43 @@ not mobile: physical Storage deletion still lacks fresh proof, out-of-state eval
 (forms/fees in `record_relief_rules`/`record_relief_forms`) is still mostly unpopulated per Addendum 3's own DEV
 data check, and independent legal review remains at 0/57. No unsupported 100% claim is made anywhere in this
 report.
+
+## Addendum 5 — final independent review: out-of-state product-safety gap, real fix shipped
+
+Assigned task: determine whether the previously-documented out-of-state gap needed a real UI fix, and ship one
+only if it's narrowly scoped and doesn't invent cross-state law. It did, and I shipped one.
+
+**The gap, precisely:** `src/app/record-relief/add.tsx` collects `out_of_state_conviction` with a hint telling
+the member "These can change which rules apply, so FairPath will suggest a manual review." That promise was
+never kept — the field is stored on the case but was never read anywhere on the screen that shows the eligibility
+result. A member who flagged their conviction as out-of-state would see a normal-looking eligibility result with
+no indication that the engine evaluated it under the wrong state's law and never flagged it for review at all.
+
+**The fix:** added `outOfStateNotice(outOfState, jurisdictionName)` to `relief-format.ts`, following the exact
+pattern already used for `ruleChangedNotice`/`staleRuleNotice` in the same file — a pure function, easy to unit
+test, returning an honest disclosure rather than a legal determination: it says plainly that the result was still
+checked under the chosen jurisdiction's rules because that's the only law loaded, that this doesn't account for
+where the conviction actually happened, and recommends manual review. Wired into
+`src/app/record-relief/case/[id].tsx` as a warning Panel shown immediately after the top disclaimer and before
+the Eligibility Review section — so it's the first thing a member sees, before any outcome. No change to the
+evaluation engine, no new jurisdiction logic, no invented cross-state rule.
+
+**Regression test:** `tests/record-relief-out-of-state-notice.test.ts` (2 tests) — confirms the notice is empty
+when the flag isn't set, and when it is set, confirms it names the jurisdiction actually used, recommends manual
+review, and never says "eligible"/"ineligible" (i.e., it discloses a gap, it doesn't pretend to have resolved one
+with a legal conclusion).
+
+**Live-verified in DEV**, not just unit-tested: created a synthetic test case (`jurisdiction_code: 'US-OH'`,
+`out_of_state_conviction: true`, fictional offense/dates, no real identity) via `save_record_relief_case`,
+confirmed the warning renders correctly and prominently on the case screen, confirmed it does **not** appear on
+an existing normal (non-out-of-state) case, then deleted the synthetic case via `delete_record_relief_case`
+afterward so no test data was left in DEV.
+
+**Verification:** `npx tsc --noEmit`: 0 errors. `node --test tests/*.test.ts`: **1,429 / 1,429 passing** (was
+1,427; +2 from the new test file). Did not run the nationwide smoke test again since this change touches neither
+`engine-executor.ts` nor any jurisdiction adapter — confirmed by inspection, not assumed.
+
+**What I did not touch**: backend files, migrations, release-gate scripts, or the filing-table work with
+uncommitted changes already in this working tree from the concurrent backend session — none of `scripts/audit-
+relief.mjs`, `scripts/audit-security.mjs`, `scripts/record-relief-release-gate.mjs`, or any `supabase/migrations/*`
+file were staged or committed by this pass.

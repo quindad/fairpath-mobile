@@ -15,7 +15,7 @@ import type { DocumentSpec } from '@/core/documents/spec';
 import { isoFromText } from '@/core/profile/opportunity-forms';
 import { loadContact } from '@/core/profile/opportunity-service';
 import {
-  ANCHOR_LABEL, DISCLAIMER, FILING_STATUS_OPTIONS, MISSING_LABEL, OUTCOME_INFO, REMEDY_LABEL, countdownText, ruleChangedNotice, staleRuleNotice,
+  ANCHOR_LABEL, DISCLAIMER, FILING_STATUS_OPTIONS, MISSING_LABEL, OUTCOME_INFO, REMEDY_LABEL, countdownText, outOfStateNotice, ruleChangedNotice, staleRuleNotice,
 } from '@/core/record-relief/relief-format';
 import {
   deleteCase, loadCase, loadCaseDetail, loadJurisdictions, reevaluateCase, reliefErrorMessage, setCaseStatus, toggleChecklist,
@@ -97,6 +97,13 @@ export default function ReliefCaseScreen() {
       <PageHeader eyebrow={jName.toUpperCase()} title={c.label} backTo="/record-relief" alwaysBackTo />
       <FormScrollView contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 56 }}>
         <Panel tone="warning"><BodyText muted>{DISCLAIMER}</BodyText></Panel>
+
+        {outOfStateNotice(c.out_of_state_conviction, jName) ? (
+          <Panel tone="warning">
+            <BodyText strong>This conviction was marked as out-of-state.</BodyText>
+            <BodyText muted>{outOfStateNotice(c.out_of_state_conviction, jName)}</BodyText>
+          </Panel>
+        ) : null}
 
         <View style={s.block}><SectionTitle>ELIGIBILITY REVIEW</SectionTitle></View>
         {evs.length === 0 ? <Panel><BodyText>This case has not been checked yet.</BodyText><PrimaryButton label="CHECK NOW" onPress={() => void run(() => reevaluateCase(c), 'Could not check')} busy={busy} /></Panel> : null}
