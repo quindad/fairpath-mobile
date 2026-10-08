@@ -22,8 +22,11 @@ Deno.serve(async (req: Request) => {
       return error ? null : ((data as ExpiredRow[] | null) ?? []);
     },
     async removeFromStorage(path) {
-      const { error } = await db.storage.from('record-relief-uploads').remove([path]);
-      return { ok: !error };
+      const { data, error } = await db.storage.from('record-relief-uploads').remove([path]);
+      // A successful HTTP response may still contain zero deleted objects.
+      // Never scrub the DB unless Storage confirms deletion of this exact path.
+      const removed = Array.isArray(data) && data.some((item) => item.name === path);
+      return { ok: !error && removed };
     },
     async markDeleted(id) {
       const { error } = await db
