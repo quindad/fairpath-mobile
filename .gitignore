@@ -59,3 +59,4 @@ incident-manifest.json
 
 # DEV QA auth credentials — never committed
 .dev-qa-credentials.local.json
+.dev-retention-proof.local.json

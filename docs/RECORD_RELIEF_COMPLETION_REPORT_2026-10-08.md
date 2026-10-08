@@ -488,3 +488,21 @@ reintroduces a per-row `auth.uid()`, `auth.role()`, or `auth.jwt()` call.
 The fresh DEV advisor reports **0 `auth_rls_initplan` findings** (down from 39). The complete application gate
 still passes **49/49** after the policy rewrite, including every local SQL authorization/isolation suite and a
 clean TypeScript check.
+
+## Addendum 9 — real DEV Storage deletion and failure proof completed
+
+Using the existing synthetic Member A account, uploaded a disposable 910-byte PDF with no personal data through
+the real Storage API and downloaded it successfully before expiry. Only this new fixture was expired. The real
+`invoke_record_relief_retention()` worker request 193 returned HTTP 200 with `deleted:1, failed:0`.
+The authenticated verification confirmed the file could no longer be downloaded, its folder listing contained
+no file, and its upload row was `deleted` with an empty path and null extraction.
+
+A separate deliberately unavailable-object fixture tested failure handling. Worker request 195 returned HTTP 200
+with `deleted:0, failed:1`. The row remained `uploaded` with its original path, preserving retry information.
+This proves the deployed worker does not falsely report deletion when Storage confirms no removed object.
+Both newly created database fixtures were removed after verification; no existing member fixtures were altered.
+The release gate now marks these two infrastructure proofs PASS. Legal review, filing content, and American Samoa
+source verification remain outstanding.
+
+The reusable DEV-only runner is `scripts/qa-dev-retention-proof.mjs`. It reads the test password from the
+`QA_PASSWORD` environment variable and never prints or saves it. Its fixture manifest is ignored by Git.

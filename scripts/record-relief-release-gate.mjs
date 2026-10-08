@@ -8,8 +8,8 @@ const smokePath='docs/record-relief-nationwide-smoke-results.json';
 if(!existsSync(smokePath))blockers.push('Nationwide smoke evidence missing');
 else {const smoke=JSON.parse(readFileSync(smokePath,'utf8'));if(smoke.total!==57||smoke.passed!==57||smoke.failed!==0)blockers.push('Nationwide smoke evidence is not 57/57 passing');}
 const required=[
- ['Live physical Storage deletion and database scrub verified','BLOCKED','No disposable physical object was uploaded and expired in DEV'],
- ['Live Storage-removal failure behavior verified','BLOCKED','Only dependency-injected unit test is available'],
+ ['Live physical Storage deletion and database scrub verified','PASS','2026-10-08 DEV request 193: deleted=1, failed=0; physical download/list and database scrub verified'],
+ ['Live Storage-removal failure behavior verified','PASS','2026-10-08 DEV request 195: deleted=0, failed=1; unavailable-object row retained with its path'],
  ['Official court-source verification for 57 jurisdictions','BLOCKED','56/57 have source-checked directory entries; American Samoa remains unverified'],
  ['Local filing profile/forms verification for 57 jurisdictions','BLOCKED','Research exists for 56 jurisdictions, but live filing rules/forms are not fully populated or legally approved'],
  ['Independent legal review for 57 jurisdictions','BLOCKED','0/57 approvals'],
