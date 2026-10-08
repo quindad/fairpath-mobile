@@ -3,8 +3,15 @@
 // LEGAL-SAFETY RULES encoded here: outcomes are always worded "potentially ..."; there is no wording that says a
 // member "is eligible", "will qualify" or "should file"; missing or unverified rule data is said plainly; a court decides.
 
+// Two outcome vocabularies exist in this codebase: the legacy DB-RPC set below (still produced by older stored
+// evaluations) and the shared TypeScript engine's ReliefOutcome set (src/core/record-relief/rule-contract.ts),
+// used by the AI-scan review flow and, since the reevaluateCase fix, by every "re-check" path too. The database's
+// own CHECK constraint on record_relief_evaluations.outcome accepts both, so a case screen reading persisted
+// evaluations must be able to render either vocabulary without crashing — this map covers both rather than
+// picking one and breaking the other.
 export type Outcome =
-  | 'potentially_eligible_now' | 'waiting_period' | 'potentially_ineligible' | 'insufficient_information' | 'manual_review' | 'rule_unavailable' | 'federal_separate';
+  | 'potentially_eligible_now' | 'waiting_period' | 'potentially_ineligible' | 'insufficient_information' | 'manual_review' | 'rule_unavailable' | 'federal_separate'
+  | 'likely_eligible_verified' | 'likely_excluded_verified' | 'automatic_relief_may_apply' | 'court_or_prosecutor_discretion' | 'additional_facts_required' | 'rule_not_verified' | 'legal_review_recommended';
 
 export const OUTCOME_INFO: Record<Outcome, { label: string; tone: 'good' | 'wait' | 'stop' | 'info' | 'warn'; summary: string }> = {
   potentially_eligible_now: { label: 'POTENTIALLY ELIGIBLE NOW', tone: 'good', summary: 'Based on what you entered, you appear to meet this rule\'s conditions. A court makes the decision, and this is not legal advice.' },
@@ -14,6 +21,13 @@ export const OUTCOME_INFO: Record<Outcome, { label: string; tone: 'good' | 'wait
   manual_review: { label: 'MANUAL REVIEW RECOMMENDED', tone: 'warn', summary: 'Something about this case is best reviewed by a person, such as a legal aid organization or the court clerk.' },
   rule_unavailable: { label: 'RULE NOT VERIFIED YET', tone: 'info', summary: 'FairPath does not have verified rules for this jurisdiction yet, so it cannot say anything about eligibility.' },
   federal_separate: { label: 'FEDERAL CASE (SEPARATE)', tone: 'info', summary: 'Federal cases are handled separately from state record relief.' },
+  likely_eligible_verified: { label: 'POTENTIALLY ELIGIBLE NOW', tone: 'good', summary: 'Based on what you entered, you appear to meet this rule\'s conditions. A court makes the decision, and this is not legal advice.' },
+  likely_excluded_verified: { label: 'POTENTIALLY INELIGIBLE UNDER THIS RULE', tone: 'stop', summary: 'Something you entered does not fit this rule. Other rules or a court may see it differently.' },
+  automatic_relief_may_apply: { label: 'AUTOMATIC RELIEF MAY APPLY', tone: 'good', summary: 'This rule may apply automatically, without you filing anything. A court or agency record is the only way to confirm it already happened.' },
+  court_or_prosecutor_discretion: { label: 'DEPENDS ON COURT OR PROSECUTOR DISCRETION', tone: 'warn', summary: 'This outcome is not automatic. A judge or prosecutor decides, even if you meet the listed conditions.' },
+  additional_facts_required: { label: 'MORE INFORMATION NEEDED', tone: 'info', summary: 'FairPath cannot check this rule until you add the missing information.' },
+  rule_not_verified: { label: 'RULE NOT VERIFIED YET', tone: 'info', summary: 'FairPath does not have verified rules for this jurisdiction yet, so it cannot say anything about eligibility.' },
+  legal_review_recommended: { label: 'MANUAL REVIEW RECOMMENDED', tone: 'warn', summary: 'Something about this case is best reviewed by a person, such as a legal aid organization or the court clerk.' },
 };
 
 export const DISCLAIMER = 'FairPath provides legal information, not legal advice, and is not a law firm. Record-relief rules are specific to each jurisdiction and change. A court decides whether relief is granted. A legal aid organization or the court clerk can confirm what applies to you.';
@@ -80,7 +94,10 @@ export function countdownText(outcome: Outcome, eligibilityDate: string | null, 
 /** Best (most actionable) outcome across a case's evaluations, for list rows. Deterministic. */
 export function headlineOutcome(evals: { outcome: Outcome; eligibility_date: string | null }[]): { outcome: Outcome; eligibility_date: string | null } | null {
   if (!evals.length) return null;
-  const rank: Record<Outcome, number> = { potentially_eligible_now: 0, waiting_period: 1, insufficient_information: 2, manual_review: 3, potentially_ineligible: 4, rule_unavailable: 5, federal_separate: 6 };
+  const rank: Record<Outcome, number> = {
+    potentially_eligible_now: 0, waiting_period: 1, insufficient_information: 2, manual_review: 3, potentially_ineligible: 4, rule_unavailable: 5, federal_separate: 6,
+    likely_eligible_verified: 0, automatic_relief_may_apply: 0, additional_facts_required: 2, court_or_prosecutor_discretion: 3, legal_review_recommended: 3, likely_excluded_verified: 4, rule_not_verified: 5,
+  };
   return [...evals].sort((a, b) => rank[a.outcome] - rank[b.outcome] || String(a.eligibility_date ?? '9999').localeCompare(String(b.eligibility_date ?? '9999')))[0];
 }
 

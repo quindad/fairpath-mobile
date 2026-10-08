@@ -163,3 +163,69 @@ filing-profiles.ts changes.
 - No backend functions, migrations, database grants, or release-gate files were touched.
 - No legal rule, form, fee, or court link was invented. Where official sources did not state one clear statewide
   figure, that is reported as such, not flattened into a plausible-looking number.
+
+## Addendum — mobile QA pass and bug fixes (same day, after handoff)
+
+Per the founder's follow-up handoff (mobile QA + UI bugs are my lane; Mardo owns the live filing DB, Storage
+retention, and release gate).
+
+### Bugs found and fixed
+
+1. **Two genuinely broken court-directory links**, found by live-checking all 56 URLs (not just confirming they
+   were well-formed): `US-MA` pointed at a page that 404s on mass.gov; fixed to
+   `https://www.mass.gov/orgs/executive-office-of-the-trial-court` (confirmed loads). `US-NJ` pointed at a 404'd
+   subpage; fixed to the working `https://www.njcourts.gov` root. The other 7 URLs that failed a raw server-side
+   fetch (403s on `oscn.net`, `dccourts.gov`, `mncourts.gov`, `courts.mo.gov`, `nvcourts.gov`, `nycourts.gov`,
+   `nccourts.gov`, `kscourts.gov`) all load correctly in a real browser — those were bot-blocking false positives
+   on the raw check, not broken links; confirmed live for each.
+2. **Major functional bug: "CHECK NOW" / "RE-CHECK WITH THE CURRENT RULE" / "RE-CHECK THIS CASE" on the case
+   detail screen always returned "rule not verified," for every real jurisdiction including Ohio**, which has
+   full engine coverage. Root cause: these three buttons all called the legacy `evaluate_record_relief_case` RPC,
+   which reads from the (mostly empty, for real jurisdictions) `record_relief_rules` table — a completely
+   different, disconnected evaluation path from the one the AI-document-scan flow uses
+   (`evaluate-record-relief` Edge Function + the static TypeScript rule engine, confirmed working end-to-end in
+   earlier passes). This meant the entire "Enter case manually" flow, and re-checking any existing case, was
+   silently broken for real jurisdictions — the only way to get a real result was through AI document scanning.
+   **Fixed**: `reevaluateCase()` now builds a `CaseBundle` from the saved case's own fields
+   (`caseToCaseBundle()`, new, in `relief-service.ts`) and calls the same working `evaluateSharedCaseServer` path.
+   Live-verified: a case stuck at "RULE NOT VERIFIED YET" now correctly returns "MORE INFORMATION NEEDED —
+   whether criminal proceedings are pending" after re-check, both on the case detail screen and in the home
+   screen's "My Cases" list.
+3. **A crash this second fix exposed**: the case detail screen's `OUTCOME_INFO` lookup table
+   (`relief-format.ts`) only covered the legacy RPC's 7-value outcome vocabulary, not the shared engine's 8-value
+   `ReliefOutcome` vocabulary (the database's own CHECK constraint already accepts both). Once real cases started
+   actually returning new-vocabulary outcomes through this screen, `OUTCOME_INFO[e.outcome]` could be `undefined`,
+   crashing the whole screen. Fixed by extending `Outcome`/`OUTCOME_INFO` to cover both vocabularies with
+   consistent, legally-safe wording, and adding a defensive fallback
+   (`OUTCOME_INFO[e.outcome] ?? OUTCOME_INFO.rule_not_verified`) so an unexpected future outcome value degrades
+   gracefully instead of crashing.
+4. Re-verified live: no unverified eligibility or filing-readiness claim appears anywhere — the engine-level
+   guard from `efd6187` (forces `additional_facts_required` when key facts are unknown) still passes its
+   nationwide smoke test (57/57) after all of today's changes, and the case screen's own "FORMS"/"FEES" sections
+   still show the honest "FairPath has no verified forms for Ohio yet... FairPath never invents a court form"
+   text rather than fabricating anything.
+
+### Tests after these fixes
+
+`npx tsc --noEmit`: 0 errors. `node --test tests/*.test.ts`: **1,415 / 1,415 passing**, no regressions from any
+fix in this addendum.
+
+### Handoff to Mardo: exact file paths and data structure for DB import
+
+The sourced filing/forms/fee research is in **Section 2 of this report** (the per-jurisdiction table above), not
+in any code file — it was deliberately kept out of `src/core/record-relief/filing-profiles.ts` because that file
+is dead code the app never reads (see Section 2's explanation). To load it into the live app, it needs to go into
+the tables the case detail screen (`src/app/record-relief/case/[id].tsx`) actually reads via
+`get_record_relief_case_detail`:
+
+- **`record_relief_rules`** — one row per jurisdiction/remedy, needs at minimum: `jurisdiction_code`,
+  `citation_text`, `source_url`, `effective_from`, `last_verified_at`, and the `fees`/`filing` jsonb shape that
+  `case/[id].tsx` already destructures (`court_fee_cents`, `fee_waiver_available`, `note`, `where_text`,
+  `instructions_text`, `court_type` — see lines ~166–180 of that file for the exact field names it reads).
+- **`record_relief_forms`** — one row per official form, needs: `form_key`, `name`, `kind`
+  (`official_form`/`fee_waiver_form`/other), `revision`, `effective_date`, `official_source_url`,
+  `last_verified_at`, `auto_fillable` (see lines ~184–192 of `case/[id].tsx` for the exact shape).
+
+Where this report's table says a fee/form varies by county or wasn't confirmed on an official page, that should
+be loaded as `null`/absent rather than a guessed figure — the schema and the app's own UI already handle "not
+listed, ask the clerk" gracefully (confirmed live this pass).

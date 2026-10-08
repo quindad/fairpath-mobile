@@ -4,7 +4,7 @@ import type { ReliefDetailForDoc, ReliefCaseForDoc } from '@/core/documents/buil
 import { RECORD_RELIEF_ENGINE_VERSION, daysUntil, getRuleFreshness } from '@/core/record-relief/shared-engine';
 import { planRecordReliefEvaluation } from '@/core/record-relief/engine-registry';
 import { executeRecordRelief, type EngineFacts } from '@/core/record-relief/engine-executor';
-import type { CaseBundle } from '@/core/record-relief/jurisdiction-engine';
+import type { CaseBundle, ChargeDegree } from '@/core/record-relief/jurisdiction-engine';
 import type { CaseDocumentExtraction } from '@/core/record-relief/ai-intake';
 
 /** Record Relief data access. Cases are owner-only; rules/forms/pathways are verified-only reference data. */
@@ -53,7 +53,35 @@ async function call<T>(fn: string, args: Record<string, unknown>): Promise<T> {
 }
 export const loadCaseDetail = (id: string) => call<ReliefDetail>('get_record_relief_case_detail', { p_case: id });
 export const saveCase = (id: string | null, payload: Record<string, unknown>) => call<ReliefCase>('save_record_relief_case', { p_id: id, p: payload });
-export const reevaluateCase = (id: string) => call<unknown>('evaluate_record_relief_case', { p_case: id });
+
+/** The inverse of extractionToCasePayload: turns a saved case row back into engine input. Degree is derived
+ * conservatively from offense_class — only mapped where the class unambiguously implies a degree; anything else
+ * (including dui_dwi, which can be either) stays 'unknown' rather than guessed. */
+function degreeFromOffenseClass(offenseClass: string): ChargeDegree {
+  if (offenseClass === 'traffic_infraction') return 'infraction';
+  if (offenseClass === 'misdemeanor') return 'misdemeanor';
+  if (offenseClass === 'non_violent_felony' || offenseClass === 'violent_felony' || offenseClass === 'sex_offense') return 'felony';
+  return 'unknown';
+}
+export function caseToCaseBundle(c: ReliefCase): CaseBundle {
+  return {
+    venue: { jurisdictionCode: c.jurisdiction_code, courtName: c.court_name ?? undefined, courtLevel: 'unknown' },
+    charges: [{
+      id: c.id, offenseName: c.offense_description ?? c.label, degree: degreeFromOffenseClass(c.offense_class),
+      disposition: (c.disposition as CaseBundle['charges'][number]['disposition']) ?? 'unknown',
+      convictionDate: c.conviction_date ?? undefined, dispositionDate: c.disposition_date ?? undefined,
+      sentenceCompletionDate: c.sentence_completion_date ?? undefined, supervisionCompletionDate: c.supervision_completion_date ?? undefined,
+      releaseDate: c.release_date ?? undefined, finesPaid: c.fines_paid ?? undefined, restitutionPaid: c.restitution_paid ?? undefined,
+    }],
+  };
+}
+/** Re-runs the same shared evaluation engine the AI-review flow uses (evaluate-record-relief), built from the
+ * saved case's own fields. Previously called the legacy evaluate_record_relief_case RPC, which reads from the
+ * (mostly empty, for real jurisdictions) record_relief_rules table and returned rule_unavailable for every real
+ * case regardless of jurisdiction — including Ohio, which has full engine coverage. This was the only reachable
+ * path for "Enter case manually" and every "re-check" button on the case screen, so it silently broke eligibility
+ * checking for every entry point except the AI-document-scan flow. */
+export const reevaluateCase = (c: ReliefCase) => evaluateSharedCaseServer(c.id, caseToCaseBundle(c));
 /** Plans a substantive evaluation through the shared 57-authority registry before persistence/RPC reconciliation. */
 export const planSharedEvaluation = (caseBundle: CaseBundle, facts: Record<string, unknown> = {}) => planRecordReliefEvaluation(caseBundle, facts);
 /** Executes the same substantive engine intended for mobile, web API, and Command Center consumers. */

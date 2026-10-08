@@ -99,9 +99,9 @@ export default function ReliefCaseScreen() {
         <Panel tone="warning"><BodyText muted>{DISCLAIMER}</BodyText></Panel>
 
         <View style={s.block}><SectionTitle>ELIGIBILITY REVIEW</SectionTitle></View>
-        {evs.length === 0 ? <Panel><BodyText>This case has not been checked yet.</BodyText><PrimaryButton label="CHECK NOW" onPress={() => void run(() => reevaluateCase(c.id), 'Could not check')} busy={busy} /></Panel> : null}
+        {evs.length === 0 ? <Panel><BodyText>This case has not been checked yet.</BodyText><PrimaryButton label="CHECK NOW" onPress={() => void run(() => reevaluateCase(c), 'Could not check')} busy={busy} /></Panel> : null}
         {evs.map((e: ReliefEvaluation) => {
-          const info = OUTCOME_INFO[e.outcome];
+          const info = OUTCOME_INFO[e.outcome] ?? OUTCOME_INFO.rule_not_verified;
           const count = countdownText(e.outcome, e.eligibility_date, e.days_remaining);
           return (
             <Panel key={e.id} tone={info.tone === 'good' ? 'accent' : info.tone === 'warn' ? 'warning' : undefined}>
@@ -113,7 +113,7 @@ export default function ReliefCaseScreen() {
               {e.missing_inputs.length ? (
                 <View><BodyText strong>What FairPath still needs:</BodyText>{e.missing_inputs.map((m) => <BodyText key={m} muted>• {MISSING_LABEL[m] ?? m.replace(/_/g, ' ')}</BodyText>)}<SecondaryButton label="ADD MISSING INFORMATION" onPress={() => router.push(('/record-relief/add?id=' + c.id) as never)} /></View>
               ) : null}
-              {ruleChangedNotice(e.rule_changed) ? <View><StatusLine tone="warning">{ruleChangedNotice(e.rule_changed)}</StatusLine><SecondaryButton label="RE-CHECK WITH THE CURRENT RULE" onPress={() => void run(() => reevaluateCase(c.id), 'Could not re-check')} /></View> : null}
+              {ruleChangedNotice(e.rule_changed) ? <View><StatusLine tone="warning">{ruleChangedNotice(e.rule_changed)}</StatusLine><SecondaryButton label="RE-CHECK WITH THE CURRENT RULE" onPress={() => void run(() => reevaluateCase(c), 'Could not re-check')} /></View> : null}
               {staleRuleNotice(e.rule_stale, e.rule?.last_verified_at ?? null) ? <StatusLine tone="warning">{staleRuleNotice(e.rule_stale, e.rule?.last_verified_at ?? null)}</StatusLine> : null}
               {e.rule ? (
                 <View style={s.source}>
@@ -125,7 +125,7 @@ export default function ReliefCaseScreen() {
             </Panel>
           );
         })}
-        {evs.length ? <SecondaryButton label="RE-CHECK THIS CASE" onPress={() => void run(() => reevaluateCase(c.id), 'Could not re-check')} disabled={busy} /> : null}
+        {evs.length ? <SecondaryButton label="RE-CHECK THIS CASE" onPress={() => void run(() => reevaluateCase(c), 'Could not re-check')} disabled={busy} /> : null}
 
         {detail.pathways.length ? (
           <>
