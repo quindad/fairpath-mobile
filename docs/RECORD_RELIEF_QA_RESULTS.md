@@ -15,6 +15,41 @@ Executed per `docs/RECORD_RELIEF_BROWSER_QA_DIRECTIVE.md`. This report follows t
 numbering. Pass 2/3 additions are called out explicitly where the result changed or new evidence was gathered;
 everything else is unchanged from Pass 1.
 
+## Pass 4 — what's new
+
+The founder enabled `RECORD_RELIEF_EXTRACTION_ENABLED=true` in Supabase DEV (the Anthropic key was already
+present), resolving the Pass 3 `extraction_not_enabled` blocker. Retried Member A's extraction immediately.
+
+- **The 503 is gone — extraction now actually runs.** Signed back in as Member A, toggled consent on, and
+  injected a new, more realistic synthetic fixture: a 850×1100 PNG rendered via canvas containing readable text
+  styled as a Franklin County, Ohio judgment entry (`synthetic-dev-fixture-franklin-county-judgment.png`, 92KB,
+  explicitly labeled in its own content as a "SYNTHETIC DEV FIXTURE... does not represent a real person, case, or
+  court record"). This exercised the real Anthropic Claude vision call in `extract-record-relief-case/index.ts`,
+  not a stub.
+- **New finding: `save_failed` (500), not a 503.** After ~12 seconds (consistent with a real model call), the
+  screen showed `save_failed`. This status code is only reachable in `handler.ts` *after* `d.runEngine` returned a
+  result and `validateCaseExtraction` accepted it — i.e., the Anthropic call succeeded and produced a structurally
+  valid extraction. The failure is specifically in `d.save()`, which does
+  `admin.from('record_relief_uploads').update({status:'needs_review', extraction:payload, model_version, extracted_at}).eq('id',id)`
+  using the service-role client.
+- **Root-cause narrowed further by direct DB inspection.** Queried `record_relief_uploads` with Member A's own
+  session token immediately after the failure: the row is still `status:'uploaded'`, `failure_code:null`,
+  `extraction:null`, `model_version:null` — meaning **`markFailed()` (the catch-path cleanup write) also failed
+  silently** (its own `error` is never checked in `index.ts`, so it fails without surfacing anything). Both the
+  success-path write and the failure-path write against `record_relief_uploads` are failing for the service-role
+  client, which points at a database-side grants/ownership issue on that table, not an application code defect —
+  `record_relief_uploads` itself only has an explicit `revoke update ... from authenticated` in
+  `20261008550000_record_relief_ai_security.sql` (correct, intentional — that's what forces members through the
+  SECURITY DEFINER RPCs); there is no table-level grant statement for `record_relief_uploads` visible in
+  `20261008570000_record_relief_production_hardening.sql`'s grant restoration, unlike
+  `record_relief_consent_events`, which does have one. **This is not something to fix by writing a new migration
+  from this session — flagging precisely for the founder, who owns DB grants in this pass's coordination split.**
+- No code was changed this pass. Reverified the row is not silently orphaned: it stays `status:'uploaded'` (a
+  legitimate, retryable pre-extraction state), will still be correctly picked up by the retention sweep once
+  `expires_at` passes, and does not expose the (valid, unsaved) extraction payload anywhere.
+- Review screen and Ohio eligibility walkthrough (#5, #6) remain **BLOCKED** — there is still no successfully
+  *saved* extraction to review, even though the AI call itself now works end-to-end.
+
 ## Pass 3 — what's new
 
 - **Live authenticated run as Member A.** Signed in, completed onboarding, reached `/record-relief`. The home
@@ -86,9 +121,10 @@ The core safety boundary — **no AI extraction without recorded consent** — i
 sides of the gate **and live, with real synthetic DEV accounts**: client-side (no file picker opens without
 consent, confirmed live), and the upload + consent RPC succeeding in the correct order (confirmed by querying the
 live DEV database directly). **Member A/B cross-account isolation is live-verified at the RLS level**, the
-strongest form of that proof available in this environment. The one flow that did not complete end-to-end is AI
-extraction itself, which returns `extraction_not_enabled` in live DEV — root-caused to a missing enablement
-secret, not a code defect, and flagged precisely for the founder. The storage-deletion sweep has 10 passing
+strongest form of that proof available in this environment. AI extraction itself now runs successfully end-to-end
+against the real Anthropic API (confirmed with a realistic synthetic document) after the founder enabled the
+extraction flag — the one remaining gap is that the extracted result fails to save back to the database, traced
+to a likely missing DB grant, not a code defect, and flagged precisely for the founder. The storage-deletion sweep has 10 passing
 offline tests; live execution against a real DEV bucket object is still pending and intentionally out of this
 session's scope (service-role-token-gated, coordination boundary). TypeScript and the full test suite are green:
 **1,414 of 1,414 tests pass.** Independent legal accuracy review of the 57 jurisdictions has not happened and is
@@ -100,7 +136,7 @@ explicitly out of scope for this pass.
 |---|---|---|---|
 | 1 | Navigate to Record Relief screens, routes/back-nav on desktop and mobile | **PASS** | Navigation audit: 101 route files pass. Pass 2: live-browser-tested all 9 Record Relief routes signed-out at both 1280px and 375px — every one redirects to `/sign-in?returnTo=...`, zero overflow, zero console errors. **Pass 3:** re-swept 6 of the 9 routes (`/record-relief`, `/add`, `/case/[id]`, `/court-finder`, `/coverage`, `/scan-packet`) **authenticated** as Member A/B at both widths — real interior content renders correctly, no overflow, no new console errors. |
 | 2 | Consent switch OFF by default; "Add first document" without consent never opens file picker/uploads/extracts | **PASS** | Code-verified in `src/app/record-relief/scan-packet.tsx`. **Pass 3 live confirmation:** as Member A, clicked "Add first document" with consent OFF and got the actual in-app error "Consent is required before AI document extraction." with no file picker opened. |
-| 3 | Full authenticated upload/case-packet flow; consent RPC succeeds before extraction | **PASS** (upload + consent) / **BLOCKED** (extraction itself — config, not code) | **Pass 3 live run as Member A:** toggled consent on, injected a synthetic PNG fixture through the real upload code path, then confirmed directly against the DEV database (via Member A's own session token, same RLS scope the app uses) that a real `record_relief_uploads` row exists with `status:'uploaded'`, a populated `storage_path`, and a populated `consented_at` — proving upload and the `record_relief_record_consent` RPC both succeeded, in that order, before extraction. The subsequent extraction call itself returned `extraction_not_enabled` (503); root-caused to `RECORD_RELIEF_EXTRACTION_ENABLED`/`ANTHROPIC_API_KEY` not actually being set on the live DEV Edge Function despite the function being deployed (v3) — see Pass 3 summary and Blockers. Server-side consent backstop (403 if consent missing) remains covered by `tests/record-relief-stored-consent.test.ts`. |
+| 3 | Full authenticated upload/case-packet flow; consent RPC succeeds before extraction | **PASS** (upload + consent + AI call) / **BLOCKED** (final DB save — DB grants, not code) | **Pass 3:** confirmed upload + `record_relief_record_consent` RPC succeed, in order, before extraction, via direct DB query with Member A's own session. **Pass 4** (after the founder enabled `RECORD_RELIEF_EXTRACTION_ENABLED`): retried with a new, realistic synthetic fixture. The 503 is gone; the real Anthropic extraction call now runs and its output passes schema validation (`validateCaseExtraction`). It fails one step later, at `save_failed` (500) — the service-role write of the extraction result back to `record_relief_uploads` fails, and the failure-path cleanup write fails too (row stays `status:'uploaded'`, nothing orphaned or exposed). Root-caused to a likely missing table-level grant for `record_relief_uploads` on the DB side — see Pass 4 summary and Blockers. Server-side consent backstop (403 if consent missing) remains covered by `tests/record-relief-stored-consent.test.ts`. |
 | 4 | Missing consent / unsupported type / oversized file / signed-out behavior; orphaned uploads | **PASS** (code) + **PASS** (missing-consent case, live) / not re-tested live (unsupported type, oversized file) | `handler.ts`'s `handleExtract` rejects each case in order with its own status code (see Pass 2 detail). **Pass 3:** the missing-consent/no-picker case was live-confirmed (see #2). Unsupported-type and oversized-file live repro were not attempted this pass — lower priority once the consent gate and upload path were both live-confirmed, and extraction is blocked regardless of file validity (see #3). Not claimed as tested live. |
 | 5 | Review screen shows extracted facts, flags low-confidence/conflicts, never silently becomes a verified legal conclusion | **PASS** (code) / **BLOCKED** (live render) | Covered by Record Relief's offline suite (1,087 tests, all passing). Live rendered inspection still **BLOCKED**: extraction itself did not complete this pass (see #3), so no real extracted-facts payload exists yet to render on the review screen. |
 | 6 | Synthetic Ohio case, missing felony classification: no eligibility promise; official source links; distinguishes sealing/expungement/pardon/other | **PASS** (offline test coverage) / **BLOCKED** (live) | Covered by the 57-jurisdiction offline suite, all passing. Live walkthrough still **BLOCKED** — same reason as #5, extraction did not complete. |
@@ -130,12 +166,16 @@ nothing from this pass touched staffing files.
 
 ## Remaining launch blockers
 
-1. **AI extraction does not run in live DEV.** `extract-record-relief-case` is deployed (v3) but its own
-   `enabled()` guard returns a 503 `extraction_not_enabled`, meaning `RECORD_RELIEF_EXTRACTION_ENABLED` and/or
-   `ANTHROPIC_API_KEY` is not actually set as a live secret on that Edge Function, despite being deployed. This
-   blocks #3 (extraction itself), #5, and #6 live. **External/config blocker — the founder needs to confirm both
-   values are set as DEV Edge Function secrets** (not just in a local `.env`), then this pass can resume where it
-   left off with a real extracted case packet.
+1. **Extraction result cannot be saved — likely missing DB grant.** Resolved this pass: the founder enabled
+   `RECORD_RELIEF_EXTRACTION_ENABLED`, so the 503 is gone and the real Anthropic extraction call now succeeds and
+   validates. New, narrower blocker: the service-role write of the result back to `record_relief_uploads`
+   (`status`, `extraction`, `model_version`, `extracted_at`) fails with `save_failed`, and the failure-cleanup
+   write fails too. `record_relief_uploads` has an explicit `revoke update ... from authenticated` (intentional)
+   but, unlike `record_relief_consent_events`, no visible table-level grant restoration for the service role in
+   `20261008570000_record_relief_production_hardening.sql`. This blocks #3's final step, #5, and #6 live.
+   **External/DB blocker — the founder needs to confirm `service_role` (or whatever role the Edge Functions'
+   `SUPABASE_SERVICE_ROLE_KEY` resolves to) has UPDATE on `record_relief_uploads`.** No migration was written for
+   this from this session, per the coordination boundary.
 2. **Physical Storage deletion (retention sweep) not executed live.** The sweep is service-role-token-gated and
    triggering it is outside this pass's "avoid backend functions" coordination boundary with the founder. Code
    guarantee has 10 passing offline tests; only live execution against a real DEV bucket object is unverified.
