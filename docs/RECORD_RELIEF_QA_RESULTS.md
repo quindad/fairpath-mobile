@@ -2,11 +2,35 @@
 
 **Date:** 2026-10-07 · **Repo:** fairpath-mobile · **Branch:** `development/mobile-v1-completion` ·
 **Environment:** Supabase DEV (`znvhmuhojvwvjzmaqwff`) and local only. Production was never touched.
-**Commit reviewed from:** `9dfc8f4` (QA directive added) through `f00df1a` (this QA pass's fixes), inclusive of
-`dd0575a` (Record Relief production automation) and `bdbbdb3` (stored-consent enforcement).
+**Pass 1 reviewed:** `9dfc8f4` (QA directive added) through `f00df1a` (Pass 1 fixes), inclusive of `dd0575a`
+(Record Relief production automation) and `bdbbdb3` (stored-consent enforcement).
+**Pass 2 reviewed:** `db10b65` (latest, pulled clean fast-forward; includes the founder's `extract-record-relief-case`
+v3 deploy, `record-relief-retention` v2 deploy, restored minimum DB grants, and the SQL-transaction RLS proof
+documented in `docs/RECORD_RELIEF_DEV_RELEASE_GATE_UPDATE.md`).
 
 Executed per `docs/RECORD_RELIEF_BROWSER_QA_DIRECTIVE.md`. This report follows that directive's test matrix
-numbering.
+numbering. Pass 2 additions are called out explicitly where the result changed or new evidence was gathered;
+everything else is unchanged from Pass 1.
+
+## Pass 2 — what's new
+
+- **Retried DEV test account creation at `db10b65`.** Result changed from "email rate limit exceeded" to two new
+  findings: a `+`-tagged address (`fairpathindustries+mobileqa@yahoo.com`) is now rejected as **invalid** by the
+  project's auth settings (not previously true), and a plain address (`fairpathmobileqa@yahoo.com`) **signs up
+  successfully but cannot sign in** — email confirmation is required and no inbox is accessible from this session.
+  This matches the founder's own, more-privileged session's finding in `RECORD_RELIEF_DEV_RELEASE_GATE_UPDATE.md`
+  ("No authenticated synthetic DEV account was available"). **Two working, signed-in synthetic accounts still do
+  not exist.** I did not keep retrying signup after this — it's the same wall from a different angle, not a quota
+  issue to wait out.
+- **Full route-level browser sweep, all 9 Record Relief screens, both viewports** (Pass 1 only checked `/record-relief`
+  itself): `/record-relief`, `/add`, `/case/[id]`, `/court-finder`, `/coverage`, `/review-scan`, `/scan-packet`,
+  `/scan-result`, `/scan` — every one redirects to `/sign-in?returnTo=...` at both 1280px desktop and 375px mobile,
+  with zero horizontal overflow and zero console errors at either width.
+- **Fresh clean baseline at `db10b65`:** typecheck 0 errors, full suite 1,414/1,414, navigation audit 101 routes,
+  keyboard audit 29 screens — unchanged in count from Pass 1, confirming the founder's grant/deploy commits didn't
+  regress anything client-side.
+- **No code defects found this pass.** Nothing was changed in `supabase/functions`, migrations, or legal-review
+  documents, per the coordination instruction.
 
 ## Summary
 
@@ -23,7 +47,7 @@ happened and is explicitly out of scope for this pass.
 
 | # | Item | Result | Evidence |
 |---|---|---|---|
-| 1 | Navigate to Record Relief screens, routes/back-nav on desktop and mobile | **PASS** (routing only; see note) | Navigation audit: 101 route files pass. All `/record-relief/*` routes correctly require sign-in (not in `isPublicRoute`'s allowlist) and redirect to `/sign-in?returnTo=...` with no dead end — confirmed live in the browser at both desktop and 375px mobile viewports. Interior screen content behind the login wall is **BLOCKED** (see #3). |
+| 1 | Navigate to Record Relief screens, routes/back-nav on desktop and mobile | **PASS** (routing only; see note) | Navigation audit: 101 route files pass. **Pass 2:** live-browser-tested all 9 Record Relief routes (`/record-relief`, `/add`, `/case/[id]`, `/court-finder`, `/coverage`, `/review-scan`, `/scan-packet`, `/scan-result`, `/scan`) at both 1280px desktop and 375px mobile — every one redirects to `/sign-in?returnTo=...` correctly, zero horizontal overflow, zero console errors at either width. Interior screen content behind the login wall is **BLOCKED** (see #3). |
 | 2 | Consent switch OFF by default; "Add first document" without consent never opens file picker/uploads/extracts | **PASS** | Code-verified in `src/app/record-relief/scan-packet.tsx`: `useState(false)` for consent; `add()` checks `if(!consent){setError(...);return}` **before** calling `pickReliefCaseFile()`, so the picker never opens. |
 | 3 | Full authenticated upload/case-packet flow; consent RPC succeeds before extraction | **PASS** (flow order, code + server test) / **BLOCKED** (live browser run) | Order confirmed in `scan-packet.tsx`: upload → `record_relief_record_consent` RPC → only then `extractRecordReliefCase`. Server-side backstop confirmed by `tests/record-relief-stored-consent.test.ts` (staged and committed this pass): the Edge Function returns 403 `stored_consent_required` and performs **zero downloads, zero engine calls** if `consented_at` is null, even when the client sends `consent:true`. Live run with a real DEV account: **BLOCKED — no DEV test account exists** (see Blockers). |
 | 4 | Missing consent / unsupported type / oversized file / signed-out behavior; orphaned uploads | **PASS** (code read) / **BLOCKED** (live) | `handler.ts`'s `handleExtract` rejects, in order: wrong method, oversized body, no user, extraction disabled, bad JSON, `consent!==true`, bad upload id, missing/foreign upload, **missing stored consent**, wrong status, unsupported MIME, size out of `[1, 15MB]`. Each has its own status code. "Orphaned uploads": investigated — if the consent RPC fails after a successful upload, the row is not literally orphaned (upload already cleans up Storage on its own DB-insert failure in `ai-upload.ts`); an uploaded-but-unconsented row simply sits until its `expires_at` and is swept by the now-tested retention function. Not a defect. Live signed-out/oversized-file browser repro: **BLOCKED — no DEV account**. |
@@ -31,7 +55,7 @@ happened and is explicitly out of scope for this pass.
 | 6 | Synthetic Ohio case, missing felony classification: no eligibility promise; official source links; distinguishes sealing/expungement/pardon/other | **PASS** (offline test coverage) / **BLOCKED** (live) | Covered by the existing 57-jurisdiction offline suite (`tests/record-relief*.test.ts`), including Ohio-specific rule-engine tests, all passing. Live browser walkthrough with a synthetic case: **BLOCKED — no DEV account**. |
 | 7 | Accessibility labels, keyboard, screen reader text, mobile layout, loading/error states, no secrets in console | **PASS**, one observation | Keyboard audit: 29 screens pass, including `scan-packet.tsx`'s `Switch` (has `accessibilityLabel="Consent to AI document extraction"`). Live-inspected the `/sign-in?returnTo=/record-relief` hand-off screen (the one Record Relief screen reachable without an account) at 375px and desktop: clean layout, no overflow, no console errors or warnings. **Observation, not fixed:** the email/password inputs on `/sign-in` get their accessible name from their placeholder text rather than a bound label — a minor, pre-existing issue on the shared sign-in screen, not a Record Relief file, and out of this pass's scope per "fix confirmed defects... without changing unrelated modules." |
 | 8 | Member A cannot access member B's cases/uploads/evaluations | **BLOCKED** | Requires two signed-in DEV accounts, which don't exist (see Blockers), **and** the local Postgres RLS harness is blocked independently by a missing `pg_cron` extension (see #11). Neither path is available in this environment. Not claimed as passing. |
-| 9 | `tsc --noEmit` and the full Record Relief test suite | **PASS** | `npx tsc --noEmit --pretty false`: 0 errors. `node --test tests/record-relief*.test.ts`: **1,087 of 1,087 pass**. Full repo suite: **1,414 of 1,414 pass**. Navigation audit: 101 routes. Keyboard audit: 29 screens. |
+| 9 | `tsc --noEmit` and the full Record Relief test suite | **PASS** | `npx tsc --noEmit --pretty false`: 0 errors. `node --test tests/record-relief*.test.ts`: **1,087 of 1,087 pass**. Full repo suite: **1,414 of 1,414 pass**. Navigation audit: 101 routes. Keyboard audit: 29 screens. **Pass 2:** rerun fresh at `db10b65`, identical counts — no regression from the founder's deploy/grant commits. |
 | 10 | Expired upload: physical Storage deletion confirmed, not just a DB flag; retry/error behavior | **PASS** (code, now tested) / **BLOCKED** (live execution) | `record-relief-retention`'s handler always calls `storage.remove([path])` **before** marking a row `deleted`, and **never** marks it deleted if removal fails (confirmed by 10 new offline tests — see Fixes below). Live execution against the real DEV bucket: **BLOCKED — requires the service-role-protected sweep token and a real expired file**, neither available here. |
 | 11 | Unauthenticated Edge Function calls fail; RLS enforces ownership; service-only RPC blocked for authenticated role; monitoring doesn't auto-approve legal changes | **PARTIAL PASS** (code) / **BLOCKED** (live/local-DB verification) | Code-verified: every Edge Function checks `getUserId`/auth before doing anything; `record-relief-retention` requires a server-held token (`checkToken`), not a user session, so an authenticated member cannot call it. Live/local-DB confirmation of RLS policies: **BLOCKED** — `node scripts/local-sql-check.mjs` cannot apply the full local migration set; `20261008570000_record_relief_production_hardening.sql` and two unrelated Program Scout migrations fail with `extension "pg_net" is not available` / `relation "cron.job" does not exist`. This is an environment gap (missing `pg_cron`/`pg_net` in this local Postgres), not a Record Relief code defect, and it was already known before this pass from unrelated prior work this session. "Monitoring does not auto-approve legal rule changes": not independently re-verified this pass; would need the same blocked local-DB access or a DEV account to check the review-queue UI. |
 | 12 | Independent legal accuracy review of all 57 jurisdictions is a separate approval gate | **NOT CLAIMED** | Per instruction. Software tests prove the rule *engine* behaves correctly against its own fixtures (1,087 passing tests) and that the app never asserts a legal conclusion without going through that engine. They do **not** establish that any jurisdiction's encoded rule is itself legally correct. That requires a human legal reviewer per jurisdiction, not done here, not claimed here. |
@@ -55,10 +79,13 @@ nothing from this pass touched staffing files.
 
 ## Remaining launch blockers
 
-1. **No DEV test account exists.** Supabase's email-send quota for this DEV project has been rate-limited for
-   over an hour across repeated attempts this session (`scripts/dev-qa-create-account.mjs`, gitignored credentials
-   file never produced). This blocks every "live browser, authenticated" item above (#3, #4 live, #5 live, #6
-   live, #8). **External blocker — needs either the quota to clear or an admin-created DEV account.**
+1. **No DEV test account exists — two findings now, not one.** Pass 1: email-send quota rate-limited. Pass 2
+   (after the founder's grant/deploy changes): a `+`-tagged address is now rejected as invalid by auth settings,
+   and a plain address signs up but **requires email confirmation to sign in**, which needs inbox access this
+   session doesn't have. The founder's own more-privileged session independently hit the same wall via a different
+   path. This blocks every "live browser, authenticated" item above (#3, #4 live, #5 live, #6 live, #8).
+   **External blocker — needs either an admin-created, pre-confirmed DEV account, or auth email confirmation
+   disabled for this DEV project, or inbox access to the test address.**
 2. **Local Postgres in this environment is missing `pg_cron`/`pg_net`.** This blocks the full local-sql test
    harness, which in turn blocks live RLS/isolation verification and local confirmation of
    `record_relief_production_hardening.sql`. **External/environment blocker**, not new to this pass — the same gap
@@ -74,5 +101,6 @@ nothing from this pass touched staffing files.
 - The storage-retention deletion ordering, now with real test coverage for the first time.
 - TypeScript correctness and the full automated suite (1,414 tests) across the whole repository, not just
   Record Relief.
-- Route-level access control for every `/record-relief/*` screen, confirmed live in the browser at two viewport
-  sizes, with a working, honest hand-off to the public website's free checker for signed-out visitors.
+- Route-level access control for **all 9** `/record-relief/*` screens, confirmed live in the browser at two
+  viewport sizes with zero console errors and zero overflow, with a working, honest hand-off to the public
+  website's free checker for signed-out visitors.
