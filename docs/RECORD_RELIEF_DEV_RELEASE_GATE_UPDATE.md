@@ -12,3 +12,15 @@ Environment: DEV project znvhmuhojvwvjzmaqwff only. Production unchanged.
 Additional DEV fix: minimum authenticated table grants restored for upload, packet and verified reference-data reads. Migration `20261009010000_record_relief_authenticated_minimum_grants.sql` applied to DEV, and `has_table_privilege` confirmed upload and packet grants.
 
 **Release recommendation: NOT READY for nationwide public launch.** Remaining blockers: authenticated E2E, actual Storage deletion, broader two-user isolation, full browser walkthrough, 57-jurisdiction independent legal review.
+
+
+## DEV technical release-gate refresh — 2026-10-08
+
+- **PASS, live authenticated:** Member A upload, persisted consent, Anthropic extraction, human review, Ohio evaluation and persistence. Member B could not read Member A upload via authenticated PostgREST (RLS); authenticated responsive routes tested. Evidence: QA Pass 6 commit `e7b56c0`.
+- **PASS, DEV fixes:** Extraction feature enabled; service_role SELECT/UPDATE on upload restored (`c204e1f`); evaluation missing_inputs JSON-to-text[] conversion fixed (`47468ea`). Member UPDATE on uploads remains denied.
+- **PASS, retention invocation only:** `public.invoke_record_relief_retention()` issued HTTP request 173; `net._http_response` returned HTTP 200, `{"deleted":0,"failed":0}`. The scheduled `record-relief-retention-daily` job is active at `45 4 * * *`. This does NOT prove physical deletion.
+- **BLOCKED, physical Storage deletion:** No new disposable Storage object was uploaded and physically removed during this pass. The three existing Member A synthetic uploads are not expired and were deliberately preserved. An authorized service-role or authenticated fixture-upload execution path is still required for a live end-to-end deletion proof. Do not count an SQL-only `storage.objects` row as a real object.
+- **BLOCKED, local SQL fixture suite:** `npm run test:relief-fixtures` reports unavailable local `pg_net` / `cron.job` and an unrelated strict change-event verification failure. `npm run test:relief` passed.
+- **NOT APPROVED, legal:** All 57 jurisdictions require independent qualified reviewer sign-off; `docs/RECORD_RELIEF_LEGAL_REVIEW_GATE.md` is the review queue. Registry coverage is not legal approval.
+
+Release decision remains **NOT READY for nationwide public release**. Do not conflate verified Ohio synthetic behavior with nationwide legal correctness.

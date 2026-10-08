@@ -301,3 +301,8 @@ the UI.**
   `record_relief_evaluations`, matching exactly what the member sees on screen.
 - Across Passes 4–6, three distinct DB-side defects were found by precise, evidence-based elimination (not
   guessing), reported exactly, fixed by the founder, and re-verified live rather than assumed fixed.
+
+
+## Retention verification follow-up — 2026-10-08
+
+DEV `public.invoke_record_relief_retention()` returned request id 173; response was HTTP 200 with `deleted:0, failed:0`. Existing three Member A fixture upload records remain unexpired; none was altered for the deletion test. Physical Storage removal is **NOT YET VERIFIED**: no disposable object was created and removed in a live bucket test. Local `test:relief-fixtures` remains blocked by unavailable pg_net/cron and strict change-event fixture failure; `test:relief` passed. Independent legal review remains 0/57 approved. See `docs/RECORD_RELIEF_DEV_RELEASE_GATE_UPDATE.md`.
