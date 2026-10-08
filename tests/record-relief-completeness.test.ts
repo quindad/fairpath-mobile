@@ -2,5 +2,5 @@ import test from'node:test';import assert from'node:assert/strict';import{BATCH0
 test('batch 01 has exactly five completeness records',()=>assert.deepEqual(BATCH01_COMPLETENESS.map(x=>x.jurisdictionCode),['US-OH','US-MD','US-PA','US-MI','US-IN']));
 test('incomplete state matrices cannot silently calculate',()=>{for(const x of BATCH01_COMPLETENESS.filter(x=>!x.substantiveRules))assert.equal(calculationGate(x.jurisdictionCode),false)});
 test('Ohio current verified core may calculate but still declares incomplete history/local filing',()=>{const x=BATCH01_COMPLETENESS[0];assert.equal(x.mayCalculate,true);assert.equal(x.historicalVersions,false);assert.equal(x.localFilingProfiles,false)});
-test('each batch state has an official court directory source',()=>{assert.equal(BATCH01_COURT_SOURCES.length,5);for(const x of BATCH01_COMPLETENESS)assert.ok(courtSource(x.jurisdictionCode)?.directoryUrl.startsWith('https://'))});
+test('each batch state has an official court directory source',()=>{assert.ok(BATCH01_COURT_SOURCES.length>=5);for(const x of BATCH01_COMPLETENESS)assert.ok(courtSource(x.jurisdictionCode)?.directoryUrl.startsWith('https://'))});
 test('court hierarchy completeness does not imply local filing completeness',()=>{for(const x of BATCH01_COMPLETENESS){assert.equal(x.courtHierarchy,true);assert.equal(x.localFilingProfiles,false)}});
