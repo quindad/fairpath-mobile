@@ -104,7 +104,7 @@ export async function loadMyMarketplaceClaimForItem(itemId:string):Promise<{id:s
  const user=await currentUser();const {data,error}=await supabase.from('marketplace_claims').select('id,status,pickup_deadline').eq('item_id',itemId).eq('claimant_id',user.id).maybeSingle();if(error)throw error;return data as any;
 }
 
-export async function refreshExpiredMarketplacePickups(){await currentUser();const {error}=await supabase.rpc('expire_marketplace_pickups');if(error)throw error}
+export async function refreshExpiredMarketplacePickups(){await currentUser();const {error}=await supabase.rpc('expire_my_marketplace_pickups');if(error)throw error}
 
 export async function loadMyMarketplaceClaims():Promise<MarketplaceClaim[]>{
  await refreshExpiredMarketplacePickups().catch(()=>{});const user=await currentUser();const {data,error}=await supabase.from('marketplace_claims').select('id,item_id,status,pickup_deadline,pickup_code,created_at,updated_at,item:marketplace_items(id,title,city,state,pickup_area,safe_pickup,status,marketplace_media(id,url,sort_order))').eq('claimant_id',user.id).order('created_at',{ascending:false});if(error)throw error;return (data??[]) as unknown as MarketplaceClaim[];

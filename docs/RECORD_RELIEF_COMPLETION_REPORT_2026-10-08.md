@@ -449,3 +449,29 @@ Fresh verification after all current changes:
 External launch dependencies remain external: production deployment approval, real jobs/housing/resources data
 providers, independent legal review, third-party notification/observability credentials, and physical-device
 testing. These are not software-test failures and are not represented as completed.
+
+## Addendum 7 — database function hardening and Marketplace scope correction
+
+The DEV security advisor identified 12 ordinary helper/trigger functions with a caller-controlled search path
+and 20 internal `SECURITY DEFINER` trigger functions exposed as API-callable functions. Migration
+`20261008190318_harden_database_function_surface.sql` pins the 12 search paths to `pg_catalog, public` and
+removes guest/member execution from every internal trigger or event-trigger function. A fresh advisor run shows
+zero mutable-search-path findings and only the four intentionally public, read-only resource/coverage RPCs remain
+guest-callable.
+
+The signed-in-function review found one additional real scope problem: a member could call the global
+`expire_marketplace_pickups()` maintenance sweep. Migration
+`20261008190631_scope_marketplace_expiry_refresh.sql` makes that global job service-only and adds
+`expire_my_marketplace_pickups()`, which can update only claims where the caller is the claimant or the listing
+owner. The client now calls the scoped RPC. A new executable regression proves an unrelated member cannot expire
+another member's pickup, while the claimant can refresh their own expired pickup immediately.
+
+Fresh verification after the security pass:
+
+- `npm run typecheck`: **0 errors**.
+- `npm run test:all`: **49/49 checks passing**.
+- `node --test tests/*.test.ts`: **1,429/1,429 passing**.
+- Marketplace SQL lifecycle: **12/12 passing**.
+- Nationwide Record Relief smoke: **57/57 passing**.
+- DEV privilege proof: global Marketplace sweep false for `authenticated`, scoped sweep true, mutable search paths 0.
+- Web preview: HTTP 200 from `http://localhost:8091`, Expo root served.

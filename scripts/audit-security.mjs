@@ -47,10 +47,21 @@ for (const f of NEW) {
   // 6. new buckets are private
   for (const m of sql.matchAll(/insert into storage\.buckets[^;]*values\s*\(([^)]*)\)/gi)) check(/'[a-z-]+',\s*'[a-z-]+',\s*false/i.test(m[1]), `${f}: a new storage bucket is not private`);
   // 7. functions that only the platform should run are not granted to authenticated
-  for (const svc of ['expire_generated_documents', 'expire_credit_uploads', 'generate_member_reminders', 'record_relief_reminders_due', 'credit_dispute_reminders_due', 'expire_ai_interactions', 'list_due_account_deletions', 'ingest_credit_extraction', 'ingest_credit_report', 'member_summary_core', 'build_opportunity_snapshot', 'resource_is_visible', 'resource_summary_json']) {
+  for (const svc of ['expire_generated_documents', 'expire_credit_uploads', 'expire_marketplace_pickups', 'generate_member_reminders', 'record_relief_reminders_due', 'credit_dispute_reminders_due', 'expire_ai_interactions', 'list_due_account_deletions', 'ingest_credit_extraction', 'ingest_credit_report', 'member_summary_core', 'build_opportunity_snapshot', 'resource_is_visible', 'resource_summary_json']) {
     check(!new RegExp(`grant execute on function public\\.${svc}\\([^)]*\\)\\s+to [^;]*authenticated`, 'i').test(sql), `${f}: ${svc} must be service-only`);
   }
 }
+
+const newSql = NEW.map((f) => strip(read('supabase/migrations/' + f))).join('\n');
+check(
+  /revoke all on function public\.expire_marketplace_pickups\(\) from public, anon, authenticated, service_role;/i.test(newSql)
+    && /grant execute on function public\.expire_marketplace_pickups\(\) to service_role;/i.test(newSql),
+  'the global Marketplace expiry sweep must remain service-only',
+);
+check(
+  /grant execute on function public\.expire_my_marketplace_pickups\(\) to authenticated, service_role;/i.test(newSql),
+  'the client Marketplace expiry refresh must use the member-scoped RPC',
+);
 
 // ---------- client code ----------
 const src = walk('src').filter((f) => /\.(ts|tsx)$/.test(f)).map((f) => f.replace(/\\/g, '/'));

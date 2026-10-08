@@ -119,6 +119,8 @@ $$;
 drop trigger if exists job_placements_create_retention_checkpoints on public.job_placements;
 create trigger job_placements_create_retention_checkpoints after insert on public.job_placements
   for each row execute function public.retention_create_checkpoints_for_placement();
+revoke all on function public.retention_create_checkpoints_for_placement() from public, anon, authenticated;
+grant execute on function public.retention_create_checkpoints_for_placement() to service_role;
 
 -- Member check-in. status_report: 'still_working' | 'ended' | 'support_needed'. A support request's detail text
 -- stays in retention_support_requests, never written to the checkpoint row an employer can read.
@@ -297,3 +299,5 @@ $$;
 drop trigger if exists retention_checkpoints_record_evidence on public.retention_checkpoints;
 create trigger retention_checkpoints_record_evidence after update of status on public.retention_checkpoints
   for each row execute function public.record_impact_evidence_retention();
+revoke all on function public.record_impact_evidence_retention() from public, anon, authenticated;
+grant execute on function public.record_impact_evidence_retention() to service_role;

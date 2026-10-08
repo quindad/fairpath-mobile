@@ -136,6 +136,20 @@ await test('a claim past its pickup deadline auto-expires to no_show and the ite
   must(await rpc(B, 'request_marketplace_claim', item, null), 'B claims after expiry');
 });
 
+await test('members can refresh only their own expired pickups; the global sweep stays service-only', async () => {
+  const A = await freshClaimant(), OUTSIDER = await freshClaimant();
+  const item = await makeItem('Member-scoped expiry test');
+  const claimRows = must(await rpc(A, 'request_marketplace_claim', item, null), 'A claims');
+  must(await rpc(SELLER, 'approve_marketplace_claim', claimRows[0].id), 'seller approves');
+  await db.query(`update public.marketplace_claims set pickup_deadline = now() - interval '1 hour' where id=$1`, [claimRows[0].id]);
+
+  denied(await rpc(OUTSIDER, 'expire_marketplace_pickups'), 'permission denied', 'member global expiry sweep');
+  const outsiderRefresh = must(await rpc(OUTSIDER, 'expire_my_marketplace_pickups'), 'outsider scoped refresh');
+  ok(outsiderRefresh[0].expire_my_marketplace_pickups === 0, 'outsider expired another member\'s pickup');
+  const ownerRefresh = must(await rpc(A, 'expire_my_marketplace_pickups'), 'claimant scoped refresh');
+  ok(ownerRefresh[0].expire_my_marketplace_pickups === 1, 'claimant could not refresh their own expired pickup');
+});
+
 await test('a non-seller cannot view claim candidates for someone else\'s item, and identities stay anonymous to the seller', async () => {
   const A = await freshClaimant(), OUTSIDER = await freshClaimant();
   const item = await makeItem('Candidates anonymity test');
