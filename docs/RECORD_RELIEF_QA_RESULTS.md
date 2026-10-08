@@ -15,10 +15,73 @@ unblocking live authenticated testing for the first time.
 role, resolving Pass 4's `save_failed`.
 **Pass 6 reviewed:** `47468ea`, after the founder fixed a JSON-into-text-array type mismatch in
 `replace_record_relief_evaluations`, resolving Pass 5's `evaluation_input_invalid`.
+**Pass 7 reviewed:** `efd6187` — nationwide (57-jurisdiction) engineering audit per
+`docs/RECORD_RELIEF_NATIONWIDE_COMPLETION_MATRIX.md`, reconciled with the founder's parallel
+`docs/RECORD_RELIEF_NATIONWIDE_COVERAGE_AUDIT_2026-10-08.md`.
 
 Executed per `docs/RECORD_RELIEF_BROWSER_QA_DIRECTIVE.md`. This report follows that directive's test matrix
 numbering. Pass 2/3 additions are called out explicitly where the result changed or new evidence was gathered;
 everything else is unchanged from Pass 1.
+
+## Pass 7 — what's new (nationwide scope)
+
+The founder's directive shifted from Ohio-only verification to a full nationwide audit of all 57 jurisdictions
+(50 states, DC, 5 inhabited territories, federal). This pass covers what a software-engineering audit can
+establish directly, in full detail in **`docs/RECORD_RELIEF_NATIONWIDE_COMPLETION_MATRIX.md`** (new this pass).
+Summary:
+
+- **Full Record Relief suite re-run fresh: 1,097/1,097 passing** (up from 1,087 at Pass 2 — new coverage was
+  added since). Full repo suite: **1,414/1,414**. Typecheck: 0 errors.
+- **All 57 jurisdictions have an adapter source file, a dedicated test file, and at least one statutory/citation
+  reference embedded in code** — confirmed by a scripted scan, not a sample.
+- **Real gap found and precisely quantified:** only **5 of 57** jurisdictions (OH, MD, PA, MI, IN) have a formal
+  substantive-law completeness record (`completeness.ts`), a verified court-directory entry, or close to it; only
+  **2 of 57** have a filing-profile (forms/instructions) entry. This matches the directive's item #4 directly and
+  had not been quantified in one place before.
+- **Dead-code finding:** `completeness.ts` exports `calculationGate()`, apparently meant to restrict live
+  evaluation to jurisdictions with a verified completeness record, but it is never imported or called anywhere
+  else in `src/`. Every jurisdiction's adapter runs regardless. Flagged, not changed (would alter product
+  behavior — which jurisdictions can return a result at all — so it needs a product decision, not a QA-pass fix).
+- **A separate, concurrent session (same working directory, author `quindad`) independently found and fixed a
+  real safety gap this pass**, committed as `efd6187`: `executeRecordRelief` now overrides any adapter's result to
+  `additional_facts_required` whenever `degree` or `disposition` is `'unknown'` but the adapter still returned an
+  eligible/excluded/automatic-relief outcome, and disables `courtSpecificFilingReady` unless venue/court are known
+  and nothing is missing. I independently verified this fix: re-ran their new nationwide runtime smoke test
+  (`scripts/test-record-relief-nationwide-smoke.mjs`) fresh — **57/57 jurisdictions correctly refuse to return a
+  false-positive eligible result for a synthetic unknown-degree/unknown-disposition charge** — and confirmed it
+  introduces zero regressions (full suite still 1,414/1,414, typecheck still clean). This is a uniform,
+  engine-level fix across all 57 jurisdictions, the highest-leverage kind of fix available without doing
+  jurisdiction-by-jurisdiction legal research.
+- **Reconciled with the founder's own parallel DB-side audit**
+  (`docs/RECORD_RELIEF_NATIONWIDE_COVERAGE_AUDIT_2026-10-08.md`): their finding that `record_relief_rules` has
+  zero real-jurisdiction rows (only synthetic `TEST-A/B/C` fixtures) describes a *different* layer than this
+  matrix — a richer "verified rule" record for forms/filing/official-source display, separate from the static
+  TypeScript adapter engine that actually computes eligibility and that this session confirmed live, working,
+  end-to-end in Pass 6. Both audits independently converge on the same real gap from different angles: the
+  eligibility logic is real and broadly tested; the official forms/filing/source-verification layer is not built
+  out beyond a handful of jurisdictions.
+- **Physical Storage deletion: still BLOCKED, now with a more precise negative result.** The founder's own
+  parallel session invoked `public.invoke_record_relief_retention()` directly in DEV (`net._http_response`: HTTP
+  200, `{"deleted":0,"failed":0}`) and confirmed the daily cron schedule is active, but explicitly noted this does
+  **not** prove physical deletion since no disposable object was expired and removed during that test (see
+  `docs/RECORD_RELIEF_DEV_RELEASE_GATE_UPDATE.md`). This session has no path to complete that proof either: making
+  an upload's `expires_at` reach the past requires either direct SQL/service-role access (which this session does
+  not have) or waiting 30 real days (the default retention window) — neither is something to fabricate or shortcut.
+  **Still needs either founder-run verification with a deliberately-backdated fixture, or a temporary
+  service-role/SQL credential shared out-of-band for this session to do it.**
+- **Independent legal review: still 0 of 57, explicitly not claimed.** Per both this session's and the founder's
+  parallel audit's own release recommendation: **nationwide public release is NOT READY** — the engineering layer
+  (rule logic, safety guards, test coverage) is substantially real and improving every pass; the legal-accuracy and
+  forms/filing layers are not, and that gap is stated precisely rather than minimized.
+
+**On pace, stated honestly:** verifying all 57 jurisdictions' encoded rules against current official statute
+text — the directive's items #2–4 taken literally — is a multi-week, per-jurisdiction research project, not
+something a single pass can complete or claim to have completed. What this pass did instead: quantified the real
+gap precisely (which jurisdictions have what evidence, exactly), fixed and verified the one engine-level defect
+that was actually find-able and fix-able without inventing legal content, and left a reproducible script
+(`test-record-relief-nationwide-smoke.mjs`) and a precise matrix so the next systematic step — a structured,
+jurisdiction-by-jurisdiction legal-sourcing pass, following the founder's own "engineering acceptance gate"
+6-step process in their audit doc — has a real, current baseline to build from rather than starting blind.
 
 ## Pass 6 — what's new
 
