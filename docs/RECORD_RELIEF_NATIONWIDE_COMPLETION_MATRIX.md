@@ -143,3 +143,10 @@ preferred next step, rather than attempting all 57 at once and risking shallow o
 honest, load-bearing distinction throughout this document is: **code-level completeness is measured and real;
 legal-accuracy completeness is not claimed anywhere it has not been independently verified by the 5-jurisdiction
 `completeness.ts` record or by a qualified legal reviewer.**
+
+
+## Correction — complete engineering gate inventory (2026-10-08)
+
+The preceding claim that only **5/57** jurisdictions have *any* formal completeness record is **incorrect**: it counted only `completeness.ts` (Batch 01), overlooking `batch02.ts` through `batch06.ts` and seven federal/district/territory completeness modules. A programmatic aggregate of all these modules found **57 records for 57 jurisdictions, zero missing, zero duplicates, zero extra, and 57 self-reported engineering gates enabled**. The new `nationwide-completeness.ts` consolidates these and the shared evaluator now enforces its engineering gate. The **5/57 verified court-directory sources and 2/57 local filing profiles** are separate metrics and remain unchanged.
+
+These completeness records are **developer-authored assertions, not independent legal approvals**. The independent reviewer count remains **0/57**. The records' `currentLawCoveragePercent:100` values should not be presented as independently validated substantive completeness. The statutory-citation presence and 1,097 passing tests do not substitute for source-by-source legal review.
