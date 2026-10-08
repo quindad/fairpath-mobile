@@ -424,3 +424,28 @@ afterward so no test data was left in DEV.
 uncommitted changes already in this working tree from the concurrent backend session — none of `scripts/audit-
 relief.mjs`, `scripts/audit-security.mjs`, `scripts/record-relief-release-gate.mjs`, or any `supabase/migrations/*`
 file were staged or committed by this pass.
+
+## Addendum 6 — full-suite recovery and DEV column-security correction
+
+The local Postgres runner now models hosted cron/network function signatures and a durable `cron.job` catalog,
+while explicitly skipping only `20261008250000_verify_change_detection_strict.sql`. That migration proves a
+hosted Edge Function produced a change event; the local runner cannot execute the worker and does not fabricate
+its output. All other migrations, including cron-registration verification, apply locally.
+
+This recovery exposed a real security regression: `20261009010000_record_relief_authenticated_minimum_grants.sql`
+had restored blanket SELECT on Record Relief reference tables after an earlier migration intentionally replaced
+it with column-level grants. In DEV, `authenticated` could therefore select staff-only `staff_notes` and reviewer
+metadata. Applied corrective DEV migration `record_relief_restore_column_grants` (version `20261008183524`) and
+mirrored it locally. Fresh DEV privilege checks: staff notes false, public rule title true, blanket table SELECT
+false; form staff notes false, public form name true.
+
+Fresh verification after all current changes:
+
+- `npm run test:all`: **49/49 checks passing**.
+- `node --test tests/*.test.ts`: **1,429/1,429 passing**.
+- Nationwide Record Relief smoke: **57/57 passing**.
+- Web preview: HTTP 200 from `http://localhost:8091`, Expo root served.
+
+External launch dependencies remain external: production deployment approval, real jobs/housing/resources data
+providers, independent legal review, third-party notification/observability credentials, and physical-device
+testing. These are not software-test failures and are not represented as completed.

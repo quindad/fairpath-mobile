@@ -10,8 +10,8 @@ else {const smoke=JSON.parse(readFileSync(smokePath,'utf8'));if(smoke.total!==57
 const required=[
  ['Live physical Storage deletion and database scrub verified','BLOCKED','No disposable physical object was uploaded and expired in DEV'],
  ['Live Storage-removal failure behavior verified','BLOCKED','Only dependency-injected unit test is available'],
- ['Official court-source verification for 57 jurisdictions','BLOCKED','Last audit found 5/57'],
- ['Local filing profile/forms verification for 57 jurisdictions','BLOCKED','Last audit found 2/57'],
+ ['Official court-source verification for 57 jurisdictions','BLOCKED','56/57 have source-checked directory entries; American Samoa remains unverified'],
+ ['Local filing profile/forms verification for 57 jurisdictions','BLOCKED','Research exists for 56 jurisdictions, but live filing rules/forms are not fully populated or legally approved'],
  ['Independent legal review for 57 jurisdictions','BLOCKED','0/57 approvals'],
  ['Explicit founder production deployment approval','BLOCKED','Not requested or granted']
 ];

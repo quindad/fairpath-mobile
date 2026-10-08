@@ -29,8 +29,10 @@ check(rf.validateCase({ ...base, sentence_text: '01/01/2015' }).sentence_text, '
 check(rf.validateCase({ ...base, other_convictions: '99' }).other_convictions && rf.validateCase({ ...base, other_convictions: 'a' }).other_convictions, 'other convictions range');
 const p = rf.caseToPayload(base);
 check(p.conviction_date === '2016-03-01' && p.fines_paid === true && p.pending_charges === false && p.restitution_paid === null && p.other_convictions_count === 0 && p.disposition_date === '', 'payload: unknown stays null/blank (never guessed)');
-check(Object.keys(rf.OUTCOME_INFO).length === 7, 'seven distinct outcomes');
-for (const [k, v] of Object.entries(rf.OUTCOME_INFO)) check(/POTENTIALLY|WAITING|MORE INFORMATION|MANUAL|NOT VERIFIED|FEDERAL/.test(v.label), `${k}: outcome label must be hedged`);
+const expectedOutcomes = ['potentially_eligible_now', 'waiting_period', 'potentially_ineligible', 'insufficient_information', 'manual_review', 'rule_unavailable', 'federal_separate',
+  'likely_eligible_verified', 'likely_excluded_verified', 'automatic_relief_may_apply', 'court_or_prosecutor_discretion', 'additional_facts_required', 'rule_not_verified', 'legal_review_recommended'];
+check(JSON.stringify(Object.keys(rf.OUTCOME_INFO).sort()) === JSON.stringify(expectedOutcomes.sort()), 'both persisted outcome vocabularies have labels');
+for (const [k, v] of Object.entries(rf.OUTCOME_INFO)) check(/POTENTIALLY|WAITING|MORE INFORMATION|MANUAL|NOT VERIFIED|FEDERAL|MAY APPLY|DEPENDS ON COURT OR PROSECUTOR DISCRETION/.test(v.label), `${k}: outcome label must be hedged`);
 
 // ---------- legal-safety wording over every member-facing file ----------
 const files = ['src/core/record-relief/relief-format.ts', 'src/core/documents/builders/record-relief.ts', 'supabase/seed/data/record-relief-fixtures.mjs',

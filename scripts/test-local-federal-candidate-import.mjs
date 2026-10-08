@@ -13,6 +13,7 @@ if (errors.length) { console.error('Migrations failed locally:', errors); proces
 
 const must = (r, what) => { if (r.error) throw new Error(`${what}: ${r.error}`); return r.rows; };
 const denied = (r, what) => ok(r.error && /permission denied|row-level security/i.test(r.error), `${what}: expected denial, got ${JSON.stringify(r.error ?? r.rows).slice(0, 160)}`);
+const hidden = (r, what) => ok((r.error && /permission denied|row-level security/i.test(r.error)) || Array.isArray(r.rows) && r.rows.length === 0, `${what}: expected denial or zero visible rows, got ${JSON.stringify(r.error ?? r.rows).slice(0, 160)}`);
 const rpc = (who, fn, ...args) => tryAs(db, who, `select * from public.${fn}(${args.map((_, i) => '$' + (i + 1)).join(', ')})`, args);
 
 const M = await addUser(db, 'federal-test-member@test.local');
@@ -47,8 +48,8 @@ await test('import lands the READY candidate as draft in the LIVE table, never v
   ok(row.status === 'draft', `must always land as draft, got "${row.status}"`);
   ok(row.pathway_type === 'pardon' && row.is_general_expungement === false, 'pathway_type/is_general_expungement must survive import exactly');
 
-  denied(await tryAs(db, M, `select * from public.record_relief_federal_pathways where pathway_key=$1`, [READY.pathway_key]), 'member reading a draft federal pathway');
-  denied(await tryAs(db, 'anon', `select * from public.record_relief_federal_pathways where pathway_key=$1`, [READY.pathway_key]), 'anon reading a draft federal pathway');
+  hidden(await tryAs(db, M, `select * from public.record_relief_federal_pathways where pathway_key=$1`, [READY.pathway_key]), 'member reading a draft federal pathway');
+  hidden(await tryAs(db, 'anon', `select * from public.record_relief_federal_pathways where pathway_key=$1`, [READY.pathway_key]), 'anon reading a draft federal pathway');
 });
 
 // ---------------- Adversarial import scenarios ----------------

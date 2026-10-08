@@ -35,7 +35,7 @@ for (const f of NEW) {
   // 3. security definer functions pin search_path
   for (const m of sql.matchAll(/create or replace function public\.(\w+)\(([\s\S]*?)\$\$;/g)) {
     const body = m[0];
-    if (/security definer/i.test(body)) check(/set search_path = public/i.test(body), `${f}: ${m[1]} is SECURITY DEFINER without a pinned search_path`);
+    if (/security definer/i.test(body)) check(/set\s+search_path\s*=\s*public\b/i.test(body), `${f}: ${m[1]} is SECURITY DEFINER without a pinned search_path`);
   }
   // 4. no employer/landlord/partner reads of member tables
   check(!/create policy[^;]*\b(employer|landlord|partner)\b/i.test(sql), `${f}: a policy mentions employer/landlord/partner`);

@@ -18,7 +18,30 @@ create schema if not exists auth;
 create schema if not exists storage;
 create schema if not exists extensions;
 create schema if not exists cron;
-create or replace function cron.schedule(name text, schedule text, command text) returns bigint language sql as $f$ select 1::bigint $f$;
+create schema if not exists net;
+create table if not exists cron.job (
+  jobid bigint generated always as identity primary key,
+  jobname text unique not null,
+  schedule text not null,
+  command text not null
+);
+create or replace function cron.schedule(name text, schedule text, command text) returns bigint language plpgsql as $f$
+declare id bigint;
+begin
+  insert into cron.job(jobname, schedule, command) values(name, schedule, command)
+  on conflict(jobname) do update set schedule=excluded.schedule, command=excluded.command
+  returning jobid into id;
+  return id;
+end $f$;
+create or replace function cron.unschedule(name text) returns boolean language plpgsql as $f$
+declare removed boolean;
+begin
+  delete from cron.job where jobname=name;
+  get diagnostics removed = row_count;
+  return removed;
+end $f$;
+create or replace function net.http_post(url text, headers jsonb default '{}'::jsonb, body jsonb default '{}'::jsonb)
+returns bigint language sql as $f$ select 1::bigint $f$;
 do $$ begin
   if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon nologin; end if;
   if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated nologin; end if;
@@ -74,11 +97,23 @@ export async function createLocalDb({ migrationsDir = 'supabase/migrations', upT
   const db = new PGlite();
   await db.exec(STUB);
   const errors = [];
+  const skipped = [];
   const files = fs.readdirSync(migrationsDir).filter((f) => f.endsWith('.sql')).sort();
   for (const f of files) {
     if (upTo && f > upTo) break;
-    // pg_cron is a hosted-Supabase extension: the local stub provides cron.schedule() as a no-op.
-    const sql = fs.readFileSync(path.join(migrationsDir, f), 'utf8').replace(/\r\n/g, '\n').replace(/create extension if not exists pg_cron[^;]*;/g, '');
+    // This migration proves a DEV Edge Function produced an event. A local SQL runner cannot execute that
+    // worker and must not fabricate its output. DEV/live QA owns this one proof; all schema around it still runs.
+    if (f === '20261008250000_verify_change_detection_strict.sql') {
+      skipped.push({ file: f, reason: 'hosted worker evidence; verified only against DEV' });
+      if (!quiet) console.log('skipped ' + f + ': hosted worker evidence; verified only against DEV');
+      continue;
+    }
+    // pg_cron and pg_net are hosted-Supabase extensions. STUB supplies their signatures and a durable cron.job
+    // catalog so migrations and verification queries exercise real SQL behavior without network side effects.
+    const sql = fs.readFileSync(path.join(migrationsDir, f), 'utf8')
+      .replace(/\r\n/g, '\n')
+      .replace(/create extension if not exists pg_cron[^;]*;/g, '')
+      .replace(/create extension if not exists pg_net[^;]*;/g, '');
     try {
       await db.exec(sql);
       if (!quiet) console.log('applied ' + f);
@@ -87,7 +122,7 @@ export async function createLocalDb({ migrationsDir = 'supabase/migrations', upT
       if (!quiet) console.log('FAILED  ' + f + ': ' + e.message);
     }
   }
-  return { db, errors };
+  return { db, errors, skipped };
 }
 
 /** Runs `fn` as an authenticated member / anon guest / service role (RLS + grants really apply). */

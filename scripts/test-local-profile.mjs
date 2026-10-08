@@ -126,7 +126,7 @@ await test('employer can read the application (snapshot) but still not the live 
   const apps = must(await tryAs(db, E, 'select answers from public.job_applications'), 'employer apps');
   ok(apps.length === 2 && apps.some((x) => x.answers.opportunity_snapshot), 'employer should see the applications');
   ok(must(await tryAs(db, E, 'select * from public.member_work_experience'), 'exp').length === 0, 'employer reads live experience');
-  denied(await tryAs(db, M, `update public.job_applications set status = 'hired' where user_id = $1`, [M]), 'permission denied', 'member set own status');
+  denied(await tryAs(db, M, `update public.job_applications set status = 'hired' where user_id = $1`, [M]), 'row-level security', 'member set own status');
   denied(await tryAs(db, M, `insert into public.job_applications (user_id, job_id, status, answers) values ($1, $2, 'submitted', '{}')`, [M, job.id]), 'permission denied', 'direct application insert');
 });
 

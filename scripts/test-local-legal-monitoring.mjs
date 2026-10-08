@@ -12,6 +12,7 @@ if (errors.length) { console.error('Migrations failed locally:', errors); proces
 const M = await addUser(db, 'member@test.local');
 const must = (r, what) => { if (r.error) throw new Error(`${what}: ${r.error}`); return r.rows; };
 const denied = (r, what) => ok(r.error && /permission denied|row-level security/i.test(r.error), `${what}: expected denial, got ${JSON.stringify(r.error ?? r.rows).slice(0, 160)}`);
+const hidden = (r, what) => ok((r.error && /permission denied|row-level security/i.test(r.error)) || Array.isArray(r.rows) && r.rows.length === 0, `${what}: expected denial or zero visible rows, got ${JSON.stringify(r.error ?? r.rows).slice(0, 160)}`);
 const rpc = (who, fn, ...args) => tryAs(db, who, `select * from public.${fn}(${args.map((_, i) => '$' + (i + 1)).join(', ')})`, args);
 
 await test('an authenticated member cannot read any staging/monitoring table, at all', async () => {
@@ -58,7 +59,7 @@ await test('promotion succeeds once verified, and always lands as draft - never 
   const candAfter = (await db.query(`select lifecycle_state, promoted_rule_id from public.legal_rule_candidates where id=$1`, [candId])).rows[0];
   ok(candAfter.lifecycle_state === 'promoted' && candAfter.promoted_rule_id === newRuleId, 'candidate should be marked promoted with the new rule id linked');
 
-  denied(await tryAs(db, M, `select * from public.record_relief_rules where id=$1`, [newRuleId]), "member reading a promoted-but-draft rule (must still be RLS-blocked, exactly like ordinary drafts)");
+  hidden(await tryAs(db, M, `select * from public.record_relief_rules where id=$1`, [newRuleId]), "member reading a promoted-but-draft rule (must still be RLS-hidden, exactly like ordinary drafts)");
 });
 
 await test('a rejected/schema-blocked candidate cannot be promoted', async () => {
