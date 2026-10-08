@@ -13,10 +13,41 @@ unblocking live authenticated testing for the first time.
 **Pass 4 reviewed:** `c5b1681`, after the founder enabled `RECORD_RELIEF_EXTRACTION_ENABLED` in DEV.
 **Pass 5 reviewed:** `c204e1f`, after the founder granted SELECT/UPDATE on `record_relief_uploads` to the service
 role, resolving Pass 4's `save_failed`.
+**Pass 6 reviewed:** `47468ea`, after the founder fixed a JSON-into-text-array type mismatch in
+`replace_record_relief_evaluations`, resolving Pass 5's `evaluation_input_invalid`.
 
 Executed per `docs/RECORD_RELIEF_BROWSER_QA_DIRECTIVE.md`. This report follows that directive's test matrix
 numbering. Pass 2/3 additions are called out explicitly where the result changed or new evidence was gathered;
 everything else is unchanged from Pass 1.
+
+## Pass 6 — what's new
+
+The founder found and fixed the Pass 5 root cause directly: `replace_record_relief_evaluations` was trying to
+save JSON into a PostgreSQL text-array column (a real type mismatch, not a grants issue this time), pushed as
+`47468ea`. Pulled latest and retried the full flow through to the eligibility result.
+
+- **Test #6 (Ohio eligibility walkthrough) — PASS, live, end-to-end.** From the same confirmed case (disposition
+  filled in during Pass 5), clicked "SAVE CASE + CHECK RELIEF" again. This time it succeeded completely: the app
+  navigated to `/record-relief/scan-result` and rendered a real result — **Outcome: "additional facts required,"
+  Remedy: "sealing," Rule: "Ohio Rev. Code § 2953.32 (effective Sept. 30, 2025)."** This is exactly the behavior
+  the directive requires for a case with an unknown felony/misdemeanor degree: no eligibility promise, an honest
+  "more information needed" result, and a cited, specific official rule source rather than a generic disclaimer.
+- **Verified the result actually persisted, not just rendered.** Queried `record_relief_evaluations` directly
+  (Member A's own session) for this case: a current, non-superseded row exists with
+  `outcome:'additional_facts_required'`, `remedy:'sealing'`, `missing_inputs:['final offense degree','whether
+  criminal proceedings are pending']`, and a real `engine_version` — matching the screen exactly. A second,
+  **superseded** row for the same case also exists (an earlier `rule_unavailable` evaluation), which is the
+  `replace_record_relief_evaluations` function's supersede-before-insert logic working correctly, not a defect:
+  stale evaluations are retired, not left to coexist or silently overwritten in place.
+- **No new console errors.** The only console errors present after this retry are residual, already-documented
+  ones from this pass's own earlier direct-API diagnostic calls and prior passes' now-resolved failures (503, 500,
+  422, 403, 400) — the successful click itself produced none.
+- No code was changed this pass.
+- **This closes out the full Member A document-to-eligibility-result flow** (#2 through #6 of the directive's
+  test matrix) with live, verified evidence at every step, three founder-side fixes later. Test #5's one open
+  observation (the disabled Save button's indistinguishable styling) and the general availability-of-verified-rules
+  caveat (0 of 57 jurisdictions formally "verified" in DEV per the Coverage screen, separate from the engine
+  itself being correct — see test #12/legal review) remain unchanged.
 
 ## Pass 5 — what's new
 
@@ -172,18 +203,19 @@ The core safety boundary — **no AI extraction without recorded consent** — i
 sides of the gate **and live, with real synthetic DEV accounts**: client-side (no file picker opens without
 consent, confirmed live), and the upload + consent RPC succeeding in the correct order (confirmed by querying the
 live DEV database directly). **Member A/B cross-account isolation is live-verified at the RLS level**, the
-strongest form of that proof available in this environment. **AI extraction now runs and saves successfully
-end-to-end against the real Anthropic API**, confirmed with a realistic synthetic document and a direct DB query
-showing the saved extraction payload, after the founder fixed two successive DB-grant gaps (extraction enablement,
-then `record_relief_uploads` write access). The review screen correctly withholds a low-confidence fact rather
-than guessing it, live-confirmed. The one remaining gap, found this pass: the final "check relief" step
-(`evaluate-record-relief`) fails with a generic `evaluation_input_invalid`, root-caused by elimination to the
-evaluation-result DB-persist step throwing and being mislabeled by a shared error handler — itself a confirmed,
-precisely-described code defect, not fixed this pass per the coordination boundary. The storage-deletion sweep has
-10 passing offline tests; live execution against a real DEV bucket object is still pending and intentionally out
-of this session's scope (service-role-token-gated, coordination boundary). TypeScript and the full test suite are
-green: **1,414 of 1,414 tests pass.** Independent legal accuracy review of the 57 jurisdictions has not happened
-and is explicitly out of scope for this pass.
+strongest form of that proof available in this environment. **The full document-to-eligibility-result flow now
+works and is live-verified end-to-end in DEV**: AI extraction runs and saves against the real Anthropic API
+(confirmed with a realistic synthetic document and a direct DB query of the saved payload); the review screen
+correctly withholds a low-confidence fact rather than guessing it; and the Ohio eligibility check itself now
+returns and persists an honest, non-promising result ("additional facts required," with the specific missing
+facts and a cited official rule) for a case with an unknown felony/misdemeanor degree — verified both on screen
+and directly in `record_relief_evaluations`. Getting here took three successive founder-side DB fixes across
+Passes 4–6 (an extraction enablement flag, a missing grant on `record_relief_uploads`, and a JSON/text-array type
+mismatch in `replace_record_relief_evaluations`), each one found, precisely reported, fixed, and re-verified in
+turn. The storage-deletion sweep has 10 passing offline tests; live execution against a real DEV bucket object is
+still pending and intentionally out of this session's scope (service-role-token-gated, coordination boundary).
+TypeScript and the full test suite are green: **1,414 of 1,414 tests pass.** Independent legal accuracy review of
+the 57 jurisdictions has not happened and is explicitly out of scope for this pass.
 
 ## Test matrix results
 
@@ -194,7 +226,7 @@ and is explicitly out of scope for this pass.
 | 3 | Full authenticated upload/case-packet flow; consent RPC succeeds before extraction | **PASS** | **Pass 3:** confirmed upload + `record_relief_record_consent` RPC succeed, in order, before extraction. **Pass 4:** after `RECORD_RELIEF_EXTRACTION_ENABLED` was enabled, the Anthropic call ran and validated, but the save failed (`save_failed`) — root-caused to a missing `record_relief_uploads` grant. **Pass 5:** after the founder granted SELECT/UPDATE on `record_relief_uploads` to the service role (`c204e1f`), retried with a fresh fixture — extraction now saves successfully, confirmed directly in the DB: `status:'needs_review'`, full `extraction` payload, `model_version`, `extracted_at` all populated. Server-side consent backstop (403 if consent missing) remains covered by `tests/record-relief-stored-consent.test.ts`. |
 | 4 | Missing consent / unsupported type / oversized file / signed-out behavior; orphaned uploads | **PASS** (code) + **PASS** (missing-consent case, live) / not re-tested live (unsupported type, oversized file) | `handler.ts`'s `handleExtract` rejects each case in order with its own status code (see Pass 2 detail). **Pass 3:** the missing-consent/no-picker case was live-confirmed (see #2). Unsupported-type and oversized-file live repro were not attempted — lower priority once the consent gate and full upload-through-save path were live-confirmed. Not claimed as tested live. |
 | 5 | Review screen shows extracted facts, flags low-confidence/conflicts, never silently becomes a verified legal conclusion | **PASS, live** | **Pass 5:** `/record-relief/review-scan` rendered the real saved extraction — all high-confidence fields pre-filled and editable, the low-confidence "Disposition" field correctly left **blank** rather than guessed (source text clearly said "Guilty plea accepted," but the AI still flagged it `needsConfirmation:true`), with a visible warning and the Save button disabled until the member resolves it. Exactly the behavior the directive requires: no silent AI-to-verified-fact promotion. |
-| 6 | Synthetic Ohio case, missing felony classification: no eligibility promise; official source links; distinguishes sealing/expungement/pardon/other | **BLOCKED — new, precise finding** | **Pass 5:** confirmed the disposition field, saved the case (`save_record_relief_case` RPC: `200`, real case row), and confirmed the packet (`confirm_record_relief_packet` RPC: `204`) — both succeed. The final step, `evaluate-record-relief` (which runs the actual Ohio rule adapter and would produce the eligibility result this test needs), returns `422 evaluation_input_invalid`. Root-caused by elimination, not guesswork: every evaluation step through running the Ohio adapter already catches its own exceptions and returns a structured result rather than throwing, so a genuine bad-input case would show real issues, not a bare generic string. The only code path that produces exactly this generic error is the DB-persist step (`replace_record_relief_evaluations` via the service role) throwing, caught by a shared `catch` in `handler.ts` that mislabels **any** post-evaluation exception — including a DB write failure — as `evaluation_input_invalid`. That mislabeling is itself a confirmed code-quality defect (not fixed this pass — backend-functions coordination boundary). The underlying DB-side cause is most likely a missing grant on `record_relief_evaluations`, the same pattern as Pass 4's `record_relief_uploads` fix, but I cannot confirm the exact Postgres error without service-role access or Edge Function logs this session doesn't have. |
+| 6 | Synthetic Ohio case, missing felony classification: no eligibility promise; official source links; distinguishes sealing/expungement/pardon/other | **PASS, live, verified in the database** | **Pass 5:** saving and packet-confirmation both succeeded; the final evaluate step returned `422 evaluation_input_invalid`, root-caused by elimination to the DB-persist RPC. **Pass 6** (after the founder fixed a JSON-into-text-array type mismatch in `replace_record_relief_evaluations`, `47468ea`): retried the same confirmed case — it now completes fully. The app rendered **Outcome: "additional facts required," Remedy: "sealing," Rule: "Ohio Rev. Code § 2953.32 (effective Sept. 30, 2025)"** — exactly the required behavior for a case with an unknown felony/misdemeanor degree: no eligibility promise, an honest "more information needed" result, and a specific cited official rule source. Verified the result is actually persisted, not just rendered: queried `record_relief_evaluations` directly and found a current `outcome:'additional_facts_required'`, `remedy:'sealing'`, `missing_inputs` row matching the screen exactly, with a prior evaluation correctly marked `superseded:true` rather than duplicated. |
 | 7 | Accessibility labels, keyboard, screen reader text, mobile layout, loading/error states, no secrets in console | **PASS**, one observation (unchanged) | Keyboard audit: 29 screens pass. **Pass 3:** checked console output across the full authenticated Member A and Member B sessions — no secrets, tokens, or case content leaked to console at any point; the only console error throughout was the one known extraction 503. Same pre-existing sign-in placeholder-as-label observation from Pass 2, still out of scope (not a Record Relief file). |
 | 8 | Member A cannot access member B's cases/uploads/evaluations | **PASS** | **Pass 3, live-verified at the database level** — the strongest form of this test. Signed in as Member B, then queried `record_relief_uploads` directly (Member B's own session token) for Member A's specific upload row by id: `200 OK` with an empty array, not an error — Postgres RLS silently excludes the row rather than returning a 403 (correct behavior; a 403 would leak that the row exists). The app UI independently confirms the same thing: Member B's `/record-relief` home shows "No cases yet." |
 | 9 | `tsc --noEmit` and the full Record Relief test suite | **PASS** | `npx tsc --noEmit --pretty false`: 0 errors. `node --test tests/record-relief*.test.ts`: **1,087 of 1,087 pass**. Full repo suite: **1,414 of 1,414 pass**. Navigation audit: 101 routes. Keyboard audit: 29 screens. **Pass 2:** rerun fresh at `db10b65`, identical counts — no regression from the founder's deploy/grant commits. |
@@ -221,33 +253,28 @@ nothing from this pass touched staffing files.
 
 ## Remaining launch blockers
 
-1. **Eligibility evaluation fails to save, mislabeled as an input error — new finding this pass.** Upload,
-   consent, extraction, and the review screen all now work live end-to-end (see #3/#5 above). The final step,
-   `evaluate-record-relief`, returns `422 evaluation_input_invalid` even though the input is valid (confirmed by
-   directly testing `save_record_relief_case` and `confirm_record_relief_packet`, both of which succeed with this
-   exact data). Root-caused by elimination to the `replace_record_relief_evaluations` DB-persist RPC throwing,
-   with `evaluate-record-relief/handler.ts` mislabeling the resulting exception as a client input error rather
-   than a server/persistence failure — a real code-quality defect in its own right, not fixed this pass. The most
-   likely underlying DB cause is a missing grant on `record_relief_evaluations`, the same pattern as the two prior
-   fixes this session. **Needs the founder to check Edge Function logs for `evaluate-record-relief` and/or confirm
-   the service role has the needed privileges on `record_relief_evaluations`** (following the same pattern as the
-   `record_relief_uploads` fix in `c204e1f`). This blocks #6 live.
-2. **Physical Storage deletion (retention sweep) not executed live.** The sweep is service-role-token-gated and
+1. **Physical Storage deletion (retention sweep) not executed live.** The sweep is service-role-token-gated and
    triggering it is outside this pass's "avoid backend functions" coordination boundary with the founder. Code
    guarantee has 10 passing offline tests; only live execution against a real DEV bucket object is unverified.
    **Needs either founder-run sweep verification, or explicit authorization + the sweep token shared out-of-band
    for this session to run it.**
-3. **Local Postgres in this environment is missing `pg_cron`/`pg_net`.** This blocks the full local-sql test
+2. **Local Postgres in this environment is missing `pg_cron`/`pg_net`.** This blocks the full local-sql test
    harness. No longer the only path to isolation proof, though — **isolation itself (test #8) is now independently
    verified live via direct RLS-scoped database queries**, so this gap no longer blocks that specific claim, only
    local confirmation of `record_relief_production_hardening.sql` in general. **External/environment blocker.**
-4. **Independent legal review of all 57 jurisdictions has not happened.** Explicitly out of scope for software QA
+3. **Independent legal review of all 57 jurisdictions has not happened.** Explicitly out of scope for software QA
    per the directive's own instruction. **Requires a human legal approval gate before any launch claim.**
+4. **Minor UX observation, not a blocker:** the "SAVE CASE + CHECK RELIEF" button is rendered identically whether
+   `disabled` or enabled (same bright green), so a member with an unresolved low-confidence field gets no visual
+   cue that clicking will do nothing — only the warning text above explains it. Not fixed this pass.
 
-Resolved this pass: the "no DEV test account exists" blocker from Pass 1/2; the `extraction_not_enabled` blocker
-from Pass 3 (founder enabled the flag in Pass 4); and the `save_failed` blocker from Pass 4 (founder granted
-SELECT/UPDATE on `record_relief_uploads` in Pass 5, `c204e1f`). Extraction and the review screen are now fully
-working, live-verified, end-to-end in DEV.
+Resolved across this pass sequence: "no DEV test account exists" (Pass 1/2 → founder created both accounts);
+`extraction_not_enabled` (Pass 3 → founder enabled the flag, Pass 4); `save_failed` on extraction (Pass 4 →
+founder granted `record_relief_uploads` SELECT/UPDATE, Pass 5, `c204e1f`); `evaluation_input_invalid` on the
+eligibility check (Pass 5 → founder fixed a JSON-into-text-array type mismatch in
+`replace_record_relief_evaluations`, Pass 6, `47468ea`). **The full Member A document-to-eligibility-result flow
+is now working and live-verified end-to-end in DEV, with every step confirmed against the real database, not just
+the UI.**
 
 ## What is genuinely finished and verified
 
@@ -268,7 +295,9 @@ working, live-verified, end-to-end in DEV.
   showing the saved extraction payload, model version, and timestamp — not just an in-app success message.
 - **The review screen correctly withholds a low-confidence fact (Disposition) rather than silently accepting the
   AI's reading of it**, live-confirmed, with the Save action genuinely disabled until a human resolves it.
-- The final eligibility-check step is the one safety-relevant flow that could **not** be completed end-to-end this
-  pass — not because of a rule-engine defect (every upstream step, including the actual rule routing logic, was
-  shown to behave correctly), but because of a DB-persistence failure that's mislabeled by the error handler. This
-  is flagged precisely, with the exact code location and reasoning, rather than guessed at or marked passing.
+- **The Ohio eligibility check now runs and persists an honest result end-to-end**: for a case with an unknown
+  felony/misdemeanor degree, it correctly returns "additional facts required" with the specific missing facts and
+  a cited official rule source — never a false eligibility promise — and that result is confirmed saved in
+  `record_relief_evaluations`, matching exactly what the member sees on screen.
+- Across Passes 4–6, three distinct DB-side defects were found by precise, evidence-based elimination (not
+  guessing), reported exactly, fixed by the founder, and re-verified live rather than assumed fixed.
