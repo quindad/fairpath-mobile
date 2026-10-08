@@ -1,1 +1,47 @@
-import{createClient}from'jsr:@supabase/supabase-js@2';import{json,requireEnv}from'../_shared/http.ts';Deno.serve(async(req:Request)=>{if(req.method!=='POST')return json(405,{error:'method_not_allowed'});const url=requireEnv('SUPABASE_URL'),key=requireEnv('SUPABASE_SERVICE_ROLE_KEY');if(!url||!key)return json(500,{error:'server_misconfigured'});const db=createClient(url,key,{auth:{persistSession:false}});let b:any;try{b=await req.json()}catch{return json(400,{error:'invalid_json'})}const{data:auth}=await db.from('record_relief_monitor_auth').select('token').eq('id',true).maybeSingle();if(!auth||b?.token!==auth.token)return json(401,{error:'unauthorized'});const{data:rows,error}=await db.from('record_relief_uploads').select('id,storage_path').neq('status','deleted').lte('expires_at',new Date().toISOString()).limit(500);if(error)return json(500,{error:'query_failed'});let deleted=0,failed=0;for(const row of rows??[]){if(!row.storage_path){const{error:up}=await db.from('record_relief_uploads').update({status:'deleted',extraction:null,storage_path:'',updated_at:new Date().toISOString()}).eq('id',row.id);if(up)failed++;else deleted++;continue}const{error:rm}=await db.storage.from('record-relief-uploads').remove([row.storage_path]);if(rm){failed++;continue}const{error:up}=await db.from('record_relief_uploads').update({status:'deleted',extraction:null,storage_path:'',updated_at:new Date().toISOString()}).eq('id',row.id);if(up)failed++;else deleted++}return json(200,{deleted,failed})});
+import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { json, requireEnv } from '../_shared/http.ts';
+import { handleRetention, type RetentionDeps } from './handler.ts';
+
+Deno.serve(async (req: Request) => {
+  const url = requireEnv('SUPABASE_URL'), key = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
+  if (!url || !key) return json(500, { error: 'server_misconfigured' });
+  const db = createClient(url, key, { auth: { persistSession: false } });
+
+  const deps: RetentionDeps = {
+    async checkToken(token) {
+      const { data } = await db.from('record_relief_monitor_auth').select('token').eq('id', true).maybeSingle();
+      return Boolean(data) && token === data!.token;
+    },
+    async listExpired() {
+      const { data, error } = await db
+        .from('record_relief_uploads')
+        .select('id,storage_path')
+        .neq('status', 'deleted')
+        .lte('expires_at', new Date().toISOString())
+        .limit(500);
+      return error ? null : ((data as ExpiredRow[] | null) ?? []);
+    },
+    async removeFromStorage(path) {
+      const { error } = await db.storage.from('record-relief-uploads').remove([path]);
+      return { ok: !error };
+    },
+    async markDeleted(id) {
+      const { error } = await db
+        .from('record_relief_uploads')
+        .update({ status: 'deleted', extraction: null, storage_path: '', updated_at: new Date().toISOString() })
+        .eq('id', id);
+      return { ok: !error };
+    },
+  };
+
+  let rawBody = '';
+  try {
+    rawBody = await req.text();
+  } catch {
+    // leave rawBody empty; handleRetention will reject it as invalid_json
+  }
+  const out = await handleRetention(req.method, rawBody, deps);
+  return json(out.status, out.body);
+});
+
+type ExpiredRow = { id: string; storage_path: string | null };
