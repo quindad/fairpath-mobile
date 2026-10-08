@@ -56,4 +56,20 @@ if (exposedInternalFunctions.rows.length) {
   process.exit(1);
 }
 
+const unoptimizedAuthPolicies = await db.query(`
+  select tablename, policyname
+  from pg_policies
+  where schemaname = 'public'
+    and regexp_replace(
+      coalesce(qual, '') || ' ' || coalesce(with_check, ''),
+      '\\(\\s*select\\s+auth\\.(uid|role|jwt)\\(\\)(\\s+as\\s+[a-z_][a-z0-9_]*)?\\s*\\)',
+      '',
+      'gi'
+    ) ~* 'auth\\.(uid|role|jwt)\\(\\)'
+`);
+if (unoptimizedAuthPolicies.rows.length) {
+  console.error(`RLS policies still call auth functions once per row: ${unoptimizedAuthPolicies.rows.map((row) => `${row.tablename}.${row.policyname}`).join(', ')}.`);
+  process.exit(1);
+}
+
 console.log(`\nAll locally applicable migrations applied on Postgres. ${t.rows[0].n} public tables; ${skipped.length} hosted evidence migration(s) explicitly skipped.`);

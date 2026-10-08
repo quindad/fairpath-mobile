@@ -475,3 +475,16 @@ Fresh verification after the security pass:
 - Nationwide Record Relief smoke: **57/57 passing**.
 - DEV privilege proof: global Marketplace sweep false for `authenticated`, scoped sweep true, mutable search paths 0.
 - Web preview: HTTP 200 from `http://localhost:8091`, Expo root served.
+
+## Addendum 8 — RLS policy performance correction
+
+The DEV performance advisor reported 39 row-level-security policies that called `auth.uid()` directly for every
+candidate row. Following Supabase's current RLS guidance, migration
+`20261009050000_optimize_rls_auth_initplans.sql` preserves each policy's existing access expression while
+wrapping stable auth helpers in a `select`, allowing Postgres to evaluate the caller identity once per statement.
+The migration is catalog-driven and idempotent, and a local database assertion now fails if any public policy
+reintroduces a per-row `auth.uid()`, `auth.role()`, or `auth.jwt()` call.
+
+The fresh DEV advisor reports **0 `auth_rls_initplan` findings** (down from 39). The complete application gate
+still passes **49/49** after the policy rewrite, including every local SQL authorization/isolation suite and a
+clean TypeScript check.
