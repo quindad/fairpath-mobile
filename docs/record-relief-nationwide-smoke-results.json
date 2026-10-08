@@ -1,0 +1,466 @@
+{
+  "runAt": "2026-10-08",
+  "kind": "runtime smoke test only; not independent legal verification",
+  "total": 57,
+  "passed": 57,
+  "failed": 0,
+  "extraAdapters": [],
+  "results": [
+    {
+      "jurisdiction": "US-FED",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-AL",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-AK",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-AZ",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-AR",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-CA",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-CO",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-CT",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-DE",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-FL",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-GA",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-HI",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-ID",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-IL",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-IN",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "legal_review_recommended"
+      ]
+    },
+    {
+      "jurisdiction": "US-IA",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-KS",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-KY",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "legal_review_recommended"
+      ]
+    },
+    {
+      "jurisdiction": "US-LA",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-ME",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-MD",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-MA",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-MI",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "legal_review_recommended"
+      ]
+    },
+    {
+      "jurisdiction": "US-MN",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-MS",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-MO",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-MT",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-NE",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-NV",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-NH",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-NJ",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-NM",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-NY",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-NC",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-ND",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-OH",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "legal_review_recommended"
+      ]
+    },
+    {
+      "jurisdiction": "US-OK",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-OR",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-PA",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-RI",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-SC",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-SD",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-TN",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "legal_review_recommended"
+      ]
+    },
+    {
+      "jurisdiction": "US-TX",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-UT",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-VT",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-VA",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-WA",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-WV",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "legal_review_recommended"
+      ]
+    },
+    {
+      "jurisdiction": "US-WI",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "legal_review_recommended"
+      ]
+    },
+    {
+      "jurisdiction": "US-WY",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-DC",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-PR",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-GU",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-VI",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-AS",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    },
+    {
+      "jurisdiction": "US-MP",
+      "pass": true,
+      "issues": [],
+      "outcomes": [
+        "additional_facts_required"
+      ]
+    }
+  ]
+}
