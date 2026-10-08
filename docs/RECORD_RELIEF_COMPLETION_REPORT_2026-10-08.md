@@ -290,3 +290,97 @@ correct transcription and correct uncertainty-flagging behavior.
 regression fixture file, +3 from unrelated concurrent commits). Nationwide runtime smoke test: **57 / 57**, rerun
 fresh. No backend/release-gate files touched. No production changes. No legal rule, statute, form, fee, or court
 link invented anywhere in this addendum.
+
+## Addendum 3 — Codex recovery and current DEV verification
+
+Recovered the handoff from the founder's pasted history, Git HEAD `2158173`, and this report.
+The chats `Continue Kentucky Implementation` and `Resume FairPath Build` were listed by the app,
+but loading their contents timed out. No claim of having read those conversations is made.
+
+Fresh checks: typecheck passed; Node tests **1,427/1,427**; nationwide smoke **57/57**.
+The broader `npm run test:all` initially passed **26/49**, revealing failures outside that Node suite.
+Three failed audits now pass after these corrections:
+
+- Baseline: staging migration renamed to `20261008170440_record_relief_filing_research_staging.sql`,
+  matching its actual DEV migration history. The previous filename collided with Program Scout's version.
+- Security: audit accepts optional whitespace around the search_path assignment. The reported functions
+  already pinned `search_path=public`; this was a formatting false positive, not nine missing settings.
+- Record Relief: audit checks both persisted outcome vocabularies and accepts the existing conditional
+  automatic-relief/discretion labels, preserving the legal wording checks.
+- Real DEV fix: case-packet backend SELECT/UPDATE privileges were absent. Applied
+  `record_relief_packet_service_access` (DEV version `20261008175923`) and recorded the grant after
+  packet table creation in the local migration. Verified backend SELECT/UPDATE true, RLS still enabled,
+  and anon SELECT false. This is privilege proof, not a fresh packet workflow test.
+
+Current DEV data: 57 staging rows, all `needs_review`; 56 have research notes, **zero have a structured
+official_source_url**. Live rules: five DEV fixtures across three jurisdictions. Live forms: four DEV
+fixtures across one jurisdiction (three verified, one draft). Nationwide live filing data is not complete.
+
+Remaining SQL suite failures share setup errors: strict Program Scout change-detection proof has no
+persisted fixture event, local pg_net is unavailable, and the cron stub lacks cron.job. These have not
+been bypassed or fixed. The entire 49-check suite has not been rerun after the targeted audit fixes.
+
+The release-gate script still hardcodes stale 5/57 court-source and 2/57 filing-profile evidence and an
+old missing-file-test status. This discrepancy is identified, not silently treated as current evidence.
+Physical Storage deletion still lacks fresh proof. Out-of-state evaluation routing, American Samoa
+source verification, and independent legal approval remain unresolved.
+
+DEV security advisors also report existing warnings about mutable function search paths, executable
+SECURITY DEFINER functions, and disabled leaked-password protection. These need individual review;
+not every executable member RPC or service-only table without policies is automatically a defect.
+
+Production untouched. Local recovery changes are not committed or pushed in this pass.
+
+## Addendum 4 — final mobile verification pass (this session, Juice)
+
+Re-ran every requested check fresh against the current working tree (which includes Addendum 3's uncommitted
+local backend changes, none of which I touched or staged):
+
+- `npm run typecheck`: **0 errors**.
+- `node --test tests/*.test.ts`: **1,427 / 1,427 passing**.
+- `node scripts/test-record-relief-nationwide-smoke.mjs`: **57 / 57**.
+- `npm run test:all`: **29 / 49** (up from 26/49 at the start of this pass, after Addendum 3's audit-script
+  corrections, which I did not touch). All 20 remaining failures are the same single, pre-existing,
+  environment-level cause: local Postgres here is missing `pg_net` and the `cron.job` relation, so every SQL
+  fixture test that depends on a persisted `change_event` fails identically — this hits unrelated features
+  (credit, marketplace, meetings, resume studio) exactly as hard as Record Relief, confirming it is not a
+  Record-Relief-specific or mobile-specific defect. Every non-SQL check passes, including `audit: relief` and
+  `audit: security`.
+
+### Live DEV mobile QA, this pass
+
+- **Court finder, both widths**: re-verified `court-sources.ts` integrity (56 entries, 0 malformed URLs, 0
+  duplicate codes, `US-AS` correctly absent) and live-rendered the screen at 375px mobile width: clean layout, no
+  overflow. Confirmed live at mobile width that `US-AS` still shows the honest "This jurisdiction does not have a
+  verified court directory in FairPath yet" fallback rather than a guess.
+- **"Stale rule not verified" check (the founder's specific item 3 concern), confirmed fully resolved, not just
+  spot-checked once**: the two remaining Ohio test cases from earlier passes that still showed the pre-fix "RULE
+  NOT VERIFIED YET" badge (stale data from before `ec3aee1`, not a live bug — same root cause already fixed) were
+  re-checked live through the real UI. The Record Relief home screen's "My Cases" list now shows **zero** stale
+  "rule not verified" badges for any Ohio case — all four read "MORE INFORMATION" with the specific missing fact,
+  which is the correct outcome for cases with an unconfirmed detail, not a defect.
+- **Navigation**: court-finder's back button correctly returns to `/record-relief`. No crash observed across any
+  screen touched this pass.
+- Console errors observed during this pass are the same historical, already-diagnosed entries from earlier
+  passes' deliberate crash-reproduction testing (confirmed in Addendum 1/2 to be a stale browser-console buffer,
+  not a live recurring failure — verified by DB writes succeeding and fresh page loads rendering correctly every
+  time).
+
+### Mobile defects found and fixed this pass
+
+None new. Everything flagged as fixed in commits `ec3aee1` and `2158173` was re-verified live and still holds.
+
+### What I did not touch
+
+Per instruction: did not modify `scripts/audit-relief.mjs`, `scripts/audit-security.mjs`, any
+`supabase/migrations/*` file, or the release-gate script, all of which have uncommitted changes in this working
+tree from the concurrent backend session (Addendum 3). Did not stage or commit any of them.
+
+### Final status
+
+Mobile lane: **working and re-verified**, nothing new broken. Remaining blockers are all backend/content/legal,
+not mobile: physical Storage deletion still lacks fresh proof, out-of-state evaluation routing is unimplemented
+(documented, not invented around), American Samoa has no verifiable official source, nationwide live filing data
+(forms/fees in `record_relief_rules`/`record_relief_forms`) is still mostly unpopulated per Addendum 3's own DEV
+data check, and independent legal review remains at 0/57. No unsupported 100% claim is made anywhere in this
+report.
