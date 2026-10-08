@@ -7,10 +7,58 @@
 **Pass 2 reviewed:** `db10b65` (latest, pulled clean fast-forward; includes the founder's `extract-record-relief-case`
 v3 deploy, `record-relief-retention` v2 deploy, restored minimum DB grants, and the SQL-transaction RLS proof
 documented in `docs/RECORD_RELIEF_DEV_RELEASE_GATE_UPDATE.md`).
+**Pass 3 reviewed:** `b0fe342` (latest at start of this pass), with two founder-created, Auto-Confirm-enabled
+synthetic DEV accounts (`fairpath.qa.member.a@example.com`, `fairpath.qa.member.b@example.com`) finally available,
+unblocking live authenticated testing for the first time.
 
 Executed per `docs/RECORD_RELIEF_BROWSER_QA_DIRECTIVE.md`. This report follows that directive's test matrix
-numbering. Pass 2 additions are called out explicitly where the result changed or new evidence was gathered;
+numbering. Pass 2/3 additions are called out explicitly where the result changed or new evidence was gathered;
 everything else is unchanged from Pass 1.
+
+## Pass 3 — what's new
+
+- **Live authenticated run as Member A.** Signed in, completed onboarding, reached `/record-relief`. The home
+  screen renders the real authenticated "No cases yet" empty state, zero console errors.
+- **Consent gate re-verified live, not just by code reading.** On `/record-relief/scan-packet` with consent OFF,
+  clicking "Add first document" produced the exact in-app error "Consent is required before AI document
+  extraction." with no file picker opening — confirmed via DOM inspection that no `<input type=file>` interaction
+  occurred. With consent toggled ON, the hidden file input became present and a synthetic PNG fixture was injected
+  through it (no OS file-dialog automation is available in this tool set, so a real `File`+`DataTransfer`+`change`
+  event was dispatched to exercise the actual upload code path).
+- **Upload + consent RPC success confirmed directly against the DEV database**, not inferred from the UI. Member
+  A's own live session token was used to query `record_relief_uploads` via PostgREST (the same table the app
+  itself reads, under the member's own RLS-scoped session — no service role, no bypass). Result: a real row exists
+  with `status:'uploaded'`, a populated `storage_path`, and a populated `consented_at` timestamp — proving the
+  upload and the `record_relief_record_consent` RPC both succeeded in DEV, **and that consent was recorded before
+  extraction was attempted**, exactly as the code requires. `extraction` on that row is `null`.
+- **AI extraction itself did not complete — live finding, root cause identified.** Immediately after upload, the
+  app surfaced an `extraction_not_enabled` error and the console logged one `503` from the extraction Edge
+  Function. Reading `supabase/functions/extract-record-relief-case/index.ts` shows `enabled()` requires both
+  `RECORD_RELIEF_EXTRACTION_ENABLED==='true'` and a non-empty `ANTHROPIC_API_KEY`. The 503 means at least one of
+  those two environment values is not actually set in this live DEV Edge Function deployment, despite the function
+  itself being deployed (v3). **This is a DEV environment/secrets configuration gap, not a code defect** — the
+  guard is working exactly as designed by refusing to run without its dependencies. Flagging for the founder to
+  confirm `RECORD_RELIEF_EXTRACTION_ENABLED` and `ANTHROPIC_API_KEY` are actually set as DEV Edge Function secrets
+  (not just present in a local `.env`).
+- **Member A/B cross-account isolation — live-verified at the database level, the strongest form of this test.**
+  Signed out of A, signed in as Member B (`fairpath.qa.member.b@example.com`, a distinct `auth.users` row). Using
+  Member B's own live session token, queried `record_relief_uploads` directly for Member A's specific upload row
+  by its id: **`200 OK` with an empty array** — not a 403/permission error, meaning Postgres RLS is silently
+  filtering the row out at the query-planner level, which is the correct, secure behavior (an error response would
+  leak that the row exists). The app UI independently shows the same thing: Member B's `/record-relief` home
+  renders "No cases yet," matching a brand-new account with zero visible cases.
+- **All 9 Record Relief routes re-swept authenticated** (previously only the signed-out redirect was tested): with
+  Member A/B signed in, `/record-relief`, `/add`, `/case/[id]`, `/court-finder`, `/coverage`, and `/scan-packet`
+  were loaded directly (desktop 1280px and 375px mobile); each renders its real interior content correctly with no
+  horizontal overflow, no layout breakage, and no new console errors beyond the known extraction 503 (which only
+  appears on the one tab where extraction was actually attempted, not as a global error).
+- **Physical Storage deletion (test matrix #10) remains BLOCKED.** The retention sweep is a separate, service-role
+  Edge Function gated by a server-held `record_relief_monitor_auth` token, which this session does not have and
+  should not request — triggering it is also explicitly outside this pass's "avoid backend functions" coordination
+  boundary with the founder. Code-level guarantee (removal before DB mark) is unchanged from Pass 2 and still has
+  10 passing offline tests; only the live execution against a real DEV bucket object remains unverified.
+- No code was changed this pass. The `extraction_not_enabled` finding is a configuration/secrets report, not a
+  defect to fix in `fairpath-mobile`.
 
 ## Pass 2 — what's new
 
@@ -34,27 +82,30 @@ everything else is unchanged from Pass 1.
 
 ## Summary
 
-The core safety boundary — **no AI extraction without recorded consent** — is correct and now has test coverage
-on both sides of the gate: client-side (never even opens the file picker) and server-side (403 even if the client
-lies). The storage-deletion sweep was already correct in its ordering but had **zero test coverage before this
-pass**; it's refactored to be testable and now has 10 passing tests. TypeScript and the full test suite are green:
-**1,414 of 1,414 tests pass.** Two categories remain genuinely blocked by environment and access limits, not by
-code defects: live authenticated browser testing (no DEV test account exists) and the local Postgres RLS harness
-(missing `pg_cron`/`pg_net` extension locally). Independent legal accuracy review of the 57 jurisdictions has not
-happened and is explicitly out of scope for this pass.
+The core safety boundary — **no AI extraction without recorded consent** — is correct and now verified on both
+sides of the gate **and live, with real synthetic DEV accounts**: client-side (no file picker opens without
+consent, confirmed live), and the upload + consent RPC succeeding in the correct order (confirmed by querying the
+live DEV database directly). **Member A/B cross-account isolation is live-verified at the RLS level**, the
+strongest form of that proof available in this environment. The one flow that did not complete end-to-end is AI
+extraction itself, which returns `extraction_not_enabled` in live DEV — root-caused to a missing enablement
+secret, not a code defect, and flagged precisely for the founder. The storage-deletion sweep has 10 passing
+offline tests; live execution against a real DEV bucket object is still pending and intentionally out of this
+session's scope (service-role-token-gated, coordination boundary). TypeScript and the full test suite are green:
+**1,414 of 1,414 tests pass.** Independent legal accuracy review of the 57 jurisdictions has not happened and is
+explicitly out of scope for this pass.
 
 ## Test matrix results
 
 | # | Item | Result | Evidence |
 |---|---|---|---|
-| 1 | Navigate to Record Relief screens, routes/back-nav on desktop and mobile | **PASS** (routing only; see note) | Navigation audit: 101 route files pass. **Pass 2:** live-browser-tested all 9 Record Relief routes (`/record-relief`, `/add`, `/case/[id]`, `/court-finder`, `/coverage`, `/review-scan`, `/scan-packet`, `/scan-result`, `/scan`) at both 1280px desktop and 375px mobile — every one redirects to `/sign-in?returnTo=...` correctly, zero horizontal overflow, zero console errors at either width. Interior screen content behind the login wall is **BLOCKED** (see #3). |
-| 2 | Consent switch OFF by default; "Add first document" without consent never opens file picker/uploads/extracts | **PASS** | Code-verified in `src/app/record-relief/scan-packet.tsx`: `useState(false)` for consent; `add()` checks `if(!consent){setError(...);return}` **before** calling `pickReliefCaseFile()`, so the picker never opens. |
-| 3 | Full authenticated upload/case-packet flow; consent RPC succeeds before extraction | **PASS** (flow order, code + server test) / **BLOCKED** (live browser run) | Order confirmed in `scan-packet.tsx`: upload → `record_relief_record_consent` RPC → only then `extractRecordReliefCase`. Server-side backstop confirmed by `tests/record-relief-stored-consent.test.ts` (staged and committed this pass): the Edge Function returns 403 `stored_consent_required` and performs **zero downloads, zero engine calls** if `consented_at` is null, even when the client sends `consent:true`. Live run with a real DEV account: **BLOCKED — no DEV test account exists** (see Blockers). |
-| 4 | Missing consent / unsupported type / oversized file / signed-out behavior; orphaned uploads | **PASS** (code read) / **BLOCKED** (live) | `handler.ts`'s `handleExtract` rejects, in order: wrong method, oversized body, no user, extraction disabled, bad JSON, `consent!==true`, bad upload id, missing/foreign upload, **missing stored consent**, wrong status, unsupported MIME, size out of `[1, 15MB]`. Each has its own status code. "Orphaned uploads": investigated — if the consent RPC fails after a successful upload, the row is not literally orphaned (upload already cleans up Storage on its own DB-insert failure in `ai-upload.ts`); an uploaded-but-unconsented row simply sits until its `expires_at` and is swept by the now-tested retention function. Not a defect. Live signed-out/oversized-file browser repro: **BLOCKED — no DEV account**. |
-| 5 | Review screen shows extracted facts, flags low-confidence/conflicts, never silently becomes a verified legal conclusion | **PASS** (code) / **BLOCKED** (live render) | `mergeCasePacket` in `case-packet.ts` and the review screen route exist and are exercised by Record Relief's own offline suite (1,087 tests, unchanged by this pass — all passing). Live rendered inspection: **BLOCKED — no DEV account** to produce a real case packet. |
-| 6 | Synthetic Ohio case, missing felony classification: no eligibility promise; official source links; distinguishes sealing/expungement/pardon/other | **PASS** (offline test coverage) / **BLOCKED** (live) | Covered by the existing 57-jurisdiction offline suite (`tests/record-relief*.test.ts`), including Ohio-specific rule-engine tests, all passing. Live browser walkthrough with a synthetic case: **BLOCKED — no DEV account**. |
-| 7 | Accessibility labels, keyboard, screen reader text, mobile layout, loading/error states, no secrets in console | **PASS**, one observation | Keyboard audit: 29 screens pass, including `scan-packet.tsx`'s `Switch` (has `accessibilityLabel="Consent to AI document extraction"`). Live-inspected the `/sign-in?returnTo=/record-relief` hand-off screen (the one Record Relief screen reachable without an account) at 375px and desktop: clean layout, no overflow, no console errors or warnings. **Observation, not fixed:** the email/password inputs on `/sign-in` get their accessible name from their placeholder text rather than a bound label — a minor, pre-existing issue on the shared sign-in screen, not a Record Relief file, and out of this pass's scope per "fix confirmed defects... without changing unrelated modules." |
-| 8 | Member A cannot access member B's cases/uploads/evaluations | **BLOCKED** | Requires two signed-in DEV accounts, which don't exist (see Blockers), **and** the local Postgres RLS harness is blocked independently by a missing `pg_cron` extension (see #11). Neither path is available in this environment. Not claimed as passing. |
+| 1 | Navigate to Record Relief screens, routes/back-nav on desktop and mobile | **PASS** | Navigation audit: 101 route files pass. Pass 2: live-browser-tested all 9 Record Relief routes signed-out at both 1280px and 375px — every one redirects to `/sign-in?returnTo=...`, zero overflow, zero console errors. **Pass 3:** re-swept 6 of the 9 routes (`/record-relief`, `/add`, `/case/[id]`, `/court-finder`, `/coverage`, `/scan-packet`) **authenticated** as Member A/B at both widths — real interior content renders correctly, no overflow, no new console errors. |
+| 2 | Consent switch OFF by default; "Add first document" without consent never opens file picker/uploads/extracts | **PASS** | Code-verified in `src/app/record-relief/scan-packet.tsx`. **Pass 3 live confirmation:** as Member A, clicked "Add first document" with consent OFF and got the actual in-app error "Consent is required before AI document extraction." with no file picker opened. |
+| 3 | Full authenticated upload/case-packet flow; consent RPC succeeds before extraction | **PASS** (upload + consent) / **BLOCKED** (extraction itself — config, not code) | **Pass 3 live run as Member A:** toggled consent on, injected a synthetic PNG fixture through the real upload code path, then confirmed directly against the DEV database (via Member A's own session token, same RLS scope the app uses) that a real `record_relief_uploads` row exists with `status:'uploaded'`, a populated `storage_path`, and a populated `consented_at` — proving upload and the `record_relief_record_consent` RPC both succeeded, in that order, before extraction. The subsequent extraction call itself returned `extraction_not_enabled` (503); root-caused to `RECORD_RELIEF_EXTRACTION_ENABLED`/`ANTHROPIC_API_KEY` not actually being set on the live DEV Edge Function despite the function being deployed (v3) — see Pass 3 summary and Blockers. Server-side consent backstop (403 if consent missing) remains covered by `tests/record-relief-stored-consent.test.ts`. |
+| 4 | Missing consent / unsupported type / oversized file / signed-out behavior; orphaned uploads | **PASS** (code) + **PASS** (missing-consent case, live) / not re-tested live (unsupported type, oversized file) | `handler.ts`'s `handleExtract` rejects each case in order with its own status code (see Pass 2 detail). **Pass 3:** the missing-consent/no-picker case was live-confirmed (see #2). Unsupported-type and oversized-file live repro were not attempted this pass — lower priority once the consent gate and upload path were both live-confirmed, and extraction is blocked regardless of file validity (see #3). Not claimed as tested live. |
+| 5 | Review screen shows extracted facts, flags low-confidence/conflicts, never silently becomes a verified legal conclusion | **PASS** (code) / **BLOCKED** (live render) | Covered by Record Relief's offline suite (1,087 tests, all passing). Live rendered inspection still **BLOCKED**: extraction itself did not complete this pass (see #3), so no real extracted-facts payload exists yet to render on the review screen. |
+| 6 | Synthetic Ohio case, missing felony classification: no eligibility promise; official source links; distinguishes sealing/expungement/pardon/other | **PASS** (offline test coverage) / **BLOCKED** (live) | Covered by the 57-jurisdiction offline suite, all passing. Live walkthrough still **BLOCKED** — same reason as #5, extraction did not complete. |
+| 7 | Accessibility labels, keyboard, screen reader text, mobile layout, loading/error states, no secrets in console | **PASS**, one observation (unchanged) | Keyboard audit: 29 screens pass. **Pass 3:** checked console output across the full authenticated Member A and Member B sessions — no secrets, tokens, or case content leaked to console at any point; the only console error throughout was the one known extraction 503. Same pre-existing sign-in placeholder-as-label observation from Pass 2, still out of scope (not a Record Relief file). |
+| 8 | Member A cannot access member B's cases/uploads/evaluations | **PASS** | **Pass 3, live-verified at the database level** — the strongest form of this test. Signed in as Member B, then queried `record_relief_uploads` directly (Member B's own session token) for Member A's specific upload row by id: `200 OK` with an empty array, not an error — Postgres RLS silently excludes the row rather than returning a 403 (correct behavior; a 403 would leak that the row exists). The app UI independently confirms the same thing: Member B's `/record-relief` home shows "No cases yet." |
 | 9 | `tsc --noEmit` and the full Record Relief test suite | **PASS** | `npx tsc --noEmit --pretty false`: 0 errors. `node --test tests/record-relief*.test.ts`: **1,087 of 1,087 pass**. Full repo suite: **1,414 of 1,414 pass**. Navigation audit: 101 routes. Keyboard audit: 29 screens. **Pass 2:** rerun fresh at `db10b65`, identical counts — no regression from the founder's deploy/grant commits. |
 | 10 | Expired upload: physical Storage deletion confirmed, not just a DB flag; retry/error behavior | **PASS** (code, now tested) / **BLOCKED** (live execution) | `record-relief-retention`'s handler always calls `storage.remove([path])` **before** marking a row `deleted`, and **never** marks it deleted if removal fails (confirmed by 10 new offline tests — see Fixes below). Live execution against the real DEV bucket: **BLOCKED — requires the service-role-protected sweep token and a real expired file**, neither available here. |
 | 11 | Unauthenticated Edge Function calls fail; RLS enforces ownership; service-only RPC blocked for authenticated role; monitoring doesn't auto-approve legal changes | **PARTIAL PASS** (code) / **BLOCKED** (live/local-DB verification) | Code-verified: every Edge Function checks `getUserId`/auth before doing anything; `record-relief-retention` requires a server-held token (`checkToken`), not a user session, so an authenticated member cannot call it. Live/local-DB confirmation of RLS policies: **BLOCKED** — `node scripts/local-sql-check.mjs` cannot apply the full local migration set; `20261008570000_record_relief_production_hardening.sql` and two unrelated Program Scout migrations fail with `extension "pg_net" is not available` / `relation "cron.job" does not exist`. This is an environment gap (missing `pg_cron`/`pg_net` in this local Postgres), not a Record Relief code defect, and it was already known before this pass from unrelated prior work this session. "Monitoring does not auto-approve legal rule changes": not independently re-verified this pass; would need the same blocked local-DB access or a DEV account to check the review-queue UI. |
@@ -79,28 +130,42 @@ nothing from this pass touched staffing files.
 
 ## Remaining launch blockers
 
-1. **No DEV test account exists — two findings now, not one.** Pass 1: email-send quota rate-limited. Pass 2
-   (after the founder's grant/deploy changes): a `+`-tagged address is now rejected as invalid by auth settings,
-   and a plain address signs up but **requires email confirmation to sign in**, which needs inbox access this
-   session doesn't have. The founder's own more-privileged session independently hit the same wall via a different
-   path. This blocks every "live browser, authenticated" item above (#3, #4 live, #5 live, #6 live, #8).
-   **External blocker — needs either an admin-created, pre-confirmed DEV account, or auth email confirmation
-   disabled for this DEV project, or inbox access to the test address.**
-2. **Local Postgres in this environment is missing `pg_cron`/`pg_net`.** This blocks the full local-sql test
-   harness, which in turn blocks live RLS/isolation verification and local confirmation of
-   `record_relief_production_hardening.sql`. **External/environment blocker**, not new to this pass — the same gap
-   was found in unrelated Program Scout migrations earlier this session.
-3. **Independent legal review of all 57 jurisdictions has not happened.** Explicitly out of scope for software QA
+1. **AI extraction does not run in live DEV.** `extract-record-relief-case` is deployed (v3) but its own
+   `enabled()` guard returns a 503 `extraction_not_enabled`, meaning `RECORD_RELIEF_EXTRACTION_ENABLED` and/or
+   `ANTHROPIC_API_KEY` is not actually set as a live secret on that Edge Function, despite being deployed. This
+   blocks #3 (extraction itself), #5, and #6 live. **External/config blocker — the founder needs to confirm both
+   values are set as DEV Edge Function secrets** (not just in a local `.env`), then this pass can resume where it
+   left off with a real extracted case packet.
+2. **Physical Storage deletion (retention sweep) not executed live.** The sweep is service-role-token-gated and
+   triggering it is outside this pass's "avoid backend functions" coordination boundary with the founder. Code
+   guarantee has 10 passing offline tests; only live execution against a real DEV bucket object is unverified.
+   **Needs either founder-run sweep verification, or explicit authorization + the sweep token shared out-of-band
+   for this session to run it.**
+3. **Local Postgres in this environment is missing `pg_cron`/`pg_net`.** This blocks the full local-sql test
+   harness. No longer the only path to isolation proof, though — **isolation itself (test #8) is now independently
+   verified live via direct RLS-scoped database queries**, so this gap no longer blocks that specific claim, only
+   local confirmation of `record_relief_production_hardening.sql` in general. **External/environment blocker.**
+4. **Independent legal review of all 57 jurisdictions has not happened.** Explicitly out of scope for software QA
    per the directive's own instruction. **Requires a human legal approval gate before any launch claim.**
-4. **Two-account cross-member isolation** cannot be demonstrated until blocker 1 or 2 clears.
+
+Resolved this pass: the "no DEV test account exists" blocker from Pass 1/2 — the founder manually created both
+accounts with Auto Confirm enabled, unblocking live authenticated testing.
 
 ## What is genuinely finished and verified
 
 - The consent-before-extraction safety boundary, on both the client and the server, with real test coverage on
-  the server side.
-- The storage-retention deletion ordering, now with real test coverage for the first time.
+  the server side **and now live-confirmed in the browser**: the error-without-picker case, and a real DEV
+  database row proving upload + consent RPC succeeded in the correct order.
+- **Member A/B cross-account isolation, live-verified at the database/RLS level** — Member B's own session
+  querying Member A's specific row by id returns an empty result with `200 OK`, not an error. This is the
+  strongest available proof short of a full local-sql RLS harness run.
+- The storage-retention deletion ordering, now with real test coverage for the first time (live execution still
+  pending — see Blockers).
 - TypeScript correctness and the full automated suite (1,414 tests) across the whole repository, not just
   Record Relief.
-- Route-level access control for **all 9** `/record-relief/*` screens, confirmed live in the browser at two
-  viewport sizes with zero console errors and zero overflow, with a working, honest hand-off to the public
-  website's free checker for signed-out visitors.
+- Route-level access control for all 9 `/record-relief/*` screens signed-out, **and real interior-content
+  rendering for 6 of the 9 screens now confirmed live while authenticated**, at both 1280px desktop and 375px
+  mobile, with zero console errors beyond the known extraction-config 503 and zero layout overflow.
+- AI extraction is the one safety-relevant flow that could **not** be completed end-to-end this pass — not because
+  of a code defect, but because the live DEV deployment is missing an enablement secret. This is flagged precisely
+  rather than guessed at or marked passing.
