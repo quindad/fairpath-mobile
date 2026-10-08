@@ -94,6 +94,8 @@ export default function AddReliefCase() {
         <ChipGroup single label="HOW DID THE CASE END?" options={DISPOSITION_OPTIONS} selected={[form.disposition]} onChange={(n) => set({ disposition: n[0] ?? form.disposition })} />
         <ChipGroup label="ANYTHING ELSE THAT APPLIES?" options={[{ value: 'juvenile', label: 'It was a juvenile case' }, { value: 'oos', label: 'It was in a different state than the one I chose' }]} selected={[...(form.is_juvenile ? ['juvenile'] : []), ...(form.out_of_state_conviction ? ['oos'] : [])]} onChange={(n) => set({ is_juvenile: n.includes('juvenile'), out_of_state_conviction: n.includes('oos') })} hint="These can change which rules apply, so FairPath will suggest a manual review." />
 
+        {form.out_of_state_conviction || errors.jurisdiction_code ? <Panel tone="warning"><BodyText>{errors.jurisdiction_code ?? 'Choose the jurisdiction where this case was heard, then clear the different-state selection. Your current address does not determine the case jurisdiction.'}</BodyText></Panel> : null}
+
         <View style={{ marginTop: 18 }}><SectionTitle>DATES</SectionTitle></View>
         <FairPathDatePicker label="CONVICTION DATE" value={form.conviction_text} onChange={(v) => set({ conviction_text: v })} kind="past" optional error={errors.conviction_text} />
         <FairPathDatePicker label="DISPOSITION DATE" value={form.disposition_text} onChange={(v) => set({ disposition_text: v })} kind="past" optional error={errors.disposition_text} />

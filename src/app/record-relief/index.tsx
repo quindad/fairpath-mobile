@@ -50,7 +50,7 @@ export default function RecordReliefHome() {
             <View style={s.block}><SectionTitle>MY CASES</SectionTitle></View>
             {cases.length === 0 ? <EmptyState title="No cases yet" body="Add a case to see whether any verified rule may apply, track a waiting period, and prepare your paperwork. You enter the details, and you can edit or delete them any time." /> : null}
             {cases.map((c) => {
-              const head = headlineOutcome(evals[c.id] ?? []);
+              const head = c.out_of_state_conviction ? { outcome: 'manual_review' as const, eligibility_date: null } : headlineOutcome(evals[c.id] ?? []);
               const info = head ? OUTCOME_INFO[head.outcome] : null;
               const count = head ? countdownText(head.outcome, head.eligibility_date, null) : '';
               return (

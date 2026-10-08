@@ -118,6 +118,7 @@ export function isoFromMdy(text: string): string | null {
 export function validateCase(f: CaseForm): Record<string, string> {
   const e: Record<string, string> = {};
   if (!f.jurisdiction_code) e.jurisdiction_code = 'Choose where the case was heard.';
+  if (f.out_of_state_conviction) e.jurisdiction_code = 'Choose the jurisdiction where this case was heard, then clear the different-state selection. Your current address does not determine the case jurisdiction.';
   if (f.label.trim().length < 2) e.label = 'Give this case a short name (for example "2016 theft").';
   if (f.label.length > 80) e.label = 'Keep the name under 80 characters.';
   if (f.case_number.length > 60) e.case_number = 'Keep the case number under 60 characters.';
@@ -154,11 +155,9 @@ export function staleRuleNotice(stale: boolean, verifiedAt: string | null): stri
   return stale ? `This rule was last verified ${verifiedAt ?? 'a long time ago'}. Confirm it is still current with the official source before relying on it.` : '';
 }
 
-// The engine has no cross-jurisdiction routing: a case flagged out-of-state is still evaluated under the chosen
-// jurisdiction's own rules, with no adjustment. This notice is the honest disclosure of that gap, shown before
-// any eligibility result, not a substitute for actually modeling 56 jurisdictions' cross-border rules.
+// A conflicting court jurisdiction must be corrected before showing or recalculating an outcome.
 export function outOfStateNotice(outOfState: boolean, jurisdictionName: string): string {
   return outOfState
-    ? `This conviction was marked as out-of-state. The result below was still checked against ${jurisdictionName}'s rules, because that is the only law FairPath has loaded for this case. It does not account for the state where the conviction actually happened, which can change what applies. Treat this case as needing manual review by a legal aid organization or the court clerk before relying on the result below.`
+    ? `This conviction was marked as out-of-state, so the selected jurisdiction (${jurisdictionName}) may be wrong. Previous results are hidden. Edit the case, choose where the court heard it, and clear the different-state selection before re-checking. If you are unsure which court handled it, get a manual review from legal aid or the court clerk.`
     : '';
 }

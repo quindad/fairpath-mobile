@@ -86,7 +86,7 @@ export default function ReliefCaseScreen() {
   if (error) return <ScreenFrame><PageHeader eyebrow="RECORD RELIEF" title="Case" backTo="/record-relief" alwaysBackTo /><View style={{ paddingHorizontal: L.mobileGutter }}><StatusLine tone="error">{error}</StatusLine></View></ScreenFrame>;
   if (!c || !detail || !docCase) return <ScreenFrame><PageHeader eyebrow="RECORD RELIEF" title="Case" backTo="/record-relief" alwaysBackTo /><ActivityIndicator color={tokens.accentText} style={{ marginTop: 32 }} /></ScreenFrame>;
 
-  const evs = detail.evaluations;
+  const evs = c.out_of_state_conviction ? [] : detail.evaluations;
   const openLink = (url: string | null | undefined) => { if (url) void Linking.openURL(url); };
   const steps = new Map<string, { key: string; title: string; body?: string }>();
   const docsNeeded = new Map<string, { key: string; label: string }>();
@@ -102,11 +102,12 @@ export default function ReliefCaseScreen() {
           <Panel tone="warning">
             <BodyText strong>This conviction was marked as out-of-state.</BodyText>
             <BodyText muted>{outOfStateNotice(c.out_of_state_conviction, jName)}</BodyText>
+            <SecondaryButton label="CORRECT CASE JURISDICTION" onPress={() => router.push(('/record-relief/add?id=' + c.id) as never)} />
           </Panel>
         ) : null}
 
         <View style={s.block}><SectionTitle>ELIGIBILITY REVIEW</SectionTitle></View>
-        {evs.length === 0 ? <Panel><BodyText>This case has not been checked yet.</BodyText><PrimaryButton label="CHECK NOW" onPress={() => void run(() => reevaluateCase(c), 'Could not check')} busy={busy} /></Panel> : null}
+        {evs.length === 0 && !c.out_of_state_conviction ? <Panel><BodyText>This case has not been checked yet.</BodyText><PrimaryButton label="CHECK NOW" onPress={() => void run(() => reevaluateCase(c), 'Could not check')} busy={busy} /></Panel> : null}
         {evs.map((e: ReliefEvaluation) => {
           const info = OUTCOME_INFO[e.outcome] ?? OUTCOME_INFO.rule_not_verified;
           const count = countdownText(e.outcome, e.eligibility_date, e.days_remaining);

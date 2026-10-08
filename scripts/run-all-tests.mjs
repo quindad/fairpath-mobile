@@ -18,6 +18,7 @@ const steps = [
   ['SQL: resources', NODE, ['scripts/test-local-resources.mjs']],
   ['SQL: opportunity profile', NODE, ['scripts/test-local-profile.mjs']],
   ['SQL: documents', NODE, ['scripts/test-local-documents.mjs']],
+  ['SQL: housing document gate', NODE, ['scripts/test-local-housing-documents.mjs']],
   ['SQL: member summary + privacy', NODE, ['scripts/test-local-member.mjs']],
   ['SQL: credit', NODE, ['scripts/test-local-credit.mjs']],
   ['SQL: record relief', NODE, ['scripts/test-local-relief.mjs']],

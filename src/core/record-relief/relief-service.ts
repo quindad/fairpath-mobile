@@ -23,6 +23,7 @@ export type ReliefDetail = Omit<ReliefDetailForDoc, 'evaluations'> & { evaluatio
 export function reliefErrorMessage(e: unknown): string {
   const text = e instanceof Error ? e.message : typeof e === 'object' && e && 'message' in e ? String((e as { message: unknown }).message) : '';
   const map: [string, string][] = [
+    ['JURISDICTION_CONFLICT', 'Edit this case and choose the jurisdiction where the court heard it. Clear the different-state selection before re-checking.'],
     ['SIGNED_OUT', 'Sign in to continue.'], ['CASE_LIMIT', 'You have reached the case limit. Delete a case you no longer need.'], ['INVALID_JURISDICTION', 'Choose where the case was heard.'],
     ['INVALID_DATE', 'That date cannot be in the future.'], ['INVALID_STATUS', 'That status is not valid.'], ['violates check', 'Please check the dates and values you entered.'],
   ];
@@ -81,7 +82,10 @@ export function caseToCaseBundle(c: ReliefCase): CaseBundle {
  * case regardless of jurisdiction — including Ohio, which has full engine coverage. This was the only reachable
  * path for "Enter case manually" and every "re-check" button on the case screen, so it silently broke eligibility
  * checking for every entry point except the AI-document-scan flow. */
-export const reevaluateCase = (c: ReliefCase) => evaluateSharedCaseServer(c.id, caseToCaseBundle(c));
+export const reevaluateCase = (c: ReliefCase) => {
+  if (c.out_of_state_conviction) return Promise.reject(new Error('JURISDICTION_CONFLICT'));
+  return evaluateSharedCaseServer(c.id, caseToCaseBundle(c));
+};
 /** Plans a substantive evaluation through the shared 57-authority registry before persistence/RPC reconciliation. */
 export const planSharedEvaluation = (caseBundle: CaseBundle, facts: Record<string, unknown> = {}) => planRecordReliefEvaluation(caseBundle, facts);
 /** Executes the same substantive engine intended for mobile, web API, and Command Center consumers. */

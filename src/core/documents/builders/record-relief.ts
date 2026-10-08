@@ -28,6 +28,10 @@ export type ReliefDetailForDoc = {
 };
 
 const DISCLAIMER = 'This document is legal information, not legal advice. FairPath is not a law firm. Record-relief rules are specific to each jurisdiction and change, and a court decides whether relief is granted.';
+const JURISDICTION_WARNING = 'The selected jurisdiction conflicts with where this case was heard. Previous results and filing instructions are withheld. Correct the case jurisdiction before re-checking; legal aid or the court clerk can help identify the court.';
+function safeDetail(c: ReliefCaseForDoc, d: ReliefDetailForDoc): ReliefDetailForDoc {
+  return c.out_of_state_conviction ? { evaluations: [], forms: [], pathways: [], checklist: [] } : d;
+}
 const OUTCOME_TEXT: Record<string, string> = {
   potentially_eligible_now: 'Potentially eligible now', waiting_period: 'Waiting period', potentially_ineligible: 'Potentially ineligible under this rule',
   insufficient_information: 'More information needed', manual_review: 'Manual review recommended', rule_unavailable: 'No verified rule available yet', federal_separate: 'Federal case (handled separately)',
@@ -43,7 +47,7 @@ function base(type: string, subject: string, title: string, c: ReliefCaseForDoc,
   const info = documentTypeInfo(type)!;
   return {
     documentType: type, sourceModule: info.module, sourceRecordId: c.id, templateId: info.templateId, templateVersion: info.templateVersion, title, subject,
-    audience: 'self', sensitivity: info.sensitivity, kind: info.kind, formats: info.formats, blocks, confirmedDataAt: now.toISOString(), inputs, footer: DISCLAIMER,
+    audience: 'self', sensitivity: info.sensitivity, kind: info.kind, formats: info.formats, blocks: c.out_of_state_conviction ? [{ type: 'notice', tone: 'warning', text: JURISDICTION_WARNING }, ...blocks] : blocks, confirmedDataAt: now.toISOString(), inputs: c.out_of_state_conviction ? { data: inputs, jurisdictionConflict: true } : inputs, footer: DISCLAIMER,
   };
 }
 
@@ -62,6 +66,7 @@ function caseFacts(c: ReliefCaseForDoc): { label: string; value: string }[] {
 }
 
 export function buildCaseSummary(c: ReliefCaseForDoc, d: ReliefDetailForDoc, now = new Date()): DocumentSpec {
+  d = safeDetail(c, d);
   const blocks: DocBlock[] = [
     { type: 'heading', text: 'Record relief case summary', level: 1 },
     { type: 'paragraph', text: `Prepared ${today(now)}` },
@@ -95,6 +100,7 @@ export function buildCaseSummary(c: ReliefCaseForDoc, d: ReliefDetailForDoc, now
 }
 
 export function buildFilingChecklist(c: ReliefCaseForDoc, d: ReliefDetailForDoc, now = new Date()): DocumentSpec {
+  d = safeDetail(c, d);
   const done = new Set(d.checklist.filter((x) => x.done).map((x) => x.kind + ':' + x.key));
   const steps = new Map<string, { key: string; title: string; body?: string }>();
   const docs = new Map<string, { key: string; label: string }>();
@@ -131,6 +137,7 @@ export function buildFilingChecklist(c: ReliefCaseForDoc, d: ReliefDetailForDoc,
 }
 
 export function buildWorksheet(c: ReliefCaseForDoc, d: ReliefDetailForDoc, member: { firstName: string; lastName: string }, now = new Date()): DocumentSpec {
+  d = safeDetail(c, d);
   const fullName = `${member.firstName} ${member.lastName}`.trim();
   const officialForms = d.forms.filter((f) => f.kind === 'official_form');
   const blocks: DocBlock[] = [
@@ -156,6 +163,7 @@ export function buildWorksheet(c: ReliefCaseForDoc, d: ReliefDetailForDoc, membe
 }
 
 export function buildFormsGuide(c: ReliefCaseForDoc, d: ReliefDetailForDoc, now = new Date()): DocumentSpec {
+  d = safeDetail(c, d);
   const blocks: DocBlock[] = [
     { type: 'heading', text: 'Forms and filing guide', level: 1 },
     { type: 'paragraph', text: `${c.label} · ${c.jurisdiction_name} · Prepared ${today(now)}` },
