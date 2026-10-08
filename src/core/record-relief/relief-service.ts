@@ -90,13 +90,14 @@ export async function extractRecordReliefCase(uploadId: string, consent: true): 
   const { data: session } = await supabase.auth.getSession();
   const token = session.session?.access_token;
   if (!token) throw new Error('SIGNED_OUT');
-  const base = process.env.EXPO_PUBLIC_SUPABASE_URL;
-  if (!base) throw new Error('service_unavailable');
-  const res = await fetch(`${base}/functions/v1/extract-record-relief-case`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ upload_id: uploadId, consent: true }) });
+  const base = process.env.EXPO_PUBLIC_SUPABASE_URL, apiKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+  if (!base || !apiKey) throw new Error('service_unavailable');
+  await call<void>('record_relief_record_consent', { p_upload: uploadId, p_version: 'record_relief_ai_v1' });
+  const res = await fetch(`${base}/functions/v1/extract-record-relief-case`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, apikey: apiKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ upload_id: uploadId, consent: true }) });
   const body = await res.json();
   if (!res.ok) throw new Error(String(body?.error ?? 'engine_error'));
   return body as RecordReliefExtractionResult;
 }
 
 
-export async function evaluateSharedCaseServer(caseId:string,caseBundle:CaseBundle,facts:EngineFacts={},consumer:'mobile'|'web'|'command_center'='mobile'){const{data:{session}}=await supabase.auth.getSession();if(!session?.access_token)throw new Error('SIGNED_OUT');const base=process.env.EXPO_PUBLIC_SUPABASE_URL;if(!base)throw new Error('SUPABASE_URL_MISSING');const res=await fetch(`${base}/functions/v1/evaluate-record-relief`,{method:'POST',headers:{Authorization:`Bearer ${session.access_token}`,'Content-Type':'application/json'},body:JSON.stringify({apiVersion:'v1',consumer,caseId,caseBundle,facts})});const body=await res.json();if(!res.ok)throw new Error(String(body?.error??'EVALUATION_FAILED'));return body as ReturnType<typeof executeSharedEvaluation>&{apiVersion:'v1';consumer:string}}
+export async function evaluateSharedCaseServer(caseId:string,caseBundle:CaseBundle,facts:EngineFacts={},consumer:'mobile'|'web'|'command_center'='mobile'){const{data:{session}}=await supabase.auth.getSession();if(!session?.access_token)throw new Error('SIGNED_OUT');const base=process.env.EXPO_PUBLIC_SUPABASE_URL,apiKey=process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;if(!base||!apiKey)throw new Error('SUPABASE_CONFIG_MISSING');const res=await fetch(`${base}/functions/v1/evaluate-record-relief`,{method:'POST',headers:{Authorization:`Bearer ${session.access_token}`,apikey:apiKey,'Content-Type':'application/json'},body:JSON.stringify({apiVersion:'v1',consumer,caseId,caseBundle,facts})});const body=await res.json();if(!res.ok)throw new Error(String(body?.error??'EVALUATION_FAILED'));return body as ReturnType<typeof executeSharedEvaluation>&{apiVersion:'v1';consumer:string}}
