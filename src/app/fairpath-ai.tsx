@@ -1,5 +1,5 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 import { FormScrollView } from '@/components/FormScrollView';
 import { PageHeader, ScreenFrame, SharpChip } from '@/components/ProductChrome';
@@ -14,6 +14,8 @@ import { useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
 import { notify } from '@/core/ui/notify';
 import { SIGNAL_ASSISTANT_NOTE } from '@/core/product/member-facing-copy';
+import { loadAiCreditBalance } from '@/core/ai/ai-credits';
+import { catalogByCategory } from '@/core/ai/signal-catalog';
 
 const BASIS_LABEL: Record<Basis, string> = { rule: 'RULE', member: 'YOU', extracted: 'FROM A FILE', app_state: 'YOUR FAIRPATH DATA', ai: 'AI WORDING' };
 type Turn = { id: number; user: string; response: AiResponse | null };
@@ -25,8 +27,15 @@ export default function FairPathAssistant() {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [openProv, setOpenProv] = useState<Record<number, boolean>>({});
+  const [credits, setCredits] = useState<number | null | undefined>(undefined);
   const seq = useRef(0);
   const asked = useRef(false);
+
+  useFocusEffect(useCallback(() => {
+    let live = true;
+    loadAiCreditBalance().then((b) => { if (live) setCredits(b); });
+    return () => { live = false; };
+  }, []));
 
   async function ask(question: string) {
     const t = question.trim();
@@ -63,12 +72,43 @@ export default function FairPathAssistant() {
         <Panel tone="accent">
           <BodyText strong>Built-in guidance</BodyText>
           <BodyText muted>{SIGNAL_ASSISTANT_NOTE} Each part shows how it was made.</BodyText>
+          {credits === undefined ? null : credits === null ? (
+            <BodyText muted>Sign in to use Signal credits on personalized help.</BodyText>
+          ) : (
+            <BodyText muted>Signal credits available: {credits}. Each tool below typically uses 1–2 credits when the server AI runs.</BodyText>
+          )}
         </Panel>
 
         {turns.length === 0 ? (
           <>
             <Text style={s.label}>TRY ASKING</Text>
             <View style={s.chips}>{SUGGESTIONS.map((sug) => <SharpChip key={sug} label={sug} onPress={() => void ask(sug)} />)}</View>
+
+            <Text style={s.label}>SIGNAL TOOLS (WHERE TO TAP)</Text>
+            <BodyText muted>These use server AI on the screen listed — open the route, then use the Signal button there.</BodyText>
+            {catalogByCategory().map((group) => (
+              <View key={group.category} style={{ marginTop: 14 }}>
+                <Text style={s.groupTitle}>{group.label.toUpperCase()}</Text>
+                {group.items.map((item) => (
+                  <Pressable
+                    key={item.id}
+                    accessibilityRole="button"
+                    style={s.catalogRow}
+                    onPress={() => {
+                      if (item.assistantPrompt) void ask(item.assistantPrompt);
+                      else if (item.route) router.push(item.route as never);
+                    }}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.catalogTitle}>{item.title}</Text>
+                      <Text style={s.catalogBody}>{item.description}</Text>
+                      {item.route ? <Text style={s.catalogMeta}>Open {item.route} · ~{item.creditCost} credit{item.creditCost === 1 ? '' : 's'}</Text> : null}
+                    </View>
+                    <Text style={s.catalogGo}>→</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ))}
           </>
         ) : null}
 
@@ -127,4 +167,10 @@ const styles = (t: ThemeTokens) => ({
   actions: { marginTop: 4 },
   prov: { borderTopWidth: 1, borderTopColor: t.border, marginTop: 6, paddingTop: 8 },
   link: { color: t.accentText, fontFamily: F.extraBold, fontSize: 10, letterSpacing: 0.6, marginTop: 6 },
+  groupTitle: { color: t.accentText, fontFamily: F.extraBold, fontSize: 8, letterSpacing: 1.2, marginBottom: 6 },
+  catalogRow: { flexDirection: 'row' as const, alignItems: 'center' as const, borderBottomWidth: 1, borderBottomColor: t.border, paddingVertical: 11, gap: 8 },
+  catalogTitle: { color: t.text, fontFamily: F.bold, fontSize: 13 },
+  catalogBody: { color: t.textSecondary, fontSize: 11, lineHeight: 16, marginTop: 2 },
+  catalogMeta: { color: t.textMuted, fontFamily: F.semiBold, fontSize: 9, marginTop: 4 },
+  catalogGo: { color: t.accentText, fontSize: 18 },
 });
