@@ -5,7 +5,8 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, json, requireEnv } from '../_shared/http.ts';
 import { WORKFLOWS } from '../_shared/core/ai-gateway/gateway.ts';
-import { anthropicChain, runSignalCall } from '../_shared/core/ai-gateway/run.ts';
+import { runSignalCall } from '../_shared/core/ai-gateway/run.ts';
+import { resolveSignalChain } from '../_shared/core/ai-gateway/signal-chains.ts';
 
 const WORKFLOW = WORKFLOWS.member_signal;
 const COST = 1;
@@ -32,12 +33,10 @@ Deno.serve(async (req: Request) => {
     .maybeSingle();
   if (meetingError || !meeting) return json(404, { error: 'meeting_not_found' });
 
-  const apiKey = requireEnv('ANTHROPIC_API_KEY');
-  const model = requireEnv('SIGNAL_MODEL') ?? 'claude-sonnet-5';
-  const { chain, adapters } = anthropicChain(apiKey, model);
+  const { chain, adapters, capabilities } = resolveSignalChain('fast');
 
   return await runSignalCall({
-    userClient, workflow: WORKFLOW, cost: COST, chain, adapters,
+    userClient, workflow: WORKFLOW, cost: COST, chain, adapters, capabilities,
     input: {
       system: 'You are FairPath Signal, helping a member (often navigating reentry) prepare for an upcoming meeting. Based only on the meeting details given to you, explain in plain, calm language what to generally expect and what to have ready (ID, documents, questions to ask) for this TYPE of meeting. Never invent specific facts about the host or organization beyond what is given. Never guarantee an outcome. Keep it under 150 words.',
       user: `Meeting: ${meeting.title}\nType: ${meeting.meeting_type}\nOrganization: ${meeting.organization_name ?? 'not given'}\nHost: ${meeting.host_name ?? 'not given'}\nFormat: ${meeting.provider}\nLocation: ${meeting.location_text ?? 'not given'}\nInstructions already provided: ${meeting.instructions ?? 'none'}\n\nHelp the member prepare for this.`,

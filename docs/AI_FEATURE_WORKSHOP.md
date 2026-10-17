@@ -62,8 +62,8 @@ Prioritized for **impact**, **ethics**, and **reuse of existing gateway**.
 
 ### Tier A — Ship soon (high value, fits mission)
 
-1. **Cover letter draft (per job)** — Reuse job + profile context; member edits before apply. New workflow `cover_letter_draft` or extend `resume_bullet_draft` pattern.
-2. **“Explain this letter in plain English”** — Upload photo/PDF of a court or bureau letter; **read-only** summary (no legal advice). Needs `document_vision` + strict guardrails.
+1. **Cover letter draft (per job)** — **Live:** `cover-letter-draft` Edge Function (`job_writer`), job detail → **Draft cover letter** (2 credits).
+2. **“Explain this letter in plain English”** — **Live:** `letter-explainer` (`document_vision`), `/letter-explainer` (photo; 2 credits). Not legal advice.
 3. **Application review coach** — Before submit on job/housing: “Here’s what you entered; here’s what’s missing.” Mostly rules + optional Signal for wording. No auto-submit.
 4. **Credit utilization coach** — Already have calculator; Signal explains **their numbers** and realistic paydown order (no score prediction).
 5. **Signal catalog in app** — Done in Assistant: discoverability so members know what AI can do **on which screen**.
@@ -105,8 +105,8 @@ Most workflows cost **1 credit**; dispute letter draft **2**. Tune from real Ant
 ## Your checklist to “feel AI live” in Expo Go
 
 1. `.env.local` → DEV Supabase URL + anon key.
-2. Supabase DEV → Secrets → `ANTHROPIC_API_KEY`.
-3. Deploy Signal functions (at minimum: `job-fit-explanation`, `credit-report-explanation`, `member-focus-guidance`, `resource-guidance`, `resume-bullet-draft`).
+2. Supabase DEV → Secrets → `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_API_KEY` (or `GEMINI_API_KEY`) — at least one required for model-assisted replies.
+3. Deploy Signal functions (including `cover-letter-draft`, `letter-explainer`, and the rest under `supabase/functions/`).
 4. SQL: grant yourself credits (`grant_ai_credits` via service role / SQL editor).
 5. `npx expo start` → sign in → Job detail → **Ask Signal** or Assistant catalog.
 
@@ -114,7 +114,7 @@ Most workflows cost **1 credit**; dispute letter draft **2**. Tune from real Ant
 
 ## Multi-provider routing (you have Anthropic, OpenAI, Google, etc.)
 
-The gateway in `supabase/functions/_shared/core/ai-gateway/gateway.ts` already defines **`openai` | `anthropic` | `google`**, failover on 429/5xx, and **per-workflow** chains. Today most Edge Functions only wire **`anthropicChain()`** — not a product limit, an implementation gap.
+The gateway in `supabase/functions/_shared/core/ai-gateway/gateway.ts` defines **`openai` | `anthropic` | `google`**, failover on 429/5xx, and **per-workflow** chains. Member Signal functions use **`resolveSignalChain()`** in `signal-chains.ts` (`fast` | `quality` | `vision` tiers) based on whichever secrets are set.
 
 **Smart setup for margin at $2–5/mo:**
 
@@ -125,7 +125,7 @@ The gateway in `supabase/functions/_shared/core/ai-gateway/gateway.ts` already d
 | Document / letter vision | Google or OpenAI vision | Capability match |
 | Sensitive credit PDF | One approved provider only; no failover to random vendors | Privacy |
 
-All keys stay in **Supabase secrets**. One shared helper (next engineering step): `resolveSignalChain(workflow)` reads env and returns `chain[]` + adapters — functions stop hard-coding Anthropic-only.
+All keys stay in **Supabase secrets**. Optional overrides: `SIGNAL_MODEL` or `SIGNAL_MODEL_ANTHROPIC` / `_OPENAI` / `_GOOGLE`.
 
 **Member never sees the vendor** — they see Signal credits spent and the same safety guards.
 

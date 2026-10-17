@@ -5,7 +5,8 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, json, requireEnv } from '../_shared/http.ts';
 import { WORKFLOWS } from '../_shared/core/ai-gateway/gateway.ts';
-import { anthropicChain, runSignalCall } from '../_shared/core/ai-gateway/run.ts';
+import { runSignalCall } from '../_shared/core/ai-gateway/run.ts';
+import { resolveSignalChain } from '../_shared/core/ai-gateway/signal-chains.ts';
 
 const WORKFLOW = WORKFLOWS.member_signal;
 const COST = 1;
@@ -42,12 +43,10 @@ Deno.serve(async (req: Request) => {
     ? evaluations.map((e) => `- ${e.rule?.title ?? 'Unverified rule'}: outcome "${e.outcome}"${e.remedy ? `, remedy ${e.remedy}` : ''}${e.eligibility_date ? `, eligible on ${e.eligibility_date}` : ''}${e.days_remaining != null ? `, ${e.days_remaining} days remaining` : ''}. Reasons: ${e.reasons.map((r) => r.text).join('; ') || 'none given'}.${e.missing_inputs.length ? ` Still needs: ${e.missing_inputs.join(', ')}.` : ''}${e.rule ? ` Source: ${e.rule.citation_text}.` : ''}`).join('\n')
     : 'No eligibility check has been run on this case yet.';
 
-  const apiKey = requireEnv('ANTHROPIC_API_KEY');
-  const model = requireEnv('SIGNAL_MODEL') ?? 'claude-sonnet-5';
-  const { chain, adapters } = anthropicChain(apiKey, model);
+  const { chain, adapters, capabilities } = resolveSignalChain('fast');
 
   return await runSignalCall({
-    userClient, workflow: WORKFLOW, cost: COST, chain, adapters,
+    userClient, workflow: WORKFLOW, cost: COST, chain, adapters, capabilities,
     input: {
       system: 'You are FairPath Signal, explaining a member\'s own Record Relief case results in plain English. This is NOT legal advice and you are not a lawyer. You may ONLY restate and explain the outcome, reasons, and dates already given to you by FairPath\'s rule engine -- never invent a legal conclusion, a law, a form, or a deadline not given to you. Never say something is guaranteed, certain, or will definitely happen. Always remind the member to confirm anything important with a court clerk or legal aid before acting. Keep it under 180 words.',
       user: `Case: ${caseRow.label} (${caseRow.jurisdiction_code})\n\nEligibility results from FairPath's rule engine:\n${evalText}\n\nExplain this to the member in plain English: what it means, and what's still needed.`,

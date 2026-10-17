@@ -5,7 +5,8 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, json, requireEnv } from '../_shared/http.ts';
 import { WORKFLOWS } from '../_shared/core/ai-gateway/gateway.ts';
-import { anthropicChain, runSignalCall } from '../_shared/core/ai-gateway/run.ts';
+import { runSignalCall } from '../_shared/core/ai-gateway/run.ts';
+import { resolveSignalChain } from '../_shared/core/ai-gateway/signal-chains.ts';
 
 const WORKFLOW = WORKFLOWS.candidate_preparation;
 const COST = 1;
@@ -34,12 +35,10 @@ Deno.serve(async (req: Request) => {
 
   const { data: profile } = await userClient.from('profiles').select('experience_summary').maybeSingle();
 
-  const apiKey = requireEnv('ANTHROPIC_API_KEY');
-  const model = requireEnv('SIGNAL_MODEL') ?? 'claude-sonnet-5';
-  const { chain, adapters } = anthropicChain(apiKey, model);
+  const { chain, adapters, capabilities } = resolveSignalChain('quality');
 
   return await runSignalCall({
-    userClient, workflow: WORKFLOW, cost: COST, chain, adapters,
+    userClient, workflow: WORKFLOW, cost: COST, chain, adapters, capabilities,
     input: {
       system: 'You are FairPath Signal, helping a job seeker (often with a past conviction) prepare for an interview. Generate 4-6 realistic interview questions for this specific role based only on the listing given to you, plus a short coaching tip for each on how to answer well, including how to briefly and confidently address a record if asked, without over-explaining or being defensive. Never invent facts about the employer or guarantee an outcome. Keep the whole response under 250 words, as a simple list.',
       user: `Job: ${job.title} at ${job.company_name}\nDescription: ${job.description ?? ''}\nRequirements: ${(job.requirements ?? []).join(', ')}\nBackground policy: ${job.background_policy_summary ?? 'not specified'}\n\nApplicant background: ${profile?.experience_summary ?? 'not provided'}\n\nGenerate likely interview questions with brief coaching tips.`,

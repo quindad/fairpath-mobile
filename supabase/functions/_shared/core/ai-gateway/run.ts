@@ -4,7 +4,7 @@
 // and run the safety guard on whatever comes back. Callers only build the prompt and the adapter.
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { json } from '../../http.ts';
-import { runWorkflow, type Adapter, type Hop, type AdapterInput, type WorkflowId } from './gateway.ts';
+import { runWorkflow, type Adapter, type Capability, type Hop, type AdapterInput, type WorkflowId } from './gateway.ts';
 import { WORKFLOW_SPECS } from './specs.ts';
 import { guardOutput, fallbackTextFor } from './policy.ts';
 
@@ -16,6 +16,7 @@ export type SignalCallArgs = {
   /** Built by the caller from whatever provider env vars it has access to. Omit/empty to force the honest no-key fallback. */
   chain: Hop[];
   adapters: Partial<Record<Hop['provider'], Adapter>>;
+  capabilities?: Partial<Record<Hop['provider'], Capability>>;
 };
 
 /** Returns a ready-to-send Response. Every Signal Edge Function should end with `return await runSignalCall(...)`. */
@@ -35,6 +36,7 @@ export async function runSignalCall(args: SignalCallArgs): Promise<Response> {
     input: args.input,
     adapters: args.adapters,
     chainOverride: args.chain,
+    capabilities: args.capabilities,
     record: () => {},
   });
 

@@ -6,7 +6,8 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, json, requireEnv } from '../_shared/http.ts';
 import { WORKFLOWS } from '../_shared/core/ai-gateway/gateway.ts';
-import { anthropicChain, runSignalCall } from '../_shared/core/ai-gateway/run.ts';
+import { runSignalCall } from '../_shared/core/ai-gateway/run.ts';
+import { resolveSignalChain } from '../_shared/core/ai-gateway/signal-chains.ts';
 
 const WORKFLOW = WORKFLOWS.credit_report_explanation;
 const COST = 1;
@@ -41,12 +42,10 @@ Deno.serve(async (req: Request) => {
     context = `This member's credit workspace.\nAccounts (${accounts.length}): ${accounts.map((a: { furnisher_name: string; payment_status: string; balance_cents: number }) => `${a.furnisher_name} (${a.payment_status}, balance ${a.balance_cents})`).join('; ') || 'none yet'}\nFlagged items (${items.length}): ${items.map((i: { title: string; stage: string }) => `${i.title} [${i.stage}]`).join('; ') || 'none yet'}`;
   }
 
-  const apiKey = requireEnv('ANTHROPIC_API_KEY');
-  const model = requireEnv('SIGNAL_MODEL') ?? 'claude-sonnet-5';
-  const { chain, adapters } = anthropicChain(apiKey, model, true);
+  const { chain, adapters, capabilities } = resolveSignalChain('quality', true);
 
   return await runSignalCall({
-    userClient, workflow: WORKFLOW, cost: COST, chain, adapters,
+    userClient, workflow: WORKFLOW, cost: COST, chain, adapters, capabilities,
     input: {
       system: 'You are FairPath Signal, explaining a member\'s own credit report data back to them in plain English. You may only describe and explain what is in the data given to you -- never invent accounts, numbers, or facts not present. Never state a credit score, a risk score, a number out of 100, or any prediction of what a score will become. Never say something "is" or "will be" approved, denied, or guaranteed. Explain what things mean and what questions are worth asking, not what will happen. Keep it under 180 words.',
       user: `${context}\n\nExplain this to the member in plain English.`,

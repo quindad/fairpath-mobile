@@ -6,7 +6,8 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, json, requireEnv } from '../_shared/http.ts';
 import { WORKFLOWS } from '../_shared/core/ai-gateway/gateway.ts';
-import { anthropicChain, runSignalCall } from '../_shared/core/ai-gateway/run.ts';
+import { runSignalCall } from '../_shared/core/ai-gateway/run.ts';
+import { resolveSignalChain } from '../_shared/core/ai-gateway/signal-chains.ts';
 
 const WORKFLOW = WORKFLOWS.resume_bullet_draft;
 const COST = 1;
@@ -27,12 +28,10 @@ Deno.serve(async (req: Request) => {
   const duties = (body.duties ?? '').trim().slice(0, 800);
   if (!duties) return json(400, { error: 'missing_duties' });
 
-  const apiKey = requireEnv('ANTHROPIC_API_KEY');
-  const model = requireEnv('SIGNAL_MODEL') ?? 'claude-sonnet-5';
-  const { chain, adapters } = anthropicChain(apiKey, model);
+  const { chain, adapters, capabilities } = resolveSignalChain('fast');
 
   return await runSignalCall({
-    userClient, workflow: WORKFLOW, cost: COST, chain, adapters,
+    userClient, workflow: WORKFLOW, cost: COST, chain, adapters, capabilities,
     input: {
       system: 'You are FairPath Signal, helping a veteran describe their own military duties in civilian-resume language for job applications. Rephrase ONLY what they tell you -- never invent a job title, certification, or responsibility they didn\'t mention, and never claim their occupation code officially corresponds to any specific civilian role (that requires human review FairPath hasn\'t done for this code). Return 3-5 resume-style bullet points describing transferable skills. Keep it under 150 words.',
       user: `Branch: ${body.branch ?? 'not given'}\nWhat they did, in their own words: "${duties}"\n\nRephrase this as civilian-resume bullet points.`,

@@ -5,7 +5,8 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, json, requireEnv } from '../_shared/http.ts';
 import { WORKFLOWS } from '../_shared/core/ai-gateway/gateway.ts';
-import { anthropicChain, runSignalCall } from '../_shared/core/ai-gateway/run.ts';
+import { runSignalCall } from '../_shared/core/ai-gateway/run.ts';
+import { resolveSignalChain } from '../_shared/core/ai-gateway/signal-chains.ts';
 
 const WORKFLOW = WORKFLOWS.member_signal;
 const COST = 1;
@@ -35,12 +36,10 @@ Deno.serve(async (req: Request) => {
     `Record Relief cases tracked: ${reliefCases.data?.length ?? 0}`,
   ].join('\n');
 
-  const apiKey = requireEnv('ANTHROPIC_API_KEY');
-  const model = requireEnv('SIGNAL_MODEL') ?? 'claude-sonnet-5';
-  const { chain, adapters } = anthropicChain(apiKey, model);
+  const { chain, adapters, capabilities } = resolveSignalChain('fast');
 
   return await runSignalCall({
-    userClient, workflow: WORKFLOW, cost: COST, chain, adapters,
+    userClient, workflow: WORKFLOW, cost: COST, chain, adapters, capabilities,
     input: {
       system: 'You are FairPath Signal, looking at a member\'s real activity across the app and suggesting what to focus on next. Base this ONLY on the numbers given to you -- never invent other activity. If everything is at zero, encourage them to explore Jobs, Housing, Record Relief, or Resources rather than implying failure. Be warm, brief, and practical. Never guarantee an outcome. Keep it under 150 words.',
       user: `Member's current activity across FairPath:\n${summary}\n\nWhat should they focus on next?`,

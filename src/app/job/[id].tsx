@@ -6,7 +6,7 @@ import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome
 import { JobMap } from '@/components/JobMap';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { isJobSaved, loadJob, loadMyJobApplicationForJob, saveJob, unsaveJob, type Job, type JobApplicationStatus } from '@/core/opportunities/opportunity-service';
-import { explainJobFit } from '@/core/ai/signal';
+import { draftCoverLetter, explainJobFit } from '@/core/ai/signal';
 import { supabase } from '@/lib/supabase';
 
 export default function JobDetail(){
@@ -20,6 +20,9 @@ export default function JobDetail(){
  const [fitText,setFitText]=useState('');
  const [fitLoading,setFitLoading]=useState(false);
  const [fitRequested,setFitRequested]=useState(false);
+ const [coverText,setCoverText]=useState('');
+ const [coverLoading,setCoverLoading]=useState(false);
+ const [coverRequested,setCoverRequested]=useState(false);
 
  useEffect(()=>{
   if(!id)return;
@@ -62,6 +65,25 @@ export default function JobDetail(){
    setFitText('Signal could not explain this job right now. Please try again.');
   }finally{
    setFitLoading(false);
+  }
+ }
+
+ async function askCoverLetter(){
+  if(!job||coverLoading)return;
+  const {data:{user}}=await supabase.auth.getUser();
+  if(!user){router.push(('/sign-up?returnTo='+encodeURIComponent('/job/'+job.id)) as never);return}
+  setCoverLoading(true);setCoverRequested(true);
+  try{
+   const r=await draftCoverLetter(job.id);
+   if(r.status==='ok')setCoverText(r.text);
+   else if(r.status==='out_of_credits')setCoverText('You are out of Signal credits for now. They refresh with your plan.');
+   else if(r.status==='rate_limited')setCoverText('Signal is busy across FairPath right now. Try again shortly.');
+   else if(r.status==='signed_out'){router.push(('/sign-up?returnTo='+encodeURIComponent('/job/'+job.id)) as never);return}
+   else setCoverText(r.message);
+  }catch{
+   setCoverText('Signal could not draft a cover letter right now. Please try again.');
+  }finally{
+   setCoverLoading(false);
   }
  }
 
@@ -144,6 +166,18 @@ export default function JobDetail(){
     ):(
      <Pressable accessibilityRole="button" style={s.signalButton} onPress={()=>void askSignal()}>
       <Text style={s.signalButtonText}>ASK SIGNAL</Text>
+     </Pressable>
+    )}
+   </View>
+
+   <View style={s.signalSection}>
+    <Text style={s.sectionLabel}>SIGNAL · COVER LETTER DRAFT</Text>
+    <Text style={[s.body,{marginBottom:10}]}>First draft only — edit every detail before you send it. Uses 2 Signal credits.</Text>
+    {coverRequested?(
+     coverLoading?<Text style={s.body}>Signal is thinking…</Text>:<Text style={s.body}>{coverText}</Text>
+    ):(
+     <Pressable accessibilityRole="button" style={s.signalButton} onPress={()=>void askCoverLetter()}>
+      <Text style={s.signalButtonText}>DRAFT COVER LETTER</Text>
      </Pressable>
     )}
    </View>

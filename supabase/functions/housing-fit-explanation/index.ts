@@ -4,7 +4,8 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, json, requireEnv } from '../_shared/http.ts';
 import { WORKFLOWS } from '../_shared/core/ai-gateway/gateway.ts';
-import { anthropicChain, runSignalCall } from '../_shared/core/ai-gateway/run.ts';
+import { runSignalCall } from '../_shared/core/ai-gateway/run.ts';
+import { resolveSignalChain } from '../_shared/core/ai-gateway/signal-chains.ts';
 
 const WORKFLOW = WORKFLOWS.housing_criteria_explainer;
 const COST = 1;
@@ -33,12 +34,10 @@ Deno.serve(async (req: Request) => {
 
   const { data: profile } = await userClient.from('profiles').select('experience_summary').maybeSingle();
 
-  const apiKey = requireEnv('ANTHROPIC_API_KEY');
-  const model = requireEnv('SIGNAL_MODEL') ?? 'claude-sonnet-5';
-  const { chain, adapters } = anthropicChain(apiKey, model);
+  const { chain, adapters, capabilities } = resolveSignalChain('fast');
 
   return await runSignalCall({
-    userClient, workflow: WORKFLOW, cost: COST, chain, adapters,
+    userClient, workflow: WORKFLOW, cost: COST, chain, adapters, capabilities,
     input: {
       system: 'You are FairPath Signal, explaining to a renter (often with a past conviction) how a listing\'s stated screening criteria lines up with their own background, in plain, encouraging, honest language. Never state an approval decision, a score, or a guarantee. Only explain what the listing itself says versus what the renter told FairPath. Keep it under 150 words.',
       user: `Listing: ${listing.title}\nRent: $${listing.rent_monthly}/mo, deposit $${listing.deposit_amount ?? 'not listed'}\nScreening summary: ${listing.screening_summary ?? 'not specified'}\nLease terms: ${(listing.lease_terms ?? []).join(', ')}\nPet policy: ${listing.pet_policy ?? 'not specified'}\n\nRenter background: ${profile?.experience_summary ?? 'not provided'}\n\nExplain, in plain language, how this renter's background lines up with what this listing says about screening.`,

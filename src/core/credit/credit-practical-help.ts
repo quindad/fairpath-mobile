@@ -21,6 +21,12 @@ export const CREDIT_PRACTICAL_HELP: PracticalHelpCard[] = [
     signalPrompt: 'Help me understand which of my flagged credit items might be worth disputing and why',
   },
   {
+    id: 'letter_photo',
+    title: 'Confusing mail? Take a photo',
+    body: 'Signal can summarize a photo of a bureau or court letter in plain English. It is not legal advice — you still verify dates and deadlines yourself.',
+    route: '/letter-explainer',
+  },
+  {
     id: 'utilities_and_rent',
     title: 'Rent and bills on your report',
     body: 'Some rental and utility data appears only when reported. If something looks unfamiliar, confirm whether it is yours before disputing.',

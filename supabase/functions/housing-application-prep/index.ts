@@ -4,7 +4,8 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, json, requireEnv } from '../_shared/http.ts';
 import { WORKFLOWS } from '../_shared/core/ai-gateway/gateway.ts';
-import { anthropicChain, runSignalCall } from '../_shared/core/ai-gateway/run.ts';
+import { runSignalCall } from '../_shared/core/ai-gateway/run.ts';
+import { resolveSignalChain } from '../_shared/core/ai-gateway/signal-chains.ts';
 
 const WORKFLOW = WORKFLOWS.renter_preparation;
 const COST = 1;
@@ -33,12 +34,10 @@ Deno.serve(async (req: Request) => {
 
   const { data: profile } = await userClient.from('profiles').select('experience_summary').maybeSingle();
 
-  const apiKey = requireEnv('ANTHROPIC_API_KEY');
-  const model = requireEnv('SIGNAL_MODEL') ?? 'claude-sonnet-5';
-  const { chain, adapters } = anthropicChain(apiKey, model);
+  const { chain, adapters, capabilities } = resolveSignalChain('fast');
 
   return await runSignalCall({
-    userClient, workflow: WORKFLOW, cost: COST, chain, adapters,
+    userClient, workflow: WORKFLOW, cost: COST, chain, adapters, capabilities,
     input: {
       system: 'You are FairPath Signal, helping a renter (often with a past conviction) prepare for a housing application. Based ONLY on the listing\'s stated screening info given to you, list what documents or information they will likely need to have ready (proof of income, ID, references, etc. -- generic and standard, never invented specifics about this property beyond what is given), and brief, practical tips for how to honestly address a criminal record on a rental application if asked. Never guarantee approval or state a decision. Keep it under 200 words, as a simple list.',
       user: `Listing: ${listing.title}\nRent: $${listing.rent_monthly}/mo, deposit $${listing.deposit_amount ?? 'not listed'}, application fee $${listing.application_fee ?? 'not listed'}\nScreening summary: ${listing.screening_summary ?? 'not specified'}\nLease terms: ${(listing.lease_terms ?? []).join(', ')}\n\nApplicant background: ${profile?.experience_summary ?? 'not provided'}\n\nWhat should they prepare?`,

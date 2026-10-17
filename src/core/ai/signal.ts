@@ -93,3 +93,11 @@ export function draftResumeBullets(jobTitle: string, employer: string, bullets: 
 export function draftDisputeLetter(itemIds: string[], targetKind: 'bureau' | 'furnisher', targetName: string): Promise<SignalResult> {
   return invokeSignal('dispute-letter-draft', { item_ids: itemIds, target_kind: targetKind, target_name: targetName }, 'Signal could not draft this letter right now. Please try again.');
 }
+
+export function draftCoverLetter(jobId: string, highlights?: string): Promise<SignalResult> {
+  return invokeSignal('cover-letter-draft', { job_id: jobId, highlights: highlights ?? '' }, 'Signal could not draft a cover letter right now. Please try again.');
+}
+
+export function explainLetterPhoto(mime: string, base64: string, context?: string): Promise<SignalResult> {
+  return invokeSignal('letter-explainer', { mime, base64, context: context ?? '' }, 'Signal could not read this photo right now. Try a clearer picture or shorter context.');
+}

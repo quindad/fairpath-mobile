@@ -5,7 +5,8 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, json, requireEnv } from '../_shared/http.ts';
 import { WORKFLOWS } from '../_shared/core/ai-gateway/gateway.ts';
-import { anthropicChain, runSignalCall } from '../_shared/core/ai-gateway/run.ts';
+import { runSignalCall } from '../_shared/core/ai-gateway/run.ts';
+import { resolveSignalChain } from '../_shared/core/ai-gateway/signal-chains.ts';
 
 const WORKFLOW = WORKFLOWS.dispute_letter_draft;
 const COST = 1;
@@ -43,12 +44,10 @@ Deno.serve(async (req: Request) => {
     `- ${accountName(i.account_id) || i.title} (${i.issue_type}): ${i.member_statement ?? i.title}`,
   ).join('\n');
 
-  const apiKey = requireEnv('ANTHROPIC_API_KEY');
-  const model = requireEnv('SIGNAL_MODEL') ?? 'claude-sonnet-5';
-  const { chain, adapters } = anthropicChain(apiKey, model);
+  const { chain, adapters, capabilities } = resolveSignalChain('quality');
 
   return await runSignalCall({
-    userClient, workflow: WORKFLOW, cost: COST, chain, adapters,
+    userClient, workflow: WORKFLOW, cost: COST, chain, adapters, capabilities,
     input: {
       system: 'You are FairPath Signal, writing a FIRST DRAFT of a credit dispute letter body for a member to review, edit, and send themselves. Write it as a formal, factual letter body (no letterhead needed) addressed to the named recipient, citing the specific items being disputed exactly as given, in the member\'s own described terms -- never add facts, dates, or amounts not given to you. Request investigation and correction or removal per the Fair Credit Reporting Act, in plain respectful language. Never claim the dispute will succeed or guarantee any outcome. End with a line reminding the member to review every detail before sending. Keep it under 300 words.',
       user: `Recipient: ${targetName} (${body.target_kind === 'bureau' ? 'credit bureau' : 'furnisher/company'})\n\nItems being disputed, in the member's own words:\n${issueList}\n\nWrite the dispute letter body.`,

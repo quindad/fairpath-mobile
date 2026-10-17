@@ -5,7 +5,8 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, json, requireEnv } from '../_shared/http.ts';
 import { WORKFLOWS } from '../_shared/core/ai-gateway/gateway.ts';
-import { anthropicChain, runSignalCall } from '../_shared/core/ai-gateway/run.ts';
+import { runSignalCall } from '../_shared/core/ai-gateway/run.ts';
+import { resolveSignalChain } from '../_shared/core/ai-gateway/signal-chains.ts';
 
 const WORKFLOW = WORKFLOWS.resume_bullet_draft;
 const COST = 1;
@@ -28,12 +29,10 @@ Deno.serve(async (req: Request) => {
   const bullets = (body.bullets ?? []).map((b) => (b ?? '').trim()).filter(Boolean).slice(0, 15);
   if (!bullets.length) return json(400, { error: 'missing_bullets' });
 
-  const apiKey = requireEnv('ANTHROPIC_API_KEY');
-  const model = requireEnv('SIGNAL_MODEL') ?? 'claude-sonnet-5';
-  const { chain, adapters } = anthropicChain(apiKey, model);
+  const { chain, adapters, capabilities } = resolveSignalChain('quality');
 
   return await runSignalCall({
-    userClient, workflow: WORKFLOW, cost: COST, chain, adapters,
+    userClient, workflow: WORKFLOW, cost: COST, chain, adapters, capabilities,
     input: {
       system: 'You are FairPath Signal, strengthening resume bullet points a member already wrote about their own work. Rephrase each bullet to be clear, specific, and action-oriented. You may NEVER invent a number, accomplishment, responsibility, or outcome the member did not mention -- only clarify and strengthen the wording of what they actually gave you. If a bullet is too vague to strengthen honestly, lightly clean up the grammar instead of inventing detail. Return one improved bullet per line, same count and order as given, no numbering, no extra commentary.',
       user: `Job title: ${jobTitle || 'not given'}\nEmployer: ${employer || 'not given'}\n${body.target_role ? `Target role they're applying toward: ${body.target_role}\n` : ''}\nTheir bullets, as written:\n${bullets.map((b) => '- ' + b).join('\n')}\n\nReturn the improved bullets, one per line.`,

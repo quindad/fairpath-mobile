@@ -5,7 +5,8 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, json, requireEnv } from '../_shared/http.ts';
 import { WORKFLOWS } from '../_shared/core/ai-gateway/gateway.ts';
-import { anthropicChain, runSignalCall } from '../_shared/core/ai-gateway/run.ts';
+import { runSignalCall } from '../_shared/core/ai-gateway/run.ts';
+import { resolveSignalChain } from '../_shared/core/ai-gateway/signal-chains.ts';
 
 const WORKFLOW = WORKFLOWS.marketplace_listing_draft;
 const COST = 1;
@@ -27,12 +28,10 @@ Deno.serve(async (req: Request) => {
   const notes = (body.notes ?? '').trim().slice(0, 500);
   if (!title && !notes) return json(400, { error: 'missing_details' });
 
-  const apiKey = requireEnv('ANTHROPIC_API_KEY');
-  const model = requireEnv('SIGNAL_MODEL') ?? 'claude-sonnet-5';
-  const { chain, adapters } = anthropicChain(apiKey, model);
+  const { chain, adapters, capabilities } = resolveSignalChain('fast');
 
   return await runSignalCall({
-    userClient, workflow: WORKFLOW, cost: COST, chain, adapters,
+    userClient, workflow: WORKFLOW, cost: COST, chain, adapters, capabilities,
     input: {
       system: 'You are FairPath Signal, writing a clear, honest, friendly description for a free item a member is giving away on FairPath Marketplace. Use ONLY the details given to you -- never invent condition, brand, features, age, or dimensions the member didn\'t mention. If something important is missing (like condition), note that it is not specified rather than guessing. Keep it under 80 words, plain and welcoming.',
       user: `Title: ${title || 'not given'}\nCategory: ${body.category ?? 'not given'}\nCondition: ${body.condition ?? 'not given'}\nMember's notes about the item: "${notes || 'none'}"\n\nWrite the listing description.`,
