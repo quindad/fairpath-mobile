@@ -11,15 +11,17 @@ FairPath Signal runs like this:
 1. Member taps **Signal** in the app.
 2. App calls a **Supabase Edge Function** with the member’s JWT.
 3. Function calls **`spend_ai_credits`** (rate limit + balance).
-4. Function calls **Anthropic** (or falls back honestly if no key).
+4. Function calls a **model provider** (today mostly Anthropic in code; gateway supports OpenAI + Google too).
 5. App shows text after **promise guards** (no guaranteed score, approval, or expungement).
 
 ### Keys you actually need
 
 | Secret | Where it lives | Purpose |
 |--------|----------------|---------|
-| `ANTHROPIC_API_KEY` | Supabase → Project Settings → Edge Functions → Secrets | Powers all Signal workflows |
-| `SIGNAL_MODEL` (optional) | Same | Defaults to `claude-sonnet-5` in functions |
+| `ANTHROPIC_API_KEY` | Supabase Edge Function secrets | Primary or fallback hop |
+| `OPENAI_API_KEY` | Same | Cheaper/faster hops (e.g. GPT-4o-mini for short tasks) |
+| `GOOGLE_API_KEY` or Vertex | Same | Gemini for vision / long context when wired |
+| `SIGNAL_MODEL` / per-provider model env | Same | e.g. `SIGNAL_MODEL_ANTHROPIC`, `SIGNAL_MODEL_OPENAI`, `SIGNAL_MODEL_GOOGLE` |
 | `EXPO_PUBLIC_SUPABASE_URL` / `ANON_KEY` | `.env.local` | App talks to DEV project |
 | Provider keys for **extraction** | Supabase secrets | `extract-credit-report` (separate privacy decision) |
 
@@ -107,6 +109,64 @@ Most workflows cost **1 credit**; dispute letter draft **2**. Tune from real Ant
 3. Deploy Signal functions (at minimum: `job-fit-explanation`, `credit-report-explanation`, `member-focus-guidance`, `resource-guidance`, `resume-bullet-draft`).
 4. SQL: grant yourself credits (`grant_ai_credits` via service role / SQL editor).
 5. `npx expo start` → sign in → Job detail → **Ask Signal** or Assistant catalog.
+
+---
+
+## Multi-provider routing (you have Anthropic, OpenAI, Google, etc.)
+
+The gateway in `supabase/functions/_shared/core/ai-gateway/gateway.ts` already defines **`openai` | `anthropic` | `google`**, failover on 429/5xx, and **per-workflow** chains. Today most Edge Functions only wire **`anthropicChain()`** — not a product limit, an implementation gap.
+
+**Smart setup for margin at $2–5/mo:**
+
+| Task type | Suggested routing | Why |
+|-----------|-------------------|-----|
+| Short explainers (job fit, credit item) | Google Gemini Flash or OpenAI mini **first**, Anthropic fallback | Cents matter at volume |
+| Dispute / resume drafts | Anthropic or GPT-4 class **first** | Quality on editable drafts |
+| Document / letter vision | Google or OpenAI vision | Capability match |
+| Sensitive credit PDF | One approved provider only; no failover to random vendors | Privacy |
+
+All keys stay in **Supabase secrets**. One shared helper (next engineering step): `resolveSignalChain(workflow)` reads env and returns `chain[]` + adapters — functions stop hard-coding Anthropic-only.
+
+**Member never sees the vendor** — they see Signal credits spent and the same safety guards.
+
+---
+
+## Make $2–5 feel obvious (without lying)
+
+FairPath+ should be framed as **“personal coach + more runs”**, not “unlock jobs.”
+
+| Benefit | Why it feels worth $2 |
+|---------|------------------------|
+| **30–50 Signal credits/mo** vs ~5–10 free | Interview prep + dispute draft + weekly focus = real sessions |
+| **7 Marketplace claims** | Tangible savings on goods |
+| **Pack add-on later** | “I’m applying hard this month” burst |
+
+**Free tier must stay generous enough** that a broke member still gets record relief, resources, credit tools, and *some* Signal — Plus is **more depth**, not survival.
+
+AI features that sell Plus ethically:
+
+1. **Weekly focus plan** (Signal) — “here’s your week” from *their* data  
+2. **Cover letter + resume bundle** per job search sprint  
+3. **Dispute letter drafts** (2 credits) — saves hours; still self-send  
+4. **Interview prep unlimited-ish** within credit bucket  
+
+---
+
+## When there are no jobs or homes nearby
+
+Inventory will be thin in many ZIPs early. The app must **not feel empty** — it should feel like **“FairPath is still my reentry OS.”**
+
+**Always-on reasons to open the app (no listing required):**
+
+- **Resources** — local/national help (food, shelter, ID)  
+- **Record Relief** — state checker + filing steps  
+- **Credit Studio** — upload/enter report, disputes, Signal explain  
+- **Resume Studio** — ready before the market catches up  
+- **Signal / My Path** — focus and next steps from profile + activity  
+- **Early Access waitlist** — honest “we’re building your market”  
+- **Academy / Entrepreneurship / Veterans / Pathways** — skill and identity work  
+
+**Product rule:** empty job/housing screens should point to **`THIN_MARKET_ACTIONS`** (see `src/core/product/thin-market-value.ts`), not only “check back later.”
 
 ---
 

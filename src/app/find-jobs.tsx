@@ -10,6 +10,7 @@ import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/
 import { isZip, JOB_PAGE_SIZE, normalizePlace, loadSavedJobIds, resolveZipCenter, saveJob, saveJobSearch, searchJobs, unsaveJob, type Job } from '@/core/opportunities/opportunity-service';
 import { DEFAULT_SEARCH_RADIUS_MILES, loadLocationSettings } from '@/core/profile/location-service';
 import { getMarketCoverage, isLowCoverage, type MarketCoverage } from '@/core/coverage/coverage-service';
+import { THIN_MARKET_ACTIONS } from '@/core/product/thin-market-value';
 import { supabase } from '@/lib/supabase';
 
 type Lane='all'|'second'|'veteran';
@@ -356,6 +357,8 @@ export default function FindJobs(){
     <Text style={s.earlyAccessBtnText}>JOIN EARLY ACCESS</Text>
     <Lucide name="arrow-right" color={C.black} size={14}/>
    </Pressable>
+   <Text style={[s.emptyBody,{marginTop:14}]}>While your market builds, FairPath still helps with:</Text>
+   {THIN_MARKET_ACTIONS.slice(0,4).map((a)=><Pressable key={a.id} accessibilityRole="link" accessibilityLabel={a.label} onPress={()=>router.push(a.route as never)}><Text style={s.thinLink}>{a.label} →</Text></Pressable>)}
   </View>:null}
   {!loading&&jobs.length===0&&!error&&!lowCoverage?<View style={s.empty}>
    <Text style={s.emptyTitle}>No jobs match these filters.</Text>
@@ -513,6 +516,7 @@ const s=StyleSheet.create({
  emptyBody:{color:C.muted,fontSize:13,lineHeight:20,marginTop:7},
  earlyAccessBtn:{height:46,backgroundColor:C.lime,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:8,marginTop:16,paddingHorizontal:16,alignSelf:'flex-start'},
  earlyAccessBtnText:{color:C.black,fontFamily:F.extraBold,fontSize:9,letterSpacing:.8},
+ thinLink:{color:C.lime,fontFamily:F.extraBold,fontSize:9,letterSpacing:.7,marginTop:8},
  error:{color:C.danger,fontSize:12,paddingVertical:12},
  radiusRow:{flexDirection:'row',alignItems:'center',gap:7,marginBottom:10},radiusLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:1.2,width:46},radiusCell:{flex:1},
  zipNote:{color:C.muted,fontSize:10,lineHeight:15,marginBottom:10},

@@ -16,6 +16,7 @@ import { DEFAULT_SEARCH_RADIUS_MILES, loadLocationSettings } from '@/core/profil
 import { supabase } from '@/lib/supabase';
 import { HousingMap } from '@/components/HousingMap';
 import { getMarketCoverage, isLowCoverage, type MarketCoverage } from '@/core/coverage/coverage-service';
+import { THIN_MARKET_ACTIONS } from '@/core/product/thin-market-value';
 
 const RADIUS_CHOICES=[10,25,50,100];
 const TYPES=['apartment','townhome','house','duplex','condo','room'];
@@ -306,6 +307,8 @@ export default function Housing(){
     <Text style={s.earlyAccessBtnText}>JOIN EARLY ACCESS</Text>
     <Lucide name="arrow-right" color={C.black} size={14}/>
    </Pressable>
+   <Text style={[s.emptyBody,{marginTop:14}]}>While your market builds, FairPath still helps with:</Text>
+   {THIN_MARKET_ACTIONS.slice(0,4).map((a)=><Pressable key={a.id} accessibilityRole="link" accessibilityLabel={a.label} onPress={()=>router.push(a.route as never)}><Text style={s.thinLink}>{a.label} →</Text></Pressable>)}
   </View>:null}
   {!loading&&homes.length===0&&!error&&!lowCoverage?<View style={s.empty}>
    <Text style={s.emptyTitle}>No homes match this search.</Text>
@@ -453,6 +456,7 @@ const s=StyleSheet.create({
  empty:{borderTopWidth:1,borderTopColor:C.border,paddingVertical:28},emptyTitle:{color:C.white,fontFamily:F.extraBold,fontSize:18},emptyBody:{color:C.muted,fontSize:13,lineHeight:20,marginTop:7},error:{color:C.danger,fontSize:12,paddingVertical:12},
  earlyAccessBtn:{height:46,backgroundColor:C.lime,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:8,marginTop:16,paddingHorizontal:16,alignSelf:'flex-start'},
  earlyAccessBtnText:{color:C.black,fontFamily:F.extraBold,fontSize:9,letterSpacing:.8},
+ thinLink:{color:C.lime,fontFamily:F.extraBold,fontSize:9,letterSpacing:.7,marginTop:8},
  footerBlock:{paddingTop:18,alignItems:'stretch'},footerText:{color:C.muted,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.1,textAlign:'center',paddingVertical:10},
  moreBtn:{height:42,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center',backgroundColor:'#0A0C0A'},moreText:{color:C.lime,fontFamily:F.extraBold,fontSize:9,letterSpacing:1},
  mapBar:{flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:L.mobileGutter,paddingVertical:10,borderBottomWidth:1,borderBottomColor:C.border},
