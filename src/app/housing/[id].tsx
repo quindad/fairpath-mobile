@@ -54,16 +54,16 @@ export default function HousingDetail(){
 
  // Opening the application form does not write anything. The draft is created by the first
  // completed section (server function save_housing_application_draft).
- async function startApplication(mode:'standard'|'fasttrack'){
+ async function startApplication(){
   if(!item)return;
   const {data:{user}}=await supabase.auth.getUser();
   if(!user){router.push(('/sign-up?returnTo='+encodeURIComponent('/housing/'+item.id)) as never);return}
-  openApplication(mode);
+  openApplication();
  }
- function openApplication(mode:'standard'|'fasttrack'){
+ function openApplication(){
   if(!item)return;
   if(application){router.push(((application.status==='started'?'/housing-apply/':'/housing-application/')+application.id) as never);return}
-  router.push(('/housing-apply/new?listing='+item.id+'&mode='+mode) as never);
+  router.push(('/housing-apply/new?listing='+item.id+'&mode=standard') as never);
  }
 
  async function askSignal(){
@@ -132,7 +132,6 @@ export default function HousingDetail(){
     <Text style={s.meta}>{[item.bedrooms!=null?item.bedrooms+' bd':null,item.bathrooms!=null?item.bathrooms+' ba':null,item.square_feet?item.square_feet.toLocaleString()+' sq ft':null].filter(Boolean).join(' · ')}</Text>
     <View style={s.locationRow}><Lucide name="map-pin" color={C.muted} size={13}/><Text style={s.location}>{location}</Text></View>
     <View style={s.badges}>
-     {item.fasttrack_enabled?<InlineBadge tone="lime">FASTTRACK AVAILABLE</InlineBadge>:null}
      {application?<InlineBadge tone="lime">{STATUS_LABEL[application.status]}</InlineBadge>:null}
      <InlineBadge>{item.property_type.toUpperCase()}</InlineBadge>
     </View>
@@ -219,21 +218,13 @@ export default function HousingDetail(){
 
    <View style={s.notice}>
     <Lucide name="shield-check" color={C.lime} size={16}/>
-    <Text style={s.noticeText}>{application?(application.status==='started'?'You have a saved draft for this home. Continue where you left off.':'Your application is in FairPath. Open it to review its status and history.'):item.fasttrack_enabled?'Choose Standard or FastTrack. Nothing is saved until you finish the first section, and nothing is submitted until you review and confirm.':'Nothing is saved until you finish the first section, and nothing is submitted until you review and confirm.'}</Text>
+    <Text style={s.noticeText}>{application?(application.status==='started'?'You have a saved draft for this home. Continue where you left off.':'Your application is in FairPath. Open it to review its status and history.'):'Nothing is saved until you finish the first section, and nothing is submitted until you review and confirm.'}</Text>
    </View>
 
-   {application?<Pressable accessibilityRole="button" style={s.primary} onPress={()=>openApplication(application.application_type)}>
-    <Text style={s.primaryText}>{application.status==='started'?'CONTINUE':'OPEN'} {application.application_type==='fasttrack'?'FASTTRACK':'STANDARD'} APPLICATION</Text><Lucide name="arrow-right" color={C.black} size={16}/>
-   </Pressable>:item.fasttrack_enabled?<View style={s.applyChoices}>
-    <Text style={s.applyChoiceLabel}>CHOOSE APPLICATION TYPE</Text>
-    <Pressable accessibilityRole="button" accessibilityLabel="FastTrack application" style={s.fastTrackButton} onPress={()=>void startApplication('fasttrack')}>
-     <View><Text style={s.fastTrackButtonTitle}>FASTTRACK APPLICATION</Text><Text style={s.fastTrackButtonBody}>Reuse available FairPath profile information and move through the application faster.</Text></View><Lucide name="zap" color={C.black} size={16}/>
-    </Pressable>
-    <Pressable accessibilityRole="button" accessibilityLabel="Standard application" style={s.standardButton} onPress={()=>void startApplication('standard')}>
-     <View><Text style={s.standardButtonTitle}>STANDARD APPLICATION</Text><Text style={s.standardButtonBody}>Start a clean application and enter each section manually.</Text></View><Lucide name="arrow-right" color={C.lime} size={16}/>
-    </Pressable>
-   </View>:<Pressable accessibilityRole="button" style={s.primary} onPress={()=>void startApplication('standard')}>
-    <Text style={s.primaryText}>START STANDARD APPLICATION</Text><Lucide name="arrow-right" color={C.black} size={16}/>
+   {application?<Pressable accessibilityRole="button" style={s.primary} onPress={()=>openApplication()}>
+    <Text style={s.primaryText}>{application.status==='started'?'CONTINUE':'OPEN'} APPLICATION</Text><Lucide name="arrow-right" color={C.black} size={16}/>
+   </Pressable>:<Pressable accessibilityRole="button" style={s.primary} onPress={()=>void startApplication()}>
+    <Text style={s.primaryText}>START APPLICATION</Text><Lucide name="arrow-right" color={C.black} size={16}/>
    </Pressable>}
   </ScrollView>
  </ScreenFrame>;

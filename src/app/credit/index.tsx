@@ -5,6 +5,7 @@ import { InlineBadge, PageHeader, ScreenFrame, SectionTitle, SharpChip, FilterSt
 import { BodyText, ChipGroup, EmptyState, ListRow, Panel, PrimaryButton, SecondaryButton, StatusLine, TextButton } from '@/components/ui-kit';
 import { FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { CREDIT_EDUCATION } from '@/core/credit/credit-education';
+import { CREDIT_PRACTICAL_HELP } from '@/core/credit/credit-practical-help';
 import {
   BUREAU_LABEL, EXTRACTION_LABEL, ISSUE_LABEL, PAYMENT_STATUS_LABEL, STAGE_INFO, bureauName, dateLabel, dueLabel, formatCents, sortAccountsForReview, DISPUTE_STATUS_LABEL,
 } from '@/core/credit/credit-format';
@@ -116,7 +117,7 @@ export default function CreditWorkspace() {
 
   return (
     <ScreenFrame>
-      <PageHeader eyebrow="FAIRPATH+ · CREDIT" title="Credit Studio" backTo="/home" />
+      <PageHeader eyebrow="FAIRPATH · CREDIT STUDIO" title="Your credit workspace" backTo="/home" />
       <FilterStrip>
         {TABS.map((t) => <SharpChip key={t.tab} label={t.label} active={tab === t.tab} onPress={() => setTab(t.tab)} />)}
       </FilterStrip>
@@ -126,7 +127,10 @@ export default function CreditWorkspace() {
 
         {loaded && tab === 'overview' ? (
           <>
-            <Panel><BodyText>Review your credit reports, decide what (if anything) is worth disputing, and track it to an outcome. FairPath does not predict scores and cannot promise that anything will be removed.</BodyText></Panel>
+            <Panel tone="accent">
+              <BodyText strong>Free tools for everyone</BodyText>
+              <BodyText muted>Upload or enter your report, review flagged items, and track disputes you choose to send. No score predictions and no guarantees — especially important when money is tight and scams are common.</BodyText>
+            </Panel>
             {next ? (
               <Panel tone="accent">
                 <Text style={s.eyebrow}>NEXT</Text>
@@ -141,13 +145,32 @@ export default function CreditWorkspace() {
               ))}
             </View>
 
-            <View style={s.block}><SectionTitle>SIGNAL</SectionTitle></View>
+            <View style={s.block}><SectionTitle>SIGNAL · AI HELP</SectionTitle></View>
             <Panel tone="accent">
               <BodyText strong>Ask Signal to explain your report</BodyText>
               <BodyText muted>Plain-English look at your accounts and flagged items. Signal only describes what's actually in your data — no score, no prediction, no guarantee.</BodyText>
               {signalRequested ? <BodyText muted>{signalLoading ? 'Signal is thinking…' : signalText}</BodyText> : null}
-              <SecondaryButton label={signalLoading ? 'ASKING SIGNAL…' : 'ASK SIGNAL'} onPress={() => void askSignalAboutReport()} disabled={signalLoading} />
+              <SecondaryButton label={signalLoading ? 'ASKING SIGNAL…' : 'EXPLAIN MY REPORT'} onPress={() => void askSignalAboutReport()} disabled={signalLoading} />
+              <SecondaryButton label="HELP WITH A DISPUTE LETTER" onPress={() => router.push('/fairpath-ai?q=' + encodeURIComponent('Build my dispute letter') as never)} />
+              <SecondaryButton label="FIND HELP WITH BILLS & HOUSING" onPress={() => router.push('/fairpath-ai?q=' + encodeURIComponent('I need help with rent, utilities, or food while I fix my credit') as never)} />
             </Panel>
+
+            <View style={s.block}><SectionTitle>PRACTICAL HELP</SectionTitle></View>
+            {CREDIT_PRACTICAL_HELP.map((card) => (
+              <Panel key={card.id}>
+                <Text style={s.title}>{card.title}</Text>
+                <BodyText>{card.body}</BodyText>
+                {card.route?.startsWith('http') ? (
+                  <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(card.route!)}><Text style={s.link}>OPEN OFFICIAL LINK →</Text></Pressable>
+                ) : null}
+                {card.route && !card.route.startsWith('http') ? (
+                  <SecondaryButton label="OPEN IN FAIRPATH" onPress={() => router.push(card.route as never)} />
+                ) : null}
+                {card.signalPrompt ? (
+                  <SecondaryButton label="ASK SIGNAL" onPress={() => router.push('/fairpath-ai?q=' + encodeURIComponent(card.signalPrompt!) as never)} />
+                ) : null}
+              </Panel>
+            ))}
 
             <View style={s.block}><SectionTitle>ADD A REPORT</SectionTitle></View>
             <ChipGroup single label="WHICH BUREAU?" options={[{ value: 'equifax', label: 'Equifax' }, { value: 'experian', label: 'Experian' }, { value: 'transunion', label: 'TransUnion' }, { value: 'unknown', label: 'Not sure' }]} selected={bureau} onChange={(n) => setBureau(n.length ? n : ['unknown'])} />

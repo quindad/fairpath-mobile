@@ -13,6 +13,7 @@ import { mergeSignalText, shouldEnrichWithSignal, signalStatusMessage } from '@/
 import { useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
 import { notify } from '@/core/ui/notify';
+import { SIGNAL_ASSISTANT_NOTE } from '@/core/product/member-facing-copy';
 
 const BASIS_LABEL: Record<Basis, string> = { rule: 'RULE', member: 'YOU', extracted: 'FROM A FILE', app_state: 'YOUR FAIRPATH DATA', ai: 'AI WORDING' };
 type Turn = { id: number; user: string; response: AiResponse | null };
@@ -61,7 +62,7 @@ export default function FairPathAssistant() {
       <FormScrollView contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 36 }}>
         <Panel tone="accent">
           <BodyText strong>Built-in guidance</BodyText>
-          <BodyText muted>Every answer starts from your FairPath data and fixed rules. When you are signed in, help-finding and next-step questions can also use Signal (server-side AI that spends a credit and never changes your records for you). Each part shows how it was made.</BodyText>
+          <BodyText muted>{SIGNAL_ASSISTANT_NOTE} Each part shows how it was made.</BodyText>
         </Panel>
 
         {turns.length === 0 ? (

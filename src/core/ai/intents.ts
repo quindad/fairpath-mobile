@@ -42,7 +42,7 @@ export const INTENTS: Intent[] = [
   { id: 'my_jobs', task: 'jobs_status', label: T('My applications'), priority: 66,
     patterns: [/\b(my|saved)\b.*\b(job )?applications?\b/i, /\bsaved jobs?\b/i, /\bapplication status\b/i] },
   { id: 'create_resume', task: 'resume_create', label: T('Create a resume'), priority: 70,
-    patterns: [/\b(build|create|make|start|write)\b.*\bresume\b/i, /\bresume studio\b/i] },
+    patterns: [/\b(build|create|make|start|write)\b.*\bresume\b/i, /\bresume studio\b/i, /\bemployment gap\b.*\bresume\b/i, /\bexplain\b.*\bgap\b.*\bresume\b/i] },
   { id: 'my_resumes', task: 'resume_status', label: T('My resumes'), priority: 68,
     patterns: [/\b(my|edit|download|export)\b.*\bresume/i, /\bresumes?\b.*\b(saved|list|versions?)\b/i] },
   { id: 'my_meetings', task: 'meetings_status', label: T('My meetings'), priority: 68,
@@ -54,7 +54,7 @@ export const INTENTS: Intent[] = [
   { id: 'my_housing', task: 'housing_status', label: T('My housing applications'), priority: 65,
     patterns: [/\b(my|saved)\b.*\bhousing\b.*\bapplications?\b/i, /\bsaved (homes?|housing)\b/i] },
   { id: 'next_steps', task: 'next_steps', label: T('Show my next steps'), priority: 60,
-    patterns: [/\b(next steps?|what (should|do) i do|what now|where do i start|show my next)\b/i] },
+    patterns: [/\b(next steps?|what (should|do) i do|what should i focus|what now|where do i start|show my next)\b/i] },
   { id: 'documents', task: 'document_help', label: T('My documents'), priority: 55,
     patterns: [/\b(export|download|print|pdf|my documents|save (a )?copy)\b/i] },
   { id: 'fairpath_plus_status', task: 'fairpath_plus_status', label: T('Do I have FairPath+'), priority: 63,
@@ -78,6 +78,7 @@ export const SUGGESTIONS = [
   'When might I become eligible?',
   'What paperwork do I need?',
   'Show my next steps',
+  'Help me explain an employment gap on my resume',
 ];
 
 export function matchIntent(text: string): { intent: Intent | null; hits: number } {

@@ -25,6 +25,7 @@ import { digitsOnly, formatDateInput, formatUsPhone } from '@/core/forms/formatt
 import { HousingApplicationDocuments } from '@/components/HousingApplicationDocuments';
 import { FairPathDatePicker } from '@/components/FairPathDatePicker';
 import { loadMyRecordStatement } from '@/core/record-relief/statement-service';
+import { HOUSING_FASTTRACK_MEMBER_ENABLED } from '@/core/housing/housing-product';
 
 const EMPTY:HousingApplicationForm={
  first_name:'',last_name:'',email:'',phone:'',date_of_birth:'',current_address:'',
@@ -75,13 +76,13 @@ export default function HousingApply(){
   setLoading(true);setLoadError('');
   const signedOut=(e:unknown)=>{if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace(('/sign-up?returnTo='+encodeURIComponent(isNew&&listing?'/housing/'+listing:'/housing-application/'+id)) as never);return true}return false};
   if(isNew){
-   const mode:HousingApplicationMode=modeParam==='fasttrack'?'fasttrack':'standard';
+   const mode:HousingApplicationMode=HOUSING_FASTTRACK_MEMBER_ENABLED&&modeParam==='fasttrack'?'fasttrack':'standard';
    if(!listing){setLoadError('This application link is missing its home.');setLoading(false);return}
    Promise.all([loadHousingListing(listing),loadMyHousingApplication(listing),loadHousingApplicationPrefill(mode)])
     .then(([home,existing,prefill])=>{
      if(!active)return;
      if(existing){router.replace(((existing.status==='started'?'/housing-apply/':'/housing-application/')+existing.id) as never);return}
-     if(mode==='fasttrack'&&!home.fasttrack_enabled){setLoadError('FastTrack is not available for this home.');return}
+     if(HOUSING_FASTTRACK_MEMBER_ENABLED&&mode==='fasttrack'&&!home.fasttrack_enabled){setLoadError('FastTrack is not available for this home.');return}
      setForm(prefill);setStep(1);setFast(mode==='fasttrack');setTitle(home.title);setListingId(home.id);
      setRequiredDocs((home.required_application_documents??[]) as HousingApplicationDocument['document_type'][]);
     })
@@ -106,7 +107,7 @@ export default function HousingApply(){
  },[id,listing,modeParam,reload]); // eslint-disable-line react-hooks/exhaustive-deps
  useEffect(()=>{void loadMyRecordStatement().then(setStatement).catch(()=>{})},[]);
  const [fastQuoteError,setFastQuoteError]=useState(false);
- useFocusEffect(useCallback(()=>{if(!appId||!fast)return;setFastQuoteError(false);loadFastTrackQuote(appId).then(setFastQuote).catch(()=>{setFastQuote(null);setFastQuoteError(true)})},[appId,fast]));
+ useFocusEffect(useCallback(()=>{if(!HOUSING_FASTTRACK_MEMBER_ENABLED||!appId||!fast)return;setFastQuoteError(false);loadFastTrackQuote(appId).then(setFastQuote).catch(()=>{setFastQuote(null);setFastQuoteError(true)})},[appId,fast]));
 
  const errors=useMemo(()=>validateHousingApplicationForm(form),[form]);
  const currentFields=STEP_FIELDS[step]??[];
@@ -158,7 +159,7 @@ export default function HousingApply(){
    notify('Application incomplete',allErrors.length===1?'Fix the required item before submitting.':'Fix '+allErrors.length+' required items before submitting.');
    return;
   }
-  if(!accuracy||!submitConsent||(fast&&!fastAck)){
+  if(!accuracy||!submitConsent||(HOUSING_FASTTRACK_MEMBER_ENABLED&&fast&&!fastAck)){
    notify('Confirm before submitting','Review and accept the required confirmations at the bottom of the application.');
    return;
   }
@@ -166,11 +167,11 @@ export default function HousingApply(){
    notify('Required documents missing','Upload every document required by this property before submitting.');
    return;
   }
-  if(fast&&fastQuoteError){
+  if(HOUSING_FASTTRACK_MEMBER_ENABLED&&fast&&fastQuoteError){
    notify('Could not confirm FastTrack status','FairPath could not check whether FastTrack payment is required. Please try again before submitting.');
    return;
   }
-  if(fast&&fastQuote?.payment_enforced&&!['paid','waived'].includes(fastQuote.status)){
+  if(HOUSING_FASTTRACK_MEMBER_ENABLED&&fast&&fastQuote?.payment_enforced&&!['paid','waived'].includes(fastQuote.status)){
    notify('FastTrack payment required','Complete FastTrack payment before submitting this application.',[
     {text:'Not now',style:'cancel'},
     {text:'Open checkout',onPress:()=>router.push(('/fasttrack-checkout/'+appId) as never)}
@@ -209,16 +210,16 @@ export default function HousingApply(){
  if(loadError)return <ScreenFrame><PageHeader eyebrow="FAIRPATH HOUSING" title="Application" backTo={listingId?'/housing/'+listingId:'/housing-applications'}/><View style={s.errorState}><Text style={s.loadError}>{loadError}</Text><Pressable accessibilityRole="button" style={s.retry} onPress={()=>setReload(n=>n+1)}><Text style={s.retryText}>TRY AGAIN</Text></Pressable></View></ScreenFrame>;
 
  return <ScreenFrame>
-  <PageHeader eyebrow={fast?'FASTTRACK APPLICATION':'STANDARD APPLICATION'} title={title} onBack={()=>void previous()}/>
+  <PageHeader eyebrow={HOUSING_FASTTRACK_MEMBER_ENABLED&&fast?'FASTTRACK APPLICATION':'HOUSING APPLICATION'} title={title} onBack={()=>void previous()}/>
   <View style={s.progress}>
    {STEPS.map((label,i)=><View key={label} style={s.piece}><View style={[s.bar,i<step&&s.barOn]}/><Text style={[s.stepLabel,i===step-1&&s.stepOn]}>{label}</Text></View>)}
   </View>
 
   <FormScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
    <View style={s.modeCard}>
-    <View style={s.modeTop}><InlineBadge tone={fast?'lime':undefined}>{fast?'FASTTRACK':'STANDARD'}</InlineBadge><Text style={s.completion}>{completion}% COMPLETE</Text></View>
-    <Text style={s.modeTitle}>{fast?'Prefilled where FairPath already knows the answer.':'A full application, one section at a time.'}</Text>
-    <Text style={s.modeBody}>{fast?'FastTrack reuses available FairPath profile information, but missing fields still have to be completed and every answer remains editable before submission.':'Standard applications start as a clean form and save your progress as you move through each section.'}</Text>
+    <View style={s.modeTop}><InlineBadge>{HOUSING_FASTTRACK_MEMBER_ENABLED&&fast?'FASTTRACK':'APPLICATION'}</InlineBadge><Text style={s.completion}>{completion}% COMPLETE</Text></View>
+    <Text style={s.modeTitle}>{HOUSING_FASTTRACK_MEMBER_ENABLED&&fast?'Prefilled where FairPath already knows the answer.':'One section at a time.'}</Text>
+    <Text style={s.modeBody}>{HOUSING_FASTTRACK_MEMBER_ENABLED&&fast?'FastTrack reuses available FairPath profile information, but missing fields still have to be completed and every answer remains editable before submission.':'Your answers save as you go. Review everything before you submit — property owners make their own decisions.'}</Text>
    </View>
 
    {step===1?<>
@@ -256,7 +257,7 @@ export default function HousingApply(){
 
    {step===5&&appId?<>
     <SectionHead kicker="STEP 5 OF 5" title="Review & submit"/>
-    <Review label="APPLICATION TYPE" value={fast?'FastTrack':'Standard'}/>
+    <Review label="APPLICATION TYPE" value={HOUSING_FASTTRACK_MEMBER_ENABLED&&fast?'FastTrack':'Standard'}/>
     <Review label="APPLICANT" value={[form.first_name,form.last_name].filter(Boolean).join(' ')}/>
     <Review label="CONTACT" value={[form.email,formatUsPhone(form.phone)].filter(Boolean).join(' · ')}/>
     <Review label="DATE OF BIRTH" value={formatDateInput(form.date_of_birth)}/>
@@ -276,7 +277,7 @@ export default function HousingApply(){
 
     <HousingApplicationDocuments applicationId={appId!} requiredTypes={requiredDocs} onDocumentsChange={setDocuments}/>
     {missingRequiredDocs.length?<View style={s.documentWarning}><Lucide name="triangle-alert" color={C.lime} size={14}/><Text style={s.documentWarningText}>Upload the required property documents before submitting: {missingRequiredDocs.join(', ').replaceAll('_',' ')}.</Text></View>:null}
-    {fast&&fastQuote?<View style={s.fastQuote}>
+    {HOUSING_FASTTRACK_MEMBER_ENABLED&&fast&&fastQuote?<View style={s.fastQuote}>
      <View style={s.quoteTop}>
       <Text style={s.quoteLabel}>FASTTRACK FEE</Text>
       <Text style={s.quoteAmount}>{`$${(fastQuote.amount_due_cents/100).toFixed(2)}`}</Text>
@@ -288,14 +289,14 @@ export default function HousingApply(){
     {statement.trim()?<Consent checked={includeStatement} onPress={()=>setIncludeStatement(v=>!v)} text="Attach the private statement I wrote explaining my record to this application."/>:null}
     <Consent checked={accuracy} onPress={()=>setAccuracy(v=>!v)} text="I confirm the information in this application is accurate to the best of my knowledge."/>
     <Consent checked={submitConsent} onPress={()=>setSubmitConsent(v=>!v)} text="I want FairPath to submit this completed application into the property application workflow."/>
-    {fast?<Consent checked={fastAck} onPress={()=>setFastAck(v=>!v)} text="I understand FastTrack can speed up reuse and review of my information but does not guarantee approval or waive property-specific screening."/>:null}
+    {HOUSING_FASTTRACK_MEMBER_ENABLED&&fast?<Consent checked={fastAck} onPress={()=>setFastAck(v=>!v)} text="I understand FastTrack can speed up reuse and review of my information but does not guarantee approval or waive property-specific screening."/>:null}
 
     <View style={s.notice}><Text style={s.noticeTitle}>BEFORE YOU SUBMIT</Text><Text style={s.noticeBody}>Nothing is sent until you confirm below. Property screening, verification, fees, availability, and property-owner decisions can still apply.</Text></View>
    </>:null}
 
-   <Pressable accessibilityRole="button" style={[s.primary,(saving||(step===5&&(allErrors.length>0||missingRequiredDocs.length>0||!accuracy||!submitConsent||(fast&&!fastAck))))&&s.primaryDisabled]} disabled={saving} onPress={step===5?attemptSubmit:()=>void saveAndNext()}>
-    <Text style={[s.primaryText,step===5&&(allErrors.length>0||missingRequiredDocs.length>0||!accuracy||!submitConsent||(fast&&!fastAck))&&s.primaryTextDisabled]}>{saving?'SAVING…':step===5?'CONFIRM & SUBMIT APPLICATION':'SAVE & CONTINUE'}</Text>
-    <Lucide name="arrow-right" color={step===5&&(allErrors.length>0||missingRequiredDocs.length>0||!accuracy||!submitConsent||(fast&&!fastAck))?C.mutedStrong:C.black} size={16}/>
+   <Pressable accessibilityRole="button" style={[s.primary,(saving||(step===5&&(allErrors.length>0||missingRequiredDocs.length>0||!accuracy||!submitConsent||(HOUSING_FASTTRACK_MEMBER_ENABLED&&fast&&!fastAck))))&&s.primaryDisabled]} disabled={saving} onPress={step===5?attemptSubmit:()=>void saveAndNext()}>
+    <Text style={[s.primaryText,step===5&&(allErrors.length>0||missingRequiredDocs.length>0||!accuracy||!submitConsent||(HOUSING_FASTTRACK_MEMBER_ENABLED&&fast&&!fastAck))&&s.primaryTextDisabled]}>{saving?'SAVING…':step===5?'CONFIRM & SUBMIT APPLICATION':'SAVE & CONTINUE'}</Text>
+    <Lucide name="arrow-right" color={step===5&&(allErrors.length>0||missingRequiredDocs.length>0||!accuracy||!submitConsent||(HOUSING_FASTTRACK_MEMBER_ENABLED&&fast&&!fastAck))?C.mutedStrong:C.black} size={16}/>
    </Pressable>
    {step>1?<Pressable accessibilityRole="button" style={s.secondary} onPress={()=>void previous()}><Text style={s.secondaryText}>← PREVIOUS STEP</Text></Pressable>:null}
   </FormScrollView>

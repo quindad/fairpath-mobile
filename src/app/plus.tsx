@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
@@ -7,8 +7,7 @@ import { FAIRPATH_PLUS_PRODUCT } from '@/core/membership/plus-config';
 import { MEMBERSHIP_BENEFITS } from '@/core/membership/fairpath-plus';
 import { describePlus, isExpiringSoon, usePlusStatus } from '@/core/membership/plus-access';
 import { getBillingProvider } from '@/core/billing/billing-provider';
-import { loadFastTrackPricing } from '@/core/payments/payments-service';
-import { formatCents } from '@/core/payments/payment-format';
+import { FAIRPATH_PLUS_DETAIL, FAIRPATH_PLUS_STORE_NOTE } from '@/core/product/member-facing-copy';
 
 /**
  * FairPath+ screen. The member's status comes from the server (usePlusStatus -> my_fairpath_plus_status).
@@ -20,9 +19,7 @@ export default function Plus(){
  const view=describePlus(status);
  const plus=MEMBERSHIP_BENEFITS.filter(x=>x.plan==='plus');
  const provider=getBillingProvider();
- const [pricing,setPricing]=useState<{base:number;discount:number;currency:string}|null>(null);
  const [notice,setNotice]=useState('');
- useEffect(()=>{loadFastTrackPricing().then(p=>{if(p)setPricing({base:p.base_amount_cents,discount:p.plus_discount_cents,currency:p.currency})})},[]);
 
  async function subscribe(){
   const r=await provider.purchasePlus();
@@ -47,10 +44,8 @@ export default function Plus(){
     <Text style={s.mark}>+</Text>
     <Text style={s.title}>More tools. More opportunity. A stronger you.</Text>
     <View style={s.priceRow}><Text style={s.price}>{'$'+FAIRPATH_PLUS_PRODUCT.displayPriceUsd}</Text><Text style={s.month}> / {FAIRPATH_PLUS_PRODUCT.period}</Text></View>
-    <Text style={s.sub}>Keep core matching and resources free. Upgrade when you want FairPath to do more of the work with you.</Text>
+    <Text style={s.sub}>{FAIRPATH_PLUS_DETAIL}</Text>
    </View>
-
-   {pricing&&pricing.discount>0?<View style={s.value}><Text style={s.valueTop}>FASTTRACK HOUSING</Text><Text style={s.valueBig}>{formatCents(pricing.base-pricing.discount,pricing.currency)} with Plus</Text><Text style={s.valueSmall}>Standard FastTrack price {formatCents(pricing.base,pricing.currency)} · save {formatCents(pricing.discount,pricing.currency)} on each eligible application.</Text></View>:null}
 
    <View style={s.list}>{plus.map(x=><View key={x.id} style={s.row}><Text style={s.check}>✓</Text><View style={s.copy}><Text style={s.rowTitle}>{x.title}</Text><Text style={s.rowBody}>{x.description}</Text></View></View>)}</View>
 
@@ -61,7 +56,7 @@ export default function Plus(){
      <Text style={s.ctaText}>{provider.configured?'SUBSCRIBE TO FAIRPATH+':'SUBSCRIBE · NOT CONNECTED YET'}</Text>
     </Pressable>
     <Pressable accessibilityRole="button" style={s.restore} onPress={()=>void restore()}><Text style={s.restoreText}>RESTORE PURCHASES</Text></Pressable>
-    <Text style={s.note}>{provider.configured?'You choose whether to subscribe. Nothing is charged until you confirm in the store.':'Store subscriptions are not connected in this build, so this cannot charge you. Your account keeps working on the free plan.'}</Text>
+    <Text style={s.note}>{provider.configured?'You choose whether to subscribe. Nothing is charged until you confirm in the store.':FAIRPATH_PLUS_STORE_NOTE+' Your account keeps working on the free plan.'}</Text>
    </>:null}
    {notice?<Text style={s.notice}>{notice}</Text>:null}
 

@@ -75,7 +75,7 @@ export default function HousingApplication(){
   if(!item)return;
   notify(
    'Delete draft application?',
-   'This permanently deletes this unfinished draft. You can start a new Standard or FastTrack application for this home afterward.',
+   'This permanently deletes this unfinished draft. You can start a new application for this home afterward.',
    [
     {text:'Keep draft',style:'cancel'},
     {text:'Delete draft',style:'destructive',onPress:async()=>{
@@ -121,7 +121,7 @@ export default function HousingApplication(){
     <View style={s.progressHead}><Text style={s.progressTitle}>APPLICATION PROGRESS</Text><Text style={s.progressPct}>{progress}%</Text></View>
     <View style={s.track}><View style={[s.fill,{width:(progress+'%') as any}]}/></View>
     <View style={s.stepList}>{FORM_STEPS.map((label,index)=>{const n=index+1;const complete=n<item.current_step;const current=n===item.current_step;return <View key={label} style={s.stepRow}><View style={[s.stepDot,complete&&s.stepDotDone,current&&s.stepDotCurrent]}>{complete?<Lucide name="check" color={C.black} size={9}/>:null}</View><Text style={[s.stepText,(complete||current)&&s.stepTextActive]}>{n}. {label}</Text>{current?<Text style={s.current}>CURRENT</Text>:null}</View>})}</View>
-    <Text style={s.draftCopy}>{fast?'FastTrack is using available FairPath profile information where possible. Missing fields still have to be completed before submission.':'Your Standard application is saved as a draft. Continue where you left off.'}</Text>
+    <Text style={s.draftCopy}>{fast?'This is a legacy FastTrack draft from an older flow. Continue where you left off or withdraw and start fresh.':'Your application is saved as a draft. Continue where you left off.'}</Text>
    </View>:null}
 
    {!draft?<StatusTimeline status={item.status} events={events}/>:null}

@@ -98,7 +98,12 @@ export function describePlus(status: PlusStatus): PlusView {
       showSubscribe: true,
     };
   }
-  return { tone: 'none', headline: 'FairPath is free to use', detail: 'FairPath+ adds AI tools, more Marketplace claims and FastTrack savings.', showSubscribe: true };
+  return {
+    tone: 'none',
+    headline: 'FairPath is free to use',
+    detail: 'FairPath+ adds more Marketplace claims. Signal AI uses credits; Plus is meant to include more when billing connects.',
+    showSubscribe: true,
+  };
 }
 
 export type PlusFeature =

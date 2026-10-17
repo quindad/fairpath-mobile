@@ -11,8 +11,10 @@ const read = (p) => fs.readFileSync(p, 'utf8').replace(/\r\n/g, '\n');
 
 // ---------- intents: every starter suggestion reaches the intended workflow ----------
 const expect = {
+  'What should I focus on this week?': 'next_steps',
   'I need somewhere to stay tonight': 'need_shelter', 'Help me finish my profile': 'finish_profile', 'Review my credit report': 'credit_review', 'Why did you flag this account?': 'credit_why_flagged',
   'Build my dispute letter': 'credit_build_dispute', 'Can I clear this record?': 'relief_can_i_clear', 'When might I become eligible?': 'relief_when_eligible', 'What paperwork do I need?': 'relief_paperwork', 'Show my next steps': 'next_steps',
+  'Help me explain an employment gap on my resume': 'create_resume',
 };
 for (const s of SUGGESTIONS) check(matchIntent(s).intent?.id === expect[s], `suggestion "${s}" -> ${matchIntent(s).intent?.id}, expected ${expect[s]}`);
 check(matchIntent('What do I need for this housing program?').intent?.id === 'housing_requirements', 'housing program requirements');

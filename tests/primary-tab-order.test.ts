@@ -1,4 +1,4 @@
-// Approved primary tab order is Home, Explore, My Path, AI, Profile.
+// Approved primary tab order is Home, Explore, My Path, Signal, Profile.
 // ProductChrome previously rendered AI before My Path. This reads the BottomNavBar items
 // literal so a reorder fails without mounting React Native.
 import test from 'node:test';
@@ -9,11 +9,11 @@ const APPROVED: readonly (readonly [string, string])[] = [
   ['Home', '/home'],
   ['Explore', '/explore'],
   ['My Path', '/my-path'],
-  ['AI', '/fairpath-ai'],
+  ['Signal', '/fairpath-ai'],
   ['Profile', '/me'],
 ];
 
-test('primary tabs are Home, Explore, My Path, AI, Profile', () => {
+test('primary tabs are Home, Explore, My Path, Signal, Profile', () => {
   const src = readFileSync('src/components/ProductChrome.tsx', 'utf8');
   const match = src.match(/const items:[^=]+=\[([\s\S]*?)\];/);
   assert.ok(match, 'BottomNavBar items array not found');

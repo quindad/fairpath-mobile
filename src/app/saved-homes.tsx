@@ -21,7 +21,7 @@ export default function SavedHomes(){
     const photo=h.housing_media?.filter(m=>m.media_type==='photo').sort((a,b)=>a.sort_order-b.sort_order)[0]?.url??'';
     return <Pressable accessibilityRole="button" key={h.id} style={s.card} onPress={()=>router.push(('/housing/'+h.id) as never)}>
      <View style={s.media}>{photo?<Image source={{uri:photo}} style={s.photo}/>:<View style={s.noPhoto}><Lucide name="image-off" color={C.mutedStrong} size={22}/><Text style={s.noPhotoText}>NO PHOTO</Text></View>}<Pressable accessibilityRole="button" style={s.remove} accessibilityLabel="Remove saved home" onPress={e=>{e.stopPropagation?.();void remove(h.id)}}><Lucide name="bookmark-x" color={C.white} size={14}/></Pressable></View>
-     <View style={s.top}><Text style={s.price}>{'$'+Number(h.rent_monthly).toLocaleString()}<Text style={s.month}> / mo</Text></Text>{h.fasttrack_enabled?<InlineBadge tone="lime">FASTTRACK</InlineBadge>:null}</View>
+     <View style={s.top}><Text style={s.price}>{'$'+Number(h.rent_monthly).toLocaleString()}<Text style={s.month}> / mo</Text></Text></View>
      <Text style={s.title}>{h.title}</Text>
      <Text style={s.meta}>{[h.bedrooms!=null?h.bedrooms+' bd':null,h.bathrooms!=null?h.bathrooms+' ba':null,h.square_feet?h.square_feet.toLocaleString()+' sq ft':null].filter(Boolean).join(' · ')}</Text>
      <Text style={s.location}>{h.city}, {h.state}</Text>

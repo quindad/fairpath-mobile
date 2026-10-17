@@ -25,7 +25,7 @@ const PATH_LINKS: { title: string; body: (s: MemberSummary) => string; route: st
 const ACTIVITY_LINKS: { title: string; body: string; route: string }[] = [
   { title: 'Job applications', body: 'Track your FairPath job applications', route: '/job-applications' },
   { title: 'Saved jobs', body: 'Jobs you bookmarked for later', route: '/saved-jobs' },
-  { title: 'Housing applications', body: 'Track standard and FastTrack applications', route: '/housing-applications' },
+  { title: 'Housing applications', body: 'Track drafts and submitted applications', route: '/housing-applications' },
   { title: 'Saved homes', body: 'Your saved FairPath housing', route: '/saved-homes' },
   { title: 'Saved housing searches', body: 'Rerun housing searches with your filters', route: '/saved-housing-searches' },
   { title: 'Housing activity', body: 'Tour requests and property questions', route: '/housing-activity' },

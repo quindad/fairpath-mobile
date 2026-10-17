@@ -4,6 +4,7 @@ import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { PageHeader, ScreenFrame, SectionTitle } from '@/components/ProductChrome';
 import { BodyText, EmptyState, ListRow, Panel, PrimaryButton, SecondaryButton, StatusLine, TextButton } from '@/components/ui-kit';
 import { FairPathLayout as L } from '@/constants/fairpath';
+import { RESUME_PRACTICAL_HELP } from '@/core/credit/credit-practical-help';
 import { deleteResume, duplicateResume, loadResumes, resumeErrorMessage, type Resume } from '@/core/resume/resume-service';
 import { useFairPathTheme } from '@/core/theme/ThemeProvider';
 import { notify } from '@/core/ui/notify';
@@ -38,15 +39,37 @@ export default function ResumeStudio() {
 
   return (
     <ScreenFrame>
-      <PageHeader eyebrow="FAIRPATH" title="Resume Studio" backTo="/me" />
+      <PageHeader eyebrow="FAIRPATH · RESUME STUDIO" title="Build your resume" backTo="/me" />
       <ScrollView contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40, paddingTop: 8 }}>
-        <Panel><BodyText muted>Build a clean, ATS-friendly resume. You can start blank or import your Opportunity Profile as a starting point — importing never changes your profile, and editing here never changes it either.</BodyText></Panel>
+        <Panel tone="accent">
+          <BodyText strong>Free for everyone</BodyText>
+          <BodyText muted>Build a clean, ATS-friendly resume. Import your Opportunity Profile as a starting point — importing never changes your profile, and editing here never changes it either.</BodyText>
+        </Panel>
+
+        <View style={{ marginTop: 16 }}><SectionTitle>SIGNAL · AI HELP</SectionTitle></View>
+        <Panel>
+          <BodyText muted>Signal can strengthen bullets you wrote, help phrase employment gaps honestly, or point you to fair-chance job search — it never invents jobs or credentials.</BodyText>
+          <SecondaryButton label="HELP WITH AN EMPLOYMENT GAP" onPress={() => router.push('/fairpath-ai?q=' + encodeURIComponent('Help me explain an employment gap on my resume') as never)} />
+          <SecondaryButton label="PRACTICE FOR AN INTERVIEW" onPress={() => router.push('/fairpath-ai?q=' + encodeURIComponent('Help me prepare for a job interview') as never)} />
+          <SecondaryButton label="OPEN SIGNAL ASSISTANT" onPress={() => router.push('/fairpath-ai' as never)} />
+        </Panel>
+
+        <View style={{ marginTop: 16 }}><SectionTitle>TIPS</SectionTitle></View>
+        {RESUME_PRACTICAL_HELP.map((card) => (
+          <Panel key={card.id}>
+            <BodyText strong>{card.title}</BodyText>
+            <BodyText muted>{card.body}</BodyText>
+            {card.route ? <SecondaryButton label={card.route.startsWith('/') ? 'OPEN IN FAIRPATH' : 'LEARN MORE'} onPress={() => router.push(card.route as never)} /> : null}
+            {card.signalPrompt ? <SecondaryButton label="ASK SIGNAL" onPress={() => router.push('/fairpath-ai?q=' + encodeURIComponent(card.signalPrompt!) as never)} /> : null}
+          </Panel>
+        ))}
+
         {!resumes && !error ? <ActivityIndicator color={tokens.accentText} style={{ marginTop: 28 }} /> : null}
         {error ? <View><StatusLine tone="error">{error}</StatusLine><SecondaryButton label="TRY AGAIN" onPress={() => void load()} /></View> : null}
         {resumes ? (
           <>
-            <PrimaryButton label="CREATE A RESUME" onPress={() => router.push('/resume-studio/new' as never)} busy={busy} />
             <View style={{ marginTop: 18 }}><SectionTitle>YOUR RESUMES</SectionTitle></View>
+            <PrimaryButton label="CREATE A RESUME" onPress={() => router.push('/resume-studio/new' as never)} busy={busy} />
             {resumes.length === 0 ? <EmptyState title="No resumes yet" body="Create your first resume to get started." /> : null}
             {resumes.map((r) => (
               <ListRow key={r.id} title={r.title} body={[r.target_role, 'Updated ' + new Date(r.updated_at).toLocaleDateString()].filter(Boolean).join(' · ')} onPress={() => router.push(('/resume-studio/' + r.id) as never)}

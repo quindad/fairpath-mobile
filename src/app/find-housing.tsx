@@ -263,7 +263,6 @@ export default function Housing(){
 
  const quickChips=<View style={s.filtersStrip}>
   <View style={s.filterCell}><SharpChip label="2+ beds" active={filters.beds==='2+'} onPress={()=>patchFilters({beds:filters.beds==='2+'?'ANY':'2+'})}/></View>
-  <View style={s.filterCell}><SharpChip label="FastTrack" active={filters.fastTrack} onPress={()=>patchFilters({fastTrack:!filters.fastTrack})}/></View>
   <View style={s.filterCell}><SharpChip label="Pets OK" active={filters.pets} onPress={()=>patchFilters({pets:!filters.pets})}/></View>
   <View style={s.filterCell}><SharpChip label="Felony Friendly" active={filters.felonyFriendly} onPress={()=>patchFilters({felonyFriendly:!filters.felonyFriendly})}/></View>
   <View style={s.filterCell}><SharpChip label="Veteran Friendly" active={filters.veteranFriendly} onPress={()=>patchFilters({veteranFriendly:!filters.veteranFriendly})}/></View>
@@ -291,7 +290,7 @@ export default function Housing(){
     <Text style={s.homeTitle}>{h.title}</Text>
     <Text style={s.meta}>{[h.bedrooms!=null?(Number(h.bedrooms)===0?'Studio':h.bedrooms+' bd'):null,h.bathrooms!=null?h.bathrooms+' ba':null,h.square_feet?h.square_feet.toLocaleString()+' sq ft':null].filter(Boolean).join(' · ')}</Text>
     <View style={s.locationRow}><Lucide name="map-pin" color={C.muted} size={12}/><Text style={s.location}>{[h.city,h.state,h.postal_code].filter(Boolean).join(', ')}{h.distance_miles!=null?' · '+(h.distance_miles<10?h.distance_miles.toFixed(1):Math.round(h.distance_miles))+' mi':''}</Text></View>
-    <View style={s.badges}>{h.fasttrack_enabled?<InlineBadge tone="lime">FASTTRACK AVAILABLE</InlineBadge>:null}{h.virtual_tour_url?<InlineBadge tone="lime">3D TOUR</InlineBadge>:null}<InlineBadge>{h.property_type.toUpperCase()}</InlineBadge></View>
+    <View style={s.badges}>{h.virtual_tour_url?<InlineBadge tone="lime">3D TOUR</InlineBadge>:null}<InlineBadge>{h.property_type.toUpperCase()}</InlineBadge></View>
     <View style={s.footer}><View><Text style={s.sourceLabel}>SOURCE</Text><Text style={s.source}>{h.source_label||'FairPath'}</Text></View><View style={s.viewRow}><Text style={s.viewText}>VIEW HOME</Text><Lucide name="arrow-right" color={C.lime} size={13}/></View></View>
    </View>
   </Pressable>;
@@ -351,7 +350,6 @@ export default function Housing(){
 
     <Text style={s.groupLabel}>FAIRPATH & ACCESS</Text>
     <View style={s.wrapRow}>
-     <SharpChip label="FastTrack" active={draft.filters.fastTrack} onPress={()=>patchDraft({fastTrack:!draft.filters.fastTrack})}/>
      <SharpChip label="Pets allowed" active={draft.filters.pets} onPress={()=>patchDraft({pets:!draft.filters.pets})}/>
      <SharpChip label="Accessible" active={draft.filters.accessible} onPress={()=>patchDraft({accessible:!draft.filters.accessible})}/>
      <SharpChip label="Felony Friendly" active={draft.filters.felonyFriendly} onPress={()=>patchDraft({felonyFriendly:!draft.filters.felonyFriendly})}/>

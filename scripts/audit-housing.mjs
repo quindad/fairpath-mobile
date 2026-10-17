@@ -57,7 +57,10 @@ if(!service.includes("supabase.rpc('submit_housing_application'"))failures.push(
 if(!service.includes("from('housing_application_documents')"))failures.push('Housing documents service is missing.');
 if(!notifications.includes("from('user_notifications')"))failures.push('Live notification service is missing.');
 if(!apply.includes('HousingApplicationDocuments'))failures.push('Application review does not expose document manager.');
-if(!apply.includes('loadFastTrackQuote'))failures.push('FastTrack pricing contract is not surfaced in application review.');
+const housingProduct=read('src/core/housing/housing-product.ts');
+const fasttrackRetired=/HOUSING_FASTTRACK_MEMBER_ENABLED\s*=\s*false/.test(housingProduct);
+if(!fasttrackRetired&&!apply.includes('loadFastTrackQuote'))failures.push('FastTrack pricing contract is not surfaced in application review.');
+if(fasttrackRetired&&!housingProduct.includes('HOUSING_FASTTRACK_MEMBER_ENABLED'))failures.push('housing-product must define HOUSING_FASTTRACK_MEMBER_ENABLED.');
 
 for(const [name,src] of [['find-housing',browse],['housing-detail',detail],['saved-homes',saved]]){
  if(src.includes('@/core/demo/demo-media')||src.includes('DEMO GALLERY'))failures.push(name+' still contains demo-media fallback.');
@@ -159,7 +162,9 @@ if(!/onOpen=\{onOpen\}/.test(read('src/components/HousingMap.web.tsx')))failures
  if(!/optional\?'OPTIONAL':'REQUIRED'/.test(applySrc)||!/FairPathDatePicker/.test(applySrc)||!/formatUsPhone/.test(applySrc))failures.push('Required fields must be clearly marked, with date pickers and phone formatting.');
  if(!/appId&&listingId/.test(applySrc)&&!/router\.replace\(\('\/housing-application\/'\+appId\+'\?submitted=1'\)/.test(applySrc))failures.push('A successful submit must replace to the application workspace with a success state.');
  // FastTrack: honest about payment
- if(!/not collecting FastTrack payment/.test(applySrc)||!/PAYMENTS ARE NOT CONNECTED/.test(read('src/app/fasttrack-checkout/[id].tsx')))failures.push('FastTrack must state honestly that payment is not connected/collected.');
+ if(fasttrackRetired){
+  if(!/no longer offered/i.test(read('src/app/fasttrack-checkout/[id].tsx')))failures.push('Retired FastTrack checkout must be honest that the product is gone.');
+ }else if(!/not collecting FastTrack payment/.test(applySrc)||!/PAYMENTS ARE NOT CONNECTED/.test(read('src/app/fasttrack-checkout/[id].tsx')))failures.push('FastTrack must state honestly that payment is not connected/collected.');
  if(/provider_payment_id|stripe|paymentIntent/i.test(allSrc))failures.push('Housing must not pretend to process payments.');
  // workspace
  const ws=read('src/app/housing-application/[id].tsx');

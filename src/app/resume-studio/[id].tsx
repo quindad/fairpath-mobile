@@ -121,6 +121,7 @@ export default function ResumeEditor() {
 
         <View style={{ marginTop: 18 }}><SectionTitle>SUMMARY</SectionTitle></View>
         <Field label="PROFESSIONAL SUMMARY" value={content.summary} onChangeText={(v) => touch(setContent)({ ...content, summary: v })} multiline maxLength={800} optional />
+        <SecondaryButton label="ASK SIGNAL ABOUT GAPS OR SUMMARY" onPress={() => router.push('/fairpath-ai?q=' + encodeURIComponent('Help me write a honest resume summary and explain employment gaps') as never)} />
 
         <View style={{ marginTop: 18 }}><SectionTitle>EXPERIENCE</SectionTitle></View>
         {content.experience.map((e, i) => (

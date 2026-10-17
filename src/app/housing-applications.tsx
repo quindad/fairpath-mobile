@@ -33,7 +33,7 @@ function Card({item:a}:{item:MyHousingApplication}){
  const draft=a.status==='started';
  const progress=draft?Math.max(0,Math.min(100,Math.round((Math.max(1,a.current_step)-1)/4*100))):100;
  return <Pressable accessibilityRole="button" style={s.card} onPress={()=>router.push(('/housing-application/'+a.id) as never)}>
-  <View style={s.top}><InlineBadge tone={a.application_type==='fasttrack'?'lime':undefined}>{a.application_type==='fasttrack'?'FASTTRACK':'STANDARD'}</InlineBadge><Text style={s.status}>{LABEL[a.status]??a.status.toUpperCase()}</Text></View>
+  <View style={s.top}><InlineBadge>{a.application_type==='fasttrack'?'LEGACY FASTTRACK':'APPLICATION'}</InlineBadge><Text style={s.status}>{LABEL[a.status]??a.status.toUpperCase()}</Text></View>
   <Text style={s.title}>{a.listing?.title??'Housing application'}</Text>
   {a.listing?<><Text style={s.price}>{'$'+Number(a.listing.rent_monthly).toLocaleString()+' / month'}</Text><Text style={s.location}>{a.listing.city}, {a.listing.state}</Text></>:null}
   {draft?<><View style={s.progressHead}><Text style={s.progressLabel}>APPLICATION PROGRESS</Text><Text style={s.progressPct}>{progress}%</Text></View><View style={s.track}><View style={[s.fill,{width:(progress+'%') as any}]}/></View></>:null}
@@ -41,7 +41,7 @@ function Card({item:a}:{item:MyHousingApplication}){
   <View style={s.openRow}><Text style={s.open}>{draft?'CONTINUE APPLICATION':'VIEW STATUS'}</Text><Lucide name="arrow-right" color={C.lime} size={13}/></View>
  </Pressable>;
 }
-function Empty(){return <View style={s.empty}><Text style={s.emptyTitle}>NO HOUSING APPLICATIONS</Text><Text style={s.emptyBody}>Start an application from a home. Standard and FastTrack drafts both appear here.</Text><Pressable accessibilityRole="button" style={s.action} onPress={()=>router.push('/find-housing' as never)}><Text style={s.actionText}>FIND HOUSING</Text></Pressable></View>}
+function Empty(){return <View style={s.empty}><Text style={s.emptyTitle}>NO HOUSING APPLICATIONS</Text><Text style={s.emptyBody}>Start an application from any listing. Drafts and submitted applications appear here.</Text><Pressable accessibilityRole="button" style={s.action} onPress={()=>router.push('/find-housing' as never)}><Text style={s.actionText}>FIND HOUSING</Text></Pressable></View>}
 function State({text}:{text:string}){return <View style={s.state}><Text style={s.stateText}>{text}</Text></View>}
 
 const s=StyleSheet.create({

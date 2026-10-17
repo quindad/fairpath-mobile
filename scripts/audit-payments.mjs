@@ -25,11 +25,18 @@ const svc = read('src/core/payments/payments-service.ts');
 check(/invoke\('create-fasttrack-payment', \{ body: \{ application_id: applicationId \} \}\)/.test(svc), 'The client may send only the application id to the payment function.');
 check(!/amount(_cents)?\s*:\s*[a-zA-Z]/.test(svc.split('prepareFastTrackPayment')[1]?.split('export type SettlementResult')[0] ?? ''), 'The client must not send an amount.');
 check(/waitForPaymentSettlement/.test(svc) && /from\('payment_transactions'\)\.select\('status'\)/.test(svc), 'Settlement must be read from the server-recorded transaction.');
+const housingProduct = read('src/core/housing/housing-product.ts');
+const fasttrackRetired = /HOUSING_FASTTRACK_MEMBER_ENABLED\s*=\s*false/.test(housingProduct);
 const checkout = read('src/app/fasttrack-checkout/[id].tsx');
-check(/waitForPaymentSettlement/.test(checkout) && /Payment confirmed\./.test(checkout), 'Checkout must wait for server confirmation.');
-check(!/setQuote\(\s*\{[^}]*status:\s*'paid'/.test(checkout) && !/\.status\s*=\s*'paid'/.test(checkout), 'The app must never mark an order paid because the sheet closed.');
-check(/does not approve your application/.test(checkout), 'Checkout must state that payment is not approval.');
-check(/quote\.amount_due_cents/.test(checkout) && /loadFastTrackQuote/.test(checkout), 'Displayed price must come from the server quote.');
+if (fasttrackRetired) {
+  check(/no longer offered/i.test(checkout), 'Retired FastTrack checkout must say the product is no longer offered.');
+  check(/PAYMENTS ARE NOT CONNECTED/.test(checkout), 'Retired checkout must state payments are not connected.');
+} else {
+  check(/waitForPaymentSettlement/.test(checkout) && /Payment confirmed\./.test(checkout), 'Checkout must wait for server confirmation.');
+  check(!/setQuote\(\s*\{[^}]*status:\s*'paid'/.test(checkout) && !/\.status\s*=\s*'paid'/.test(checkout), 'The app must never mark an order paid because the sheet closed.');
+  check(/does not approve your application/.test(checkout), 'Checkout must state that payment is not approval.');
+  check(/quote\.amount_due_cents/.test(checkout) && /loadFastTrackQuote/.test(checkout), 'Displayed price must come from the server quote.');
+}
 const sheet = read('src/core/payments/payment-sheet.native.ts');
 check(/NOT proof of payment|not proof of payment/i.test(sheet), 'The native sheet wrapper must document that completion is not proof of payment.');
 check(/applePay:\s*Platform\.OS === 'ios' && merchantId/.test(sheet) && /googlePay:\s*googlePay/.test(sheet), 'Apple Pay / Google Pay must be configured only when their merchant setup exists.');

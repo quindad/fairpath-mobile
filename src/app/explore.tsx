@@ -43,6 +43,8 @@ const SECTIONS: { title: string; items: Destination[] }[] = [
       { id: 'resources', title: 'Resources', body: 'Emergency help and local services. Free, no sign-up.', icon: 'life-buoy', route: '/resources', status: 'live' },
       { id: 'record-relief', title: 'Record Relief', body: 'Check possible relief paths and filing steps.', icon: 'scale', route: '/record-relief', status: 'live' },
       { id: 'market', title: 'Free Marketplace', body: 'Free goods, claimed with your monthly allowance.', icon: 'store', route: '/marketplace', status: 'live' },
+      { id: 'signal', title: 'Signal', body: 'Assistant plus optional AI help on jobs, housing, credit, and next steps.', icon: 'bot', route: '/fairpath-ai', status: 'live' },
+      { id: 'plus', title: 'FairPath+', body: 'More Marketplace claims and member Signal credits. Core tools stay free.', icon: 'crown', route: '/plus', status: 'live' },
     ],
   },
 ];

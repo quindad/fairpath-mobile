@@ -16,7 +16,7 @@ export function HousingMapCard({home,onOpen,onClose}:{home:HousingCard;onOpen:(h
    <Pressable accessibilityRole="button" accessibilityLabel="Close home preview" hitSlop={10} style={s.close} onPress={onClose}><Lucide name="x" color={C.mutedStrong} size={15}/></Pressable>
   </View>
   {facts?<Text style={s.meta}>{facts}</Text>:null}
-  <Text style={s.meta} numberOfLines={1}>{place}{home.distance_miles!=null?' · '+(home.distance_miles<10?home.distance_miles.toFixed(1):Math.round(home.distance_miles))+' mi':''}{home.fasttrack_enabled?' · FastTrack':''}</Text>
+  <Text style={s.meta} numberOfLines={1}>{place}{home.distance_miles!=null?' · '+(home.distance_miles<10?home.distance_miles.toFixed(1):Math.round(home.distance_miles))+' mi':''}</Text>
   <Pressable accessibilityRole="button" style={s.open} onPress={()=>onOpen(home)}>
    <Text style={s.openText}>OPEN HOME DETAILS</Text><Lucide name="arrow-right" color={C.black} size={14}/>
   </Pressable>
