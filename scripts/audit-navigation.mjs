@@ -14,6 +14,7 @@ const failures=[];
 const chrome=fs.readFileSync('src/components/ProductChrome.tsx','utf8').replace(/\r\n/g,'\n');
 if(!/const NavProvided=createContext/.test(chrome)||!/useContext\(NavProvided\)/.test(chrome))failures.push('ProductChrome must keep the NavProvided guard so a nested <BottomNav/> renders nothing.');
 if((chrome.match(/<BottomNavBar\/>/g)||[]).length!==2)failures.push('ProductChrome must mount <BottomNavBar/> in exactly two places: ScreenFrame and the guarded BottomNav export.');
+if(!/accessibilityRole="tab"/.test(chrome)||!/accessibilityState=\{\{selected:active\}\}/.test(chrome))failures.push('Bottom navigation items must expose tab roles and their selected state to assistive technology.');
 const usesNav=files.filter(f=>/<BottomNav\b/.test(fs.readFileSync(f,'utf8'))).map(f=>path.relative(process.cwd(),f));
 if(usesNav.length)failures.push('Screens must not render <BottomNav/> themselves (ScreenFrame does): '+usesNav.join(', '));
 const otherFrames=files.filter(f=>{const src=fs.readFileSync(f,'utf8');return /<ScreenFrame/.test(src)&&/SafeAreaView/.test(src)}).map(f=>path.relative(process.cwd(),f));

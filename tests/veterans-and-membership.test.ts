@@ -72,11 +72,11 @@ test('exactly six armed-forces branches with official names', () => {
   );
 });
 
-test('no branch may use insignia, and every branch accent is pending review', () => {
+test('no branch may use insignia; accent color is opt-in and never the official insignia', () => {
   for (const b of BRANCHES) {
     assert.equal(b.insigniaAllowed, false, b.id);
-    assert.equal(b.accentStatus, 'pending_review', b.id);
-    assert.equal(b.accentHex, '#A8F32C', b.id);
+    assert.equal(b.accentStatus, 'available_opt_in', b.id);
+    assert.ok(/^#[0-9A-Fa-f]{6}$/.test(b.accentHex), b.id);
   }
 });
 
@@ -124,6 +124,6 @@ test('benefit determinations are never allowed in the Veterans pathway', () => {
   assert.equal(benefits.officialLinksOnly, true);
 });
 
-test('no Veterans section is usable while the pathway is in development', () => {
-  for (const s of VETERAN_SECTIONS) assert.equal(sectionUsable(s), false, s.id);
+test('every Veterans section is live and usable', () => {
+  for (const s of VETERAN_SECTIONS) assert.equal(sectionUsable(s), true, s.id);
 });

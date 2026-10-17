@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { FairPathColors as C, FairPathFonts as F } from '@/constants/fairpath';
 import type { Job } from '@/core/opportunities/opportunity-service';
 import { JobMapCard, type MapJob } from '@/components/JobMapCard';
+import { mappableOnly } from '@/core/location/map-data';
 
 function safeJson(value:unknown){
  return JSON.stringify(value).replace(/</g,'\\u003c');
@@ -12,7 +13,7 @@ type Props={jobs:MapJob[];onOpenJob?:(job:Job)=>void;compact?:boolean;fill?:bool
 
 /** Web map (Leaflet in an iframe). Pin clicks are posted to the page so the same selection card as native is used. */
 export function JobMap({jobs,onOpenJob,compact=false,fill=false}:Props){
- const mapped=useMemo(()=>jobs.filter(j=>j.latitude!=null&&j.longitude!=null),[jobs]);
+ const mapped=useMemo(()=>mappableOnly(jobs),[jobs]);
  const [selectedId,setSelectedId]=useState<string|null>(null);
  const selected=mapped.find(j=>j.id===selectedId)??null;
  const key=mapped.map(j=>j.id).join(',');

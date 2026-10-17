@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import MapView, { Marker } from 'react-native-maps';
-import { StyleSheet, Text, View } from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import Constants from 'expo-constants';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { FairPathColors as C, FairPathFonts as F } from '@/constants/fairpath';
 import type { Job } from '@/core/opportunities/opportunity-service';
 import { JobMapCard, type MapJob } from '@/components/JobMapCard';
+import { mappableOnly } from '@/core/location/map-data';
 
 type Props={jobs:MapJob[];onOpenJob?:(job:Job)=>void;compact?:boolean;fill?:boolean};
 
@@ -12,7 +14,7 @@ type Props={jobs:MapJob[];onOpenJob?:(job:Job)=>void;compact?:boolean;fill?:bool
  * Pins are selectable; the selected pin shows a card with an OPEN JOB DETAILS action.
  */
 export function JobMap({jobs,onOpenJob,compact=false,fill=false}:Props){
- const mapped=useMemo(()=>jobs.filter(j=>j.latitude!=null&&j.longitude!=null),[jobs]);
+ const mapped=useMemo(()=>mappableOnly(jobs),[jobs]);
  const ref=useRef<MapView>(null);
  const [selectedId,setSelectedId]=useState<string|null>(null);
  const selected=mapped.find(j=>j.id===selectedId)??null;
@@ -33,6 +35,7 @@ export function JobMap({jobs,onOpenJob,compact=false,fill=false}:Props){
  return <View style={[s.wrap,compact&&s.wrapCompact,fill&&s.wrapFill]}>
   <MapView
    ref={ref}
+   provider={Platform.OS==='android'||Constants.expoConfig?.extra?.googleMapsIosEnabled?PROVIDER_GOOGLE:undefined}
    style={StyleSheet.absoluteFill}
    scrollEnabled={!compact}
    zoomEnabled={!compact}

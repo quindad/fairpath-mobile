@@ -70,27 +70,33 @@ export default function Marketplace(){
     <Text style={s.heroTitle}>Good stuff. Free. Local.</Text>
     <Text style={s.heroBody}>Claim useful items from people and organizations in your community. FairPath keeps claimant selection anonymous, protects private pickup details, and verifies pickup.</Text>
     <View style={s.heroActions}>
-     <Pressable style={s.primarySmall} onPress={()=>router.push('/marketplace-list-item' as never)}><Lucide name="plus" color={C.black} size={14}/><Text style={s.primarySmallText}>LIST A FREE ITEM</Text></Pressable>
-     <Pressable style={s.outlineSmall} onPress={()=>router.push('/marketplace-claims' as never)}><Text style={s.outlineSmallText}>MY CLAIMS</Text></Pressable>
+     <Pressable accessibilityRole="button" accessibilityLabel="List a free item" style={s.primarySmall} onPress={()=>router.push('/marketplace-list-item' as never)}><Lucide name="plus" color={C.black} size={14}/><Text style={s.primarySmallText}>LIST A FREE ITEM</Text></Pressable>
+     <Pressable accessibilityRole="button" accessibilityLabel="My claims" style={s.outlineSmall} onPress={()=>router.push('/marketplace-claims' as never)}><Text style={s.outlineSmallText}>MY CLAIMS</Text></Pressable>
     </View>
    </View>
+
+   <Pressable accessibilityRole="button" accessibilityLabel="Food Rescue" style={s.foodRescueBanner} onPress={()=>router.push('/food-rescue' as never)}>
+    <Lucide name="utensils" color={C.lime} size={18}/>
+    <View style={{flex:1}}><Text style={s.foodRescueTitle}>FOOD RESCUE</Text><Text style={s.foodRescueBody}>Real surplus food, free, closing soon — sorted by pickup window.</Text></View>
+    <Lucide name="arrow-right" color={C.lime} size={16}/>
+   </Pressable>
 
    {quota?<View style={s.quota}>
     <View><Text style={s.quotaLabel}>{quota.plan==='fairpath_plus'?'FAIRPATH+ MARKETPLACE':'FREE PLAN MARKETPLACE'}</Text><Text style={s.quotaTitle}>{quota.remaining} claim{quota.remaining===1?'':'s'} left this month</Text></View>
     <View style={s.quotaCount}><Text style={s.quotaBig}>{quota.used}</Text><Text style={s.quotaOf}> / {quota.monthly_limit}</Text></View>
-   </View>:<Pressable style={s.quotaGuest} onPress={()=>router.push('/plus' as never)}><Text style={s.quotaLabel}>CLAIM LIMITS</Text><Text style={s.quotaGuestText}>Free members get 1 claim/month. FairPath+ gets 7.</Text><Lucide name="arrow-right" color={C.lime} size={14}/></Pressable>}
+   </View>:<Pressable accessibilityRole="button" accessibilityLabel="Claim limits, upgrade to FairPath+" style={s.quotaGuest} onPress={()=>router.push('/plus' as never)}><Text style={s.quotaLabel}>CLAIM LIMITS</Text><Text style={s.quotaGuestText}>Free members get 1 claim/month. FairPath+ gets 7.</Text><Lucide name="arrow-right" color={C.lime} size={14}/></Pressable>}
 
    <View style={s.searchCard}>
     <View style={s.searchRow}><Lucide name="search" color={C.mutedStrong} size={15}/><TextInput value={query} onChangeText={setQuery} onSubmitEditing={()=>void run()} style={s.input} placeholder="Search furniture, electronics, kids items…" placeholderTextColor={C.muted}/></View>
     <View style={s.searchRow}><Lucide name="map-pin" color={C.mutedStrong} size={15}/><TextInput value={location} onChangeText={setLocation} onSubmitEditing={()=>void run()} style={s.input} placeholder="City, state or ZIP" placeholderTextColor={C.muted}/></View>
-    <Pressable style={s.searchBtn} onPress={()=>void run()}><Text style={s.searchBtnText}>SEARCH MARKETPLACE</Text><Lucide name="arrow-right" color={C.black} size={15}/></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel="Search Marketplace" style={s.searchBtn} onPress={()=>void run()}><Text style={s.searchBtnText}>SEARCH MARKETPLACE</Text><Lucide name="arrow-right" color={C.black} size={15}/></Pressable>
    </View>
 
    <View style={s.quickLinks}>
-    <Pressable style={s.quick} onPress={()=>router.push('/saved-marketplace' as never)}><Lucide name="bookmark" color={C.lime} size={14}/><Text style={s.quickText}>SAVED</Text></Pressable>
-    <Pressable style={s.quick} onPress={()=>router.push('/marketplace-my-listings' as never)}><Lucide name="package" color={C.lime} size={14}/><Text style={s.quickText}>MY LISTINGS</Text></Pressable>
-    <Pressable style={s.quick} onPress={()=>setSafeOnly(v=>!v)}><Lucide name="shield-check" color={safeOnly?C.black:C.lime} size={14}/><Text style={[s.quickText,safeOnly&&s.quickTextOn]}>SAFE PICKUP</Text></Pressable>
-    <Pressable style={s.quick} onPress={()=>setSort(v=>v==='newest'?'oldest':'newest')}><Lucide name="arrow-up-down" color={C.lime} size={14}/><Text style={s.quickText}>{sort==='newest'?'NEWEST':'OLDEST'}</Text></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel="Saved" style={s.quick} onPress={()=>router.push('/saved-marketplace' as never)}><Lucide name="bookmark" color={C.lime} size={14}/><Text style={s.quickText}>SAVED</Text></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel="My listings" style={s.quick} onPress={()=>router.push('/marketplace-my-listings' as never)}><Lucide name="package" color={C.lime} size={14}/><Text style={s.quickText}>MY LISTINGS</Text></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel="Safe pickup filter" accessibilityState={{selected:safeOnly}} style={s.quick} onPress={()=>setSafeOnly(v=>!v)}><Lucide name="shield-check" color={safeOnly?C.black:C.lime} size={14}/><Text style={[s.quickText,safeOnly&&s.quickTextOn]}>SAFE PICKUP</Text></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel={'Sort, currently '+(sort==='newest'?'newest':'oldest')} style={s.quick} onPress={()=>setSort(v=>v==='newest'?'oldest':'newest')}><Lucide name="arrow-up-down" color={C.lime} size={14}/><Text style={s.quickText}>{sort==='newest'?'NEWEST':'OLDEST'}</Text></Pressable>
    </View>
 
    <FilterStrip>
@@ -109,10 +115,10 @@ export default function Marketplace(){
 
    <View style={s.grid}>{visible.map(item=>{
     const photo=item.marketplace_media?.slice().sort((a,b)=>a.sort_order-b.sort_order)[0]?.url??'';
-    return <Pressable key={item.id} style={s.card} onPress={()=>router.push(('/market-item/'+item.id) as never)}>
+    return <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={item.title} style={s.card} onPress={()=>router.push(('/market-item/'+item.id) as never)}>
      <View style={s.media}>
       {photo?<Image source={{uri:photo}} style={s.photo}/>:<View style={s.noPhoto}><Lucide name="image-off" color={C.mutedStrong} size={23}/><Text style={s.noPhotoText}>NO PHOTO</Text></View>}
-      <Pressable style={[s.saveBtn,saved[item.id]&&s.saveBtnOn]} onPress={e=>{e.stopPropagation?.();void toggleSave(item)}}><Lucide name={saved[item.id]?'bookmark-check':'bookmark'} color={saved[item.id]?C.black:C.white} size={14}/></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={saved[item.id]?'Remove saved item':'Save item'} style={[s.saveBtn,saved[item.id]&&s.saveBtnOn]} onPress={e=>{e.stopPropagation?.();void toggleSave(item)}}><Lucide name={saved[item.id]?'bookmark-check':'bookmark'} color={saved[item.id]?C.black:C.white} size={14}/></Pressable>
       {item.featured?<View style={s.featured}><Text style={s.featuredText}>FEATURED</Text></View>:null}
      </View>
      <View style={s.cardBody}>
@@ -136,6 +142,7 @@ const s=StyleSheet.create({
  page:{paddingHorizontal:L.mobileGutter,paddingBottom:40},
  hero:{paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.borderStrong},heroTitle:{color:C.white,fontFamily:F.black,fontSize:27,letterSpacing:-.7},heroBody:{color:C.mutedStrong,fontSize:10,lineHeight:16,marginTop:7,maxWidth:520},
  heroActions:{flexDirection:'row',gap:8,marginTop:14},primarySmall:{height:40,backgroundColor:C.lime,paddingHorizontal:12,flexDirection:'row',gap:7,alignItems:'center'},primarySmallText:{color:C.black,fontFamily:F.extraBold,fontSize:8,letterSpacing:.7},outlineSmall:{height:40,borderWidth:1,borderColor:C.borderStrong,paddingHorizontal:12,justifyContent:'center'},outlineSmallText:{color:C.white,fontFamily:F.extraBold,fontSize:8,letterSpacing:.7},
+ foodRescueBanner:{marginTop:14,borderWidth:1,borderColor:'#526F2B',backgroundColor:'#0F150B',padding:13,flexDirection:'row',gap:10,alignItems:'center'},foodRescueTitle:{color:C.lime,fontFamily:F.extraBold,fontSize:9,letterSpacing:.8},foodRescueBody:{color:C.mutedStrong,fontSize:9,lineHeight:13,marginTop:3},
  quota:{minHeight:70,borderBottomWidth:1,borderBottomColor:C.borderStrong,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},quotaLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},quotaTitle:{color:C.white,fontFamily:F.extraBold,fontSize:15,marginTop:5},quotaCount:{flexDirection:'row',alignItems:'baseline'},quotaBig:{color:C.white,fontFamily:F.black,fontSize:27},quotaOf:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:10},quotaGuest:{minHeight:72,borderBottomWidth:1,borderBottomColor:C.borderStrong,justifyContent:'center',paddingRight:28,position:'relative'},quotaGuestText:{color:C.white,fontFamily:F.extraBold,fontSize:12,marginTop:5},
  searchCard:{paddingVertical:14,borderBottomWidth:1,borderBottomColor:C.borderStrong},searchRow:{height:46,borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#0A0C0A',flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:11,marginBottom:7},input:{flex:1,color:C.white,fontSize:11,paddingVertical:0},searchBtn:{height:46,backgroundColor:C.lime,flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:13},searchBtnText:{color:C.black,fontFamily:F.extraBold,fontSize:8,letterSpacing:.9},
  quickLinks:{flexDirection:'row',flexWrap:'wrap',gap:7,paddingVertical:12},quick:{minHeight:36,borderWidth:1,borderColor:C.borderStrong,paddingHorizontal:10,flexDirection:'row',alignItems:'center',gap:6},quickText:{color:C.white,fontFamily:F.extraBold,fontSize:7,letterSpacing:.7},quickTextOn:{color:C.black},

@@ -40,14 +40,15 @@ file 2, order does not matter beyond both depending on file 1 being applied firs
 | **Ops access** | No dedicated "ops" authenticated role exists yet in this schema (the Command Center foundation's `staff_users` table is service-role-checked, not a Postgres role). Financial and audit tables being service-role-only is correct for now; a future ops read path should go through a `security definer` function that checks `staff_users`, the same pattern `fairpath_plus_status()` uses, not a direct authenticated grant. |
 | **Financial isolation** | Confirmed: `staffing_rate_cards`, `staffing_economics`, `staffing_rate_card_templates` carry zero authenticated-role grants in either draft file. |
 
-## One finding that needs resolution before this is approved
+## Finding resolved 2026-10-14 (before any application)
 
-**`staffing_provider_state` and `staffing_screening_state`'s member-read policy exposes `provider_ref`.** The member
-should see only the small `state` enum (what `ui-contract.ts`'s `ScreeningStatus`/`OnboardingStatus` components
-render), never the opaque provider reference string. Before approval, split these into the full table (service-role
-only) plus a narrow view or column-level grant exposing `assignment_id` and `state` only to the member's own row.
-This was not caught in the first draft's review and should be fixed there, not worked around at the application
-layer, since RLS is the actual security boundary.
+**`staffing_provider_state` and `staffing_screening_state`'s member-read policy exposed `provider_ref`.** Fixed in
+file 1 directly: `authenticated` no longer has a `grant select` on either base table at all (RLS restricted which
+*rows* a member could see, but column-level exposure needed a separate fix). Two new views,
+`staffing_provider_state_member_view` and `staffing_screening_state_member_view` (`security_invoker = true`, so the
+same RLS policies still gate them row-by-row), expose `assignment_id`, `state`, `updated_at` only — never
+`provider_ref`. `service_role` keeps full base-table access either way. No client code referenced these tables yet
+(confirmed by search), so nothing shipped on the insecure shape.
 
 ## What becomes live if and when this is applied
 

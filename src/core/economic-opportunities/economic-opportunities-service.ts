@@ -88,7 +88,7 @@ export const BENEFIT_TYPE_LABELS:Record<string,string> = {
  lease_up_bonus:'Lease-up bonus', vacancy_payment:'Vacancy payment', damage_mitigation:'Damage mitigation',
  rent_loss_protection:'Rent-loss protection', training_funding:'Training funding', transportation_assistance:'Transportation assistance',
  childcare_assistance:'Childcare assistance', fee_waiver:'Fee waiver', loan:'Loan', loan_guarantee:'Loan guarantee',
- legal_relief:'Legal relief', other:'Other',
+ legal_relief:'Legal relief', scholarship:'Scholarship', fellowship:'Fellowship', other:'Other',
 };
 
 export function groupByDomain(opportunities:EconomicOpportunity[]):OpportunityDomainCount[]{

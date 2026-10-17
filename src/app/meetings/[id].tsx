@@ -6,8 +6,9 @@ import { InlineBadge, PageHeader, ScreenFrame, SectionTitle } from '@/components
 import { BodyText, Field, Panel, PrimaryButton, SecondaryButton, StatusLine, TextButton } from '@/components/ui-kit';
 import { FairPathLayout as L } from '@/constants/fairpath';
 import {
-  MEETING_TYPE_LABEL, PROVIDER_LABEL, STATUS_LABEL, deleteMeeting, loadMeeting, meetingsErrorMessage, setMeetingStatus, updateMeeting, type Meeting,
+  MEETING_TYPE_LABEL, PROVIDER_LABEL, STATUS_LABEL, canUpdateMeetingStatus, deleteMeeting, loadMeeting, meetingsErrorMessage, setMeetingStatus, updateMeeting, type Meeting,
 } from '@/core/meetings/meetings-service';
+import { prepareForMeeting } from '@/core/ai/signal';
 import { useFairPathTheme } from '@/core/theme/ThemeProvider';
 import { notify } from '@/core/ui/notify';
 
@@ -21,6 +22,11 @@ export default function MeetingDetail() {
   const [busy, setBusy] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
   const [when, setWhen] = useState('');
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [prepText, setPrepText] = useState('');
+  const [prepLoading, setPrepLoading] = useState(false);
+  const [prepRequested, setPrepRequested] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -28,13 +34,27 @@ export default function MeetingDetail() {
   }, [id]);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
+  async function askSignal() {
+    if (!id || prepLoading) return;
+    setPrepLoading(true); setPrepRequested(true);
+    try {
+      const r = await prepareForMeeting(id);
+      if (r.status === 'ok') setPrepText(r.text);
+      else if (r.status === 'out_of_credits') setPrepText('You are out of Signal credits for now. They refresh with your plan.');
+      else if (r.status === 'rate_limited') setPrepText('Signal is busy across FairPath right now. Try again shortly.');
+      else if (r.status === 'signed_out') { router.replace(('/sign-in?returnTo=' + encodeURIComponent('/meetings/' + id)) as never); return; }
+      else setPrepText(r.message);
+    } catch { setPrepText('Signal could not prepare meeting tips right now. Please try again.'); }
+    finally { setPrepLoading(false); }
+  }
+
   async function setStatus(status: 'confirmed' | 'completed' | 'cancelled' | 'no_show', reason?: string) {
     if (!id) return;
     setBusy(true);
     try { setMeeting(await setMeetingStatus(id, status, reason)); } catch (e) { notify('Could not update', meetingsErrorMessage(e)); } finally { setBusy(false); }
   }
-  function cancel() {
-    notify('Cancel this meeting?', 'You can note why below (optional). This cannot be undone.', [{ text: 'Never mind', style: 'cancel' }, { text: 'Cancel meeting', style: 'destructive', onPress: () => void setStatus('cancelled') }]);
+  function confirmCancel() {
+    notify('Cancel this meeting?', 'This cannot be undone.', [{ text: 'Never mind', style: 'cancel' }, { text: 'Cancel meeting', style: 'destructive', onPress: () => { void setStatus('cancelled', cancelReason.trim() || undefined); setCancelling(false); setCancelReason(''); } }]);
   }
   function remove() {
     if (!id) return;
@@ -54,7 +74,9 @@ export default function MeetingDetail() {
   if (error) return <ScreenFrame><PageHeader eyebrow="MEETING" title="Meeting" backTo="/meetings" alwaysBackTo /><View style={{ paddingHorizontal: L.mobileGutter }}><StatusLine tone="error">{error}</StatusLine></View></ScreenFrame>;
   if (!meeting) return <ScreenFrame><PageHeader eyebrow="MEETING" title="Meeting" backTo="/meetings" alwaysBackTo /><ActivityIndicator color={tokens.accentText} style={{ marginTop: 32 }} /></ScreenFrame>;
 
-  const upcoming = new Date(meeting.start_at).getTime() >= Date.now() && meeting.status !== 'cancelled';
+  const future = new Date(meeting.start_at).getTime() >= Date.now();
+  const upcoming = future && meeting.status !== 'cancelled';
+  const canUpdateStatus = canUpdateMeetingStatus(meeting.status);
 
   return (
     <ScreenFrame>
@@ -77,6 +99,14 @@ export default function MeetingDetail() {
 
         {upcoming ? (
           <>
+            <View style={{ marginTop: 18 }}><SectionTitle>SIGNAL</SectionTitle></View>
+            {prepRequested ? <Panel><BodyText muted>{prepLoading ? 'Signal is thinking…' : prepText}</BodyText></Panel> : null}
+            <SecondaryButton label={prepLoading ? 'ASKING SIGNAL…' : 'PREP FOR THIS MEETING WITH SIGNAL'} onPress={() => void askSignal()} disabled={prepLoading} />
+          </>
+        ) : null}
+
+        {canUpdateStatus ? (
+          <>
             <View style={{ marginTop: 18 }}><SectionTitle>UPDATE</SectionTitle></View>
             {meeting.status === 'scheduled' ? <SecondaryButton label="MARK CONFIRMED" onPress={() => void setStatus('confirmed')} disabled={busy} /> : null}
             {meeting.status === 'confirmed' ? (
@@ -85,13 +115,19 @@ export default function MeetingDetail() {
                 <SecondaryButton label="MARK NO-SHOW" onPress={() => void setStatus('no_show')} disabled={busy} />
               </View>
             ) : null}
-            {rescheduling ? (
+            {future ? (rescheduling ? (
               <>
                 <Field label="NEW DATE AND TIME (YYYY-MM-DD HH:MM)" value={when} onChangeText={setWhen} placeholder="2026-10-20 10:00" />
                 <PrimaryButton label="SAVE NEW TIME" onPress={() => void saveReschedule()} disabled={busy} />
               </>
-            ) : <TextButton label="RESCHEDULE" onPress={() => setRescheduling(true)} />}
-            <TextButton tone="danger" label="CANCEL MEETING" onPress={cancel} />
+            ) : <TextButton label="RESCHEDULE" onPress={() => setRescheduling(true)} />) : null}
+            {cancelling ? (
+              <>
+                <Field label="WHY ARE YOU CANCELLING? (OPTIONAL)" value={cancelReason} onChangeText={setCancelReason} placeholder="e.g. conflict came up" optional />
+                <PrimaryButton label="CANCEL MEETING" onPress={confirmCancel} disabled={busy} />
+                <TextButton label="NEVER MIND" onPress={() => { setCancelling(false); setCancelReason(''); }} />
+              </>
+            ) : <TextButton tone="danger" label="CANCEL MEETING" onPress={() => setCancelling(true)} />}
           </>
         ) : null}
         <TextButton tone="danger" label="DELETE" onPress={remove} />

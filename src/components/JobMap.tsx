@@ -1,12 +1,13 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { FairPathColors as C, FairPathFonts as F } from '@/constants/fairpath';
 import type { Job } from '@/core/opportunities/opportunity-service';
+import { mappableOnly } from '@/core/location/map-data';
 
 export function JobMap({jobs,onOpenJob,compact=false}:{jobs:Job[];onOpenJob?:(job:Job)=>void;compact?:boolean;fill?:boolean}){
- const located=jobs.filter(j=>j.latitude!=null&&j.longitude!=null);
+ const located=mappableOnly(jobs);
  return <View style={[s.wrap,compact&&s.compact]}>
   <View style={s.head}><Text style={s.label}>LOCATION VIEW</Text><Text style={s.count}>{located.length} LOCATED</Text></View>
-  {located.length===0?<Text style={s.empty}>Exact or approximate map coordinates are not available for these jobs.</Text>:located.slice(0,compact?1:12).map(j=><Pressable key={j.id} disabled={!onOpenJob} style={s.row} onPress={()=>onOpenJob?.(j)}>
+  {located.length===0?<Text style={s.empty}>Exact or approximate map coordinates are not available for these jobs.</Text>:located.slice(0,compact?1:12).map(j=><Pressable accessibilityRole="button" key={j.id} disabled={!onOpenJob} style={s.row} onPress={()=>onOpenJob?.(j)}>
    <View style={s.pin}/><View style={s.copy}><Text style={s.title}>{j.title}</Text><Text style={s.meta}>{j.location_text||[j.city,j.state].filter(Boolean).join(', ')||'Location'}</Text></View>{onOpenJob?<Text style={s.open}>OPEN →</Text>:null}
   </Pressable>)}
   <Text style={s.note}>Interactive geographic map rendering is being kept separate from location data so approximate coordinates are not presented as exact addresses.</Text>

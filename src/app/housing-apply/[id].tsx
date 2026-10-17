@@ -1,5 +1,5 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { FormScrollView } from '@/components/FormScrollView';
 import { notify } from '@/core/ui/notify';
@@ -24,6 +24,7 @@ import {
 import { digitsOnly, formatDateInput, formatUsPhone } from '@/core/forms/formatters';
 import { HousingApplicationDocuments } from '@/components/HousingApplicationDocuments';
 import { FairPathDatePicker } from '@/components/FairPathDatePicker';
+import { loadMyRecordStatement } from '@/core/record-relief/statement-service';
 
 const EMPTY:HousingApplicationForm={
  first_name:'',last_name:'',email:'',phone:'',date_of_birth:'',current_address:'',
@@ -59,6 +60,8 @@ export default function HousingApply(){
  const [touched,setTouched]=useState<Partial<Record<keyof HousingApplicationForm,boolean>>>({});
  const [accuracy,setAccuracy]=useState(false);
  const [submitConsent,setSubmitConsent]=useState(false);
+ const [statement,setStatement]=useState('');
+ const [includeStatement,setIncludeStatement]=useState(false);
  const [fastAck,setFastAck]=useState(false);
  const [fastQuote,setFastQuote]=useState<FastTrackQuote|null>(null);
  const [requiredDocs,setRequiredDocs]=useState<HousingApplicationDocument['document_type'][]>([]);
@@ -101,7 +104,9 @@ export default function HousingApply(){
   }
   return()=>{active=false};
  },[id,listing,modeParam,reload]); // eslint-disable-line react-hooks/exhaustive-deps
- useEffect(()=>{if(!appId||!fast)return;loadFastTrackQuote(appId).then(setFastQuote).catch(()=>setFastQuote(null))},[appId,fast]);
+ useEffect(()=>{void loadMyRecordStatement().then(setStatement).catch(()=>{})},[]);
+ const [fastQuoteError,setFastQuoteError]=useState(false);
+ useFocusEffect(useCallback(()=>{if(!appId||!fast)return;setFastQuoteError(false);loadFastTrackQuote(appId).then(setFastQuote).catch(()=>{setFastQuote(null);setFastQuoteError(true)})},[appId,fast]));
 
  const errors=useMemo(()=>validateHousingApplicationForm(form),[form]);
  const currentFields=STEP_FIELDS[step]??[];
@@ -161,6 +166,10 @@ export default function HousingApply(){
    notify('Required documents missing','Upload every document required by this property before submitting.');
    return;
   }
+  if(fast&&fastQuoteError){
+   notify('Could not confirm FastTrack status','FairPath could not check whether FastTrack payment is required. Please try again before submitting.');
+   return;
+  }
   if(fast&&fastQuote?.payment_enforced&&!['paid','waived'].includes(fastQuote.status)){
    notify('FastTrack payment required','Complete FastTrack payment before submitting this application.',[
     {text:'Not now',style:'cancel'},
@@ -176,7 +185,7 @@ export default function HousingApply(){
   submitLock.current=true;
   setSaving(true);
   try{
-   await submitHousingApplication(appId,form,{accuracy,submit:submitConsent,fasttrack_ack:fast?fastAck:undefined});
+   await submitHousingApplication(appId,form,{accuracy,submit:submitConsent,fasttrack_ack:fast?fastAck:undefined},includeStatement);
    router.replace(('/housing-application/'+appId+'?submitted=1') as never);
   }catch(e){
    const message=e instanceof Error&&e.message==='APPLICATION_INCOMPLETE'
@@ -197,7 +206,7 @@ export default function HousingApply(){
  }
 
  if(loading)return <ScreenFrame><PageHeader eyebrow="FAIRPATH HOUSING" title="Application" backTo={listingId?'/housing/'+listingId:'/housing-applications'}/><Text style={s.loading}>Loading application…</Text></ScreenFrame>;
- if(loadError)return <ScreenFrame><PageHeader eyebrow="FAIRPATH HOUSING" title="Application" backTo={listingId?'/housing/'+listingId:'/housing-applications'}/><View style={s.errorState}><Text style={s.loadError}>{loadError}</Text><Pressable style={s.retry} onPress={()=>setReload(n=>n+1)}><Text style={s.retryText}>TRY AGAIN</Text></Pressable></View></ScreenFrame>;
+ if(loadError)return <ScreenFrame><PageHeader eyebrow="FAIRPATH HOUSING" title="Application" backTo={listingId?'/housing/'+listingId:'/housing-applications'}/><View style={s.errorState}><Text style={s.loadError}>{loadError}</Text><Pressable accessibilityRole="button" style={s.retry} onPress={()=>setReload(n=>n+1)}><Text style={s.retryText}>TRY AGAIN</Text></Pressable></View></ScreenFrame>;
 
  return <ScreenFrame>
   <PageHeader eyebrow={fast?'FASTTRACK APPLICATION':'STANDARD APPLICATION'} title={title} onBack={()=>void previous()}/>
@@ -260,7 +269,7 @@ export default function HousingApply(){
     <Review label="HOUSING HISTORY" value={form.housing_history}/>
     <Review label="REFERENCES" value={form.references}/>
 
-    {allErrors.length?<Pressable style={s.errorSummary} onPress={()=>setStep(firstErrorStep(errors))}>
+    {allErrors.length?<Pressable accessibilityRole="button" style={s.errorSummary} onPress={()=>setStep(firstErrorStep(errors))}>
      <Lucide name="triangle-alert" color={C.lime} size={15}/>
      <Text style={s.errorSummaryText}>{allErrors.length} required {allErrors.length===1?'item needs':'items need'} attention. TAP TO FIX.</Text>
     </Pressable>:null}
@@ -276,6 +285,7 @@ export default function HousingApply(){
      <Text style={s.quoteBody}>FastTrack speeds up reuse and review of your information. It does not guarantee approval or replace property-specific screening.</Text>
      {fastQuote.payment_enforced?<Text style={s.quoteBody}>Payment is required before you can submit. You pay securely in checkout, and paying does not approve your application.</Text>:<Text style={s.quoteBody}>FairPath is not collecting FastTrack payment yet. You will not be charged for this application.</Text>}
     </View>:null}
+    {statement.trim()?<Consent checked={includeStatement} onPress={()=>setIncludeStatement(v=>!v)} text="Attach the private statement I wrote explaining my record to this application."/>:null}
     <Consent checked={accuracy} onPress={()=>setAccuracy(v=>!v)} text="I confirm the information in this application is accurate to the best of my knowledge."/>
     <Consent checked={submitConsent} onPress={()=>setSubmitConsent(v=>!v)} text="I want FairPath to submit this completed application into the property application workflow."/>
     {fast?<Consent checked={fastAck} onPress={()=>setFastAck(v=>!v)} text="I understand FastTrack can speed up reuse and review of my information but does not guarantee approval or waive property-specific screening."/>:null}
@@ -283,11 +293,11 @@ export default function HousingApply(){
     <View style={s.notice}><Text style={s.noticeTitle}>BEFORE YOU SUBMIT</Text><Text style={s.noticeBody}>Nothing is sent until you confirm below. Property screening, verification, fees, availability, and property-owner decisions can still apply.</Text></View>
    </>:null}
 
-   <Pressable style={[s.primary,(saving||(step===5&&(allErrors.length>0||missingRequiredDocs.length>0||!accuracy||!submitConsent||(fast&&!fastAck))))&&s.primaryDisabled]} disabled={saving} onPress={step===5?attemptSubmit:()=>void saveAndNext()}>
+   <Pressable accessibilityRole="button" style={[s.primary,(saving||(step===5&&(allErrors.length>0||missingRequiredDocs.length>0||!accuracy||!submitConsent||(fast&&!fastAck))))&&s.primaryDisabled]} disabled={saving} onPress={step===5?attemptSubmit:()=>void saveAndNext()}>
     <Text style={[s.primaryText,step===5&&(allErrors.length>0||missingRequiredDocs.length>0||!accuracy||!submitConsent||(fast&&!fastAck))&&s.primaryTextDisabled]}>{saving?'SAVING…':step===5?'CONFIRM & SUBMIT APPLICATION':'SAVE & CONTINUE'}</Text>
     <Lucide name="arrow-right" color={step===5&&(allErrors.length>0||missingRequiredDocs.length>0||!accuracy||!submitConsent||(fast&&!fastAck))?C.mutedStrong:C.black} size={16}/>
    </Pressable>
-   {step>1?<Pressable style={s.secondary} onPress={()=>void previous()}><Text style={s.secondaryText}>← PREVIOUS STEP</Text></Pressable>:null}
+   {step>1?<Pressable accessibilityRole="button" style={s.secondary} onPress={()=>void previous()}><Text style={s.secondaryText}>← PREVIOUS STEP</Text></Pressable>:null}
   </FormScrollView>
  </ScreenFrame>;
 }
@@ -301,9 +311,9 @@ function Field({label,value,onChangeText,placeholder='',keyboardType='default',m
  return <View style={s.field}><View style={s.fieldHead}><Text style={s.label}>{label}</Text><Text style={[s.required,!error&&s.requiredIdle]}>{optional?'OPTIONAL':'REQUIRED'}</Text></View><TextInput style={[s.input,multiline&&s.multi,error&&s.inputError]} value={value} onChangeText={onChangeText} placeholder={placeholder||'Enter '+label.toLowerCase()} placeholderTextColor={C.muted} keyboardType={keyboardType} multiline={multiline} maxLength={maxLength} autoCapitalize={autoCapitalize}/>{error?<Text style={s.errorText}>{error}</Text>:null}</View>
 }
 function MoneyField({label,value,onChangeText,error,optional=false}:{optional?:boolean;label:string;value:string;onChangeText:(v:string)=>void;error?:string}){return <View style={s.field}><View style={s.fieldHead}><Text style={s.label}>{label}</Text><Text style={[s.required,!error&&s.requiredIdle]}>{optional?'OPTIONAL':'REQUIRED'}</Text></View><View style={[s.money,error&&s.inputError]}><Text style={s.moneyPrefix}>$</Text><TextInput style={s.moneyInput} value={value} onChangeText={onChangeText} keyboardType="number-pad" placeholder="0" placeholderTextColor={C.muted}/></View>{error?<Text style={s.errorText}>{error}</Text>:null}</View>}
-function ChoiceField({label,options,value,onChange,error,optional=false}:{optional?:boolean;label:string;options:string[];value:string;onChange:(v:string)=>void;error?:string}){return <View style={s.field}><View style={s.fieldHead}><Text style={s.label}>{label}</Text><Text style={[s.required,!error&&s.requiredIdle]}>{optional?'OPTIONAL':'REQUIRED'}</Text></View><View style={s.choiceGrid}>{options.map(o=><Pressable key={o} style={[s.choice,value===o&&s.choiceActive]} onPress={()=>onChange(o)}><Text style={[s.choiceText,value===o&&s.choiceTextActive]}>{o.toUpperCase()}</Text></Pressable>)}</View>{error?<Text style={s.errorText}>{error}</Text>:null}</View>}
+function ChoiceField({label,options,value,onChange,error,optional=false}:{optional?:boolean;label:string;options:string[];value:string;onChange:(v:string)=>void;error?:string}){return <View style={s.field}><View style={s.fieldHead}><Text style={s.label}>{label}</Text><Text style={[s.required,!error&&s.requiredIdle]}>{optional?'OPTIONAL':'REQUIRED'}</Text></View><View style={s.choiceGrid}>{options.map(o=><Pressable accessibilityRole="button" key={o} style={[s.choice,value===o&&s.choiceActive]} onPress={()=>onChange(o)}><Text style={[s.choiceText,value===o&&s.choiceTextActive]}>{o.toUpperCase()}</Text></Pressable>)}</View>{error?<Text style={s.errorText}>{error}</Text>:null}</View>}
 function Review({label,value}:{label:string;value:string}){return <View style={s.review}><Text style={s.label}>{label}</Text><Text style={s.reviewValue}>{value||'Not provided'}</Text></View>}
-function Consent({checked,onPress,text}:{checked:boolean;onPress:()=>void;text:string}){return <Pressable style={s.consent} onPress={onPress}><View style={[s.checkBox,checked&&s.checkBoxOn]}>{checked?<Lucide name="check" color={C.black} size={12}/>:null}</View><Text style={s.consentText}>{text}</Text></Pressable>}
+function Consent({checked,onPress,text}:{checked:boolean;onPress:()=>void;text:string}){return <Pressable accessibilityRole="button" style={s.consent} onPress={onPress}><View style={[s.checkBox,checked&&s.checkBoxOn]}>{checked?<Lucide name="check" color={C.black} size={12}/>:null}</View><Text style={s.consentText}>{text}</Text></Pressable>}
 
 const s=StyleSheet.create({
  loading:{color:C.mutedStrong,padding:L.mobileGutter},errorState:{padding:L.mobileGutter},loadError:{color:C.danger,fontSize:13,lineHeight:19},retry:{height:46,backgroundColor:C.lime,alignItems:'center',justifyContent:'center',marginTop:16},retryText:{color:C.black,fontFamily:F.extraBold,fontSize:9,letterSpacing:.9},

@@ -24,8 +24,8 @@ export default function ForgotPasswordScreen() {
       const redirectTo=Platform.OS==='web'
         ? window.location.origin + '/reset-password'
         : 'fairpathmobile://reset-password';
-      const { error }=await supabase.auth.resetPasswordForEmail(cleanEmail,{redirectTo});
-      if (error) { setErrorMessage(error.message); return; }
+      // Keep the response identical whether or not the address belongs to an account.
+      await supabase.auth.resetPasswordForEmail(cleanEmail,{redirectTo});
       setSent(true);
     } catch {
       setErrorMessage('We could not send the reset email right now. Check your connection and try again.');
@@ -44,10 +44,10 @@ export default function ForgotPasswordScreen() {
         <Text style={styles.label}>Email</Text>
         <TextInput value={email} onChangeText={setEmail} placeholder="you@email.com" placeholderTextColor="#666C66" keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" style={styles.input} onSubmitEditing={sendReset}/>
         {errorMessage?<Text style={styles.errorText}>{errorMessage}</Text>:null}
-        <Pressable style={[styles.primaryButton,loading&&styles.disabled]} onPress={sendReset} disabled={loading}>
+        <Pressable accessibilityRole="button" style={[styles.primaryButton,loading&&styles.disabled]} onPress={sendReset} disabled={loading}>
           <Text style={styles.primaryText}>{loading?'Sending…':'Send reset link'}</Text><Text style={styles.arrow}>{loading?'•':'→'}</Text>
         </Pressable>
-      </View> : <Pressable style={styles.secondaryButton} onPress={()=>router.replace('/sign-in')}><Text style={styles.secondaryText}>Back to sign in</Text></Pressable>}
+      </View> : <Pressable accessibilityRole="button" style={styles.secondaryButton} onPress={()=>router.replace('/sign-in')}><Text style={styles.secondaryText}>Back to sign in</Text></Pressable>}
     </FormScrollView>
   </SafeAreaView></View>;
 }

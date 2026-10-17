@@ -14,13 +14,14 @@ import {
   loadMyHousingApplicationDetail,
   withdrawMyHousingApplication,
 } from '@/core/opportunities/opportunity-service';
+import { prepareHousingApplication } from '@/core/ai/signal';
+import { housingApplicationEventLabel, housingApplicationTimeline } from '@/core/housing/application-timeline';
 
 const LABEL:Record<string,string>={
  started:'IN PROGRESS',submitted:'SUBMITTED',reviewing:'UNDER REVIEW',tour:'TOUR / NEXT STEP',
  approved:'APPROVED',denied:'NOT APPROVED',withdrawn:'WITHDRAWN'
 };
 const FORM_STEPS=['Applicant','Income','Household','History','Review'];
-const EVENT_LABEL:Record<string,string>={started:'DRAFT STARTED',submitted:'APPLICATION SUBMITTED',reviewing:'PROPERTY REVIEW STARTED',tour:'TOUR / NEXT STEP',approved:'APPLICATION APPROVED',denied:'APPLICATION NOT APPROVED',withdrawn:'APPLICATION WITHDRAWN'};
 
 export default function HousingApplication(){
  const {id,submitted:submittedParam}=useLocalSearchParams<{id:string;submitted?:string}>();
@@ -28,6 +29,9 @@ export default function HousingApplication(){
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
  const [events,setEvents]=useState<HousingApplicationEvent[]>([]);
+ const [prepText,setPrepText]=useState('');
+ const [prepLoading,setPrepLoading]=useState(false);
+ const [prepRequested,setPrepRequested]=useState(false);
 
  const load=useCallback(()=>{
   if(!id)return;
@@ -49,6 +53,23 @@ export default function HousingApplication(){
  const draft=item.status==='started';
  const isSubmitted=Boolean(item.submitted_at);
  const progress=draft?Math.max(0,Math.min(100,Math.round((Math.max(1,item.current_step)-1)/4*100))):100;
+
+ async function askSignal(){
+  if(!item?.listing||prepLoading)return;
+  setPrepLoading(true);setPrepRequested(true);
+  try{
+   const r=await prepareHousingApplication(item.listing.id);
+   if(r.status==='ok')setPrepText(r.text);
+   else if(r.status==='out_of_credits')setPrepText('You are out of Signal credits for now. They refresh with your plan.');
+   else if(r.status==='rate_limited')setPrepText('Signal is busy across FairPath right now. Try again shortly.');
+   else if(r.status==='signed_out'){router.replace(('/sign-up?returnTo='+encodeURIComponent('/housing-application/'+id)) as never);return}
+   else setPrepText(r.message);
+  }catch{
+   setPrepText('Signal could not prepare application tips right now. Please try again.');
+  }finally{
+   setPrepLoading(false);
+  }
+ }
 
  function deleteDraft(){
   if(!item)return;
@@ -90,6 +111,12 @@ export default function HousingApplication(){
    <Text style={s.title}>{item.listing?.title??'Housing application'}</Text>
    {item.listing?<><Text style={s.price}>{'$'+Number(item.listing.rent_monthly).toLocaleString()+' / month'}</Text><Text style={s.meta}>{[item.listing.bedrooms!=null?item.listing.bedrooms+' bd':null,item.listing.bathrooms!=null?item.listing.bathrooms+' ba':null,item.listing.city+', '+item.listing.state].filter(Boolean).join(' · ')}</Text></>:null}
 
+   {item.listing&&draft?<View style={s.draftCard}>
+    <Text style={s.progressTitle}>SIGNAL · APPLICATION PREP</Text>
+    {prepRequested?<Text style={s.draftCopy}>{prepLoading?'Signal is thinking…':prepText}</Text>:
+     <Pressable accessibilityRole="button" style={s.secondary} onPress={()=>void askSignal()}><Text style={s.secondaryText}>PREP WITH SIGNAL</Text></Pressable>}
+   </View>:null}
+
    {draft?<View style={s.draftCard}>
     <View style={s.progressHead}><Text style={s.progressTitle}>APPLICATION PROGRESS</Text><Text style={s.progressPct}>{progress}%</Text></View>
     <View style={s.track}><View style={[s.fill,{width:(progress+'%') as any}]}/></View>
@@ -97,8 +124,17 @@ export default function HousingApplication(){
     <Text style={s.draftCopy}>{fast?'FastTrack is using available FairPath profile information where possible. Missing fields still have to be completed before submission.':'Your Standard application is saved as a draft. Continue where you left off.'}</Text>
    </View>:null}
 
-   {!draft?<StatusTimeline status={item.status}/>:null}
-   {events.length?<View style={s.activity}><Text style={s.section}>ACTIVITY</Text>{events.map(e=><View key={e.id} style={s.activityRow}><View style={s.activityDot}/><View style={{flex:1}}><Text style={s.activityTitle}>{EVENT_LABEL[e.event_type]??e.event_type.replaceAll('_',' ').toUpperCase()}</Text><Text style={s.activityDate}>{new Date(e.created_at).toLocaleString()}</Text></View></View>)}</View>:null}
+   {!draft?<StatusTimeline status={item.status} events={events}/>:null}
+   {!draft&&(item.partner_note||item.status_reason)?<View style={s.answers}>
+    <Text style={s.section}>PROPERTY FEEDBACK</Text>
+    {item.status_reason?<View style={s.answerRow}><Text style={s.answerKey}>REASON</Text><Text style={s.answerValue}>{item.status_reason}</Text></View>:null}
+    {item.partner_note?<View style={s.answerRow}><Text style={s.answerKey}>NOTE</Text><Text style={s.answerValue}>{item.partner_note}</Text></View>:null}
+   </View>:null}
+   {!draft&&item.answers?.record_statement_snapshot?<View style={s.answers}>
+    <Text style={s.section}>RECORD STATEMENT SHARED</Text>
+    <Text style={s.answerValue}>{item.answers.record_statement_snapshot.body}</Text>
+   </View>:null}
+   {events.length?<View style={s.activity}><Text style={s.section}>ACTIVITY</Text>{events.map(e=><View key={e.id} style={s.activityRow}><View style={s.activityDot}/><View style={{flex:1}}><Text style={s.activityTitle}>{housingApplicationEventLabel(e)}</Text><Text style={s.activityDate}>{new Date(e.created_at).toLocaleString()}</Text></View></View>)}</View>:null}
 
    {isSubmitted?<View style={s.submittedCard}><Text style={s.smallLabel}>SUBMITTED</Text><Text style={s.submittedDate}>{new Date(item.submitted_at!).toLocaleString()}</Text><Text style={s.submittedBody}>Your application is now in the FairPath housing workflow. Property-owner review, screening, fees, availability, and final decisions can still apply.</Text></View>:null}
    {!draft&&Object.keys(item.answers??{}).length?<View style={s.answers}>
@@ -108,26 +144,24 @@ export default function HousingApplication(){
    </View>:null}
    <HousingApplicationDocuments applicationId={item.id} readOnly={!draft}/>
 
-   {draft?<Pressable style={s.primary} onPress={()=>router.push(('/housing-apply/'+item.id) as never)}>
+   {draft?<Pressable accessibilityRole="button" style={s.primary} onPress={()=>router.push(('/housing-apply/'+item.id) as never)}>
     <Text style={s.primaryText}>{fast?'CONTINUE FASTTRACK APPLICATION':'CONTINUE STANDARD APPLICATION'}</Text><Lucide name="arrow-right" color={C.black} size={16}/>
    </Pressable>:null}
 
-   {!draft?<Pressable style={s.homeButton} onPress={()=>router.replace('/housing-applications' as never)}><Lucide name="file-check-2" color={C.black} size={15}/><Text style={s.homeButtonText}>ALL MY APPLICATIONS</Text></Pressable>:null}
-   {!draft?<Pressable style={s.secondary} onPress={()=>router.replace('/home' as never)}><Text style={s.secondaryText}>BACK TO FAIRPATH HOME</Text></Pressable>:null}
-   {item.listing?<Pressable style={s.secondary} onPress={()=>router.push(('/housing/'+item.listing!.id) as never)}><Text style={s.secondaryText}>VIEW HOME</Text></Pressable>:null}
-   {draft?<Pressable style={s.dangerButton} onPress={deleteDraft}><Text style={s.dangerText}>DELETE DRAFT APPLICATION</Text></Pressable>:null}
-   {['submitted','reviewing','tour'].includes(item.status)?<Pressable style={s.dangerButton} onPress={withdrawSubmitted}><Text style={s.dangerText}>WITHDRAW APPLICATION</Text></Pressable>:null}
+   {!draft?<Pressable accessibilityRole="button" style={s.homeButton} onPress={()=>router.replace('/housing-applications' as never)}><Lucide name="file-check-2" color={C.black} size={15}/><Text style={s.homeButtonText}>ALL MY APPLICATIONS</Text></Pressable>:null}
+   {!draft?<Pressable accessibilityRole="button" style={s.secondary} onPress={()=>router.replace('/home' as never)}><Text style={s.secondaryText}>BACK TO FAIRPATH HOME</Text></Pressable>:null}
+   {item.listing?<Pressable accessibilityRole="button" style={s.secondary} onPress={()=>router.push(('/housing/'+item.listing!.id) as never)}><Text style={s.secondaryText}>VIEW HOME</Text></Pressable>:null}
+   {draft?<Pressable accessibilityRole="button" style={s.dangerButton} onPress={deleteDraft}><Text style={s.dangerText}>DELETE DRAFT APPLICATION</Text></Pressable>:null}
+   {['submitted','reviewing','tour'].includes(item.status)?<Pressable accessibilityRole="button" style={s.dangerButton} onPress={withdrawSubmitted}><Text style={s.dangerText}>WITHDRAW APPLICATION</Text></Pressable>:null}
 
    <Text style={s.updated}>LAST UPDATED {new Date(item.updated_at).toLocaleString()}</Text>
   </ScrollView>
  </ScreenFrame>;
 }
 
-function StatusTimeline({status}:{status:string}){
- const order=['submitted','reviewing','tour','approved'];
- const current=status==='denied'?3:status==='withdrawn'?0:Math.max(0,order.indexOf(status));
- const labels=['Submitted','Property review','Tour / next step','Decision'];
- return <View style={s.timeline}><Text style={s.section}>APPLICATION STATUS</Text>{labels.map((label,index)=><View key={label} style={s.timelineRow}><View style={[s.timelineDot,index<=current&&s.timelineDotOn]}/><View style={s.timelineCopy}><Text style={[s.timelineTitle,index<=current&&s.timelineTitleOn]}>{label}</Text>{index===0?<Text style={s.timelineBody}>FairPath received your completed application.</Text>:index===1?<Text style={s.timelineBody}>Property review and any required screening happen here.</Text>:index===2?<Text style={s.timelineBody}>A tour, clarification, or other property-specific next step may be requested.</Text>:<Text style={s.timelineBody}>The property owner or manager records the final application decision.</Text>}</View></View>)}</View>
+function StatusTimeline({status,events}:{status:string;events:HousingApplicationEvent[]}){
+ const steps=housingApplicationTimeline(status,events);
+ return <View style={s.timeline}><Text style={s.section}>APPLICATION STATUS</Text>{steps.map(step=>{const on=step.state!=='upcoming';return <View key={step.key} style={s.timelineRow}><View style={[s.timelineDot,on&&s.timelineDotOn]}/><View style={s.timelineCopy}><Text style={[s.timelineTitle,on&&s.timelineTitleOn]}>{step.label}</Text><Text style={s.timelineBody}>{step.body}</Text></View></View>})}</View>
 }
 function State({text}:{text:string}){return <View style={s.state}><Text style={s.stateText}>{text}</Text></View>}
 

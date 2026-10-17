@@ -7,6 +7,7 @@ import { BodyText, ChipGroup, EmptyState, Field, Panel, PrimaryButton, StatusLin
 import { FairPathLayout as L } from '@/constants/fairpath';
 import { DISPUTE_REASON_CATEGORIES, disputableItems } from '@/core/credit/credit-format';
 import { createDispute, creditErrorMessage, loadAccounts, loadItems, type CreditAccount, type ReviewItem } from '@/core/credit/credit-service';
+import { draftDisputeLetter } from '@/core/ai/signal';
 import { useFairPathTheme } from '@/core/theme/ThemeProvider';
 import { notify } from '@/core/ui/notify';
 
@@ -23,6 +24,7 @@ export default function NewDispute() {
   const [reasonTouched, setReasonTouched] = useState(false);
   const [reasonCategory, setReasonCategory] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [drafting, setDrafting] = useState(false);
 
   useEffect(() => {
     void Promise.all([loadItems(), loadAccounts()]).then(([i, a]) => {
@@ -47,6 +49,23 @@ export default function NewDispute() {
     if (!reasonTouched || reason.trim().length === 0) { setReasonTouched(true); setReason(cat.starter + (suggestedReason ? '\n' + suggestedReason : '')); }
   }
 
+  async function draftWithSignal() {
+    if (!ready && (chosen.length === 0 || targetName.length < 2)) {
+      notify('Choose issues and a recipient first', 'Pick the issues to include and who you are sending it to, then draft with Signal.');
+      return;
+    }
+    setDrafting(true);
+    try {
+      const r = await draftDisputeLetter(chosen, kind[0] as 'bureau' | 'furnisher', targetName);
+      if (r.status === 'ok') { setReasonTouched(true); setReason(r.text); }
+      else if (r.status === 'out_of_credits') notify('Out of Signal credits', 'They refresh with your plan.');
+      else if (r.status === 'rate_limited') notify('Signal is busy', 'Try again shortly.');
+      else if (r.status === 'signed_out') router.push(('/sign-in?returnTo=' + encodeURIComponent('/credit/new-dispute')) as never);
+      else notify('Could not draft this letter', r.message);
+    } catch { notify('Could not draft this letter', 'Please try again.'); }
+    finally { setDrafting(false); }
+  }
+
   async function create() {
     setBusy(true);
     try {
@@ -69,6 +88,8 @@ export default function NewDispute() {
             {kind[0] === 'bureau' ? <ChipGroup single options={[{ value: 'equifax', label: 'Equifax' }, { value: 'experian', label: 'Experian' }, { value: 'transunion', label: 'TransUnion' }]} selected={bureau} onChange={setBureau} /> : <Field label="COMPANY NAME" value={furnisher} onChangeText={setFurnisher} autoCapitalize="words" />}
             <ChipGroup single label="WHAT KIND OF ISSUE IS THIS? (OPTIONAL STARTING POINT)" options={DISPUTE_REASON_CATEGORIES.map((c) => ({ value: c.value, label: c.label }))} selected={reasonCategory} onChange={pickCategory} />
             <Field label="WHY YOU ARE DISPUTING (EDITABLE)" value={reasonText} onChangeText={(v) => { setReasonTouched(true); setReason(v); }} multiline maxLength={1500} hint="Built from your own statements. Edit anything that is not exactly right. FairPath does not decide what is inaccurate — you do." />
+            <PrimaryButton label="DRAFT FULL LETTER WITH SIGNAL" onPress={() => void draftWithSignal()} busy={drafting} disabled={chosen.length === 0 || targetName.length < 2} />
+            <StatusLine tone="muted">Signal writes a first draft from what you chose above. Review every detail before sending — nothing is sent automatically.</StatusLine>
             {!ready ? <StatusLine tone="muted">Choose at least one issue, who you are sending it to, and a reason.</StatusLine> : null}
             <PrimaryButton label="CREATE DISPUTE" onPress={() => void create()} busy={busy} disabled={!ready} />
           </>

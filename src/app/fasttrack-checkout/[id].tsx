@@ -68,7 +68,7 @@ export default function FastTrackCheckout(){
   <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    {loading?<Text style={s.state}>Loading FastTrack price…</Text>:error?<>
     <Text style={s.error}>{error}</Text>
-    <Pressable style={s.retry} onPress={load}><Text style={s.retryText}>TRY AGAIN</Text></Pressable>
+    <Pressable accessibilityRole="button" style={s.retry} onPress={load}><Text style={s.retryText}>TRY AGAIN</Text></Pressable>
    </>:quote?<>
     <View style={s.hero}><InlineBadge tone="lime">FASTTRACK</InlineBadge><Text style={s.price}>{formatCents(quote.amount_due_cents)}</Text><Text style={s.sub}>ONE APPLICATION</Text></View>
     <View style={s.breakdown}>
@@ -78,14 +78,15 @@ export default function FastTrackCheckout(){
     </View>
     <Text style={s.priceNote}>This price is set by FairPath's servers for your account. It cannot be changed from this screen.</Text>
     <View style={s.notice}><Lucide name="shield-check" color={C.lime} size={16}/><Text style={s.noticeText}>Paying for FastTrack does not approve your application. Property owners make their own decisions, and you still review and submit the application yourself.</Text></View>
+    <View style={s.notice}><Lucide name="info" color={C.lime} size={16}/><Text style={s.noticeText}>If your application is later denied, this payment is not automatically refunded. Contact FairPath support if you have a question about a charge.</Text></View>
 
     {paid?<>
      <View style={s.paid}><Lucide name="circle-check-big" color={C.lime} size={18}/><Text style={s.paidText}>{quote.status==='waived'?'FASTTRACK FEE WAIVED':'PAYMENT CONFIRMED'}</Text></View>
-     <Pressable style={s.primary} onPress={()=>router.replace(back as never)}><Text style={s.primaryText}>RETURN TO MY APPLICATION</Text><Lucide name="arrow-right" color={C.black} size={16}/></Pressable>
+     <Pressable accessibilityRole="button" style={s.primary} onPress={()=>router.replace(back as never)}><Text style={s.primaryText}>RETURN TO MY APPLICATION</Text><Lucide name="arrow-right" color={C.black} size={16}/></Pressable>
     </>:!quote.payment_enforced?<View style={s.dev}>
      <Text style={s.devTitle}>NO PAYMENT IS REQUIRED YET</Text>
      <Text style={s.devBody}>FairPath is not collecting the FastTrack fee in this build, so you can submit your application without paying. Nothing will be charged.</Text>
-     {configured?<Pressable style={[s.secondary]} onPress={()=>void pay()} disabled={phase!=='idle'}><Text style={s.secondaryText}>{phase==='idle'?'TEST THE PAYMENT SHEET':'WORKING…'}</Text></Pressable>:null}
+     {configured?<Pressable accessibilityRole="button" style={[s.secondary]} onPress={()=>void pay()} disabled={phase!=='idle'}><Text style={s.secondaryText}>{phase==='idle'?'TEST THE PAYMENT SHEET':'WORKING…'}</Text></Pressable>:null}
     </View>:configured?<>
      <Pressable accessibilityRole="button" style={[s.primary,phase!=='idle'&&s.primaryOff]} onPress={()=>void pay()} disabled={phase!=='idle'}>
       <Text style={s.primaryText}>{phase==='preparing'?'PREPARING…':phase==='confirming'?'CONFIRMING PAYMENT…':'PAY '+formatCents(quote.amount_due_cents)}</Text><Lucide name="lock" color={C.black} size={15}/>
@@ -94,7 +95,7 @@ export default function FastTrackCheckout(){
     </>:<View style={s.pending}><Text style={s.pendingTitle}>PAYMENTS ARE NOT CONNECTED</Text><Text style={s.pendingBody}>The server requires payment, but card payments are not configured in this build. Nothing was charged.</Text></View>}
 
     {message?<Text style={s.message}>{message}</Text>:null}
-    <Pressable style={s.link} onPress={()=>router.push('/payments' as never)}><Text style={s.linkText}>VIEW PAYMENT HISTORY</Text></Pressable>
+    <Pressable accessibilityRole="button" style={s.link} onPress={()=>router.push('/payments' as never)}><Text style={s.linkText}>VIEW PAYMENT HISTORY</Text></Pressable>
    </>:null}
   </ScrollView>
  </ScreenFrame>

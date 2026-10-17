@@ -32,7 +32,7 @@ export default function CheckEmailScreen() {
               Check your spam or junk folder. Keep this screen open while you verify your email.
             </Text>
           </View>
-          <Pressable style={styles.secondaryButton} onPress={() => router.replace('/sign-up')}>
+          <Pressable accessibilityRole="button" style={styles.secondaryButton} onPress={() => router.replace('/sign-up')}>
             <Text style={styles.secondaryButtonText}>Use a different email</Text>
           </Pressable>
         </View>

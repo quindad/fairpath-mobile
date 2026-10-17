@@ -8,9 +8,10 @@
  * Leave both unset (the default) and cards still work through Stripe's PaymentSheet; the wallets simply do not appear.
  * Set them as EAS environment variables (never in source) and rebuild the native client.
  */
-module.exports = ({ config }) => ({
-  ...config,
-  plugins: (config.plugins ?? []).map((plugin) => {
+module.exports = ({ config }) => {
+  const androidMapsKey = process.env.GOOGLE_MAPS_ANDROID_API_KEY?.trim();
+  const iosMapsKey = process.env.GOOGLE_MAPS_IOS_API_KEY?.trim();
+  const plugins = (config.plugins ?? []).map((plugin) => {
     const name = Array.isArray(plugin) ? plugin[0] : plugin;
     if (name !== '@stripe/stripe-react-native') return plugin;
     return [
@@ -20,5 +21,17 @@ module.exports = ({ config }) => ({
         enableGooglePay: process.env.ENABLE_GOOGLE_PAY === 'true',
       },
     ];
-  }),
-});
+  });
+  if ((androidMapsKey || iosMapsKey) && !plugins.some((p) => (Array.isArray(p) ? p[0] : p) === 'react-native-maps')) {
+    plugins.push(['react-native-maps', {
+      androidGoogleMapsApiKey: androidMapsKey || undefined,
+      iosGoogleMapsApiKey: iosMapsKey || undefined,
+    }]);
+  }
+  return {
+    ...config,
+    android: { ...config.android, package: config.android?.package || 'com.fairpathfwd.fairpathmobile' },
+    extra: { ...config.extra, googleMapsIosEnabled: Boolean(iosMapsKey) },
+    plugins,
+  };
+};

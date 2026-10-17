@@ -1,8 +1,8 @@
 import { supabase } from '@/lib/supabase';
 import { currentUser } from '@/core/supabase/current-user';
-import { EMPTY_RESUME_CONTENT, parseResumeContent, type ResumeContent } from '@/core/resume/resume-types';
+import { EMPTY_RESUME_CONTENT, parseResumeContent, type ResumeContent, type ResumeTemplate } from '@/core/resume/resume-types';
 
-export type Resume = { id: string; title: string; target_role: string | null; template: 'classic' | 'compact'; content: ResumeContent; imported_from_profile_at: string | null; created_at: string; updated_at: string };
+export type Resume = { id: string; title: string; target_role: string | null; template: ResumeTemplate; content: ResumeContent; imported_from_profile_at: string | null; created_at: string; updated_at: string };
 type ResumeRow = Omit<Resume, 'content'> & { content: unknown };
 
 export function resumeErrorMessage(e: unknown): string {
@@ -41,7 +41,7 @@ export async function createResume(title: string): Promise<Resume> {
   return toResume(data as ResumeRow);
 }
 
-export async function updateResume(id: string, patch: Partial<{ title: string; target_role: string | null; template: 'classic' | 'compact'; content: ResumeContent }>): Promise<Resume> {
+export async function updateResume(id: string, patch: Partial<{ title: string; target_role: string | null; template: ResumeTemplate; content: ResumeContent }>): Promise<Resume> {
   const { data, error } = await supabase.from('member_resumes').update(patch).eq('id', id).select('*').single();
   if (error) throw error;
   return toResume(data as ResumeRow);

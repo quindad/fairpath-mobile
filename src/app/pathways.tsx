@@ -25,7 +25,7 @@ export default function PathwaysScreen(){
     <Text style={s.name}>{p.name}</Text><Text style={s.headline}>{x.headline}</Text><Text style={s.body}>{x.body}</Text>
     <View style={s.actionRow}><Text style={s.action}>{x.action}</Text><Text style={s.arrow}>→</Text></View>
    </Pressable>})}
-   <View style={s.cross}><Text style={s.crossLabel}>WORKS ACROSS EVERY PATH</Text><Text style={s.crossTitle}>Academy + Entrepreneurship</Text><Text style={s.body}>Learning and business-building are systems you can use across pathways. They are not separate identities you have to join.</Text><View style={s.crossActions}><Pressable onPress={()=>router.push('/academy' as never)}><Text style={s.action}>ACADEMY →</Text></Pressable><Pressable onPress={()=>router.push('/entrepreneurship' as never)}><Text style={s.action}>ENTREPRENEURSHIP →</Text></Pressable></View></View>
+   <View style={s.cross}><Text style={s.crossLabel}>WORKS ACROSS EVERY PATH</Text><Text style={s.crossTitle}>Academy + Entrepreneurship</Text><Text style={s.body}>Learning and business-building are systems you can use across pathways. They are not separate identities you have to join.</Text><View style={s.crossActions}><Pressable accessibilityRole="button" onPress={()=>router.push('/academy' as never)}><Text style={s.action}>ACADEMY →</Text></Pressable><Pressable accessibilityRole="button" onPress={()=>router.push('/entrepreneurship' as never)}><Text style={s.action}>ENTREPRENEURSHIP →</Text></Pressable></View></View>
   </FormScrollView>
  </ScreenFrame>
 }

@@ -8,13 +8,16 @@ import { SpecPreview } from '@/components/SpecPreview';
 import { BodyText, ChipGroup, Field, Panel, PrimaryButton, SecondaryButton, StatusLine, TextButton } from '@/components/ui-kit';
 import { FairPathLayout as L } from '@/constants/fairpath';
 import { buildResume } from '@/core/documents/builders/resume';
-import { generateFromSpec, type GeneratedDocument } from '@/core/documents/generate';
-import { EMPTY_RESUME_CONTENT, RESUME_TEMPLATES, type ResumeContent, type ResumeExperience } from '@/core/resume/resume-types';
+import { generateResume, type GeneratedDocument } from '@/core/documents/generate';
+import { EMPTY_RESUME_CONTENT, RESUME_TEMPLATES, type ResumeContent, type ResumeCredential, type ResumeEducation, type ResumeExperience, type ResumeTemplate } from '@/core/resume/resume-types';
 import { importFromProfile, loadResume, resumeErrorMessage, updateResume, type Resume } from '@/core/resume/resume-service';
+import { draftResumeBullets } from '@/core/ai/signal';
 import { useFairPathTheme } from '@/core/theme/ThemeProvider';
 import { notify } from '@/core/ui/notify';
 
 const emptyExperience = (): ResumeExperience => ({ title: '', employer: '', location: '', start: '', end: '', current: false, bullets: [''] });
+const emptyEducation = (): ResumeEducation => ({ school: '', credential: '', field: '', endYear: '' });
+const emptyCredential = (): ResumeCredential => ({ name: '', issuer: '', year: '' });
 
 export default function ResumeEditor() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -28,6 +31,7 @@ export default function ResumeEditor() {
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(true);
   const [generated, setGenerated] = useState<GeneratedDocument | null>(null);
+  const [improvingIndex, setImprovingIndex] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -38,12 +42,13 @@ export default function ResumeEditor() {
   }, [id]);
   useEffect(() => { void load(); }, [load]);
 
-  const spec = useMemo(() => buildResume(title, content), [title, content]);
+  const activeTemplate = (template[0] as ResumeTemplate) ?? 'classic';
+  const spec = useMemo(() => buildResume(title, content, new Date(), activeTemplate), [title, content, activeTemplate]);
 
   async function save() {
     if (!id) return;
     setBusy(true);
-    try { await updateResume(id, { title: title.trim() || 'My resume', target_role: targetRole.trim() || null, template: (template[0] as 'classic' | 'compact') ?? 'classic', content }); setSaved(true); }
+    try { await updateResume(id, { title: title.trim() || 'My resume', target_role: targetRole.trim() || null, template: activeTemplate, content }); setSaved(true); }
     catch (e) { notify('Could not save', resumeErrorMessage(e)); } finally { setBusy(false); }
   }
   function touch<T>(setter: (v: T) => void) { return (v: T) => { setter(v); setSaved(false); }; }
@@ -57,7 +62,7 @@ export default function ResumeEditor() {
   async function make(format: 'pdf' | 'docx') {
     if (!saved) { notify('Save first', 'Save your changes before exporting.'); return; }
     setBusy(true);
-    try { setGenerated(await generateFromSpec(spec, format)); } catch (e) { notify('Could not create the resume file', resumeErrorMessage(e)); } finally { setBusy(false); }
+    try { setGenerated(await generateResume(spec, content, activeTemplate, title, format)); } catch (e) { notify('Could not create the resume file', resumeErrorMessage(e)); } finally { setBusy(false); }
   }
 
   const setContact = (p: Partial<ResumeContent['contact']>) => touch(setContent)({ ...content, contact: { ...content.contact, ...p } });
@@ -66,14 +71,39 @@ export default function ResumeEditor() {
   const removeExperience = (i: number) => touch(setContent)({ ...content, experience: content.experience.filter((_, n) => n !== i) });
   const setBullet = (ei: number, bi: number, v: string) => setExperience(ei, { bullets: content.experience[ei].bullets.map((b, n) => (n === bi ? v : b)) });
   const addBullet = (ei: number) => setExperience(ei, { bullets: [...content.experience[ei].bullets, ''] });
+
+  async function improveBullets(ei: number) {
+    const e = content.experience[ei];
+    const nonEmpty = e.bullets.map((b) => b.trim()).filter(Boolean);
+    if (!nonEmpty.length) { notify('Write a bullet first', 'Add at least one highlight for Signal to strengthen.'); return; }
+    setImprovingIndex(ei);
+    try {
+      const r = await draftResumeBullets(e.title, e.employer, nonEmpty, targetRole);
+      if (r.status === 'ok') {
+        const lines = r.text.split('\n').map((l) => l.trim()).filter(Boolean);
+        setExperience(ei, { bullets: lines.length ? lines : e.bullets });
+        setSaved(false);
+      } else if (r.status === 'out_of_credits') notify('Out of Signal credits', 'They refresh with your plan.');
+      else if (r.status === 'rate_limited') notify('Signal is busy', 'Try again shortly.');
+      else if (r.status === 'signed_out') router.push(('/sign-in?returnTo=' + encodeURIComponent('/resume-studio/' + id)) as never);
+      else notify('Could not improve these bullets', r.message);
+    } catch { notify('Could not improve these bullets', 'Please try again.'); }
+    finally { setImprovingIndex(null); }
+  }
   const setSkills = (v: string) => touch(setContent)({ ...content, skills: v.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 40) });
+  const setEducation = (i: number, p: Partial<ResumeEducation>) => touch(setContent)({ ...content, education: content.education.map((e, n) => (n === i ? { ...e, ...p } : e)) });
+  const addEducation = () => touch(setContent)({ ...content, education: [...content.education, emptyEducation()] });
+  const removeEducation = (i: number) => touch(setContent)({ ...content, education: content.education.filter((_, n) => n !== i) });
+  const setCredential = (i: number, p: Partial<ResumeCredential>) => touch(setContent)({ ...content, credentials: content.credentials.map((c, n) => (n === i ? { ...c, ...p } : c)) });
+  const addCredential = () => touch(setContent)({ ...content, credentials: [...content.credentials, emptyCredential()] });
+  const removeCredential = (i: number) => touch(setContent)({ ...content, credentials: content.credentials.filter((_, n) => n !== i) });
 
   if (error) return <ScreenFrame><PageHeader eyebrow="RESUME STUDIO" title="Resume" backTo="/resume-studio" alwaysBackTo /><View style={{ paddingHorizontal: L.mobileGutter }}><StatusLine tone="error">{error}</StatusLine></View></ScreenFrame>;
   if (!resume) return <ScreenFrame><PageHeader eyebrow="RESUME STUDIO" title="Resume" backTo="/resume-studio" alwaysBackTo /><ActivityIndicator color={tokens.accentText} style={{ marginTop: 32 }} /></ScreenFrame>;
 
   return (
     <ScreenFrame>
-      <PageHeader eyebrow="RESUME STUDIO" title={title || 'Resume'} backTo="/resume-studio" alwaysBackTo />
+      <PageHeader eyebrow="RESUME STUDIO" title={title || 'Resume'} backTo="/resume-studio" alwaysBackTo onBack={saved ? true : () => notify('Discard unsaved changes?', 'You have unsaved edits to this résumé. Leaving now will lose them.', [{ text: 'Keep editing', style: 'cancel' }, { text: 'Discard changes', style: 'destructive', onPress: () => router.replace('/resume-studio' as never) }])} />
       <FormScrollView contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40 }}>
         <Field label="RESUME TITLE" value={title} onChangeText={touch(setTitle)} />
         <Field label="TARGET ROLE" value={targetRole} onChangeText={touch(setTargetRole)} optional />
@@ -104,10 +134,34 @@ export default function ResumeEditor() {
               <Field key={bi} label={bi === 0 ? 'HIGHLIGHTS (ONE PER LINE)' : ''} value={b} onChangeText={(v) => setBullet(i, bi, v)} optional />
             ))}
             <TextButton label="+ ADD A LINE" onPress={() => addBullet(i)} />
+            <SecondaryButton label={improvingIndex === i ? 'SIGNAL IS IMPROVING…' : 'IMPROVE THESE BULLETS WITH SIGNAL'} onPress={() => void improveBullets(i)} disabled={improvingIndex !== null} />
             <TextButton tone="danger" label="REMOVE THIS ROLE" onPress={() => removeExperience(i)} />
           </Panel>
         ))}
         <SecondaryButton label="+ ADD EXPERIENCE" onPress={addExperience} />
+
+        <View style={{ marginTop: 18 }}><SectionTitle>EDUCATION</SectionTitle></View>
+        {content.education.map((e, i) => (
+          <Panel key={i}>
+            <Field label="SCHOOL" value={e.school} onChangeText={(v) => setEducation(i, { school: v })} />
+            <Field label="CREDENTIAL (E.G. HIGH SCHOOL DIPLOMA, A.A.)" value={e.credential} onChangeText={(v) => setEducation(i, { credential: v })} optional />
+            <Field label="FIELD OF STUDY" value={e.field} onChangeText={(v) => setEducation(i, { field: v })} optional />
+            <Field label="END YEAR" value={e.endYear} onChangeText={(v) => setEducation(i, { endYear: v })} optional />
+            <TextButton tone="danger" label="REMOVE THIS SCHOOL" onPress={() => removeEducation(i)} />
+          </Panel>
+        ))}
+        <SecondaryButton label="+ ADD EDUCATION" onPress={addEducation} />
+
+        <View style={{ marginTop: 18 }}><SectionTitle>CERTIFICATIONS</SectionTitle></View>
+        {content.credentials.map((c, i) => (
+          <Panel key={i}>
+            <Field label="CERTIFICATION NAME" value={c.name} onChangeText={(v) => setCredential(i, { name: v })} />
+            <Field label="ISSUER" value={c.issuer} onChangeText={(v) => setCredential(i, { issuer: v })} optional />
+            <Field label="YEAR" value={c.year} onChangeText={(v) => setCredential(i, { year: v })} optional />
+            <TextButton tone="danger" label="REMOVE THIS CERTIFICATION" onPress={() => removeCredential(i)} />
+          </Panel>
+        ))}
+        <SecondaryButton label="+ ADD CERTIFICATION" onPress={addCredential} />
 
         <View style={{ marginTop: 18 }}><SectionTitle>SKILLS</SectionTitle></View>
         <Field label="SKILLS (COMMA-SEPARATED)" value={content.skills.join(', ')} onChangeText={setSkills} optional />

@@ -59,4 +59,19 @@ incident-manifest.json
 
 # DEV QA auth credentials — never committed
 .dev-qa-credentials.local.json
+.dev-qa-partner-credentials.local.json
+.dev-qa-partner-b-credentials.local.json
+.dev-qa-staff-credentials.local.json
+.dev-qa-member-a11y-credentials.local.json
 .dev-retention-proof.local.json
+
+# agent scratch / local noise — never commit
+big.txt
+.claude-scratch/
+package.json.*
+!package.json
+!package-lock.json
+*-tsc.log
+*-typecheck*.log
+public-relief-*.log
+record-relief-*.log

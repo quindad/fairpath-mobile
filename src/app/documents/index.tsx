@@ -4,9 +4,11 @@ import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { PageHeader, ScreenFrame, SectionTitle } from '@/components/ProductChrome';
 import { BodyText, EmptyState, ListRow, Panel, PrimaryButton, SecondaryButton, StatusLine, TextButton } from '@/components/ui-kit';
 import { FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
-import { deleteDocument, documentErrorMessage, listMyDocuments, type DocumentListItem } from '@/core/documents/document-service';
+import { deleteDocument, documentErrorMessage, downloadStoredCopy, listMyDocuments, storedPathFor, type DocumentListItem } from '@/core/documents/document-service';
 import { DOCUMENT_TYPES } from '@/core/documents/document-types';
+import { deliver, getDeliveryCapabilities } from '@/core/documents/deliver';
 import { RENDERABLE, currentFingerprint, readinessFor, type RenderableType } from '@/core/documents/generate';
+import { MIME } from '@/core/documents/spec';
 import { useFairPathTheme, useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
 import { notify } from '@/core/ui/notify';
@@ -28,6 +30,7 @@ export default function DocumentsScreen() {
   const [stale, setStale] = useState<Record<string, boolean>>({});
   const [error, setError] = useState('');
   const [openTypes, setOpenTypes] = useState<Record<string, boolean>>({});
+  const [retrieveStatus, setRetrieveStatus] = useState('');
 
   const load = useCallback(async () => {
     setError('');
@@ -50,6 +53,20 @@ export default function DocumentsScreen() {
     }
   }, []);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
+
+  async function retrieve(x: DocumentListItem) {
+    setRetrieveStatus('');
+    try {
+      const path = await storedPathFor(x.doc.id);
+      if (!path) { notify('No stored copy', 'FairPath only kept a record that this was created, not the file itself. Create a new version to get a fresh copy.'); return; }
+      const bytes = await downloadStoredCopy(path);
+      const caps = await getDeliveryCapabilities();
+      const action = caps.share ? 'share' : 'download';
+      const r = await deliver(action, { bytes, fileName: x.doc.file_name, mime: MIME[x.doc.format], format: x.doc.format });
+      if (r.ok) setRetrieveStatus(action === 'share' ? `${x.doc.file_name}: share sheet opened.` : `${x.doc.file_name}: downloaded.`);
+      else if (r.message) notify('Could not open this file', r.message);
+    } catch (e) { notify('Could not retrieve this file', documentErrorMessage(e)); }
+  }
 
   function remove(x: DocumentListItem) {
     notify('Delete this document?', 'This removes FairPath’s stored copy and history entry. A file you already downloaded or shared stays where it is: FairPath cannot recall it.', [
@@ -77,6 +94,7 @@ export default function DocumentsScreen() {
         />
         {!items && !error ? <ActivityIndicator color={tokens.accentText} style={s.spinner} /> : null}
         {error ? <View><StatusLine tone="error">{error}</StatusLine><SecondaryButton label="TRY AGAIN" onPress={() => void load()} /></View> : null}
+        {retrieveStatus ? <StatusLine tone="success">{retrieveStatus}</StatusLine> : null}
 
         {items ? (
           <>
@@ -118,12 +136,18 @@ export default function DocumentsScreen() {
                   />
                   <View style={s.actions}>
                     {older.length ? <TextButton label={openTypes[x.doc.document_type] ? 'HIDE EARLIER VERSIONS' : `EARLIER VERSIONS (${older.length})`} onPress={() => setOpenTypes((o) => ({ ...o, [x.doc.document_type]: !o[x.doc.document_type] }))} /> : <View />}
-                    <TextButton tone="danger" label="DELETE" onPress={() => remove(x)} />
+                    <View style={{ flexDirection: 'row' as const }}>
+                      {x.doc.has_stored_copy ? <TextButton label="RETRIEVE" onPress={() => void retrieve(x)} /> : null}
+                      <TextButton tone="danger" label="DELETE" onPress={() => remove(x)} />
+                    </View>
                   </View>
                   {openTypes[x.doc.document_type] ? older.map((o) => (
                     <View key={o.doc.id} style={s.earlier}>
                       <Text style={s.earlierText}>Version {o.doc.version} · {o.doc.format.toUpperCase()} · {dateText(o.doc.created_at)}</Text>
-                      <TextButton tone="danger" label="DELETE" onPress={() => remove(o)} />
+                      <View style={{ flexDirection: 'row' as const }}>
+                        {o.doc.has_stored_copy ? <TextButton label="RETRIEVE" onPress={() => void retrieve(o)} /> : null}
+                        <TextButton tone="danger" label="DELETE" onPress={() => remove(o)} />
+                      </View>
                     </View>
                   )) : null}
                 </View>

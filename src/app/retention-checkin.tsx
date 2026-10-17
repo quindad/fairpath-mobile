@@ -7,6 +7,7 @@ import { FormScrollView } from '@/components/FormScrollView';
 import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { CHECKPOINT_LABELS, RetentionCheckpoint, SUPPORT_CATEGORIES, confirmEnded, confirmStillWorking, loadMyCheckpoint, loadMyDueCheckpoints, requestSupport } from '@/core/retention/retention-service';
+import { getResourceGuidance } from '@/core/ai/signal';
 
 type Step = 'ask' | 'support_category' | 'support_detail' | 'done';
 
@@ -20,6 +21,9 @@ export default function RetentionCheckinScreen() {
  const [category, setCategory] = useState<string | null>(null);
  const [detail, setDetail] = useState('');
  const [saving, setSaving] = useState(false);
+ const [signalText, setSignalText] = useState('');
+ const [signalLoading, setSignalLoading] = useState(false);
+ const [signalRequested, setSignalRequested] = useState(false);
 
  const load = useCallback(() => {
   setLoading(true); setError(''); setStep('ask'); setCategory(null); setDetail('');
@@ -58,6 +62,21 @@ export default function RetentionCheckinScreen() {
   finally { setSaving(false); }
  }
 
+ async function askSignal() {
+  if (signalLoading || !category) return;
+  const catLabel = SUPPORT_CATEGORIES.find((c) => c.code === category)?.label ?? category;
+  setSignalLoading(true); setSignalRequested(true);
+  try {
+   const r = await getResourceGuidance(detail.trim() ? `${catLabel}: ${detail.trim()}` : catLabel);
+   if (r.status === 'ok') setSignalText(r.text);
+   else if (r.status === 'out_of_credits') setSignalText('You are out of Signal credits for now. They refresh with your plan.');
+   else if (r.status === 'rate_limited') setSignalText('Signal is busy across FairPath right now. Try again shortly.');
+   else if (r.status === 'signed_out') { router.replace(('/sign-in?returnTo=' + encodeURIComponent('/retention-checkin')) as never); return; }
+   else setSignalText(r.message);
+  } catch { setSignalText('Signal could not look at this right now. Please try again.'); }
+  finally { setSignalLoading(false); }
+ }
+
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH" title="Job check-in" backTo="/home" />
   <FormScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -65,25 +84,30 @@ export default function RetentionCheckinScreen() {
     <View style={s.empty}><Lucide name="check-circle" color={C.lime} size={22} /><Text style={s.emptyTitle}>NOTHING DUE RIGHT NOW</Text><Text style={s.emptyBody}>We'll check back in with you when your next job check-in is due.</Text></View>
    ) : step === 'done' ? (
     <View style={s.empty}><Lucide name="check-circle" color={C.lime} size={22} /><Text style={s.emptyTitle}>THANKS FOR LETTING US KNOW</Text><Text style={s.emptyBody}>Your {CHECKPOINT_LABELS[active.checkpoint_type] ?? active.checkpoint_type} check-in is saved.</Text>
-     {checkpoints.length > 1 ? <Pressable style={s.secondary} onPress={() => { const next = checkpoints.find((c) => c.id !== active.id); setActive(next ?? null); setStep('ask'); }}><Text style={s.secondaryText}>NEXT CHECK-IN</Text></Pressable> : null}
+     {category ? <View style={{ width: '100%', marginTop: 18 }}>
+      <Text style={s.eyebrow}>SIGNAL · FIND HELP NOW</Text>
+      {signalRequested ? <Text style={s.emptyBody}>{signalLoading ? 'Signal is thinking…' : signalText}</Text> :
+       <Pressable accessibilityRole="button" style={s.option} onPress={() => void askSignal()}><Text style={s.optionText}>ASK SIGNAL FOR RESOURCES</Text></Pressable>}
+     </View> : null}
+     {checkpoints.length > 1 ? <Pressable accessibilityRole="button" style={s.secondary} onPress={() => { const next = checkpoints.find((c) => c.id !== active.id); setActive(next ?? null); setStep('ask'); }}><Text style={s.secondaryText}>NEXT CHECK-IN</Text></Pressable> : null}
     </View>
    ) : step === 'ask' ? (<>
     <Text style={s.eyebrow}>{(CHECKPOINT_LABELS[active.checkpoint_type] ?? active.checkpoint_type).toUpperCase()} CHECK-IN</Text>
     <Text style={s.question}>How's the job going?</Text>
-    <Pressable style={s.optionPrimary} onPress={() => void stillWorking()} disabled={saving}><Lucide name="check" color={C.black} size={16} /><Text style={s.optionPrimaryText}>STILL WORKING HERE</Text></Pressable>
-    <Pressable style={s.option} onPress={() => setStep('support_category')} disabled={saving}><Lucide name="life-buoy" color={C.white} size={16} /><Text style={s.optionText}>I NEED SUPPORT</Text></Pressable>
-    <Pressable style={s.option} onPress={() => void noLongerWorking()} disabled={saving}><Lucide name="x" color={C.mutedStrong} size={16} /><Text style={s.optionText}>I'M NO LONGER WORKING HERE</Text></Pressable>
+    <Pressable accessibilityRole="button" style={s.optionPrimary} onPress={() => void stillWorking()} disabled={saving}><Lucide name="check" color={C.black} size={16} /><Text style={s.optionPrimaryText}>STILL WORKING HERE</Text></Pressable>
+    <Pressable accessibilityRole="button" style={s.option} onPress={() => setStep('support_category')} disabled={saving}><Lucide name="life-buoy" color={C.white} size={16} /><Text style={s.optionText}>I NEED SUPPORT</Text></Pressable>
+    <Pressable accessibilityRole="button" style={s.option} onPress={() => void noLongerWorking()} disabled={saving}><Lucide name="x" color={C.mutedStrong} size={16} /><Text style={s.optionText}>I'M NO LONGER WORKING HERE</Text></Pressable>
     <Text style={s.privacyNote}>If you need support, what you share stays private to you and any organization already authorized to help you - your employer only ever sees that support is available, never the details.</Text>
    </>) : step === 'support_category' ? (<>
     <Text style={s.eyebrow}>WHAT KIND OF SUPPORT?</Text>
     <View style={s.grid}>{SUPPORT_CATEGORIES.map((c) => (
-     <Pressable key={c.code} style={[s.choice, category === c.code && s.choiceOn]} onPress={() => setCategory(c.code)}><Text style={[s.choiceText, category === c.code && s.choiceTextOn]}>{c.label.toUpperCase()}</Text></Pressable>
+     <Pressable accessibilityRole="button" key={c.code} style={[s.choice, category === c.code && s.choiceOn]} onPress={() => setCategory(c.code)}><Text style={[s.choiceText, category === c.code && s.choiceTextOn]}>{c.label.toUpperCase()}</Text></Pressable>
     ))}</View>
-    <Pressable style={[s.optionPrimary, !category && s.optionDisabled]} disabled={!category} onPress={() => setStep('support_detail')}><Text style={s.optionPrimaryText}>CONTINUE</Text></Pressable>
+    <Pressable accessibilityRole="button" style={[s.optionPrimary, !category && s.optionDisabled]} disabled={!category} onPress={() => setStep('support_detail')}><Text style={s.optionPrimaryText}>CONTINUE</Text></Pressable>
    </>) : (<>
     <Text style={s.eyebrow}>TELL US MORE (OPTIONAL)</Text>
     <TextInput style={s.textarea} value={detail} onChangeText={setDetail} multiline placeholder="What's going on? This stays private." placeholderTextColor={C.muted} />
-    <Pressable style={s.optionPrimary} onPress={() => void submitSupport()} disabled={saving}><Text style={s.optionPrimaryText}>{saving ? 'SENDING…' : 'SEND'}</Text></Pressable>
+    <Pressable accessibilityRole="button" style={s.optionPrimary} onPress={() => void submitSupport()} disabled={saving}><Text style={s.optionPrimaryText}>{saving ? 'SENDING…' : 'SEND'}</Text></Pressable>
    </>)}
   </FormScrollView>
  </ScreenFrame>;

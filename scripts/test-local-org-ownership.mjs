@@ -77,6 +77,30 @@ await test('an ordinary authenticated member with zero membership rows gains no 
     'outsider insert with a forged organization_id should be denied');
 });
 
+await test('organization managers may advance an application status but cannot rewrite its applicant, job, or submitted answers', async () => {
+  const applicant = await addUser(db, 'org-applicant@test.local');
+  const otherApplicant = await addUser(db, 'org-other-applicant@test.local');
+  const [orgJob] = must(await tryAs(db, ORG_MGR,
+    `insert into public.jobs (employer_id, organization_id, title, description, company_name, employment_type, status, easy_apply_enabled, application_method)
+     values ($1,'11111111-1111-4111-8111-111111111111','Org Applicant Job','desc','Org A','full_time','published',true,'fairpath') returning id`,
+    [ORG_MGR]), 'org job insert');
+  const application = must(await tryAs(db, applicant,
+    `select public.submit_job_application($1,$2::jsonb) as id`, [orgJob.id, JSON.stringify({ profile: { first_name: 'Safe', last_name: 'Applicant', phone: '2165550100' }, employer_questions: {} })]),
+    'application submit')[0];
+  const id = application.id;
+  const move = must(await tryAs(db, ORG_MGR, `update public.job_applications set status='viewed' where id=$1 returning status`, [id]), 'status move');
+  ok(move[0]?.status === 'viewed', 'manager could not progress application status');
+  const tamper = await tryAs(db, ORG_MGR,
+    `update public.job_applications set user_id=$1, answers='{"forged":true}'::jsonb where id=$2 returning id`, [otherApplicant, id]);
+  ok(!tamper.rows?.length, 'manager rewrote application ownership or submitted answers');
+  const own = must(await tryAs(db, applicant, `select user_id, answers from public.job_applications where id=$1`, [id]), 'applicant read');
+  ok(own[0]?.user_id === applicant && !own[0]?.answers?.forged, 'tampering altered the stored application');
+  const crossOrg = must(await tryAs(db, ORG_B_MGR, `select id from public.job_applications where id=$1`, [id]), 'cross-org application read');
+  ok(crossOrg.length === 0, 'organization B read organization A application');
+  const crossOrgEvent = must(await tryAs(db, ORG_B_MGR, `select id from public.job_application_events where application_id=$1`, [id]), 'cross-org event read');
+  ok(crossOrgEvent.length === 0, 'organization B read organization A application history');
+});
+
 // ---------------- same shape for Housing ----------------
 await test('housing: unchanged individual owner behavior + org manager create + cross-org isolation', async () => {
   const rows = must(await tryAs(db, OWNER,

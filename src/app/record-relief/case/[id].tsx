@@ -15,12 +15,13 @@ import type { DocumentSpec } from '@/core/documents/spec';
 import { isoFromText } from '@/core/profile/opportunity-forms';
 import { loadContact } from '@/core/profile/opportunity-service';
 import {
-  ANCHOR_LABEL, DISCLAIMER, FILING_STATUS_OPTIONS, MISSING_LABEL, OUTCOME_INFO, REMEDY_LABEL, countdownText, outOfStateNotice, ruleChangedNotice, staleRuleNotice,
+  ANCHOR_LABEL, DISCLAIMER, FILING_STATUS_OPTIONS, MISSING_LABEL, OUTCOME_INFO, REMEDY_LABEL, countdownText, headlineOutcome, outOfStateNotice, ruleChangedNotice, staleRuleNotice,
 } from '@/core/record-relief/relief-format';
 import {
   deleteCase, loadCase, loadCaseDetail, loadJurisdictions, reevaluateCase, reliefErrorMessage, setCaseStatus, toggleChecklist,
   type ReliefCase, type ReliefDetail, type ReliefEvaluation,
 } from '@/core/record-relief/relief-service';
+import { explainReliefCase } from '@/core/ai/signal';
 import { useFairPathTheme, useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
 import { notify } from '@/core/ui/notify';
@@ -40,6 +41,9 @@ export default function ReliefCaseScreen() {
   const [filedText, setFiledText] = useState('');
   const [generated, setGenerated] = useState<GeneratedDocument | null>(null);
   const [packetNote, setPacketNote] = useState('');
+  const [signalText, setSignalText] = useState('');
+  const [signalLoading, setSignalLoading] = useState(false);
+  const [signalRequested, setSignalRequested] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -58,6 +62,20 @@ export default function ReliefCaseScreen() {
   const doneKey = useMemo(() => new Set((detail?.checklist ?? []).filter((x) => x.done).map((x) => x.kind + ':' + x.key)), [detail]);
 
   const run = async (fn: () => Promise<unknown>, title: string) => { setBusy(true); try { await fn(); await load(); } catch (e) { notify(title, reliefErrorMessage(e)); } finally { setBusy(false); } };
+
+  async function askSignal() {
+    if (!c || signalLoading) return;
+    setSignalLoading(true); setSignalRequested(true);
+    try {
+      const r = await explainReliefCase(c.id);
+      if (r.status === 'ok') setSignalText(r.text);
+      else if (r.status === 'out_of_credits') setSignalText('You are out of Signal credits for now. They refresh with your plan.');
+      else if (r.status === 'rate_limited') setSignalText('Signal is busy across FairPath right now. Try again shortly.');
+      else if (r.status === 'signed_out') { router.replace(('/sign-in?returnTo=' + encodeURIComponent('/record-relief')) as never); return; }
+      else setSignalText(r.message);
+    } catch { setSignalText('Signal could not explain this case right now. Please try again.'); }
+    finally { setSignalLoading(false); }
+  }
 
   async function makeDoc(spec: DocumentSpec, format: 'pdf' | 'docx') {
     setBusy(true);
@@ -87,6 +105,7 @@ export default function ReliefCaseScreen() {
   if (!c || !detail || !docCase) return <ScreenFrame><PageHeader eyebrow="RECORD RELIEF" title="Case" backTo="/record-relief" alwaysBackTo /><ActivityIndicator color={tokens.accentText} style={{ marginTop: 32 }} /></ScreenFrame>;
 
   const evs = c.out_of_state_conviction ? [] : detail.evaluations;
+  const headline = headlineOutcome(evs);
   const openLink = (url: string | null | undefined) => { if (url) void Linking.openURL(url); };
   const steps = new Map<string, { key: string; title: string; body?: string }>();
   const docsNeeded = new Map<string, { key: string; label: string }>();
@@ -129,11 +148,48 @@ export default function ReliefCaseScreen() {
                   <BodyText muted>Rule version {e.rule.rule_version} · effective {e.rule.effective_from} · last verified {e.rule.last_verified_at ?? 'unknown'}</BodyText>
                   <TextButton label="OPEN THE SOURCE" onPress={() => openLink(e.rule?.source_url)} />
                 </View>
-              ) : null}
+              ) : (
+                <ListRow title="Find legal help" body="Legal aid and record-relief organizations near you" onPress={() => router.push('/resources' as never)} />
+              )}
             </Panel>
           );
         })}
         {evs.length ? <SecondaryButton label="RE-CHECK THIS CASE" onPress={() => void run(() => reevaluateCase(c), 'Could not re-check')} disabled={busy} /> : null}
+
+        {headline ? (
+          <>
+            <View style={s.block}><SectionTitle>KEEP MOVING</SectionTitle></View>
+            <Panel tone={headline.outcome === 'potentially_eligible_now' ? 'accent' : undefined}>
+              {headline.outcome === 'waiting_period' && headline.eligibility_date ? (
+                <>
+                  <BodyText strong>Your estimated eligibility date is {headline.eligibility_date}.</BodyText>
+                  <BodyText muted>FairPath cannot tell you which specific employer or landlord would say yes today versus after that date — that depends on each one's own policy. In the meantime, here's what's already open to you.</BodyText>
+                </>
+              ) : headline.outcome === 'potentially_eligible_now' ? (
+                <>
+                  <BodyText strong>Your waiting period may have ended.</BodyText>
+                  <BodyText muted>This is FairPath's read of the rule, not a legal determination — re-check with a lawyer before relying on it. Either way, here's where to look for work and housing right now.</BodyText>
+                </>
+              ) : (
+                <BodyText muted>While this case is reviewed, here's where to look for work and housing right now.</BodyText>
+              )}
+              <ListRow title="Felony-friendly jobs" body="Jobs FairPath has verified or that employers have marked second-chance friendly" onPress={() => router.push('/find-jobs?lane=second' as never)} />
+              <ListRow title="Felony-friendly housing" body="Homes FairPath has verified or that landlords have marked second-chance friendly" onPress={() => router.push('/find-housing?felonyFriendly=true' as never)} />
+            </Panel>
+          </>
+        ) : null}
+
+        {evs.length ? (
+          <>
+            <View style={s.block}><SectionTitle>SIGNAL</SectionTitle></View>
+            <Panel tone="accent">
+              <BodyText strong>Ask Signal to explain this in plain English</BodyText>
+              <BodyText muted>Signal only restates what FairPath's rule engine already found — not legal advice, nothing new.</BodyText>
+              {signalRequested ? <BodyText muted>{signalLoading ? 'Signal is thinking…' : signalText}</BodyText> : null}
+              <SecondaryButton label={signalLoading ? 'ASKING SIGNAL…' : 'ASK SIGNAL'} onPress={() => void askSignal()} disabled={signalLoading} />
+            </Panel>
+          </>
+        ) : null}
 
         {detail.pathways.length ? (
           <>
@@ -151,7 +207,7 @@ export default function ReliefCaseScreen() {
             ))}
           </>
         ) : null}
-        {c.jurisdiction_code === 'US-FED' && detail.pathways.length === 0 ? <Panel><BodyText>FairPath does not have verified federal pathway information loaded yet. You can still track this case and export a summary.</BodyText></Panel> : null}
+        {c.jurisdiction_code === 'US-FED' && detail.pathways.length === 0 ? <Panel><BodyText>FairPath does not have verified federal pathway information loaded yet. You can still track this case and export a summary.</BodyText><ListRow title="Find legal help" body="Legal aid and record-relief organizations near you" onPress={() => router.push('/resources' as never)} /></Panel> : null}
 
         {steps.size || docsNeeded.size ? (
           <>

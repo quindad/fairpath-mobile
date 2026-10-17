@@ -8,8 +8,11 @@ import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { loadJob, loadJobApplicationAutofill, loadMyJobApplicationForJob, saveJobApplicationProfile, submitJobApplication, type Job, type JobApplicationAutofill } from '@/core/opportunities/opportunity-service';
 import { formatUsPhone } from '@/core/forms/formatters';
+import { loadResumes, type Resume } from '@/core/resume/resume-service';
+import { isResumeContentEmpty } from '@/core/resume/resume-types';
+import { loadMyRecordStatement } from '@/core/record-relief/statement-service';
 
-const EMPTY:JobApplicationAutofill={first_name:'',last_name:'',email:'',phone:'',education:'',skills:'',certifications:'',desired_roles:'',resume_ready:''};
+const EMPTY:JobApplicationAutofill={first_name:'',last_name:'',email:'',phone:'',education:'',skills:'',certifications:'',desired_roles:''};
 
 export default function JobApply(){
  const {id}=useLocalSearchParams<{id:string}>();
@@ -18,11 +21,15 @@ export default function JobApply(){
  const [extra,setExtra]=useState<Record<string,string>>({});
  const [shareProfile,setShareProfile]=useState(false);
  const [shareSections,setShareSections]=useState<string[]>(['experience','education','skills']);
+ const [resumes,setResumes]=useState<Resume[]>([]);
+ const [resumeId,setResumeId]=useState<string|null>(null);
+ const [statement,setStatement]=useState('');
+ const [includeStatement,setIncludeStatement]=useState(false);
  const [loading,setLoading]=useState(true);
  const [submitting,setSubmitting]=useState(false);
  const [error,setError]=useState('');
 
- useEffect(()=>{if(!id)return;Promise.all([loadJob(id),loadJobApplicationAutofill(),loadMyJobApplicationForJob(id)]).then(([j,a,existing])=>{if(existing){router.replace(('/job-application/'+existing.id) as never);return}setJob(j);setForm(a)}).catch(e=>{if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace(('/sign-up?returnTo='+encodeURIComponent('/job/'+id)) as never);return}setError('Application could not load.')}).finally(()=>setLoading(false))},[id]);
+ useEffect(()=>{if(!id)return;Promise.all([loadJob(id),loadJobApplicationAutofill(),loadMyJobApplicationForJob(id),loadResumes().catch(()=>[]),loadMyRecordStatement().catch(()=>'')]).then(([j,a,existing,r,st])=>{if(existing){router.replace(('/job-application/'+existing.id) as never);return}setJob(j);setForm(a);setResumes(r);setStatement(st);const onlyReal=r.filter(x=>!isResumeContentEmpty(x.content));if(onlyReal.length===1)setResumeId(onlyReal[0].id)}).catch(e=>{if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace(('/sign-up?returnTo='+encodeURIComponent('/job/'+id)) as never);return}setError('Application could not load.')}).finally(()=>setLoading(false))},[id]);
 
  const requiredKeys:(keyof JobApplicationAutofill)[]=['first_name','last_name','email','phone'];
  const validRequired=(key:keyof JobApplicationAutofill,value:string)=>{
@@ -50,13 +57,14 @@ export default function JobApply(){
   setSubmitting(true);
   try{
    await saveJobApplicationProfile(form);
-   const applicationId=await submitJobApplication(id,{profile:form,employer_questions:extra,share_opportunity_profile:shareProfile,share_sections:shareProfile?shareSections:[]});
+   const applicationId=await submitJobApplication(id,{profile:form,employer_questions:extra,share_opportunity_profile:shareProfile,share_sections:shareProfile?shareSections:[]},resumeId,includeStatement);
    router.replace((applicationId?'/job-application/'+applicationId:'/job-applications') as never);
   }catch(e){
    if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace(('/sign-up?returnTo='+encodeURIComponent('/job/'+id)) as never);return}
    if(e instanceof Error&&e.message==='ALREADY_APPLIED'){notify('Already applied','You already submitted an application for this job.',[{text:'View application',onPress:()=>router.replace('/job-applications' as never)}]);return}
    const msg=e instanceof Error?e.message:'';
    if(msg==='JOB_UNAVAILABLE'){notify('Job unavailable','This job is no longer accepting applications.');return}
+   if(msg==='RESUME_NOT_FOUND'){notify('Resume not found','That resume could not be attached. Try again or choose a different one.');return}
    if(msg.startsWith('INVALID_APPLICATION')){notify('Application incomplete','Check the required fields and try again.');return}
    notify('Could not submit','Please try again.');
   }finally{setSubmitting(false)}
@@ -91,7 +99,26 @@ export default function JobApply(){
    <Field label="SKILLS" value={form.skills} onChangeText={v=>set('skills',v)} multiline />
    <Field label="CERTIFICATIONS" value={form.certifications} onChangeText={v=>set('certifications',v)} multiline />
    <Field label="WORK PREFERENCES" value={form.desired_roles} onChangeText={v=>set('desired_roles',v)} multiline />
-   <Field label="RESUME READY" value={form.resume_ready} onChangeText={v=>set('resume_ready',v)} />
+
+   <View style={s.question}>
+    <Text style={s.questionLabel}>Attach a résumé</Text>
+    {resumes.length?<>
+     <Text style={s.muted}>Pick one of your Resume Studio résumés to send with this application, or send none.</Text>
+     <View style={{gap:8,marginTop:9}}>
+      {resumes.map(r=><Choice key={r.id} label={r.title.toUpperCase()+(isResumeContentEmpty(r.content)?' (EMPTY)':'')} active={resumeId===r.id} onPress={()=>setResumeId(r.id)}/>)}
+      <Choice label="NO RESUME" active={resumeId===null} onPress={()=>setResumeId(null)}/>
+     </View>
+     {resumeId&&resumes.find(r=>r.id===resumeId)&&isResumeContentEmpty(resumes.find(r=>r.id===resumeId)!.content)?<Text style={[s.muted,{color:C.lime,marginTop:8}]}>This résumé is empty. The employer will receive a blank résumé unless you add your experience to it first.</Text>:null}
+    </>:<Text style={s.muted}>You don't have a résumé in Resume Studio yet. You can submit without one, or go build one first.</Text>}
+   </View>
+
+   <View style={s.question}>
+    <Text style={s.questionLabel}>Explain my record (optional)</Text>
+    {statement.trim()?<>
+     <Text style={s.muted}>Attach the private statement you wrote about your record. Only sent if you choose YES below — never automatic.</Text>
+     <View style={s.yesNo}><Choice label="YES, ATTACH IT" active={includeStatement} onPress={()=>setIncludeStatement(true)}/><Choice label="NO" active={!includeStatement} onPress={()=>setIncludeStatement(false)}/></View>
+    </>:<Text style={s.muted}>You haven't written a record statement yet. <Text style={{color:C.lime}} onPress={()=>router.push('/record-relief/my-statement' as never)}>Write one</Text> if you'd like the option to share it with employers.</Text>}
+   </View>
 
    {questions.length?<><Text style={s.sectionLabel}>EMPLOYER QUESTIONS</Text>{questions.map(q=><View key={q.id} style={s.question}>
     <View style={s.questionHead}><Text style={s.questionLabel}>{q.label}</Text>{q.required?<Text style={s.requiredTag}>REQUIRED</Text>:null}</View>
@@ -111,7 +138,7 @@ export default function JobApply(){
     <Text style={s.reviewText}>Nothing is submitted until you tap SUBMIT APPLICATION. You can edit every autofilled field first.</Text>
    </View>
 
-   <Pressable style={[s.submit,!ready&&s.submitDisabled]} disabled={!ready||submitting} onPress={()=>void submit()}>
+   <Pressable accessibilityRole="button" style={[s.submit,!ready&&s.submitDisabled]} disabled={!ready||submitting} onPress={()=>void submit()}>
     <Text style={[s.submitText,!ready&&s.submitTextDisabled]}>{submitting?'SUBMITTING…':ready?'SUBMIT APPLICATION':'COMPLETE REQUIRED ITEMS'}</Text>
     <Lucide name="arrow-right" color={ready?C.black:C.mutedStrong} size={16}/>
    </Pressable>
@@ -127,7 +154,7 @@ function Field({label,value,onChangeText,multiline=false,keyboardType,required=f
   {invalid&&value.trim()?<Text style={s.validationText}>{invalidHint}</Text>:null}
  </View>
 }
-function Choice({label,active,onPress}:{label:string;active:boolean;onPress:()=>void}){return <Pressable style={[s.choice,active&&s.choiceActive]} onPress={onPress}><Text style={[s.choiceText,active&&s.choiceTextActive]}>{label}</Text></Pressable>}
+function Choice({label,active,onPress}:{label:string;active:boolean;onPress:()=>void}){return <Pressable accessibilityRole="button" style={[s.choice,active&&s.choiceActive]} onPress={onPress}><Text style={[s.choiceText,active&&s.choiceTextActive]}>{label}</Text></Pressable>}
 
 const s=StyleSheet.create({
  content:{paddingHorizontal:L.mobileGutter,paddingTop:14,paddingBottom:36},state:{padding:L.mobileGutter},muted:{color:C.muted},error:{color:C.danger},

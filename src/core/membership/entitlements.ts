@@ -12,7 +12,7 @@ export const PLUS_FEATURES: Record<PlusFeature, { title: string; route: string }
   ai_housing: { title: 'Housing Assistant', route: '/plus' },
   ai_forward_plan: { title: 'FairPath Forward Plan', route: '/plus' },
   ai_document: { title: 'Document Assistant', route: '/plus' },
-  credit_builder: { title: 'Credit Builder', route: '/credit-tools' },
+  credit_builder: { title: 'Credit Studio', route: '/credit-tools' },
   marketplace_claims: { title: 'Marketplace claims', route: '/plus' },
   fasttrack_discount: { title: 'FastTrack savings', route: '/plus' },
 };

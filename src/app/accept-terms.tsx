@@ -12,12 +12,13 @@ import { supabase } from '@/lib/supabase';
 export default function AcceptTerms(){
  const params=useLocalSearchParams<{returnTo?:string}>();
  const returnTo=typeof params.returnTo==='string'&&params.returnTo.startsWith('/')?params.returnTo:null;
- const [agreed,setAgreed]=useState(false);
+ const [agreedTerms,setAgreedTerms]=useState(false);
+ const [agreedPrivacy,setAgreedPrivacy]=useState(false);
  const [saving,setSaving]=useState(false);
  const [error,setError]=useState('');
 
  async function accept(){
-  if(!agreed||saving)return;
+  if(!agreedTerms||!agreedPrivacy||saving)return;
   setSaving(true);setError('');
   try{
    await recordSignUpConsent();
@@ -36,13 +37,17 @@ export default function AcceptTerms(){
    <Text style={s.kicker}>ONE LAST STEP</Text>
    <Text style={s.title}>Welcome to FairPath.</Text>
    <Text style={s.body}>Before you continue, please confirm you agree to FairPath's Terms and Privacy Policy. You can change what you share later in your profile.</Text>
-   <Pressable accessibilityRole="checkbox" accessibilityState={{checked:agreed}} style={s.row} onPress={()=>setAgreed(v=>!v)}>
-    <View style={[s.box,agreed&&s.boxOn]}>{agreed?<Text style={s.mark}>✓</Text>:null}</View>
-    <Text style={s.rowText}>I agree to FairPath's Terms and Privacy Policy.</Text>
+   <Pressable accessibilityRole="checkbox" accessibilityLabel="Accept FairPath Terms" accessibilityState={{checked:agreedTerms}} style={s.row} onPress={()=>setAgreedTerms(v=>!v)}>
+    <View style={[s.box,agreedTerms&&s.boxOn]}>{agreedTerms?<Text style={s.mark}>✓</Text>:null}</View>
+    <Text style={s.rowText}>I agree to FairPath's Terms.</Text>
+   </Pressable>
+   <Pressable accessibilityRole="checkbox" accessibilityLabel="Acknowledge FairPath Privacy Policy" accessibilityState={{checked:agreedPrivacy}} style={s.row} onPress={()=>setAgreedPrivacy(v=>!v)}>
+    <View style={[s.box,agreedPrivacy&&s.boxOn]}>{agreedPrivacy?<Text style={s.mark}>✓</Text>:null}</View>
+    <Text style={s.rowText}>I have reviewed FairPath's Privacy Policy.</Text>
    </Pressable>
    {error?<Text style={s.error}>{error}</Text>:null}
-   <Pressable accessibilityRole="button" style={[s.primary,(!agreed||saving)&&s.primaryOff]} disabled={!agreed||saving} onPress={()=>void accept()}>
-    <Text style={[s.primaryText,(!agreed||saving)&&s.primaryTextOff]}>{saving?'Saving…':'Agree and continue'}</Text><Text style={[s.primaryText,(!agreed||saving)&&s.primaryTextOff]}>→</Text>
+   <Pressable accessibilityRole="button" style={[s.primary,(!agreedTerms||!agreedPrivacy||saving)&&s.primaryOff]} disabled={!agreedTerms||!agreedPrivacy||saving} onPress={()=>void accept()}>
+    <Text style={[s.primaryText,(!agreedTerms||!agreedPrivacy||saving)&&s.primaryTextOff]}>{saving?'Saving…':'Agree and continue'}</Text><Text style={[s.primaryText,(!agreedTerms||!agreedPrivacy||saving)&&s.primaryTextOff]}>→</Text>
    </Pressable>
    <Pressable accessibilityRole="button" style={s.secondary} onPress={()=>void decline()}><Text style={s.secondaryText}>Not now — sign out</Text></Pressable>
   </FormScrollView>

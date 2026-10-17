@@ -30,3 +30,7 @@ verify_jwt = false
 
 [functions.store-subscription-webhook]
 verify_jwt = false
+
+# DEV-only stateless gateway. Authentication is enforced by handler; do not deploy until reviewed.
+[functions.public-record-relief-dev]
+verify_jwt = false

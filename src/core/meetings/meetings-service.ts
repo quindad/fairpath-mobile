@@ -16,6 +16,7 @@ export const MEETING_TYPE_LABEL: Record<MeetingType, string> = {
 };
 export const PROVIDER_LABEL: Record<MeetingProvider, string> = { zoom: 'Zoom', google_meet: 'Google Meet', microsoft_teams: 'Microsoft Teams', phone: 'Phone', in_person: 'In person', other: 'Other' };
 export const STATUS_LABEL: Record<MeetingStatus, string> = { scheduled: 'Scheduled', confirmed: 'Confirmed', completed: 'Completed', cancelled: 'Cancelled', no_show: 'No-show' };
+export { canUpdateMeetingStatus } from './meetings-format.ts';
 
 export function meetingsErrorMessage(e: unknown): string {
   const text = e instanceof Error ? e.message : typeof e === 'object' && e && 'message' in e ? String((e as { message: unknown }).message) : '';

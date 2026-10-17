@@ -68,6 +68,7 @@ export const INTENTS: Intent[] = [
 
 /** The starter phrases the UI offers (each is matched by the rules above). */
 export const SUGGESTIONS = [
+  'What should I focus on this week?',
   'I need somewhere to stay tonight',
   'Help me finish my profile',
   'Review my credit report',

@@ -213,8 +213,13 @@ create policy "staffing_status_history_read_own" on public.staffing_assignment_s
 );
 
 -- staffing_provider_state, staffing_screening_state: member may see ONLY their own assignment's small
--- state enum, never provider_ref (opaque to them regardless, but excluded at the view layer, not here —
--- a dedicated member-facing view should select state only, never provider_ref).
+-- state enum, never provider_ref. The RLS policy below still gates the base table (service_role and any
+-- future ops path), but authenticated is deliberately NOT granted select on these two base tables -- the
+-- only way a member reaches this data is through the narrow views defined after this block, which select
+-- state only. This closes the finding flagged in STAFFING_MIGRATION_REVIEW_AND_ORDER.md: a member-facing
+-- grant on the full base table would have exposed provider_ref (an opaque third-party reference string)
+-- even though the policy's own join restricts which ROWS are visible, because row-level security restricts
+-- which rows, never which columns.
 drop policy if exists "staffing_provider_state_read_own" on public.staffing_provider_state;
 create policy "staffing_provider_state_read_own" on public.staffing_provider_state for select to authenticated using (
   exists (
@@ -230,9 +235,22 @@ create policy "staffing_screening_state_read_own" on public.staffing_screening_s
   )
 );
 
+-- Narrow member-facing views: assignment_id + state only, never provider_ref. security_invoker means the
+-- view runs as the querying role, so the RLS policies above still apply row-by-row -- this is a column
+-- restriction layered on top of the existing row restriction, not a replacement for it.
+create or replace view public.staffing_provider_state_member_view
+  with (security_invoker = true) as
+  select assignment_id, state, updated_at from public.staffing_provider_state;
+create or replace view public.staffing_screening_state_member_view
+  with (security_invoker = true) as
+  select assignment_id, state, updated_at from public.staffing_screening_state;
+
 -- staffing_rate_cards, staffing_economics: NO authenticated policy. Service role only, full stop.
-grant select on table public.staffing_requisitions, public.staffing_assignments, public.staffing_assignment_status_history,
-  public.staffing_provider_state, public.staffing_screening_state to authenticated;
+-- staffing_provider_state, staffing_screening_state: NO direct authenticated select -- only through the
+-- narrow views above, which service_role also has full underlying table access to regardless.
+grant select on table public.staffing_requisitions, public.staffing_assignments, public.staffing_assignment_status_history
+  to authenticated;
+grant select on public.staffing_provider_state_member_view, public.staffing_screening_state_member_view to authenticated;
 grant select, insert, update, delete on table public.staffing_requisitions, public.staffing_assignments,
   public.staffing_assignment_status_history, public.staffing_provider_state, public.staffing_screening_state,
   public.staffing_rate_cards, public.staffing_economics to service_role;

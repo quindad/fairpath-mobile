@@ -56,12 +56,16 @@ export default function CorrectIdentity() {
         <Panel><BodyText muted>Use this when a bureau has your name, address, date of birth or other personal information wrong — not for a specific account. FairPath never sends anything for you.</BodyText></Panel>
         <ChipGroup single label="WHO WILL YOU SEND IT TO?" options={BUREAUS} selected={bureau} onChange={(n) => setBureau(n.length ? n : bureau)} />
         <View style={{ marginTop: 14 }}><SectionTitle>WHAT IS WRONG</SectionTitle></View>
-        {rows.map((row, i) => (
-          <View key={row.label} style={{ marginBottom: 4 }}>
-            <Field label={row.label.toUpperCase() + ' — ON FILE (OPTIONAL)'} value={row.current} onChangeText={(v) => setRow(i, { current: v })} />
-            <Field label={row.label.toUpperCase() + ' — CORRECT'} value={row.correct} onChangeText={(v) => setRow(i, { correct: v })} />
-          </View>
-        ))}
+        {rows.map((row, i) => {
+          const sensitiveHint = row.label === 'Date of birth' || row.label === 'Social Security number (last 4)'
+            ? 'Only used to fill in this letter — FairPath does not verify or store it anywhere else.' : undefined;
+          return (
+            <View key={row.label} style={{ marginBottom: 4 }}>
+              <Field label={row.label.toUpperCase() + ' — ON FILE (OPTIONAL)'} value={row.current} onChangeText={(v) => setRow(i, { current: v })} hint={sensitiveHint} />
+              <Field label={row.label.toUpperCase() + ' — CORRECT'} value={row.correct} onChangeText={(v) => setRow(i, { correct: v })} />
+            </View>
+          );
+        })}
         <View style={{ marginTop: 14 }}><SectionTitle>YOUR CONTACT INFORMATION</SectionTitle></View>
         <Field label="YOUR NAME" value={fields.senderName} onChangeText={(v) => set({ senderName: v })} />
         <Field label="YOUR MAILING ADDRESS" value={fields.senderAddress} onChangeText={(v) => set({ senderAddress: v })} multiline />

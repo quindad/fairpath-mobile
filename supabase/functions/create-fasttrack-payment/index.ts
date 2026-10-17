@@ -12,6 +12,7 @@
 import Stripe from 'npm:stripe@17';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, json, requireEnv } from '../_shared/http.ts';
+import { canReuseIntent, paymentAttemptKey } from './payment-attempt.ts';
 
 // Must match the Stripe React Native SDK's expected ephemeral key API version.
 const EPHEMERAL_KEY_API_VERSION = '2024-06-20';
@@ -68,14 +69,15 @@ Deno.serve(async (req: Request) => {
   }
 
   // 4. reuse a live attempt for this application (no double charge on retry / double tap)
-  const { data: open } = await admin.from('payment_transactions').select('id,provider_payment_intent_id,amount_cents')
-    .eq('purpose', 'housing_fasttrack').eq('purpose_ref', applicationId).in('status', ['requires_payment_method', 'requires_action', 'processing']).maybeSingle();
+  const { data: latest } = await admin.from('payment_transactions').select('id,provider_payment_intent_id,amount_cents,status')
+    .eq('purpose', 'housing_fasttrack').eq('purpose_ref', applicationId).order('created_at', { ascending: false }).limit(1).maybeSingle();
+  const open = latest && ['requires_payment_method', 'requires_action', 'processing'].includes(latest.status) ? latest : null;
   let intent: Stripe.PaymentIntent | null = null;
   let transactionId: string | null = null;
   if (open?.provider_payment_intent_id) {
     const existing = await stripe.paymentIntents.retrieve(open.provider_payment_intent_id);
     if (existing.status === 'succeeded') return json(200, { processing: true, transaction_id: open.id, note: 'Payment received; waiting for confirmation.' });
-    if (open.amount_cents === amount && existing.status !== 'canceled') { intent = existing; transactionId = open.id; }
+    if (canReuseIntent(open, amount, existing.status)) { intent = existing; transactionId = open.id; }
     else {
       // price changed (e.g. FairPath+ status changed): retire the old attempt and create a new one
       if (existing.status !== 'canceled') await stripe.paymentIntents.cancel(existing.id);
@@ -91,7 +93,7 @@ Deno.serve(async (req: Request) => {
       automatic_payment_methods: { enabled: true },
       description: 'FairPath FastTrack housing application',
       metadata: { purpose: 'housing_fasttrack', application_id: applicationId, user_id: user.id },
-    }, { idempotencyKey: `fasttrack:${applicationId}:${amount}:${open?.id ?? 'first'}` });
+    }, { idempotencyKey: paymentAttemptKey(applicationId, amount, latest) });
     const { data: txId, error: txError } = await admin.rpc('create_payment_transaction', {
       p_user: user.id, p_purpose: 'housing_fasttrack', p_purpose_ref: applicationId, p_product_code: 'fasttrack_application',
       p_amount_cents: amount, p_currency: 'usd', p_idempotency_key: `fasttrack:${applicationId}:${amount}:${intent.id}`,

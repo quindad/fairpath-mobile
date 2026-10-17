@@ -6,6 +6,7 @@ import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { loadJobApplicationEvents, loadMyJobApplicationDetail, withdrawMyJobApplication, type JobApplicationEvent, type JobApplicationStatus, type MyJobApplicationDetail } from '@/core/opportunities/opportunity-service';
+import { prepareForInterview } from '@/core/ai/signal';
 
 function eventLabel(e:JobApplicationEvent){
  const who=e.actor_type==='employer'?' by employer':e.actor_type==='applicant'&&e.event_type!=='submitted'?' by you':'';
@@ -30,27 +31,26 @@ function fmt(value:string|null){
  const d=new Date(value);
  return Number.isNaN(d.getTime())?'—':d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
 }
-const PROFILE_ORDER=['first_name','last_name','email','phone','address','date_of_birth','education','skills','certifications','desired_roles','resume_ready'];
+// Address and date of birth are never present: submit_job_application whitelists exactly first_name, last_name,
+// email, phone, education, skills, certifications, desired_roles and never accepts or stores those two fields.
+// This list is kept in sync with that whitelist on purpose -- don't add a key here without a matching server change.
+const PROFILE_ORDER=['first_name','last_name','email','phone','education','skills','certifications','desired_roles'];
 function profileLabel(key:string){
  const labels:Record<string,string>={
-  first_name:'FIRST NAME',last_name:'LAST NAME',email:'EMAIL',phone:'PHONE',address:'HOME ADDRESS',
-  date_of_birth:'DATE OF BIRTH',education:'EDUCATION',skills:'SKILLS',certifications:'CERTIFICATIONS',
-  desired_roles:'WORK PREFERENCES',resume_ready:'RESUME READY'
+  first_name:'FIRST NAME',last_name:'LAST NAME',email:'EMAIL',phone:'PHONE',
+  education:'EDUCATION',skills:'SKILLS',certifications:'CERTIFICATIONS',desired_roles:'WORK PREFERENCES'
  };
  return labels[key]??key.replace(/_/g,' ').toUpperCase();
 }
 function profileValue(key:string,value:unknown){
  const raw=String(value??'');
- if(key==='date_of_birth'){
-  const digits=raw.replace(/\D/g,'');
-  if(digits.length===8)return digits.slice(0,2)+'/'+digits.slice(2,4)+'/'+digits.slice(4);
- }
  if(key==='phone'){
   const digits=raw.replace(/\D/g,'');
   if(digits.length===10)return digits.slice(0,3)+'-'+digits.slice(3,6)+'-'+digits.slice(6);
  }
  return Array.isArray(value)?value.join(', '):raw;
 }
+const SHARE_SECTION_LABEL:Record<string,string>={experience:'WORK EXPERIENCE',education:'EDUCATION',credentials:'CERTIFICATIONS',skills:'SKILLS',availability:'AVAILABILITY',transportation:'TRANSPORTATION'};
 
 export default function JobApplicationDetail(){
  const {id}=useLocalSearchParams<{id:string}>();
@@ -59,6 +59,9 @@ export default function JobApplicationDetail(){
  const [error,setError]=useState('');
  const [withdrawing,setWithdrawing]=useState(false);
  const [events,setEvents]=useState<JobApplicationEvent[]>([]);
+ const [prepText,setPrepText]=useState('');
+ const [prepLoading,setPrepLoading]=useState(false);
+ const [prepRequested,setPrepRequested]=useState(false);
 
  useEffect(()=>{
   if(!id)return;
@@ -80,6 +83,23 @@ export default function JobApplicationDetail(){
   ]);
  }
 
+ async function askSignal(){
+  if(!item?.job||prepLoading)return;
+  setPrepLoading(true);setPrepRequested(true);
+  try{
+   const r=await prepareForInterview(item.job.id);
+   if(r.status==='ok')setPrepText(r.text);
+   else if(r.status==='out_of_credits')setPrepText('You are out of Signal credits for now. They refresh with your plan.');
+   else if(r.status==='rate_limited')setPrepText('Signal is busy across FairPath right now. Try again shortly.');
+   else if(r.status==='signed_out'){router.replace(('/sign-up?returnTo='+encodeURIComponent('/job-application/'+id)) as never);return}
+   else setPrepText(r.message);
+  }catch{
+   setPrepText('Signal could not prepare interview tips right now. Please try again.');
+  }finally{
+   setPrepLoading(false);
+  }
+ }
+
  async function withdraw(){
   if(!item)return;
   setWithdrawing(true);
@@ -98,6 +118,9 @@ export default function JobApplicationDetail(){
  const copy=STATUS[item.status]??STATUS.submitted;
  const profile=(item.answers?.profile??{}) as Record<string,unknown>;
  const employer=(item.answers?.employer_questions??{}) as Record<string,unknown>;
+ const resumeSnapshot=item.answers?.resume_snapshot as {resume_id:string;title:string}|undefined;
+ const opportunitySnapshot=item.answers?.opportunity_snapshot as Record<string,unknown>|undefined;
+ const statementSnapshot=item.answers?.record_statement_snapshot as {body:string}|undefined;
  const location=item.job?.location_text||[item.job?.city,item.job?.state].filter(Boolean).join(', ')||'Location not listed';
  const canWithdraw=['submitted','viewed','interview','offer'].includes(item.status);
 
@@ -134,11 +157,33 @@ export default function JobApplicationDetail(){
     {Object.entries(employer).map(([k,v])=><View key={k} style={s.answer}><Text style={s.answerKey}>{k.toUpperCase()}</Text><Text style={s.answerValue}>{String(v)}</Text></View>)}
    </View>:null}
 
-   {item.job?<Pressable style={s.viewJob} onPress={()=>router.push(('/job/'+item.job!.id) as never)}>
+   <View style={s.section}>
+    <Text style={s.sectionLabel}>RÉSUMÉ</Text>
+    {resumeSnapshot?<Text style={s.statusBody}>{resumeSnapshot.title} was sent with this application.</Text>:<Text style={s.muted}>No résumé was attached to this application.</Text>}
+   </View>
+
+   {opportunitySnapshot?<View style={s.section}>
+    <Text style={s.sectionLabel}>OPPORTUNITY PROFILE SHARED</Text>
+    <Text style={s.statusBody}>The employer received a copy of these sections, as they were at the moment you applied:</Text>
+    {Object.keys(opportunitySnapshot).map(k=><View key={k} style={s.answer}><Text style={s.answerKey}>{SHARE_SECTION_LABEL[k]??k.toUpperCase()}</Text></View>)}
+   </View>:null}
+
+   {statementSnapshot?<View style={s.section}>
+    <Text style={s.sectionLabel}>RECORD STATEMENT SHARED</Text>
+    <Text style={s.statusBody}>{statementSnapshot.body}</Text>
+   </View>:null}
+
+   {item.job&&canWithdraw?<View style={s.section}>
+    <Text style={s.sectionLabel}>SIGNAL · INTERVIEW PREP</Text>
+    {prepRequested?<Text style={s.statusBody}>{prepLoading?'Signal is thinking…':prepText}</Text>:
+     <Pressable accessibilityRole="button" style={s.viewJob} onPress={()=>void askSignal()}><Text style={s.viewJobText}>PREP FOR THIS INTERVIEW WITH SIGNAL</Text></Pressable>}
+   </View>:null}
+
+   {item.job?<Pressable accessibilityRole="button" style={s.viewJob} onPress={()=>router.push(('/job/'+item.job!.id) as never)}>
     <Text style={s.viewJobText}>VIEW JOB</Text><Lucide name="arrow-right" color={C.lime} size={14}/>
    </Pressable>:null}
 
-   {canWithdraw?<Pressable style={s.withdraw} disabled={withdrawing} onPress={confirmWithdraw}>
+   {canWithdraw?<Pressable accessibilityRole="button" style={s.withdraw} disabled={withdrawing} onPress={confirmWithdraw}>
     <Text style={s.withdrawText}>{withdrawing?'WITHDRAWING…':'WITHDRAW APPLICATION'}</Text>
    </Pressable>:null}
   </ScrollView>

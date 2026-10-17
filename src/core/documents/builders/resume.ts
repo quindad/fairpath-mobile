@@ -1,19 +1,22 @@
 // Resume document builder. Pure: ResumeContent -> DocumentSpec. Prints exactly what the member wrote; invents nothing.
 import type { DocBlock, DocumentSpec } from '../spec.ts';
 import { documentTypeInfo } from '../document-types.ts';
-import type { ResumeContent } from '../../resume/resume-types.ts';
+import type { ResumeContent, ResumeTemplate } from '../../resume/resume-types.ts';
 
 const FOOTER = 'Prepared with FairPath Resume Studio. Content is written and confirmed by the member.';
 
-export function buildResume(title: string, content: ResumeContent, now = new Date()): DocumentSpec {
+export function buildResume(title: string, content: ResumeContent, now = new Date(), template: ResumeTemplate = 'classic'): DocumentSpec {
   const info = documentTypeInfo('resume')!;
+  // 'compact' drops the spacer blocks between sections -- a real, visible difference in the rendered PDF/DOCX
+  // (tighter vertical spacing, more content per page), not a cosmetic label with identical output either way.
+  const gap = (): DocBlock[] => (template === 'compact' ? [] : [{ type: 'spacer' }]);
   const blocks: DocBlock[] = [
     { type: 'heading', text: content.contact.name || 'Your name', level: 1 },
     { type: 'paragraph', text: [content.contact.location, content.contact.phone, content.contact.email].filter(Boolean).join('  ·  ') },
   ];
-  if (content.summary.trim()) blocks.push({ type: 'spacer' }, { type: 'heading', text: 'Summary', level: 2 }, { type: 'paragraph', text: content.summary });
+  if (content.summary.trim()) blocks.push(...gap(), { type: 'heading', text: 'Summary', level: 2 }, { type: 'paragraph', text: content.summary });
   if (content.experience.length) {
-    blocks.push({ type: 'spacer' }, { type: 'heading', text: 'Experience', level: 2 });
+    blocks.push(...gap(), { type: 'heading', text: 'Experience', level: 2 });
     for (const e of content.experience) {
       blocks.push({ type: 'heading', text: `${e.title || 'Role'} — ${e.employer || 'Employer'}`, level: 3 });
       blocks.push({ type: 'paragraph', text: [e.location, `${e.start || ''} – ${e.current ? 'Present' : e.end || ''}`].filter(Boolean).join('  ·  ') });
@@ -21,12 +24,12 @@ export function buildResume(title: string, content: ResumeContent, now = new Dat
     }
   }
   if (content.education.length) {
-    blocks.push({ type: 'spacer' }, { type: 'heading', text: 'Education', level: 2 });
+    blocks.push(...gap(), { type: 'heading', text: 'Education', level: 2 });
     blocks.push({ type: 'keyvalue', items: content.education.map((e) => ({ label: e.school || 'School', value: [e.credential, e.field, e.endYear].filter(Boolean).join(', ') })) });
   }
-  if (content.skills.length) blocks.push({ type: 'spacer' }, { type: 'heading', text: 'Skills', level: 2 }, { type: 'bullets', items: content.skills });
+  if (content.skills.length) blocks.push(...gap(), { type: 'heading', text: 'Skills', level: 2 }, { type: 'bullets', items: content.skills });
   if (content.credentials.length) {
-    blocks.push({ type: 'spacer' }, { type: 'heading', text: 'Credentials & Certifications', level: 2 });
+    blocks.push(...gap(), { type: 'heading', text: 'Credentials & Certifications', level: 2 });
     blocks.push({ type: 'keyvalue', items: content.credentials.map((c) => ({ label: c.name || 'Credential', value: [c.issuer, c.year].filter(Boolean).join(', ') })) });
   }
   return {

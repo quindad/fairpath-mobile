@@ -18,7 +18,7 @@ export type HousingSort='featured'|'nearest'|'price_low'|'price_high'|'newest';
 import {BOOLEAN_FILTER_KEYS,EMPTY_HOUSING_FILTERS,type HousingFilters} from '@/core/housing/housing-filters';
 export {countHousingFilters,EMPTY_HOUSING_FILTERS,housingFiltersFromRecord,type HousingFilters} from '@/core/housing/housing-filters';
 export type HousingSearchParams={query?:string;zip?:string|null;radiusMiles?:number;location?:string;filters?:HousingFilters;sort?:HousingSort;limit?:number;offset?:number};
-export type HousingCard=Pick<HousingListing,'id'|'title'|'property_type'|'city'|'state'|'postal_code'|'bedrooms'|'bathrooms'|'square_feet'|'rent_monthly'|'fasttrack_enabled'|'featured'|'source_label'|'created_at'|'latitude'|'longitude'|'housing_media'>&{distance_miles:number|null};
+export type HousingCard=Pick<HousingListing,'id'|'title'|'property_type'|'city'|'state'|'postal_code'|'bedrooms'|'bathrooms'|'square_feet'|'rent_monthly'|'fasttrack_enabled'|'featured'|'source_label'|'created_at'|'latitude'|'longitude'|'housing_media'|'virtual_tour_url'>&{distance_miles:number|null;accepted_voucher_types?:string[]};
 export type HousingSearchResult={homes:HousingCard[];total:number;hasMore:boolean};
 export const HOUSING_PAGE_SIZE=20;
 /** Server-side search (public.search_housing): ZIP/radius, text, every filter and sort, with pagination. */
@@ -33,6 +33,7 @@ export async function searchHousing(p:HousingSearchParams={}):Promise<HousingSea
  if(f.beds!=='ANY')payload.beds=f.beds;
  if(f.baths!=='ANY')payload.baths=f.baths;
  if(f.types.length)payload.types=f.types;
+ if(f.voucherTypes.length)payload.voucherTypes=f.voucherTypes;
  for(const k of BOOLEAN_FILTER_KEYS)if(f[k])payload[k]=true;
  const {data,error}=await supabase.rpc('search_housing',{
   p_query:p.query?.trim()||null,
@@ -96,6 +97,24 @@ export async function createHousingInquiry(input:{listingId:string;subject?:stri
  void trackProductEvent('housing_inquiry_sent','housing',input.listingId,{inquiry_id:id}).catch(()=>{});
  return {id};
 }
+
+export type HousingInquiryThreadMessage={id:string;sender_id:string;body:string;created_at:string;is_me:boolean};
+/** Full follow-up thread for one inquiry, seeded with the original question + any single-shot reply on first load. */
+export async function loadHousingInquiryThread(inquiryId:string):Promise<HousingInquiryThreadMessage[]>{
+ await currentUser();
+ const {data,error}=await supabase.rpc('load_housing_inquiry_thread',{p_inquiry_id:inquiryId});
+ if(error)throw error;
+ return (data??[]) as HousingInquiryThreadMessage[];
+}
+/** Sends a member follow-up into the inquiry thread. The landlord/Partner reply side is not wired to this yet. */
+export async function sendHousingInquiryFollowup(inquiryId:string,body:string){
+ await currentUser();
+ const {error}=await supabase.rpc('send_housing_inquiry_followup',{p_inquiry_id:inquiryId,p_body:body.trim()});
+ if(error){
+  for(const code of ['SIGNED_OUT','MESSAGE_INVALID','INQUIRY_NOT_FOUND'])if(error.message.includes(code))throw new Error(code);
+  throw error;
+ }
+}
 export async function createHousingReport(input:{listingId:string;reason:'incorrect_info'|'suspected_scam'|'unavailable'|'discrimination_concern'|'safety_concern'|'other';details?:string}){
  const user=await currentUser();
  const {data,error}=await supabase.from('housing_reports').insert({user_id:user.id,listing_id:input.listingId,reason:input.reason,details:input.details?.trim()||null}).select('id,status,created_at').single();
@@ -134,10 +153,10 @@ export async function loadMyHousingApplication(listingId:string):Promise<{id:str
  return data as {id:string;status:HousingApplicationStatus;application_type:HousingApplicationMode;current_step:number}|null;
 }
 
-export type HousingApplicationDetail=MyHousingApplication & {answers:Partial<HousingApplicationForm>;listing:{id:string;title:string;city:string;state:string;rent_monthly:number;bedrooms:number|null;bathrooms:number|null;fasttrack_enabled:boolean}|null};
+export type HousingApplicationDetail=MyHousingApplication & {answers:Partial<HousingApplicationForm>&{record_statement_snapshot?:{body:string}};partner_note:string|null;status_reason:string|null;listing:{id:string;title:string;city:string;state:string;rent_monthly:number;bedrooms:number|null;bathrooms:number|null;fasttrack_enabled:boolean}|null};
 export async function loadMyHousingApplicationDetail(applicationId:string):Promise<HousingApplicationDetail>{
  const user=await currentUser();
- const {data,error}=await supabase.from('housing_applications').select('id,listing_id,status,application_type,current_step,submitted_at,updated_at,answers,listing:housing_listings(id,title,city,state,rent_monthly,bedrooms,bathrooms,fasttrack_enabled)').eq('id',applicationId).eq('user_id',user.id).single();
+ const {data,error}=await supabase.from('housing_applications').select('id,listing_id,status,application_type,current_step,submitted_at,updated_at,answers,partner_note,status_reason,listing:housing_listings(id,title,city,state,rent_monthly,bedrooms,bathrooms,fasttrack_enabled)').eq('id',applicationId).eq('user_id',user.id).single();
  if(error)throw error;
  return data as unknown as HousingApplicationDetail;
 }
@@ -204,7 +223,7 @@ export async function saveHousingApplicationDraft(input:{listingId:string;mode:H
  if(!row)throw new Error('DRAFT_NOT_SAVED');
  return row as HousingDraft;
 }
-export async function submitHousingApplication(applicationId:string,form:HousingApplicationForm,consent:{accuracy:boolean;submit:boolean;fasttrack_ack?:boolean}){
+export async function submitHousingApplication(applicationId:string,form:HousingApplicationForm,consent:{accuracy:boolean;submit:boolean;fasttrack_ack?:boolean},includeStatement?:boolean){
  const validation=validateHousingApplicationForm(form);
  if(Object.keys(validation).length)throw new Error('APPLICATION_INCOMPLETE');
  if(!consent.accuracy||!consent.submit)throw new Error('CONSENT_REQUIRED');
@@ -212,7 +231,8 @@ export async function submitHousingApplication(applicationId:string,form:Housing
  const {data,error}=await supabase.rpc('submit_housing_application',{
   p_application_id:applicationId,
   p_answers:form,
-  p_consent:consent
+  p_consent:consent,
+  p_include_statement:includeStatement??false
  });
  if(error){
   if(error.message?.includes('CONSENT_REQUIRED'))throw new Error('CONSENT_REQUIRED');

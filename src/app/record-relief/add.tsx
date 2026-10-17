@@ -88,7 +88,7 @@ export default function AddReliefCase() {
         <Field label="A SHORT NAME FOR THIS CASE" value={form.label} onChangeText={(v) => set({ label: v })} error={errors.label} placeholder="2016 theft charge" autoCapitalize="words" />
         <Field label="COURT" value={form.court_name} onChangeText={(v) => set({ court_name: v })} optional autoCapitalize="words" />
         <Field label="CASE NUMBER" value={form.case_number} onChangeText={(v) => set({ case_number: v })} error={errors.case_number} optional hint="Optional and private. It is only printed inside documents you create, never in a file name." />
-        <Field label="WHAT WAS THE CHARGE?" value={form.offense_description} onChangeText={(v) => set({ offense_description: v })} optional autoCapitalize="sentences" />
+        <Field label="WHAT WAS THE CHARGE?" value={form.offense_description} onChangeText={(v) => set({ offense_description: v })} optional autoCapitalize="sentences" hint="This determines which relief rules can apply to your case." />
 
         {!isFed ? <ChipGroup single label="TYPE OF OFFENSE" options={OFFENSE_CLASS_OPTIONS} selected={[form.offense_class]} onChange={(n) => set({ offense_class: n[0] ?? form.offense_class })} hint="Pick the closest match. If you are not sure, choose Other." /> : null}
         <ChipGroup single label="HOW DID THE CASE END?" options={DISPOSITION_OPTIONS} selected={[form.disposition]} onChange={(n) => set({ disposition: n[0] ?? form.disposition })} />
@@ -104,10 +104,11 @@ export default function AddReliefCase() {
         <FairPathDatePicker label="RELEASE DATE" value={form.release_text} onChange={(v) => set({ release_text: v })} kind="past" optional error={errors.release_text} />
 
         <View style={{ marginTop: 18 }}><SectionTitle>CONDITIONS SOME RULES CHECK</SectionTitle></View>
+        <BodyText muted>Many waiting-period and automatic-relief rules specifically require fines and restitution to be paid, or check for pending charges and other convictions. All of these are optional — FairPath only uses what you choose to share, and it stays private.</BodyText>
         <ChipGroup single label="ARE ALL FINES PAID?" options={YNU} selected={form.fines_paid ? [form.fines_paid] : []} onChange={(n) => set({ fines_paid: (n[0] as 'yes' | 'no') ?? '' })} hint="Leave blank if you are not sure." />
-        <ChipGroup single label="IS RESTITUTION PAID?" options={YNU} selected={form.restitution_paid ? [form.restitution_paid] : []} onChange={(n) => set({ restitution_paid: (n[0] as 'yes' | 'no') ?? '' })} />
-        <ChipGroup single label="ANY PENDING CHARGES?" options={YNU} selected={form.pending_charges ? [form.pending_charges] : []} onChange={(n) => set({ pending_charges: (n[0] as 'yes' | 'no') ?? '' })} />
-        <Field label="HOW MANY OTHER CONVICTIONS DO YOU HAVE?" value={form.other_convictions} onChangeText={(v) => set({ other_convictions: v.replace(/[^0-9]/g, '').slice(0, 2) })} error={errors.other_convictions} keyboardType="number-pad" optional />
+        <ChipGroup single label="IS RESTITUTION PAID?" options={YNU} selected={form.restitution_paid ? [form.restitution_paid] : []} onChange={(n) => set({ restitution_paid: (n[0] as 'yes' | 'no') ?? '' })} hint="Some jurisdictions require restitution paid in full before relief is available." />
+        <ChipGroup single label="ANY PENDING CHARGES?" options={YNU} selected={form.pending_charges ? [form.pending_charges] : []} onChange={(n) => set({ pending_charges: (n[0] as 'yes' | 'no') ?? '' })} hint="An open case elsewhere can delay or block relief on this one." />
+        <Field label="HOW MANY OTHER CONVICTIONS DO YOU HAVE?" value={form.other_convictions} onChangeText={(v) => set({ other_convictions: v.replace(/[^0-9]/g, '').slice(0, 2) })} error={errors.other_convictions} keyboardType="number-pad" optional hint="Some relief rules have a limit on total convictions." />
         <Field label="NOTES" value={form.notes} onChangeText={(v) => set({ notes: v })} multiline optional maxLength={1500} />
 
         {Object.keys(errors).length ? <StatusLine tone="error">Please fix the highlighted fields.</StatusLine> : null}

@@ -21,7 +21,7 @@ export default function Payments(){
   <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <Text style={s.intro}>Receipts for FairPath services you paid for. Payment status is separate from your application status. FairPath+ membership billing is handled by the App Store or Google Play.</Text>
    {loading?<Text style={s.state}>Loading payments…</Text>:error?<>
-    <Text style={s.error}>{error}</Text><Pressable style={s.retry} onPress={load}><Text style={s.retryText}>TRY AGAIN</Text></Pressable>
+    <Text style={s.error}>{error}</Text><Pressable accessibilityRole="button" style={s.retry} onPress={load}><Text style={s.retryText}>TRY AGAIN</Text></Pressable>
    </>:rows.length===0?<View style={s.empty}><Text style={s.emptyTitle}>NO PAYMENTS YET</Text><Text style={s.emptyBody}>When you pay for a FairPath service, your receipt appears here.</Text></View>
    :rows.map(p=><View key={p.id} style={s.card}>
     <View style={s.top}><InlineBadge tone={p.status==='succeeded'?'lime':undefined}>{paymentStatusLabel(p.status)}</InlineBadge><Text style={s.date}>{new Date(p.created_at).toLocaleDateString()}</Text></View>
@@ -30,7 +30,7 @@ export default function Payments(){
     <Text style={s.ref}>REFERENCE {receiptRef(p.id)}{p.succeeded_at?' · PAID '+new Date(p.succeeded_at).toLocaleString():''}</Text>
     {p.failure_code&&p.status==='failed'?<Text style={s.fail}>Declined ({p.failure_code.replaceAll('_',' ')}). You were not charged.</Text>:null}
     {p.refunds.map(r=><Text key={r.id} style={s.refund}>REFUND {formatCents(r.amount_cents,p.currency)} · {new Date(r.created_at).toLocaleDateString()}</Text>)}
-    {p.purpose==='housing_fasttrack'?<Pressable style={s.link} onPress={()=>router.push(('/housing-application/'+p.purpose_ref) as never)}><Text style={s.linkText}>VIEW APPLICATION</Text></Pressable>:null}
+    {p.purpose==='housing_fasttrack'?<Pressable accessibilityRole="button" style={s.link} onPress={()=>router.push(('/housing-application/'+p.purpose_ref) as never)}><Text style={s.linkText}>VIEW APPLICATION</Text></Pressable>:null}
    </View>)}
   </ScrollView>
  </ScreenFrame>

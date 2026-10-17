@@ -43,10 +43,12 @@ check(/quote_housing_fasttrack/.test(create) && /quote\.amount_due_cents/.test(c
 check(!/body\.(amount|price|currency|total)/.test(create), 'The payment function must not read an amount/price from the request.');
 check(/app\.application_type !== 'fasttrack'/.test(create) && /app\.status !== 'started'/.test(create) && /app\.user_id !== user\.id/.test(create), 'Payment purpose must be validated server-side.');
 check(/idempotencyKey/.test(create) && /create_payment_transaction/.test(create), 'Payment creation must be idempotent and recorded.');
+check(/order\('created_at', \{ ascending: false \}\)/.test(create) && /paymentAttemptKey\(applicationId, amount, latest\)/.test(create), 'A declined attempt must produce a new stable Stripe idempotency key.');
 check(/requireEnv\('STRIPE_SECRET_KEY'\)/.test(create) && /501/.test(create), 'The secret key must come from function env and the function must refuse when unset.');
 const hook = strip(read('supabase/functions/stripe-webhook/index.ts'));
 check(/constructEventAsync/.test(hook) && /STRIPE_WEBHOOK_SECRET/.test(hook) && /invalid_signature/.test(hook), 'The webhook must verify Stripe signatures.');
 check(/apply_payment_event/.test(hook) && /status\(500|json\(500/.test(hook.replace(/\s+/g, ' ')), 'The webhook must use apply_payment_event and fail (retryable) on processing errors.');
+check(/latestRefund\?\.amount/.test(hook) && /refund_amount: refundAmount/.test(hook), 'Refund history must record each Stripe refund amount rather than the cumulative charge total.');
 check(!/housing_applications/.test(hook), 'The webhook must never touch housing applications: payment is not approval.');
 check(/verify_jwt = false/.test(read('supabase/config.toml')) && /\[functions\.stripe-webhook\]/.test(read('supabase/config.toml')), 'The webhook must be deployed without JWT verification (Stripe signs it instead).');
 

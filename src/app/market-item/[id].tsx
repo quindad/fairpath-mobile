@@ -70,7 +70,7 @@ export default function MarketItem(){
 
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH MARKETPLACE" title="Item details" backTo="/marketplace" trailing={
-   !isOwner?<Pressable style={[s.save,saved&&s.saveOn]} onPress={()=>void toggleSave()}><Lucide name={saved?'bookmark-check':'bookmark'} color={saved?C.black:C.white} size={14}/></Pressable>:undefined
+   !isOwner?<Pressable accessibilityRole="button" style={[s.save,saved&&s.saveOn]} onPress={()=>void toggleSave()}><Lucide name={saved?'bookmark-check':'bookmark'} color={saved?C.black:C.white} size={14}/></Pressable>:undefined
   }/>
   <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <View style={s.gallery} onLayout={e=>setGalleryWidth(e.nativeEvent.layout.width)}>
@@ -79,13 +79,20 @@ export default function MarketItem(){
     </ScrollView>:<View style={s.noPhoto}><Lucide name="image-off" color={C.mutedStrong} size={32}/><Text style={s.noPhotoTitle}>NO PHOTOS PROVIDED</Text></View>}
     {photos.length?<View style={s.photoCount}><Text style={s.photoCountText}>{galleryIndex+1} / {photos.length}</Text></View>:null}
    </View>
-   {photos.length>1?<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.thumbs}>{photos.map((url,index)=><Pressable key={'t'+url+index} style={[s.thumbWrap,galleryIndex===index&&s.thumbOn]} onPress={()=>{setGalleryIndex(index);galleryRef.current?.scrollTo({x:index*galleryWidth,animated:true})}}><Image source={{uri:url}} style={s.thumb}/></Pressable>)}</ScrollView>:null}
+   {photos.length>1?<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.thumbs}>{photos.map((url,index)=><Pressable accessibilityRole="button" key={'t'+url+index} style={[s.thumbWrap,galleryIndex===index&&s.thumbOn]} onPress={()=>{setGalleryIndex(index);galleryRef.current?.scrollTo({x:index*galleryWidth,animated:true})}}><Image source={{uri:url}} style={s.thumb}/></Pressable>)}</ScrollView>:null}
 
    <View style={s.intro}>
-    <View style={s.badges}><InlineBadge tone="lime">FREE</InlineBadge>{item.safe_pickup?<InlineBadge tone="lime">SAFE PICKUP</InlineBadge>:null}{item.seller_type==='organization'?<InlineBadge>ORGANIZATION</InlineBadge>:null}</View>
+    <View style={s.badges}><InlineBadge tone="lime">FREE</InlineBadge>{item.is_food_rescue?<InlineBadge tone="lime">FOOD RESCUE</InlineBadge>:null}{item.safe_pickup?<InlineBadge tone="lime">SAFE PICKUP</InlineBadge>:null}{item.seller_type==='organization'?<InlineBadge>ORGANIZATION</InlineBadge>:null}</View>
     <Text style={s.title}>{item.title}</Text>
     <Text style={s.meta}>{[item.condition,item.quantity>1?'Qty '+item.quantity:null,item.pickup_area||item.city+', '+item.state].filter(Boolean).join(' · ')}</Text>
    </View>
+
+   {item.is_food_rescue?<Section label="PICKUP WINDOW TODAY">
+    <View style={s.infoRow}><Lucide name="clock" color={C.lime} size={15}/><View style={{flex:1}}>
+     <Text style={s.infoTitle}>{item.pickup_window_start&&item.pickup_window_end?new Date(item.pickup_window_start).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+' – '+new Date(item.pickup_window_end).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'Pickup window not listed'}</Text>
+     {item.best_by_note?<Text style={s.infoBody}>{item.best_by_note}</Text>:null}
+    </View></View>
+   </Section>:null}
 
    <Section label="ABOUT THIS ITEM"><Text style={s.body}>{item.description||'No description provided.'}</Text></Section>
    <Section label="PICKUP AREA">
@@ -100,15 +107,15 @@ export default function MarketItem(){
     <Step n="4" title="VERIFY" body="At pickup, give the donor your FairPath code. The donor verifies it to complete the handoff."/>
    </Section>
 
-   {isOwner?<View style={s.ownerBox}><Text style={s.ownerLabel}>YOUR LISTING</Text><Text style={s.ownerTitle}>Manage claim requests and pickup.</Text><Pressable style={s.primary} onPress={()=>router.push(('/marketplace-manage/'+item.id) as never)}><Text style={s.primaryText}>MANAGE LISTING</Text><Lucide name="arrow-right" color={C.black} size={15}/></Pressable></View>
-   :claim?<View style={s.claimBox}><Text style={s.claimLabel}>YOUR CLAIM</Text><Text style={s.claimTitle}>{claim.status.replaceAll('_',' ').toUpperCase()}</Text><Text style={s.claimBody}>{claim.status==='requested'?'Your claim is waiting for anonymous donor selection.':claim.status==='approved'||claim.status==='ready'?'Pickup details are available in your claim workspace.':'Open your claim for the latest status.'}</Text><Pressable style={s.primary} onPress={()=>router.push(('/marketplace-claim/'+claim.id) as never)}><Text style={s.primaryText}>OPEN MY CLAIM</Text><Lucide name="arrow-right" color={C.black} size={15}/></Pressable></View>
+   {isOwner?<View style={s.ownerBox}><Text style={s.ownerLabel}>YOUR LISTING</Text><Text style={s.ownerTitle}>Manage claim requests and pickup.</Text><Pressable accessibilityRole="button" style={s.primary} onPress={()=>router.push(('/marketplace-manage/'+item.id) as never)}><Text style={s.primaryText}>MANAGE LISTING</Text><Lucide name="arrow-right" color={C.black} size={15}/></Pressable></View>
+   :claim?<View style={s.claimBox}><Text style={s.claimLabel}>YOUR CLAIM</Text><Text style={s.claimTitle}>{claim.status.replaceAll('_',' ').toUpperCase()}</Text><Text style={s.claimBody}>{claim.status==='requested'?'Your claim is waiting for anonymous donor selection.':claim.status==='approved'||claim.status==='ready'?'Pickup details are available in your claim workspace.':'Open your claim for the latest status.'}</Text><Pressable accessibilityRole="button" style={s.primary} onPress={()=>router.push(('/marketplace-claim/'+claim.id) as never)}><Text style={s.primaryText}>OPEN MY CLAIM</Text><Lucide name="arrow-right" color={C.black} size={15}/></Pressable></View>
    :unavailable?<View style={s.unavailable}><Text style={s.unavailableTitle}>NOT ACCEPTING CLAIMS</Text><Text style={s.unavailableBody}>This item is currently reserved, claimed, or removed.</Text></View>
    :<View style={s.claimForm}>
     <View style={s.claimTop}><View><Text style={s.claimLabel}>REQUEST THIS ITEM</Text><Text style={s.claimQuota}>{quota?quota.remaining+' of '+quota.monthly_limit+' claims left this month':'Sign in to request'}</Text></View><Lucide name="gift" color={C.lime} size={22}/></View>
-    <Pressable style={[s.primary,claiming&&s.disabled]} onPress={()=>void requestClaim()} disabled={claiming}><Text style={s.primaryText}>{claiming?'REQUESTING…':'REQUEST CLAIM'}</Text><Lucide name="arrow-right" color={C.black} size={15}/></Pressable>
+    <Pressable accessibilityRole="button" style={[s.primary,claiming&&s.disabled]} onPress={()=>void requestClaim()} disabled={claiming}><Text style={s.primaryText}>{claiming?'REQUESTING…':'REQUEST CLAIM'}</Text><Lucide name="arrow-right" color={C.black} size={15}/></Pressable>
    </View>}
 
-   {!isOwner?<Pressable style={s.report} onPress={()=>router.push(('/marketplace-report/'+item.id) as never)}><Lucide name="flag" color={C.mutedStrong} size={13}/><Text style={s.reportText}>REPORT LISTING OR SAFETY CONCERN</Text><Lucide name="arrow-right" color={C.mutedStrong} size={13}/></Pressable>:null}
+   {!isOwner?<Pressable accessibilityRole="button" style={s.report} onPress={()=>router.push(('/marketplace-report/'+item.id) as never)}><Lucide name="flag" color={C.mutedStrong} size={13}/><Text style={s.reportText}>REPORT LISTING OR SAFETY CONCERN</Text><Lucide name="arrow-right" color={C.mutedStrong} size={13}/></Pressable>:null}
   </ScrollView>
  </ScreenFrame>
 }

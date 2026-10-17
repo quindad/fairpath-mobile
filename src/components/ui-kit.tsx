@@ -1,5 +1,7 @@
+import { useRef } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, type KeyboardTypeOptions } from 'react-native';
 import { FairPathFonts as F } from '@/constants/fairpath';
+import { isNavigationKey, nextChipIndex } from '@/components/chip-group-nav';
 import { useFairPathTheme, useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
 
@@ -38,17 +40,40 @@ export function ChipGroup({ label, options, selected, onChange, single, hint }: 
   label?: string; options: { value: string; label: string }[]; selected: string[]; onChange: (next: string[]) => void; single?: boolean; hint?: string;
 }) {
   const s = useThemedStyles(styles);
+  const nodes = useRef<Record<number, { focus?: () => void } | null>>({});
+
+  const selectedIndex = Math.max(0, options.findIndex((o) => selected.includes(o.value)));
+
+  // Radio groups (single) follow the standard WAI-ARIA radiogroup keyboard pattern: only one chip is a Tab stop
+  // (roving tabindex, on the selected chip or the first if none is selected), and arrow keys both move focus AND
+  // select, matching every native radio-button group. Checkbox groups keep independent per-chip tabbing: there is
+  // no roving-tabindex convention for a checkbox group, each one is its own yes/no control.
+  const onKeyDown = (idx: number) => (e: { key: string; preventDefault?: () => void }) => {
+    if (!single || !isNavigationKey(e.key)) return;
+    e.preventDefault?.();
+    const next = nextChipIndex(idx, options.length, e.key);
+    onChange([options[next].value]);
+    nodes.current[next]?.focus?.();
+  };
+
   return (
     <View style={s.fieldWrap}>
-      {label ? <Text style={s.label}>{label}</Text> : null}
-      <View style={s.chips}>
-        {options.map((o) => {
+      {label ? <Text style={s.label} nativeID={single ? `chipgroup-${label}` : undefined}>{label}</Text> : null}
+      <View style={s.chips} accessibilityRole={single ? 'radiogroup' : undefined} aria-labelledby={single && label ? `chipgroup-${label}` : undefined}>
+        {options.map((o, idx) => {
           const on = selected.includes(o.value);
           return (
             <Pressable
               key={o.value}
+              ref={(node: { focus?: () => void } | null) => { nodes.current[idx] = node; }}
               accessibilityRole={single ? 'radio' : 'checkbox'}
               accessibilityState={{ selected: on, checked: on }}
+              // React Native Web does not reliably turn accessibilityState.checked into aria-checked for a View-based
+              // Pressable with role radio/checkbox, so a screen reader announced every chip without saying which one
+              // was selected. aria-checked is forwarded to the DOM as a plain unknown prop, so it is set directly too.
+              aria-checked={on}
+              tabIndex={single ? (idx === selectedIndex ? 0 : -1) : 0}
+              {...({ onKeyDown: onKeyDown(idx) } as object)}
               style={[s.chip, on && s.chipOn]}
               onPress={() => onChange(single ? (on ? [] : [o.value]) : on ? selected.filter((v) => v !== o.value) : [...selected, o.value])}
             >
@@ -105,17 +130,20 @@ export function StatusLine({ tone, children }: { tone: 'error' | 'success' | 'wa
 
 export function ListRow({ title, body, meta, onPress, trailing }: { title: string; body?: string; meta?: string; onPress?: () => void; trailing?: React.ReactNode }) {
   const s = useThemedStyles(styles);
-  const inner = (
-    <>
-      <View style={s.rowCopy}>
-        <Text style={s.rowTitle}>{title}</Text>
-        {body ? <Text style={s.rowBody}>{body}</Text> : null}
-        {meta ? <Text style={s.rowMeta}>{meta}</Text> : null}
-      </View>
-      {trailing ?? (onPress ? <Text style={s.rowArrow}>→</Text> : null)}
-    </>
+  const copy = (
+    <View style={s.rowCopy}>
+      <Text style={s.rowTitle}>{title}</Text>
+      {body ? <Text style={s.rowBody}>{body}</Text> : null}
+      {meta ? <Text style={s.rowMeta}>{meta}</Text> : null}
+    </View>
   );
-  return onPress ? <Pressable accessibilityRole="button" style={s.row} onPress={onPress}>{inner}</Pressable> : <View style={s.row}>{inner}</View>;
+  // `trailing` (e.g. COPY/DELETE buttons) is rendered as a sibling of the row's own Pressable, never nested inside
+  // it: on web a Pressable becomes a real <button>, and a button cannot legally contain another button -- that
+  // produced an actual React hydration warning and an inaccessible nested-control structure when trailing held
+  // its own Pressable/TextButton.
+  if (!onPress) return <View style={s.row}>{copy}{trailing ?? null}</View>;
+  if (trailing) return <View style={s.row}><Pressable accessibilityRole="button" style={s.rowPressable} onPress={onPress}>{copy}</Pressable>{trailing}</View>;
+  return <Pressable accessibilityRole="button" style={s.row} onPress={onPress}>{copy}<Text style={s.rowArrow}>→</Text></Pressable>;
 }
 
 const styles = (t: ThemeTokens) => StyleSheet.create({
@@ -152,6 +180,7 @@ const styles = (t: ThemeTokens) => StyleSheet.create({
   statusWarning: { color: t.warning },
   statusMuted: { color: t.textMuted },
   row: { minHeight: 64, borderBottomWidth: 1, borderBottomColor: t.border, flexDirection: 'row', alignItems: 'center' },
+  rowPressable: { flex: 1, flexDirection: 'row', alignItems: 'center' },
   rowCopy: { flex: 1, paddingRight: 12, paddingVertical: 10 },
   rowTitle: { color: t.text, fontFamily: F.extraBold, fontSize: 15 },
   rowBody: { color: t.textSecondary, fontSize: 12, lineHeight: 17, marginTop: 3 },

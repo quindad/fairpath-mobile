@@ -6,35 +6,25 @@ import { AppState, Platform } from 'react-native';
 
 // Dev/prod separation (Step 0 Foundation item 5): read from env when
 // present, so a different Supabase project can be targeted per
-// environment via EAS/CI config without a code change. Falls back to
-// the existing project's values so local dev and this repo's current
-// tests keep working unchanged if no .env is present. EXPO_PUBLIC_*
+// environment via EAS/CI config without a code change. EXPO_PUBLIC_*
 // vars are inlined at build time by Expo and are safe to ship to the
 // client — this is the anon/publishable key, not a secret.
 const PRODUCTION_PROJECT_REF = 'rqpczemdagoddhuwefxt';
-const PRODUCTION_URL_FALLBACK = 'https://rqpczemdagoddhuwefxt.supabase.co';
-const PRODUCTION_KEY_FALLBACK = 'sb_publishable_zPBzvXj7eVASZo20n3nIOg_4JBdeug_';
 
 const envUrl = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim();
 const envKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim();
 const envKeyIsPlaceholder = !envKey || envKey.startsWith('<');
 
-// Environment safety: a development bundle must NEVER silently talk to the
-// production project. Two separate Supabase projects exist —
-// fairpath-mobile (production) and fairpath-mobile-dev — and local dev must
-// select the dev one explicitly via .env.local.
-if (__DEV__ && (!envUrl || envKeyIsPlaceholder)) {
+// Every build must name its target explicitly. This prevents a missing EAS
+// environment variable from silently connecting a release to production.
+if (!envUrl || envKeyIsPlaceholder) {
   throw new Error(
-    'FairPath dev safety stop: EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_ANON_KEY are not set. ' +
-      'Refusing to fall back to the PRODUCTION Supabase project in a development build. ' +
-      'Copy .env.example to .env.local and fill in the fairpath-mobile-dev URL and anon key, then restart Expo with: expo start -c',
+    'FairPath configuration error: EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_ANON_KEY must be set for this build.',
   );
 }
 
-// Release builds keep their existing behavior (production defaults) unless
-// EAS/CI provides explicit values.
-const supabaseUrl = envUrl || PRODUCTION_URL_FALLBACK;
-const supabasePublishableKey = envKeyIsPlaceholder ? PRODUCTION_KEY_FALLBACK : (envKey as string);
+const supabaseUrl = envUrl;
+const supabasePublishableKey = envKey;
 
 if (__DEV__) {
   const isProduction = supabaseUrl.includes(PRODUCTION_PROJECT_REF);

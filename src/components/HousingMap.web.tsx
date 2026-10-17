@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { FairPathColors as C, FairPathFonts as F } from '@/constants/fairpath';
 import type { HousingCard } from '@/core/housing/housing-service';
 import { HousingMapCard } from '@/components/HousingMapCard';
+import { mappableOnly } from '@/core/location/map-data';
 
 function safeJson(value:unknown){
  return JSON.stringify(value).replace(/</g,'\\u003c');
@@ -10,7 +11,7 @@ function safeJson(value:unknown){
 
 /** Web map (Leaflet in an iframe). Pin clicks are posted to the page so the same preview card as native is used. */
 export function HousingMap({homes,onOpen}:{homes:HousingCard[];onOpen:(home:HousingCard)=>void}){
- const located=useMemo(()=>homes.filter(h=>h.latitude!=null&&h.longitude!=null),[homes]);
+ const located=useMemo(()=>mappableOnly(homes),[homes]);
  const [selectedId,setSelectedId]=useState<string|null>(null);
  const selected=located.find(h=>h.id===selectedId)??null;
  const key=located.map(h=>h.id).join(',');

@@ -5,11 +5,9 @@ import { Pressable, Text, View } from 'react-native';
 import { PageHeader, ScreenFrame, SectionTitle } from '@/components/ProductChrome';
 import { useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
-import { loadEnrollments, type EnrollmentMap } from '@/core/academy/progress-store';
-import { progressPercent } from '@/core/academy/enrollment';
-import { NATIVE_FIXTURE_COURSE } from '@/core/academy/native-fixtures';
 import { parseProfile, VETERAN_PROFILE_KEY, type VeteranProfile } from '@/core/veterans/profile-store';
 import { BRANCHES } from '@/core/veterans/branches';
+import { getFocusGuidance } from '@/core/ai/signal';
 
 type Load = 'loading' | 'ready' | 'error';
 
@@ -25,15 +23,16 @@ const PLANNED = [
 export default function MyPathScreen() {
   const s = useThemedStyles(styles);
   const [load, setLoad] = useState<Load>('loading');
-  const [enrollments, setEnrollments] = useState<EnrollmentMap>({});
   const [veteran, setVeteran] = useState<VeteranProfile | null>(null);
+  const [focusText, setFocusText] = useState('');
+  const [focusLoading, setFocusLoading] = useState(false);
+  const [focusRequested, setFocusRequested] = useState(false);
 
   useEffect(() => {
     let alive = true;
-    Promise.all([loadEnrollments(AsyncStorage), AsyncStorage.getItem(VETERAN_PROFILE_KEY)])
-      .then(([map, raw]) => {
+    AsyncStorage.getItem(VETERAN_PROFILE_KEY)
+      .then((raw) => {
         if (!alive) return;
-        setEnrollments(map);
         setVeteran(raw ? parseProfile(raw, new Date().toISOString()) : null);
         setLoad('ready');
       })
@@ -41,9 +40,21 @@ export default function MyPathScreen() {
     return () => { alive = false; };
   }, []);
 
-  const courses = Object.values(enrollments);
+  async function askSignal() {
+    if (focusLoading) return;
+    setFocusLoading(true); setFocusRequested(true);
+    try {
+      const r = await getFocusGuidance();
+      if (r.status === 'ok') setFocusText(r.text);
+      else if (r.status === 'out_of_credits') setFocusText('You are out of Signal credits for now. They refresh with your plan.');
+      else if (r.status === 'rate_limited') setFocusText('Signal is busy across FairPath right now. Try again shortly.');
+      else if (r.status === 'signed_out') { router.push(('/sign-in?returnTo=' + encodeURIComponent('/my-path')) as never); return; }
+      else setFocusText(r.message);
+    } catch { setFocusText('Signal could not look at your activity right now. Please try again.'); }
+    finally { setFocusLoading(false); }
+  }
+
   const branch = veteran?.branch ? BRANCHES.find((b) => b.id === veteran.branch)?.officialName ?? null : null;
-  const academyEnrollment = enrollments[NATIVE_FIXTURE_COURSE.id];
 
   return (
     <ScreenFrame>
@@ -56,32 +67,28 @@ export default function MyPathScreen() {
           </Text>
         </View>
 
+        <View style={s.card}>
+          <Text style={s.cardTitle}>Signal · What should I focus on?</Text>
+          {focusRequested ? <Text style={s.body}>{focusLoading ? 'Signal is thinking…' : focusText}</Text> : (
+            <Pressable style={s.button} accessibilityRole="button" onPress={() => void askSignal()}>
+              <Text style={s.buttonText}>Ask Signal</Text>
+            </Pressable>
+          )}
+        </View>
+
         {load === 'loading' ? <Text style={s.body} accessibilityLiveRegion="polite">Loading your plan…</Text> : null}
         {load === 'error' ? <Text style={s.error} accessibilityRole="alert">Your plan could not be loaded on this device.</Text> : null}
 
         {load === 'ready' ? (
           <>
             <SectionTitle>Learning</SectionTitle>
-            {courses.length === 0 ? (
-              <View style={s.card}>
-                <Text style={s.cardTitle}>No courses yet</Text>
-                <Pressable style={s.button} accessibilityRole="link" onPress={() => router.push('/academy' as never)}>
-                  <Text style={s.buttonText}>Browse Academy</Text>
-                </Pressable>
-              </View>
-            ) : (
-              <Pressable
-                style={s.card}
-                accessibilityRole="link"
-                accessibilityLabel={`${NATIVE_FIXTURE_COURSE.title}, ${academyEnrollment ? progressPercent(NATIVE_FIXTURE_COURSE, academyEnrollment) : 0} percent complete`}
-                onPress={() => router.push(`/academy/${NATIVE_FIXTURE_COURSE.id}` as never)}
-              >
-                <Text style={s.cardTitle}>{NATIVE_FIXTURE_COURSE.title}</Text>
-                <Text style={s.body}>
-                  {academyEnrollment ? `${progressPercent(NATIVE_FIXTURE_COURSE, academyEnrollment)}% complete` : 'Not enrolled'}
-                </Text>
+            <View style={s.card}>
+              <Text style={s.cardTitle}>Find a real course or program</Text>
+              <Text style={s.body}>FairPath links directly to real organizations and their real certificates, rather than issuing its own.</Text>
+              <Pressable style={s.button} accessibilityRole="link" onPress={() => router.push('/academy' as never)}>
+                <Text style={s.buttonText}>Browse Academy</Text>
               </Pressable>
-            )}
+            </View>
 
             <SectionTitle>FairPath Staffing</SectionTitle>
             <Pressable style={s.card} accessibilityRole="link" onPress={() => router.push('/my-assignment' as never)}>

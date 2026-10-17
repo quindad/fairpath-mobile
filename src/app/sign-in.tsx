@@ -60,7 +60,7 @@ export default function SignInScreen() {
       }
 
       if(returnTo&&profile?.onboarding_completed){router.replace(returnTo as never);return;}
-      router.replace(profile?.onboarding_completed ? '/find-jobs' : '/onboarding');
+      router.replace(profile?.onboarding_completed ? '/home' : '/onboarding');
     } catch {
       setErrorMessage('We could not sign you in right now. Check your connection and try again.');
     } finally {
@@ -122,13 +122,15 @@ export default function SignInScreen() {
               onSubmitEditing={signIn}
             />
 
-            <Pressable onPress={() => router.push('/forgot-password')} style={styles.forgotButton}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Forgot password?" onPress={() => router.push('/forgot-password')} style={styles.forgotButton}>
               <Text style={styles.forgotText}>Forgot password?</Text>
             </Pressable>
 
             {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={loading ? 'Signing in' : 'Sign in'}
               style={[styles.primaryButton, loading && styles.primaryButtonDisabled]}
               onPress={signIn}
               disabled={loading}
@@ -142,7 +144,7 @@ export default function SignInScreen() {
 
           <View style={styles.signupRow}>
             <Text style={styles.signupMuted}>New to FairPath?</Text>
-            <Pressable onPress={() => router.replace(returnTo?('/sign-up?returnTo='+encodeURIComponent(returnTo)) as never:'/sign-up')}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Create account" onPress={() => router.replace(returnTo?('/sign-up?returnTo='+encodeURIComponent(returnTo)) as never:'/sign-up')}>
               <Text style={styles.signupLink}> Create account</Text>
             </Pressable>
           </View>

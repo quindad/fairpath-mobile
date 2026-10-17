@@ -82,7 +82,7 @@ const steps: Step[] = [
     choices: ['Jobs & staffing', 'Housing', 'Resources', 'Record relief', 'Academy', 'Entrepreneurship', 'Marketplace', 'My plan'],
   },
   {
-    eyebrow: 'FAIRPATH AI',
+    eyebrow: 'SIGNAL',
     title: 'Choose how AI can help.',
     body: 'AI can help you do the work, but it does not make hiring, housing, legal or eligibility decisions. Nothing is submitted or changed without your action.',
     type: 'choices',
@@ -222,6 +222,9 @@ export default function OnboardingScreen() {
                 return (
                   <Pressable
                     key={choice}
+                    accessibilityRole="button"
+                    accessibilityLabel={choice}
+                    accessibilityState={{selected:isSelected}}
                     onPress={() => toggleChoice(choice)}
                     style={[styles.choice, isSelected && styles.choiceSelected]}
                   >
@@ -252,6 +255,8 @@ export default function OnboardingScreen() {
 
         <View style={styles.footer}>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={saving ? 'Saving your FairPath' : buttonLabel}
             onPress={goNext}
             disabled={!canContinue || saving}
             style={[styles.primaryButton, (!canContinue || saving) && styles.primaryButtonDisabled]}

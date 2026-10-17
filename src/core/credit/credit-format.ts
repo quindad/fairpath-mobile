@@ -110,7 +110,7 @@ export function disputableItems<T extends { stage: string }>(items: T[]): T[] {
 }
 
 /** Legal-safety wording checks: text FairPath shows must never promise outcomes. */
-export const PROMISE_PATTERN = /guarantee|will (be )?(delete|remov)|remove (it|them) (for|from)|boost your score|raise your score|score (will|to) (increase|go up)|fix your credit fast|instantly/i;
+export const PROMISE_PATTERN = /guarantee|will (be )?(delete|remov|expung)|remove (it|them) (for|from)|boost your score|raise your score|score (will|to) (increase|go up|rise)|fix your credit fast|instantly|dispute will succeed|qualify for expung/i;
 
 export function bureauName(bureau: string | null | undefined): string {
   return BUREAU_LABEL[bureau ?? ''] ?? 'Unknown bureau';

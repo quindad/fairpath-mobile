@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 
 export const MARKETPLACE_CATEGORIES=[
- 'Furniture','Home','Electronics','Appliances','Clothing','Kids & Baby','Tools','Sports & Outdoors','Books & Media','Auto Parts','Other'
+ 'Food','Furniture','Home','Electronics','Appliances','Clothing','Kids & Baby','Tools','Sports & Outdoors','Books & Media','Auto Parts','Other'
 ] as const;
 export const MARKETPLACE_CONDITIONS=['New','Like new','Good','Fair','Needs repair'] as const;
 
@@ -28,6 +28,10 @@ export type MarketplaceItem={
  created_at:string;
  updated_at:string;
  listed_at:string|null;
+ is_food_rescue:boolean;
+ pickup_window_start:string|null;
+ pickup_window_end:string|null;
+ best_by_note:string|null;
  marketplace_media?:MarketplaceMedia[];
 };
 
@@ -55,12 +59,14 @@ export async function trackMarketplaceEvent(eventName:string,entityId?:string|nu
  if(error)throw error;
 }
 
-const ITEM_SELECT='id,seller_id,title,description,category,condition,price,is_free,city,state,postal_code,pickup_area,pickup_notes,safe_pickup,quantity,featured,seller_type,moderation_status,status,created_at,updated_at,listed_at,marketplace_media(id,url,sort_order,storage_path,mime_type)';
+const ITEM_SELECT='id,seller_id,title,description,category,condition,price,is_free,city,state,postal_code,pickup_area,pickup_notes,safe_pickup,quantity,featured,seller_type,moderation_status,status,created_at,updated_at,listed_at,is_food_rescue,pickup_window_start,pickup_window_end,best_by_note,marketplace_media(id,url,sort_order,storage_path,mime_type)';
 
 const MARKET_STATE_CODES:Record<string,string>={ohio:'OH',maryland:'MD',michigan:'MI',pennsylvania:'PA',indiana:'IN',kentucky:'KY','west virginia':'WV',virginia:'VA','new york':'NY','new jersey':'NJ',delaware:'DE','district of columbia':'DC'};
 function parseMarketplaceLocation(raw:string){const text=raw.trim().replace(/\s+/g,' ');if(!text)return null;if(/^\d{5}$/.test(text))return {postal:text};const comma=text.split(',').map(x=>x.trim()).filter(Boolean);if(comma.length>=2){const stateRaw=comma[comma.length-1].toLowerCase();return {city:comma[0],state:stateRaw.length===2?stateRaw.toUpperCase():MARKET_STATE_CODES[stateRaw]}}const parts=text.split(' ');const last=parts[parts.length-1].toLowerCase();const state=last.length===2?last.toUpperCase():MARKET_STATE_CODES[last];if(state&&parts.length>1)return {city:parts.slice(0,-1).join(' '),state};for(const [name,code] of Object.entries(MARKET_STATE_CODES)){if(text.toLowerCase().endsWith(' '+name))return {city:text.slice(0,-name.length).trim(),state:code}}return {free:text}}
-export async function loadMarketplace(input:{search?:string;category?:string;location?:string;safePickup?:boolean;condition?:string;sort?:'newest'|'oldest'}={}):Promise<MarketplaceItem[]>{
- let q=supabase.from('marketplace_items').select(ITEM_SELECT).eq('status','available').eq('moderation_status','approved').order('featured',{ascending:false}).order('created_at',{ascending:input.sort==='oldest'}).limit(100);
+export async function loadMarketplace(input:{search?:string;category?:string;location?:string;safePickup?:boolean;condition?:string;sort?:'newest'|'oldest';foodRescueOnly?:boolean}={}):Promise<MarketplaceItem[]>{
+ let q=supabase.from('marketplace_items').select(ITEM_SELECT).eq('status','available').eq('moderation_status','approved').limit(100);
+ if(input.foodRescueOnly){q=q.eq('is_food_rescue',true).order('pickup_window_end',{ascending:true,nullsFirst:false})}
+ else{q=q.order('featured',{ascending:false}).order('created_at',{ascending:input.sort==='oldest'})}
  const search=input.search?.trim();if(search)q=q.or(`title.ilike.%${search}%,description.ilike.%${search}%,category.ilike.%${search}%`);
  if(input.category)q=q.eq('category',input.category);
  if(input.condition)q=q.eq('condition',input.condition);
@@ -82,7 +88,11 @@ export async function loadMarketplaceViewerState(itemId:string):Promise<{signedI
  const {data:{user}}=await supabase.auth.getUser();if(!user)return {signedIn:false,userId:null,isOwner:false,saved:false,claim:null,quota:null};
  const [itemSave,claim,quota]=await Promise.all([
   supabase.from('marketplace_saves').select('item_id').eq('user_id',user.id).eq('item_id',itemId).maybeSingle(),
-  supabase.from('marketplace_claims').select('id,status,pickup_deadline').eq('claimant_id',user.id).eq('item_id',itemId).maybeSingle(),
+  // Only an ACTIVE claim should block re-requesting. A terminal claim (cancelled/declined/expired/no_show) must
+  // fall through to the normal request form, or the member is permanently dead-ended on this item even though
+  // request_marketplace_claim itself supports re-requesting by reusing that same row. picked_up stays visible
+  // since that's a real completed state worth showing, not one to request again.
+  supabase.from('marketplace_claims').select('id,status,pickup_deadline').eq('claimant_id',user.id).eq('item_id',itemId).in('status',['requested','approved','ready','picked_up']).maybeSingle(),
   loadMarketplaceQuota().catch(()=>null)
  ]);
  const {data:item}=await supabase.from('marketplace_items').select('seller_id').eq('id',itemId).maybeSingle();
@@ -142,6 +152,7 @@ export async function loadMyMarketplaceListings():Promise<MarketplaceItem[]>{
 export type CreateMarketplaceItemInput={
  title:string;description:string;category:string;condition:string;quantity:number;city:string;state:string;postal_code?:string;pickup_area?:string;safe_pickup:boolean;seller_type:'individual'|'organization';
  location_name?:string;address_line1?:string;address_line2?:string;pickup_city:string;pickup_state:string;pickup_postal_code?:string;instructions?:string;contact_phone?:string;
+ isFoodRescue?:boolean;pickupWindowStart?:string|null;pickupWindowEnd?:string|null;bestByNote?:string;
 };
 export async function createMarketplaceItem(input:CreateMarketplaceItemInput){
  const user=await currentUser();const now=new Date().toISOString();
@@ -149,6 +160,7 @@ export async function createMarketplaceItem(input:CreateMarketplaceItemInput){
   seller_id:user.id,title:input.title.trim(),description:input.description.trim(),category:input.category,condition:input.condition||null,
   quantity:Math.max(1,Math.min(99,Number(input.quantity)||1)),price:0,is_free:true,city:input.city.trim(),state:input.state.trim().toUpperCase().slice(0,2),
   postal_code:input.postal_code?.trim()||null,pickup_area:input.pickup_area?.trim()||null,safe_pickup:input.safe_pickup,seller_type:input.seller_type,
+  is_food_rescue:input.isFoodRescue??false,pickup_window_start:input.pickupWindowStart||null,pickup_window_end:input.pickupWindowEnd||null,best_by_note:input.bestByNote?.trim()||null,
   status:'draft',moderation_status:'approved',listed_at:null
  }).select('id').single();if(error)throw error;
  const {error:pickupError}=await supabase.from('marketplace_pickup_details').insert({
@@ -176,7 +188,9 @@ export async function updateMarketplaceItem(itemId:string,input:CreateMarketplac
  const {error}=await supabase.from('marketplace_items').update({
   title:input.title.trim(),description:input.description.trim(),category:input.category,condition:input.condition||null,
   quantity:Math.max(1,Math.min(99,Number(input.quantity)||1)),city:input.city.trim(),state:input.state.trim().toUpperCase().slice(0,2),
-  postal_code:input.postal_code?.trim()||null,pickup_area:input.pickup_area?.trim()||null,safe_pickup:input.safe_pickup,seller_type:input.seller_type,updated_at:new Date().toISOString()
+  postal_code:input.postal_code?.trim()||null,pickup_area:input.pickup_area?.trim()||null,safe_pickup:input.safe_pickup,seller_type:input.seller_type,
+  is_food_rescue:input.isFoodRescue??false,pickup_window_start:input.pickupWindowStart||null,pickup_window_end:input.pickupWindowEnd||null,best_by_note:input.bestByNote?.trim()||null,
+  updated_at:new Date().toISOString()
  }).eq('id',itemId).eq('seller_id',user.id);if(error)throw error;
  const {error:pickupError}=await supabase.from('marketplace_pickup_details').upsert({
   item_id:itemId,seller_id:user.id,location_name:input.location_name?.trim()||null,address_line1:input.address_line1?.trim()||null,address_line2:input.address_line2?.trim()||null,
@@ -191,7 +205,7 @@ export async function removeMarketplacePhoto(media:MarketplaceMedia){
 export async function reorderMarketplacePhotos(itemId:string,media:MarketplaceMedia[]){
  await currentUser();for(let i=0;i<media.length;i++){const {error}=await supabase.from('marketplace_media').update({sort_order:i}).eq('id',media[i].id).eq('item_id',itemId);if(error)throw error}
 }
-export async function setMarketplaceItemAvailability(itemId:string,available:boolean){await currentUser();const {error}=await supabase.rpc('set_marketplace_item_availability',{p_item_id:itemId,p_available:available});if(error){if(error.message?.includes('STATUS_LOCKED'))throw new Error('STATUS_LOCKED');throw error}void trackMarketplaceEvent(available?'marketplace_item_published':'marketplace_item_paused',itemId).catch(()=>{})}
+export async function setMarketplaceItemAvailability(itemId:string,available:boolean){await currentUser();const {error}=await supabase.rpc('set_marketplace_item_availability',{p_item_id:itemId,p_available:available});if(error){if(error.message?.includes('STATUS_LOCKED'))throw new Error('STATUS_LOCKED');if(error.message?.includes('MODERATION_REQUIRED'))throw new Error('MODERATION_REQUIRED');throw error}void trackMarketplaceEvent(available?'marketplace_item_published':'marketplace_item_paused',itemId).catch(()=>{})}
 
 export async function removeMarketplaceItem(itemId:string){await currentUser();const {error}=await supabase.rpc('remove_marketplace_item',{p_item_id:itemId});if(error)throw error}
 

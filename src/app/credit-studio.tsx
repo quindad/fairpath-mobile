@@ -47,15 +47,15 @@ export default function CreditStudioScreen() {
 
   return (
     <ScreenFrame>
-      <PageHeader eyebrow="CREDIT STUDIO" title="Credit Studio" backTo="/explore" />
+      <PageHeader eyebrow="CREDIT STUDIO · TOOL" title="Utilization Calculator" backTo="/credit" />
       <FormScrollView contentContainerStyle={s.content}>
         <View style={s.banner} accessibilityRole="summary">
           <Text style={s.bannerTitle}>Enter your numbers</Text>
           <Text style={s.body}>
-            This calculator works from numbers you enter; it does not read your report. To upload and review your actual credit report, with disputes and AI extraction, use Credit Builder.
+            This calculator works from numbers you enter; it does not read your report. To upload and review your actual credit report, with disputes and AI extraction, use Credit Studio.
           </Text>
           <Pressable style={s.secondary} accessibilityRole="link" onPress={() => router.push('/credit' as never)}>
-            <Text style={s.secondaryText}>Open Credit Builder</Text>
+            <Text style={s.secondaryText}>Open Credit Studio</Text>
           </Pressable>
         </View>
 
@@ -128,7 +128,7 @@ export default function CreditStudioScreen() {
         {tierLoading ? <Text style={s.body} accessibilityLiveRegion="polite">Checking your plan…</Text> : null}
         <View style={s.card}>
           <Text style={s.cardTitle}>Full credit-report analysis</Text>
-          <Text style={s.body}>Costs {AI_ACTION_CREDITS.full_credit_report_analysis} AI credits. Premium members get it included, subject to credit balance. Upload your report in Credit Builder to use this.</Text>
+          <Text style={s.body}>Costs {AI_ACTION_CREDITS.full_credit_report_analysis} AI credits. Premium members get it included, subject to credit balance. Upload your report in Credit Studio to use this.</Text>
         </View>
         <View style={s.card} accessibilityLabel={disputeAllowed ? 'Dispute letter drafting available' : 'Dispute letter drafting is a Premium feature'}>
           <Text style={s.cardTitle}>Dispute letter drafting</Text>

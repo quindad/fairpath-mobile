@@ -8,9 +8,9 @@ test('six pathways with unique ids', () => {
   assert.equal(new Set(ids).size, 6);
 });
 
-test('Reentry is the only live pathway at launch', () => {
-  const live = PATHWAYS.filter((p) => p.status === 'live').map((p) => p.id);
-  assert.deepEqual(live, ['reentry']);
+test('every pathway is live', () => {
+  const live = PATHWAYS.filter((p) => p.status === 'live').map((p) => p.id).sort();
+  assert.deepEqual(live, [...PATHWAYS].map((p) => p.id).sort());
 });
 
 test('planned pathways cannot be activated', () => {
@@ -50,9 +50,9 @@ test('activation requires explicit selection; browsing activates nothing', () =>
   assert.deepEqual(activePathwaysFor([]), []);
 });
 
-test('planned pathways are filtered out even when a stale record requests them', () => {
-  const active = activePathwaysFor(['reentry', 'food', 'safety_recovery']).map((p) => p.id);
-  assert.deepEqual(active, ['reentry']);
+test('activePathwaysFor returns every requested pathway that is currently activatable', () => {
+  const active = activePathwaysFor(['reentry', 'food', 'safety_recovery']).map((p) => p.id).sort();
+  assert.deepEqual(active, ['food', 'reentry', 'safety_recovery']);
 });
 
 test('a member can hold reentry and veterans together', () => {

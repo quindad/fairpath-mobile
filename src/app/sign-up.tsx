@@ -87,7 +87,11 @@ export default function SignUpScreen() {
         // user is authenticated now, so consent can be recorded right
         // away. Fail-soft: the consent_events table may not exist yet
         // on the live project until the Step 1 migrations are applied.
-        void recordSignUpConsent().catch(() => {});
+        try { await recordSignUpConsent(); } catch {
+          setErrorMessage('Account created, but consent could not be saved. Please retry from the Terms screen.');
+          router.replace('/accept-terms' as never);
+          return;
+        }
         router.replace('/auth/callback');
         return;
       }
@@ -187,6 +191,8 @@ export default function SignUpScreen() {
             </Pressable>
 
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={loading ? 'Creating account' : 'Create account'}
               style={[styles.primaryButton, loading && styles.primaryButtonDisabled]}
               onPress={createAccount}
               disabled={loading}
@@ -205,13 +211,16 @@ export default function SignUpScreen() {
             }}
             onSignedIn={async (r) => {
               if (!r.needsConsent) return;
-              try { await recordSignUpConsent(); return { needsConsent: false }; } catch { return; }
+              try { await recordSignUpConsent(); return { needsConsent: false }; } catch {
+                setErrorMessage('Consent could not be saved. Please accept the Terms and Privacy Policy to continue.');
+                return { needsConsent: true };
+              }
             }}
           />
 
           <View style={styles.loginRow}>
             <Text style={styles.loginMuted}>Already have an account?</Text>
-            <Pressable onPress={() => router.replace(returnTo?('/sign-in?returnTo='+encodeURIComponent(returnTo)) as never:'/sign-in')}><Text style={styles.loginLink}> Sign in</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Sign in" onPress={() => router.replace(returnTo?('/sign-in?returnTo='+encodeURIComponent(returnTo)) as never:'/sign-in')}><Text style={styles.loginLink}> Sign in</Text></Pressable>
           </View>
         </FormScrollView>
       </SafeAreaView>

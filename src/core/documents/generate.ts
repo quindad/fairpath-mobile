@@ -9,6 +9,9 @@ import { registerDeviceDocument, type DocumentRow } from '@/core/documents/docum
 import { MIME, fingerprintOf, toCsv, type DocBlock, type DocFormat, type DocumentSpec } from '@/core/documents/spec';
 import { loadProfileForDocument } from '@/core/profile/opportunity-service';
 import { loadResourceCategories, loadSavedResourceDetails } from '@/core/resources/resources-service';
+import type { ResumeContent, ResumeTemplate } from '@/core/resume/resume-types';
+import { renderResumePdf } from '@/core/documents/render-resume-pdf';
+import { renderResumeDocx } from '@/core/documents/render-resume-docx';
 
 /**
  * Document generation orchestration.
@@ -112,6 +115,25 @@ export async function generateDocument(type: RenderableType, format: DocFormat, 
 
   const spec = await buildSpec(type, profileOptions);
   const bytes = await renderOnDevice(spec, format);
+  const fingerprint = fingerprintOf(spec.inputs);
+  const row = await registerDeviceDocument({
+    documentType: spec.documentType, sourceModule: spec.sourceModule, sourceRecordId: spec.sourceRecordId, subject: spec.subject, title: spec.title, format,
+    kind: spec.kind, templateId: spec.templateId, templateVersion: spec.templateVersion, sensitivity: spec.sensitivity, fingerprint,
+    confirmedDataAt: spec.confirmedDataAt, optionsCode: spec.optionsCode,
+  });
+  return { row, bytes, fileName: row.file_name, mime: MIME[format], format, preview: { title: spec.title, blocks: spec.blocks, footer: spec.footer }, generatedBy: 'device', fingerprint };
+}
+
+/**
+ * Resume Studio's own export path. Uses the dedicated resume renderers (real visual templates: Classic, Compact,
+ * Modern, Bold) instead of the shared letter/checklist renderer that generateFromSpec uses for every other
+ * document type -- so a résumé can look genuinely different per template without risking the plain look that
+ * Record Relief letters, credit dispute letters and the Opportunity Profile rely on.
+ */
+export async function generateResume(spec: DocumentSpec, content: ResumeContent, template: ResumeTemplate, title: string, format: DocFormat): Promise<GeneratedDocument> {
+  const info = documentTypeInfo(spec.documentType);
+  if (!info || !info.formats.includes(format)) throw new Error('FORMAT_NOT_AVAILABLE');
+  const bytes = format === 'pdf' ? await renderResumePdf(content, title, template) : await renderResumeDocx(content, template);
   const fingerprint = fingerprintOf(spec.inputs);
   const row = await registerDeviceDocument({
     documentType: spec.documentType, sourceModule: spec.sourceModule, sourceRecordId: spec.sourceRecordId, subject: spec.subject, title: spec.title, format,

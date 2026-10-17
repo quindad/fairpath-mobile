@@ -8,6 +8,8 @@ import { FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { gateway, deleteAiHistory, logInteraction } from '@/core/ai/gateway';
 import { SUGGESTIONS } from '@/core/ai/intents';
 import { NO_MODEL, answer, type AiResponse, type Basis } from '@/core/ai/orchestrator';
+import { getFocusGuidance, getResourceGuidance } from '@/core/ai/signal';
+import { mergeSignalText, shouldEnrichWithSignal, signalStatusMessage } from '@/core/ai/signal-enrich';
 import { useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
 import { notify } from '@/core/ui/notify';
@@ -32,7 +34,18 @@ export default function FairPathAssistant() {
     setBusy(true);
     setText('');
     setTurns((cur) => [...cur, { id, user: t, response: null }]);
-    const response = await answer(t, gateway, { adapter: NO_MODEL, routeHint: item ? { kind: 'credit_item', id: item } : null });
+    let response = await answer(t, gateway, { adapter: NO_MODEL, routeHint: item ? { kind: 'credit_item', id: item } : null });
+    if (shouldEnrichWithSignal(response.intent) && (await gateway.signedIn())) {
+      const sig =
+        response.intent === 'next_steps'
+          ? await getFocusGuidance()
+          : await getResourceGuidance(t);
+      if (sig.status === 'ok') response = mergeSignalText(response, sig.text);
+      else {
+        const note = signalStatusMessage(sig.status);
+        if (note) response = { ...response, parts: [...response.parts, { text: note, basis: 'app_state' }] };
+      }
+    }
     setTurns((cur) => cur.map((x) => (x.id === id ? { ...x, response } : x)));
     setBusy(false);
     void logInteraction(response.provenance); // provenance only (ids, versions, sources); never the conversation
@@ -44,11 +57,11 @@ export default function FairPathAssistant() {
 
   return (
     <ScreenFrame>
-      <PageHeader eyebrow="ASK FAIRPATH" title="Assistant" backTo="/home" />
+      <PageHeader eyebrow="SIGNAL" title="Assistant" backTo="/home" />
       <FormScrollView contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 36 }}>
         <Panel tone="accent">
           <BodyText strong>Built-in guidance</BodyText>
-          <BodyText muted>No AI model is connected right now. Every answer comes from your own FairPath information, verified sources and fixed rules, and each one shows how it was made. The assistant only opens FairPath tools: it never changes your records for you.</BodyText>
+          <BodyText muted>Every answer starts from your FairPath data and fixed rules. When you are signed in, help-finding and next-step questions can also use Signal (server-side AI that spends a credit and never changes your records for you). Each part shows how it was made.</BodyText>
         </Panel>
 
         {turns.length === 0 ? (

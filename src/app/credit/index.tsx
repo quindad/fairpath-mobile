@@ -12,6 +12,7 @@ import {
   creditErrorMessage, deleteUpload, extendUploadRetention, loadAccounts, loadDisputes, loadItems, loadReports, loadSampleReports, loadUploads, pickReportFile, readUploadedReport, uploadReportFile,
   type CreditAccount, type CreditReport, type Dispute, type ReviewItem, type Upload,
 } from '@/core/credit/credit-service';
+import { explainCreditReport } from '@/core/ai/signal';
 import { useFairPathTheme, useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
 import { notify } from '@/core/ui/notify';
@@ -33,6 +34,9 @@ export default function CreditWorkspace() {
   const [bureau, setBureau] = useState<string[]>(['unknown']);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
+  const [signalText, setSignalText] = useState('');
+  const [signalLoading, setSignalLoading] = useState(false);
+  const [signalRequested, setSignalRequested] = useState(false);
 
   const load = useCallback(async () => {
     setError('');
@@ -78,6 +82,20 @@ export default function CreditWorkspace() {
     try { await loadSampleReports(); setNote('Sample reports loaded. These are TEST DATA, not a real person.'); await load(); } catch (e) { notify('Could not load samples', creditErrorMessage(e)); } finally { setBusy(false); }
   }
 
+  async function askSignalAboutReport() {
+    if (signalLoading) return;
+    setSignalLoading(true); setSignalRequested(true);
+    try {
+      const r = await explainCreditReport();
+      if (r.status === 'ok') setSignalText(r.text);
+      else if (r.status === 'out_of_credits') setSignalText('You are out of Signal credits for now. They refresh with your plan.');
+      else if (r.status === 'rate_limited') setSignalText('Signal is busy across FairPath right now. Try again shortly.');
+      else if (r.status === 'signed_out') { router.replace(('/sign-in?returnTo=' + encodeURIComponent('/credit')) as never); return; }
+      else setSignalText(r.message);
+    } catch { setSignalText('Signal could not explain your report right now. Please try again.'); }
+    finally { setSignalLoading(false); }
+  }
+
   const uploadStatus = (u: Upload) => u.status === 'uploaded' ? 'Stored privately.' : u.status === 'processing' ? 'Reading now…' : u.status === 'needs_review' ? 'Read. Review the accounts below.' : u.status === 'failed' ? 'Could not be read automatically. Add the accounts yourself.' : u.status;
 
   function confirmAndRead(u: Upload) {
@@ -98,7 +116,7 @@ export default function CreditWorkspace() {
 
   return (
     <ScreenFrame>
-      <PageHeader eyebrow="FAIRPATH+ · CREDIT" title="Credit Builder" backTo="/home" />
+      <PageHeader eyebrow="FAIRPATH+ · CREDIT" title="Credit Studio" backTo="/home" />
       <FilterStrip>
         {TABS.map((t) => <SharpChip key={t.tab} label={t.label} active={tab === t.tab} onPress={() => setTab(t.tab)} />)}
       </FilterStrip>
@@ -122,6 +140,14 @@ export default function CreditWorkspace() {
                 <View key={String(l)} style={s.tile}><Text style={s.tileValue}>{String(v)}</Text><Text style={s.tileLabel}>{String(l)}</Text></View>
               ))}
             </View>
+
+            <View style={s.block}><SectionTitle>SIGNAL</SectionTitle></View>
+            <Panel tone="accent">
+              <BodyText strong>Ask Signal to explain your report</BodyText>
+              <BodyText muted>Plain-English look at your accounts and flagged items. Signal only describes what's actually in your data — no score, no prediction, no guarantee.</BodyText>
+              {signalRequested ? <BodyText muted>{signalLoading ? 'Signal is thinking…' : signalText}</BodyText> : null}
+              <SecondaryButton label={signalLoading ? 'ASKING SIGNAL…' : 'ASK SIGNAL'} onPress={() => void askSignalAboutReport()} disabled={signalLoading} />
+            </Panel>
 
             <View style={s.block}><SectionTitle>ADD A REPORT</SectionTitle></View>
             <ChipGroup single label="WHICH BUREAU?" options={[{ value: 'equifax', label: 'Equifax' }, { value: 'experian', label: 'Experian' }, { value: 'transunion', label: 'TransUnion' }, { value: 'unknown', label: 'Not sure' }]} selected={bureau} onChange={(n) => setBureau(n.length ? n : ['unknown'])} />
@@ -151,7 +177,7 @@ export default function CreditWorkspace() {
             <View style={s.block}><SectionTitle>DOCUMENTS</SectionTitle></View>
             <ListRow title="Dispute history" body="Export your disputes, dates and outcomes" onPress={() => router.push('/documents/create-credit' as never)} />
             <ListRow title="Correct my personal information" body="Name, address or other details a bureau has wrong (not an account issue)" onPress={() => router.push('/credit/correct-identity' as never)} />
-            <ListRow title="Utilization & payoff calculator" body="See how your balances compare to your limits, from numbers you enter" onPress={() => router.push('/credit-studio' as never)} />
+            <ListRow title="Utilization calculator" body="See how your balances compare to your limits, from numbers you enter" onPress={() => router.push('/credit-studio' as never)} />
           </>
         ) : null}
 

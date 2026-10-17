@@ -7,6 +7,7 @@ import { BodyText, Field, ListRow, Panel, PrimaryButton, SecondaryButton, Status
 import { FairPathLayout as L } from '@/constants/fairpath';
 import { ISSUE_LABEL, PAYMENT_STATUS_LABEL, STAGE_INFO, formatCents } from '@/core/credit/credit-format';
 import { creditErrorMessage, loadAccount, loadItem, setItemStage, type CreditAccount, type ReviewItem } from '@/core/credit/credit-service';
+import { explainCreditItem } from '@/core/ai/signal';
 import { useFairPathTheme } from '@/core/theme/ThemeProvider';
 import { notify } from '@/core/ui/notify';
 
@@ -32,6 +33,9 @@ export default function CreditItemScreen() {
   const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [signalText, setSignalText] = useState('');
+  const [signalLoading, setSignalLoading] = useState(false);
+  const [signalRequested, setSignalRequested] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -47,6 +51,20 @@ export default function CreditItemScreen() {
     if (!item) return;
     setBusy(true);
     try { await setItemStage(item.id, stage, text); setAsking(false); setStatement(''); await load(); } catch (e) { notify('Could not update', creditErrorMessage(e)); } finally { setBusy(false); }
+  }
+
+  async function askSignal() {
+    if (!item || signalLoading) return;
+    setSignalLoading(true); setSignalRequested(true);
+    try {
+      const r = await explainCreditItem(item.id);
+      if (r.status === 'ok') setSignalText(r.text);
+      else if (r.status === 'out_of_credits') setSignalText('You are out of Signal credits for now. They refresh with your plan.');
+      else if (r.status === 'rate_limited') setSignalText('Signal is busy across FairPath right now. Try again shortly.');
+      else if (r.status === 'signed_out') { router.push(('/sign-in?returnTo=' + encodeURIComponent('/credit/item/' + item.id)) as never); return; }
+      else setSignalText(r.message);
+    } catch { setSignalText('Signal could not explain this right now. Please try again.'); }
+    finally { setSignalLoading(false); }
   }
 
   if (error) return <ScreenFrame><PageHeader eyebrow="CREDIT REVIEW" title="Item" backTo="/credit" alwaysBackTo /><View style={{ paddingHorizontal: L.mobileGutter }}><StatusLine tone="error">{error}</StatusLine></View></ScreenFrame>;
@@ -99,7 +117,10 @@ export default function CreditItemScreen() {
           </>
         ) : null}
         {item.stage === 'dismissed' ? <SecondaryButton label="REOPEN" onPress={() => void move('reopen')} /> : null}
-        <SecondaryButton label="ASK FAIRPATH WHY THIS WAS FLAGGED" onPress={() => router.push(('/fairpath-ai?item=' + item.id + '&q=' + encodeURIComponent('Why did you flag this account?')) as never)} />
+
+        <View style={{ marginTop: 18 }}><SectionTitle>SIGNAL</SectionTitle></View>
+        {signalRequested ? <Panel><BodyText muted>{signalLoading ? 'Signal is thinking…' : signalText}</BodyText></Panel> : null}
+        <SecondaryButton label={signalLoading ? 'ASKING SIGNAL…' : 'ASK SIGNAL WHY THIS WAS FLAGGED'} onPress={() => void askSignal()} disabled={signalLoading} />
       </FormScrollView>
     </ScreenFrame>
   );

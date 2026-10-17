@@ -6,7 +6,9 @@ import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { isHousingSaved, loadHousingListing, loadMyHousingApplication, saveHousing, unsaveHousing, type HousingApplicationStatus, type HousingListing } from '@/core/opportunities/opportunity-service';
+import { explainHousingFit } from '@/core/ai/signal';
 import { supabase } from '@/lib/supabase';
+import { openGoogleMapsDirections } from '@/core/location/maps';
 
 const STATUS_LABEL:Record<HousingApplicationStatus,string>={
  started:'APPLICATION STARTED',submitted:'SUBMITTED',reviewing:'UNDER REVIEW',tour:'TOUR',approved:'APPROVED',denied:'NOT APPROVED',withdrawn:'WITHDRAWN'
@@ -22,6 +24,9 @@ export default function HousingDetail(){
  const [galleryIndex,setGalleryIndex]=useState(0);
  const [galleryWidth,setGalleryWidth]=useState(0);
  const galleryRef=useRef<ScrollView|null>(null);
+ const [fitText,setFitText]=useState('');
+ const [fitLoading,setFitLoading]=useState(false);
+ const [fitRequested,setFitRequested]=useState(false);
 
  useEffect(()=>{
   if(!id)return;
@@ -61,9 +66,35 @@ export default function HousingDetail(){
   router.push(('/housing-apply/new?listing='+item.id+'&mode='+mode) as never);
  }
 
+ async function askSignal(){
+  if(!item||fitLoading)return;
+  const {data:{user}}=await supabase.auth.getUser();
+  if(!user){router.push(('/sign-up?returnTo='+encodeURIComponent('/housing/'+item.id)) as never);return}
+  setFitLoading(true);setFitRequested(true);
+  try{
+   const r=await explainHousingFit(item.id);
+   if(r.status==='ok')setFitText(r.text);
+   else if(r.status==='out_of_credits')setFitText('You are out of Signal credits for now. They refresh with your plan.');
+   else if(r.status==='rate_limited')setFitText('Signal is busy across FairPath right now. Try again shortly.');
+   else if(r.status==='signed_out'){router.push(('/sign-up?returnTo='+encodeURIComponent('/housing/'+item.id)) as never);return}
+   else setFitText(r.message);
+  }catch{
+   setFitText('Signal could not explain this home right now. Please try again.');
+  }finally{
+   setFitLoading(false);
+  }
+ }
+
  async function openUrl(url:string|null){
   if(!url)return;
   try{await Linking.openURL(url)}catch{notify('Link unavailable','We could not open this link.')}
+ }
+
+ async function directions(){
+  if(!item)return;
+  const query=[item.address_line1,item.city,item.state,item.postal_code].filter(Boolean).join(', ');
+  try{await openGoogleMapsDirections({latitude:item.latitude,longitude:item.longitude,query})}
+  catch{notify('Maps unavailable','We could not open directions on this device.')}
  }
 
  if(loading)return <ScreenFrame><PageHeader eyebrow="FAIRPATH HOUSING" title="Home details" backTo="/find-housing"/><View style={s.state}><Text style={s.muted}>Loading home…</Text></View></ScreenFrame>;
@@ -76,7 +107,7 @@ export default function HousingDetail(){
 
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH HOUSING" title="Home details" backTo="/find-housing" trailing={
-   <Pressable style={[s.save,saved&&s.saveActive]} onPress={()=>void toggleSave()}>
+   <Pressable accessibilityRole="button" accessibilityLabel={saved?'Remove saved home':'Save home'} style={[s.save,saved&&s.saveActive]} onPress={()=>void toggleSave()}>
     <Lucide name={saved?'bookmark-check':'bookmark'} color={saved?C.black:C.white} size={14}/><Text style={[s.saveText,saved&&s.saveTextActive]}>{saved?'SAVED':'SAVE'}</Text>
    </Pressable>
   }/>
@@ -92,7 +123,7 @@ export default function HousingDetail(){
     {photos.length?<View style={s.photoCount}><Lucide name="images" color={C.white} size={12}/><Text style={s.photoCountText}>{galleryIndex+1} / {photos.length}</Text></View>:null}
    </View>
    {photos.length?<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.thumbs}>
-    {photos.map((url,index)=><Pressable key={'thumb-'+url+index} onPress={()=>{setGalleryIndex(index);galleryRef.current?.scrollTo({x:index*galleryWidth,animated:true})}} style={[s.thumbWrap,galleryIndex===index&&s.thumbActive]}><Image source={{uri:url}} style={s.thumb}/></Pressable>)}
+    {photos.map((url,index)=><Pressable key={'thumb-'+url+index} accessibilityRole="button" accessibilityLabel={'Photo '+(index+1)} onPress={()=>{setGalleryIndex(index);galleryRef.current?.scrollTo({x:index*galleryWidth,animated:true})}} style={[s.thumbWrap,galleryIndex===index&&s.thumbActive]}><Image source={{uri:url}} style={s.thumb}/></Pressable>)}
    </ScrollView>:null}
 
    <View style={s.intro}>
@@ -112,6 +143,16 @@ export default function HousingDetail(){
     {item.application_fee!=null?<Fact label="APPLICATION FEE" value={'$'+Number(item.application_fee).toLocaleString()}/>:null}
     {availability?<Fact label="AVAILABLE" value={availability}/>:null}
    </View>
+
+   <Section label="SIGNAL · WHY THIS MIGHT FIT YOU">
+    {fitRequested?(
+     fitLoading?<Text style={s.body}>Signal is thinking…</Text>:<Text style={s.body}>{fitText}</Text>
+    ):(
+     <Pressable accessibilityRole="button" accessibilityLabel="Ask Signal about this home" style={s.signalButton} onPress={()=>void askSignal()}>
+      <Text style={s.signalButtonText}>ASK SIGNAL</Text>
+     </Pressable>
+    )}
+   </Section>
 
    {item.description?<Section label="ABOUT THIS HOME"><Text style={s.body}>{item.description}</Text></Section>:null}
    {(item.deposit_amount!=null||item.application_fee!=null)?<Section label="COST SNAPSHOT">
@@ -144,7 +185,7 @@ export default function HousingDetail(){
    </Section>:null}
 
    {item.housing_schools?.length?<Section label="SCHOOLS NEARBY">
-    {item.housing_schools.slice().sort((a,b)=>a.sort_order-b.sort_order).map((school,index)=><Pressable key={school.provider+'-'+school.provider_school_id} style={[s.areaRow,index===0&&s.areaRowFirst]} onPress={()=>school.profile_url?void openUrl(school.profile_url):undefined}>
+    {item.housing_schools.slice().sort((a,b)=>a.sort_order-b.sort_order).map((school,index)=><Pressable key={school.provider+'-'+school.provider_school_id} accessibilityRole={school.profile_url?'link':undefined} accessibilityLabel={school.name} style={[s.areaRow,index===0&&s.areaRowFirst]} onPress={()=>school.profile_url?void openUrl(school.profile_url):undefined}>
      <View style={s.areaCopy}><Text style={s.areaTitle}>{school.name}</Text><Text style={s.areaMeta}>{[school.school_type,school.grades,school.distance_miles!=null?Number(school.distance_miles).toFixed(1)+' mi':null].filter(Boolean).join(' · ')}</Text><Text style={s.areaSource}>{school.provider.toUpperCase()}</Text></View>
      {school.quality_label?<Text style={s.quality}>{school.quality_label}</Text>:null}
      {school.profile_url?<Lucide name="external-link" color={C.lime} size={13}/>:null}
@@ -166,31 +207,32 @@ export default function HousingDetail(){
    </View>:null}
 
    <Section label="RENTER ACTIONS">
-    <View style={s.actionGrid}>
-     <Pressable style={s.actionCard} onPress={()=>router.push(('/housing-tour/'+item.id) as never)}><Lucide name="calendar-days" color={C.lime} size={16}/><Text style={s.actionTitle}>REQUEST TOUR</Text><Text style={s.actionBody}>Ask for a preferred date and time window.</Text></Pressable>
-     <Pressable style={s.actionCard} onPress={()=>router.push(('/housing-inquiry/'+item.id) as never)}><Lucide name="message-square" color={C.lime} size={16}/><Text style={s.actionTitle}>ASK A QUESTION</Text><Text style={s.actionBody}>Ask about screening, utilities, availability or move-in.</Text></Pressable>
+   <View style={s.actionGrid}>
+     <Pressable accessibilityRole="button" accessibilityLabel="Request tour" style={s.actionCard} onPress={()=>router.push(('/housing-tour/'+item.id) as never)}><Lucide name="calendar-days" color={C.lime} size={16}/><Text style={s.actionTitle}>REQUEST TOUR</Text><Text style={s.actionBody}>Ask for a preferred date and time window.</Text></Pressable>
+     <Pressable accessibilityRole="button" accessibilityLabel="Ask a question" style={s.actionCard} onPress={()=>router.push(('/housing-inquiry/'+item.id) as never)}><Lucide name="message-square" color={C.lime} size={16}/><Text style={s.actionTitle}>ASK A QUESTION</Text><Text style={s.actionBody}>Ask about screening, utilities, availability or move-in.</Text></Pressable>
     </View>
-    <Pressable style={s.reportRow} onPress={()=>router.push(('/housing-report/'+item.id) as never)}><Lucide name="shield-alert" color={C.mutedStrong} size={14}/><Text style={s.reportText}>REPORT LISTING OR SAFETY CONCERN</Text><Lucide name="arrow-right" color={C.mutedStrong} size={13}/></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel="Get directions" style={s.reportRow} onPress={()=>void directions()}><Lucide name="map" color={C.lime} size={14}/><Text style={s.reportText}>GET DIRECTIONS</Text><Lucide name="arrow-up-right" color={C.lime} size={13}/></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel="Report listing or safety concern" style={s.reportRow} onPress={()=>router.push(('/housing-report/'+item.id) as never)}><Lucide name="shield-alert" color={C.mutedStrong} size={14}/><Text style={s.reportText}>REPORT LISTING OR SAFETY CONCERN</Text><Lucide name="arrow-right" color={C.mutedStrong} size={13}/></Pressable>
    </Section>
 
-   <View style={s.source}><Text style={s.sourceLabel}>SOURCE</Text><Text style={s.sourceText}>{item.source_label||'FairPath'}</Text>{item.source_url?<Pressable onPress={()=>void openUrl(item.source_url)}><Text style={s.sourceLink}>VIEW ORIGINAL LISTING ↗</Text></Pressable>:null}</View>
+   <View style={s.source}><Text style={s.sourceLabel}>SOURCE</Text><Text style={s.sourceText}>{item.source_label||'FairPath'}</Text>{item.source_url?<Pressable accessibilityRole="link" accessibilityLabel="View original listing" onPress={()=>void openUrl(item.source_url)}><Text style={s.sourceLink}>VIEW ORIGINAL LISTING ↗</Text></Pressable>:null}</View>
 
    <View style={s.notice}>
     <Lucide name="shield-check" color={C.lime} size={16}/>
     <Text style={s.noticeText}>{application?(application.status==='started'?'You have a saved draft for this home. Continue where you left off.':'Your application is in FairPath. Open it to review its status and history.'):item.fasttrack_enabled?'Choose Standard or FastTrack. Nothing is saved until you finish the first section, and nothing is submitted until you review and confirm.':'Nothing is saved until you finish the first section, and nothing is submitted until you review and confirm.'}</Text>
    </View>
 
-   {application?<Pressable style={s.primary} onPress={()=>openApplication(application.application_type)}>
+   {application?<Pressable accessibilityRole="button" style={s.primary} onPress={()=>openApplication(application.application_type)}>
     <Text style={s.primaryText}>{application.status==='started'?'CONTINUE':'OPEN'} {application.application_type==='fasttrack'?'FASTTRACK':'STANDARD'} APPLICATION</Text><Lucide name="arrow-right" color={C.black} size={16}/>
    </Pressable>:item.fasttrack_enabled?<View style={s.applyChoices}>
     <Text style={s.applyChoiceLabel}>CHOOSE APPLICATION TYPE</Text>
-    <Pressable style={s.fastTrackButton} onPress={()=>void startApplication('fasttrack')}>
+    <Pressable accessibilityRole="button" accessibilityLabel="FastTrack application" style={s.fastTrackButton} onPress={()=>void startApplication('fasttrack')}>
      <View><Text style={s.fastTrackButtonTitle}>FASTTRACK APPLICATION</Text><Text style={s.fastTrackButtonBody}>Reuse available FairPath profile information and move through the application faster.</Text></View><Lucide name="zap" color={C.black} size={16}/>
     </Pressable>
-    <Pressable style={s.standardButton} onPress={()=>void startApplication('standard')}>
+    <Pressable accessibilityRole="button" accessibilityLabel="Standard application" style={s.standardButton} onPress={()=>void startApplication('standard')}>
      <View><Text style={s.standardButtonTitle}>STANDARD APPLICATION</Text><Text style={s.standardButtonBody}>Start a clean application and enter each section manually.</Text></View><Lucide name="arrow-right" color={C.lime} size={16}/>
     </Pressable>
-   </View>:<Pressable style={s.primary} onPress={()=>void startApplication('standard')}>
+   </View>:<Pressable accessibilityRole="button" style={s.primary} onPress={()=>void startApplication('standard')}>
     <Text style={s.primaryText}>START STANDARD APPLICATION</Text><Lucide name="arrow-right" color={C.black} size={16}/>
    </Pressable>}
   </ScrollView>
@@ -200,7 +242,7 @@ export default function HousingDetail(){
 function Fact({label,value}:{label:string;value:string}){return <View style={s.fact}><Text style={s.factLabel}>{label}</Text><Text style={s.factValue}>{value}</Text></View>}
 function Section({label,children}:{label:string;children:React.ReactNode}){return <View style={s.section}><Text style={s.sectionLabel}>{label}</Text>{children}</View>}
 function Score({label,value}:{label:string;value:number}){return <View style={s.score}><Text style={s.scoreValue}>{value}</Text><Text style={s.scoreLabel}>{label}</Text></View>}
-function LinkRow({label,onPress}:{label:string;onPress:()=>void}){return <Pressable style={s.linkRow} onPress={onPress}><Text style={s.linkText}>{label}</Text><Lucide name="external-link" color={C.lime} size={14}/></Pressable>}
+function LinkRow({label,onPress}:{label:string;onPress:()=>void}){return <Pressable accessibilityRole="button" accessibilityLabel={label} style={s.linkRow} onPress={onPress}><Text style={s.linkText}>{label}</Text><Lucide name="external-link" color={C.lime} size={14}/></Pressable>}
 
 const s=StyleSheet.create({
  content:{paddingHorizontal:L.mobileGutter,paddingTop:16,paddingBottom:36},state:{padding:L.mobileGutter},muted:{color:C.muted},error:{color:C.danger},
@@ -208,7 +250,7 @@ const s=StyleSheet.create({
  scoreRow:{flexDirection:'row',gap:8},score:{flex:1,borderWidth:1,borderColor:C.borderStrong,paddingVertical:12,alignItems:'center'},scoreValue:{color:C.white,fontFamily:F.black,fontSize:23},scoreLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:1,marginTop:2},sourceNote:{color:C.muted,fontSize:9,lineHeight:14,marginTop:8},
  areaRow:{minHeight:54,flexDirection:'row',alignItems:'center',gap:10,borderTopWidth:1,borderTopColor:C.border,paddingVertical:11},areaRowFirst:{borderTopWidth:0},areaIcon:{width:28,height:28,borderRadius:2,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center'},areaCopy:{flex:1,minWidth:0},areaTitle:{color:C.white,fontFamily:F.bold,fontSize:12},areaMeta:{color:C.mutedStrong,fontSize:10,marginTop:3},areaSource:{color:C.muted,fontFamily:F.extraBold,fontSize:7,letterSpacing:.7,marginTop:3},quality:{color:C.lime,fontFamily:F.extraBold,fontSize:9,marginRight:4},gallery:{height:230,width:'100%',backgroundColor:'#0A0C0A',borderWidth:1,borderColor:C.borderStrong,position:'relative',overflow:'hidden'},noPhoto:{flex:1,alignItems:'center',justifyContent:'center',padding:18},noPhotoTitle:{color:C.white,fontFamily:F.extraBold,fontSize:10,letterSpacing:.8,marginTop:9},noPhotoBody:{color:C.muted,fontSize:9,marginTop:4},hero:{height:228,backgroundColor:'#0A0C0A'},photoCount:{position:'absolute',right:9,bottom:9,height:27,paddingHorizontal:9,backgroundColor:'#090A09DD',borderWidth:1,borderColor:C.borderStrong,flexDirection:'row',gap:6,alignItems:'center'},photoCountText:{color:C.white,fontFamily:F.extraBold,fontSize:8,letterSpacing:.5},demoFlag:{position:'absolute',left:9,top:9,height:25,paddingHorizontal:8,backgroundColor:'#090A09DD',borderWidth:1,borderColor:'#526F2B',justifyContent:'center'},demoFlagText:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},thumbs:{gap:7,paddingVertical:9},thumbWrap:{width:64,height:48,borderWidth:1,borderColor:C.borderStrong,opacity:.65},thumbActive:{borderColor:C.lime,opacity:1},thumb:{width:'100%',height:'100%'},intro:{paddingVertical:17,borderBottomWidth:1,borderBottomColor:C.borderStrong},price:{color:C.white,fontFamily:F.black,fontSize:29},month:{color:C.mutedStrong,fontFamily:F.regular,fontSize:12},title:{color:C.white,fontFamily:F.extraBold,fontSize:23,lineHeight:26,marginTop:5},meta:{color:C.mutedStrong,fontSize:12,marginTop:8},locationRow:{flexDirection:'row',alignItems:'center',gap:6,marginTop:8},location:{color:C.muted,fontSize:11,flex:1},badges:{flexDirection:'row',gap:6,flexWrap:'wrap',marginTop:12},
  facts:{flexDirection:'row',borderBottomWidth:1,borderBottomColor:C.borderStrong},costRow:{minHeight:34,flexDirection:'row',justifyContent:'space-between',alignItems:'center',borderTopWidth:1,borderTopColor:C.border},costLabel:{color:C.mutedStrong,fontSize:10},costValue:{color:C.white,fontFamily:F.extraBold,fontSize:10},costTotal:{minHeight:44,flexDirection:'row',justifyContent:'space-between',alignItems:'center',borderTopWidth:1,borderTopColor:C.borderStrong,marginTop:4},costTotalLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},costTotalValue:{color:C.white,fontFamily:F.black,fontSize:16},fact:{flex:1,paddingVertical:15,paddingRight:8},factLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},factValue:{color:C.white,fontFamily:F.extraBold,fontSize:12,marginTop:5},
- section:{paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.border},actionGrid:{flexDirection:'row',gap:8},actionCard:{flex:1,minHeight:112,borderWidth:1,borderColor:C.borderStrong,padding:12,justifyContent:'flex-start'},actionTitle:{color:C.white,fontFamily:F.extraBold,fontSize:8,letterSpacing:.7,marginTop:10},actionBody:{color:C.mutedStrong,fontSize:8,lineHeight:13,marginTop:4},reportRow:{minHeight:42,borderTopWidth:1,borderTopColor:C.border,marginTop:10,flexDirection:'row',alignItems:'center',gap:8},reportText:{flex:1,color:C.mutedStrong,fontFamily:F.extraBold,fontSize:7,letterSpacing:.7},sectionLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.1,marginBottom:8},body:{color:C.mutedStrong,fontSize:13,lineHeight:20},
+ section:{paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.border},signalButton:{height:44,borderWidth:1,borderColor:C.lime,alignItems:'center',justifyContent:'center',paddingHorizontal:14,alignSelf:'flex-start'},signalButtonText:{color:C.lime,fontFamily:F.extraBold,fontSize:10,letterSpacing:.8},actionGrid:{flexDirection:'row',gap:8},actionCard:{flex:1,minHeight:112,borderWidth:1,borderColor:C.borderStrong,padding:12,justifyContent:'flex-start'},actionTitle:{color:C.white,fontFamily:F.extraBold,fontSize:8,letterSpacing:.7,marginTop:10},actionBody:{color:C.mutedStrong,fontSize:8,lineHeight:13,marginTop:4},reportRow:{minHeight:42,borderTopWidth:1,borderTopColor:C.border,marginTop:10,flexDirection:'row',alignItems:'center',gap:8},reportText:{flex:1,color:C.mutedStrong,fontFamily:F.extraBold,fontSize:7,letterSpacing:.7},sectionLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.1,marginBottom:8},body:{color:C.mutedStrong,fontSize:13,lineHeight:20},
  links:{paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.border},linkRow:{height:42,borderTopWidth:1,borderTopColor:C.border,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},linkText:{color:C.white,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8},
  source:{paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.border},sourceLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},sourceText:{color:C.mutedStrong,fontSize:11,marginTop:4},sourceLink:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8,marginTop:9},
  notice:{flexDirection:'row',gap:9,paddingVertical:16},noticeText:{flex:1,color:C.mutedStrong,fontSize:9,lineHeight:14},

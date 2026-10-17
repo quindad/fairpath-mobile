@@ -54,12 +54,12 @@ export default function JobApplications(){
     <Text style={s.summaryText}>Your FairPath applications and employer status updates live here.</Text>
    </View>
 
-   {error?<View style={s.state}><Text style={s.error}>{error}</Text><Pressable onPress={()=>void load()}><Text style={s.retry}>TRY AGAIN</Text></Pressable></View>:null}
+   {error?<View style={s.state}><Text style={s.error}>{error}</Text><Pressable accessibilityRole="button" onPress={()=>void load()}><Text style={s.retry}>TRY AGAIN</Text></Pressable></View>:null}
    {loading&&!error?<View style={s.state}><Text style={s.muted}>Loading applications…</Text></View>:null}
    {!loading&&!error&&items.length===0?<View style={s.empty}>
     <Text style={s.emptyTitle}>No applications yet.</Text>
     <Text style={s.emptyBody}>When you Easy Apply through FairPath, the application and its status will show here.</Text>
-    <Pressable style={s.primary} onPress={()=>router.push('/find-jobs' as never)}>
+    <Pressable accessibilityRole="button" style={s.primary} onPress={()=>router.push('/find-jobs' as never)}>
      <Text style={s.primaryText}>FIND JOBS</Text><Lucide name="arrow-right" color={C.black} size={15}/>
     </Pressable>
    </View>:null}
@@ -68,7 +68,7 @@ export default function JobApplications(){
     const copy=STATUS_COPY[item.status]??STATUS_COPY.submitted;
     const job=item.job;
     const location=job?.location_text||[job?.city,job?.state].filter(Boolean).join(', ')||'Location not listed';
-    return <Pressable key={item.id} style={s.card} onPress={()=>router.push(('/job-application/'+item.id) as never)}>
+    return <Pressable accessibilityRole="button" key={item.id} style={s.card} onPress={()=>router.push(('/job-application/'+item.id) as never)}>
      <View style={s.cardTop}>
       <View style={s.cardCopy}>
        <Text style={s.title}>{job?.title||'Job application'}</Text>

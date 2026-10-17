@@ -82,7 +82,7 @@ export default function LocationSetup() {
         <Text style={s.label}>SEARCH RADIUS</Text>
         <View style={s.radiusRow}>
           {RADIUS_OPTIONS.map((mi) => (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={mi}
               style={[s.chip, radius === mi && s.chipActive]}
               onPress={() => setRadius(mi)}
@@ -93,7 +93,7 @@ export default function LocationSetup() {
         </View>
         <Text style={s.note}>Default is {DEFAULT_SEARCH_RADIUS_MILES} miles. You can widen this anytime — FairPath will also suggest widening it if your area has limited local inventory.</Text>
 
-        <Pressable
+        <Pressable accessibilityRole="button"
           style={[s.primary, (!zipValid || saving || loading) && s.primaryDisabled]}
           onPress={() => void save()}
           disabled={!zipValid || saving || loading}

@@ -60,7 +60,7 @@ export function HomeStatus() {
 
   return (
     <View style={s.wrap} accessibilityLabel="Your next move">
-      <View style={s.head}><Text style={s.eyebrow}>NEXT MOVE</Text><Pressable onPress={() => router.push('/my-path' as never)}><Text style={s.plan}>MY PATH →</Text></Pressable></View>
+      <View style={s.head}><Text style={s.eyebrow}>NEXT MOVE</Text><Pressable accessibilityRole="button" onPress={() => router.push('/my-path' as never)}><Text style={s.plan}>MY PATH →</Text></Pressable></View>
       {steps[0] ? (
         <Pressable accessibilityRole="button" style={s.primary} onPress={() => router.push(steps[0].route as never)}>
           <View style={s.copy}><Text style={s.title}>{steps[0].title}</Text><Text style={s.body} numberOfLines={2}>{steps[0].body}</Text></View>

@@ -1,4 +1,4 @@
-// Credit Builder audit: pure rules, letter safety, legal-safety wording, and client/SQL boundaries. `npm run test:credit`
+// Credit Studio audit: pure rules, letter safety, legal-safety wording, and client/SQL boundaries. `npm run test:credit`
 import fs from 'node:fs';
 import path from 'node:path';
 import * as cf from '../src/core/credit/credit-format.ts';

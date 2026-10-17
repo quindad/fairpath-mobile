@@ -168,6 +168,16 @@ export default function DisputeScreen() {
           </>
         ) : null}
 
+        {dispute.status !== 'draft' ? (
+          <>
+            <View style={{ marginTop: 22 }}><SectionTitle>YOUR LETTER</SectionTitle></View>
+            <BodyText muted>Need another copy? Re-download the letter using the information you already entered.</BodyText>
+            <PrimaryButton label="RE-DOWNLOAD LETTER (PDF)" onPress={() => void makeLetter('pdf')} busy={busy} />
+            <SecondaryButton label="RE-DOWNLOAD LETTER (WORD)" onPress={() => void makeLetter('docx')} disabled={busy} />
+            {generated ? <ExportPanel result={generated} onChange={setGenerated} onDeleted={() => setGenerated(null)} /> : null}
+          </>
+        ) : null}
+
         <View style={{ marginTop: 22 }}><SectionTitle>SUPPORTING DOCUMENTS</SectionTitle></View>
         {data.evidence.map((e) => <ListRow key={e.id} title={e.description} />)}
         <Field label="ADD A NOTE ABOUT A DOCUMENT YOU HAVE" value={evidenceText} onChangeText={setEvidenceText} optional placeholder="March statement showing the payment" />

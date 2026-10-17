@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FairPathLogo } from '@/components/FairPathLogo';
 import { FairPathColors as C, FairPathFonts as F } from '@/constants/fairpath';
 import { supabase } from '@/lib/supabase';
+import { resolveNextRouteForSignedInUser } from '@/core/auth/post-auth-route';
 
 export default function Welcome(){
  const [checking,setChecking]=useState(true);
@@ -13,7 +14,10 @@ export default function Welcome(){
   let active=true;
   supabase.auth.getUser().then(({data})=>{
    if(!active)return;
-   if(data.user){router.replace('/home' as never);return}
+   if(data.user){
+    resolveNextRouteForSignedInUser().then((next)=>{if(active)router.replace((next??'/home') as never)}).catch(()=>{if(active)router.replace('/home' as never)});
+    return;
+   }
    setChecking(false);
   }).catch(()=>setChecking(false));
   return()=>{active=false};
@@ -31,17 +35,17 @@ export default function Welcome(){
    <View style={s.hero}>
     <Text style={s.eyebrow}>WELCOME TO FAIRPATH</Text>
     <Text style={s.title}>Your FairPath forward{"\n"}starts here.</Text>
-    <Text style={s.body}>Jobs, housing, resources and tools built to help you move forward. Browse without an account. Create one when you’re ready to save, apply and track your progress.</Text>
+    <Text style={s.body}>Jobs and housing with felony-friendly and veteran-friendly filters built in. Free expungement and sealing checker, built state by state. Military experience translated into civilian terms. Browse without an account — create one when you’re ready to save, apply and track your progress.</Text>
    </View>
 
    <View style={s.actions}>
-    <Pressable style={s.primary} onPress={()=>router.push('/sign-in' as never)}>
+    <Pressable accessibilityRole="button" accessibilityLabel="Sign in" style={s.primary} onPress={()=>router.push('/sign-in' as never)}>
      <Text style={s.primaryText}>SIGN IN</Text><Text style={s.primaryArrow}>→</Text>
     </Pressable>
-    <Pressable style={s.secondary} onPress={()=>router.push('/sign-up' as never)}>
+    <Pressable accessibilityRole="button" accessibilityLabel="Create account" style={s.secondary} onPress={()=>router.push('/sign-up' as never)}>
      <Text style={s.secondaryText}>CREATE ACCOUNT</Text>
     </Pressable>
-    <Pressable style={s.guest} onPress={()=>router.replace('/find-jobs' as never)}>
+    <Pressable accessibilityRole="button" accessibilityLabel="Browse as guest" style={s.guest} onPress={()=>router.replace('/find-jobs' as never)}>
      <Text style={s.guestText}>BROWSE AS GUEST</Text><Text style={s.guestArrow}>→</Text>
     </Pressable>
     <Text style={s.note}>No account needed to browse jobs or housing.</Text>

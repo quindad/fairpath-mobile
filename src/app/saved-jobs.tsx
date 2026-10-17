@@ -43,12 +43,12 @@ export default function SavedJobs(){
     <Text style={s.summaryText}>Jobs you save stay here until you remove them.</Text>
    </View>
 
-   {error?<View style={s.state}><Text style={s.error}>{error}</Text><Pressable onPress={()=>void load()}><Text style={s.retry}>TRY AGAIN</Text></Pressable></View>:null}
+   {error?<View style={s.state}><Text style={s.error}>{error}</Text><Pressable accessibilityRole="button" onPress={()=>void load()}><Text style={s.retry}>TRY AGAIN</Text></Pressable></View>:null}
    {loading&&!error?<View style={s.state}><Text style={s.muted}>Loading saved jobs…</Text></View>:null}
    {!loading&&!error&&jobs.length===0?<View style={s.empty}>
     <Text style={s.emptyTitle}>No saved jobs yet.</Text>
     <Text style={s.emptyBody}>Tap the bookmark on a job you want to come back to.</Text>
-    <Pressable style={s.primary} onPress={()=>router.replace('/find-jobs' as never)}>
+    <Pressable accessibilityRole="button" style={s.primary} onPress={()=>router.replace('/find-jobs' as never)}>
      <Text style={s.primaryText}>FIND JOBS</Text><Lucide name="arrow-right" color={C.black} size={15}/>
     </Pressable>
    </View>:null}
@@ -58,7 +58,7 @@ export default function SavedJobs(){
     const expired=Boolean(job.expires_at&&new Date(job.expires_at).getTime()<=Date.now())||job.status==='expired';
     const inactive=expired||job.status==='closed'||job.status==='filled';
     return <View key={job.id} style={s.card}>
-     <Pressable style={s.cardMain} onPress={()=>router.push(('/job/'+job.id) as never)}>
+     <Pressable accessibilityRole="button" style={s.cardMain} onPress={()=>router.push(('/job/'+job.id) as never)}>
       <View style={s.cardTop}>
        <View style={s.mark}><Text style={s.markText}>{job.company_name.slice(0,1).toUpperCase()}</Text></View>
        <View style={s.copy}>

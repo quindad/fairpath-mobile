@@ -6,6 +6,7 @@ import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome
 import { JobMap } from '@/components/JobMap';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { isJobSaved, loadJob, loadMyJobApplicationForJob, saveJob, unsaveJob, type Job, type JobApplicationStatus } from '@/core/opportunities/opportunity-service';
+import { explainJobFit } from '@/core/ai/signal';
 import { supabase } from '@/lib/supabase';
 
 export default function JobDetail(){
@@ -16,6 +17,9 @@ export default function JobDetail(){
  const [applicationStatus,setApplicationStatus]=useState<JobApplicationStatus|null>(null);
  const [applicationId,setApplicationId]=useState<string|null>(null);
  const [saved,setSaved]=useState(false);
+ const [fitText,setFitText]=useState('');
+ const [fitLoading,setFitLoading]=useState(false);
+ const [fitRequested,setFitRequested]=useState(false);
 
  useEffect(()=>{
   if(!id)return;
@@ -39,6 +43,25 @@ export default function JobDetail(){
   }catch(e){
    if(e instanceof Error&&e.message==='SIGNED_OUT'){router.push(('/sign-up?returnTo='+encodeURIComponent('/job/'+job.id)) as never);return}
    notify('Could not update saved job','Please try again.');
+  }
+ }
+
+ async function askSignal(){
+  if(!job||fitLoading)return;
+  const {data:{user}}=await supabase.auth.getUser();
+  if(!user){router.push(('/sign-up?returnTo='+encodeURIComponent('/job/'+job.id)) as never);return}
+  setFitLoading(true);setFitRequested(true);
+  try{
+   const r=await explainJobFit(job.id);
+   if(r.status==='ok')setFitText(r.text);
+   else if(r.status==='out_of_credits')setFitText('You are out of Signal credits for now. They refresh with your plan.');
+   else if(r.status==='rate_limited')setFitText('Signal is busy across FairPath right now. Try again shortly.');
+   else if(r.status==='signed_out'){router.push(('/sign-up?returnTo='+encodeURIComponent('/job/'+job.id)) as never);return}
+   else setFitText(r.message);
+  }catch{
+   setFitText('Signal could not explain this job right now. Please try again.');
+  }finally{
+   setFitLoading(false);
   }
  }
 
@@ -81,7 +104,7 @@ export default function JobDetail(){
  const applied=Boolean(applicationStatus);
 
  return <ScreenFrame>
-  <PageHeader eyebrow="FAIRPATH JOBS" title="Job details" backTo="/find-jobs" trailing={<Pressable style={[s.save,saved&&s.saveActive]} onPress={()=>void save()}><Text style={[s.saveText,saved&&s.saveTextActive]}>{saved?'SAVED':'SAVE'}</Text></Pressable>}/>
+  <PageHeader eyebrow="FAIRPATH JOBS" title="Job details" backTo="/find-jobs" trailing={<Pressable accessibilityRole="button" style={[s.save,saved&&s.saveActive]} onPress={()=>void save()}><Text style={[s.saveText,saved&&s.saveTextActive]}>{saved?'SAVED':'SAVE'}</Text></Pressable>}/>
   <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <Text style={s.company}>{job.company_name.toUpperCase()}</Text>
    <Text style={s.title}>{job.title}</Text>
@@ -91,7 +114,7 @@ export default function JobDetail(){
     {job.location_precision==='city'?<Text style={s.approx}>APPROX. AREA</Text>:null}
    </View>
 
-   {job.company_website_url?<Pressable style={s.companySite} onPress={()=>void openCompanyWebsite()}>
+   {job.company_website_url?<Pressable accessibilityRole="button" style={s.companySite} onPress={()=>void openCompanyWebsite()}>
     <Text style={s.companySiteLabel}>COMPANY WEBSITE</Text>
     <Text style={s.companySiteAction}>VISIT ↗</Text>
    </Pressable>:null}
@@ -104,15 +127,26 @@ export default function JobDetail(){
     <InlineBadge>{job.employment_type.replace('_',' ').toUpperCase()}</InlineBadge>
    </View>
 
-   {job.pay_min!=null?<View style={s.fact}>
+   <View style={s.fact}>
     <Text style={s.factLabel}>PAY</Text>
-    <Text style={s.factValue}>{'$'+Number(job.pay_min).toLocaleString()+(job.pay_max?' – $'+Number(job.pay_max).toLocaleString():'')+' / '+(job.pay_period||'period')}</Text>
-   </View>:null}
+    <Text style={s.factValue}>{job.pay_min!=null?'$'+Number(job.pay_min).toLocaleString()+(job.pay_max?' – $'+Number(job.pay_max).toLocaleString():'')+' / '+(job.pay_period||'period'):'Not listed by the employer'}</Text>
+   </View>
 
    {job.latitude!=null&&job.longitude!=null?<View style={s.mapSection}>
     <Text style={s.sectionLabel}>WORK AREA</Text>
     <JobMap jobs={[job]} compact/>
    </View>:null}
+
+   <View style={s.signalSection}>
+    <Text style={s.sectionLabel}>SIGNAL · WHY THIS MIGHT FIT YOU</Text>
+    {fitRequested?(
+     fitLoading?<Text style={s.body}>Signal is thinking…</Text>:<Text style={s.body}>{fitText}</Text>
+    ):(
+     <Pressable accessibilityRole="button" style={s.signalButton} onPress={()=>void askSignal()}>
+      <Text style={s.signalButtonText}>ASK SIGNAL</Text>
+     </Pressable>
+    )}
+   </View>
 
    <View style={s.section}><Text style={s.sectionLabel}>ABOUT THE ROLE</Text><Text style={s.body}>{job.description}</Text></View>
    {job.background_policy_summary?<View style={s.section}><Text style={s.sectionLabel}>BACKGROUND POLICY</Text><Text style={s.body}>{job.background_policy_summary}</Text></View>:null}
@@ -124,7 +158,7 @@ export default function JobDetail(){
   </ScrollView>
 
   <View style={s.bottom}>
-   <Pressable style={[s.apply,(inactive||applied)&&s.applyDisabled]} onPress={apply}>
+   <Pressable accessibilityRole="button" style={[s.apply,(inactive||applied)&&s.applyDisabled]} onPress={apply}>
     <Text style={[s.applyText,(inactive||applied)&&s.applyTextDisabled]}>{applied?'VIEW APPLICATION':inactive?(job.status==='filled'?'POSITION FILLED':expiredByTime||job.status==='expired'?'JOB EXPIRED':'JOB CLOSED'):job.application_method==='external'?'CONTINUE TO APPLY':job.easy_apply_enabled?'EASY APPLY WITH FAIRPATH':'APPLY WITH FAIRPATH'}</Text>
     <Text style={[s.applyText,(inactive||applied)&&s.applyTextDisabled]}>{applied?'→':inactive?'—':'→'}</Text>
    </Pressable>
@@ -146,6 +180,9 @@ const s=StyleSheet.create({
  factLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:8,letterSpacing:1},
  factValue:{color:C.white,fontFamily:F.extraBold,fontSize:17,marginTop:5},
  mapSection:{paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.border},
+ signalSection:{paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.border},
+ signalButton:{height:44,borderWidth:1,borderColor:C.lime,alignItems:'center',justifyContent:'center',paddingHorizontal:14,alignSelf:'flex-start'},
+ signalButtonText:{color:C.lime,fontFamily:F.extraBold,fontSize:10,letterSpacing:.8},
  section:{paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.border},
  sectionLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.1,marginBottom:8},
  body:{color:C.mutedStrong,fontSize:13,lineHeight:20},line:{color:C.mutedStrong,fontSize:13,lineHeight:21},

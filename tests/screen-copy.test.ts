@@ -21,12 +21,12 @@ for (const f of FILES) {
   });
 }
 
-test('Veterans screen keeps the pathway marked in development', () => {
+test('Veterans screen is marked live, not in development', () => {
   const text = readFileSync(join(process.cwd(), 'src/app/veterans.tsx'), 'utf8');
-  assert.ok(text.includes('in development'));
+  assert.ok(!text.includes('IN DEVELOPMENT'));
 });
 
-test('Academy screen labels fixture data as not real courses', () => {
+test('Academy screen is honest that the catalog is development fixtures, not real partner courses', () => {
   const text = readFileSync(join(process.cwd(), 'src/app/academy.tsx'), 'utf8');
-  assert.ok(text.includes('not real courses'));
+  assert.ok(text.includes('development fixtures only'));
 });

@@ -24,10 +24,13 @@ and the tests described in the file's header written and passing against a local
 5. Giving — not yet drafted. Needs `assistance_needs`, `donations` mirroring
    `src/core/giving/{needs,donations}.ts`'s explicit state machine, with the public view enforced as
    a Postgres view or RPC that only ever exposes the allowlisted fields, never raw table access.
-6. Document metadata/extraction state for the generic (non-credit) upload flow — not yet drafted.
-   Needs a table mirroring `src/core/documents/extraction-contract.ts`'s field/status shape, reusing
-   the existing `documents` storage conventions in `src/core/documents/document-service.ts` rather
-   than inventing new storage.
+6. Document metadata/extraction state for the generic (non-credit) upload flow — **drafted**, see
+   `20261009090000_member_document_uploads_DRAFT.sql`. Mirrors `extraction-contract.ts`'s field/status
+   shape and the member-folder-scoped storage pattern already proven by `record-relief-uploads` and
+   `housing-application-documents`. Still needs: founder/backend review (court/credit/ID documents are
+   the highest-stakes data in the app), a local Postgres isolation/review-state test suite, and the RPC
+   layer (register/confirm/correct/reject/grant/revoke) written against the reviewed schema. Until all
+   three land, `src/app/documents/upload.tsx` keeps `STORAGE_CONNECTED = false`.
 7. Safety & Recovery preferences, if any need storage beyond the public, stateless `/safety`
    screen — not yet drafted. Any such table must enforce the never-shared-externally rule server-side.
 

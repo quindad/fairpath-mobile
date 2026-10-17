@@ -124,7 +124,8 @@ export async function loadContact(): Promise<ContactInfo & { email: string }> {
 }
 export async function saveContact(input: { first_name: string; last_name: string; phone: string }) {
   const user = await currentUser();
-  const { error } = await supabase.from('profiles').update({ first_name: input.first_name.trim(), last_name: input.last_name.trim(), phone: input.phone.trim() || null, updated_at: new Date().toISOString() }).eq('id', user.id);
+  const digits = input.phone.replace(/[^0-9]/g, '');
+  const { error } = await supabase.from('profiles').update({ first_name: input.first_name.trim(), last_name: input.last_name.trim(), phone: digits || null, updated_at: new Date().toISOString() }).eq('id', user.id);
   if (error) throw error;
 }
 

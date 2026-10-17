@@ -54,7 +54,7 @@ export default function Plus(){
 
    <View style={s.list}>{plus.map(x=><View key={x.id} style={s.row}><Text style={s.check}>✓</Text><View style={s.copy}><Text style={s.rowTitle}>{x.title}</Text><Text style={s.rowBody}>{x.description}</Text></View></View>)}</View>
 
-   <View style={s.market}><Text style={s.marketTitle}>7 Marketplace claims / month</Text><Text style={s.marketBody}>Free FairPath accounts include 1 Marketplace claim each month. FairPath+ raises that allowance to 7 while keeping Marketplace items free.</Text><Pressable onPress={()=>router.push('/marketplace' as never)}><Text style={s.marketLink}>OPEN FREE MARKETPLACE →</Text></Pressable></View>
+   <View style={s.market}><Text style={s.marketTitle}>7 Marketplace claims / month</Text><Text style={s.marketBody}>Free FairPath accounts include 1 Marketplace claim each month. FairPath+ raises that allowance to 7 while keeping Marketplace items free.</Text><Pressable accessibilityRole="button" onPress={()=>router.push('/marketplace' as never)}><Text style={s.marketLink}>OPEN FREE MARKETPLACE →</Text></Pressable></View>
 
    {view.showSubscribe&&!loading?<>
     <Pressable accessibilityRole="button" style={[s.cta,!provider.configured&&s.ctaDisabled]} onPress={()=>void subscribe()}>
@@ -65,7 +65,7 @@ export default function Plus(){
    </>:null}
    {notice?<Text style={s.notice}>{notice}</Text>:null}
 
-   <Pressable onPress={()=>router.push('/fairpath-ai' as never)}><Text style={s.back}>Explore FairPath AI →</Text></Pressable>
+   <Pressable accessibilityRole="button" onPress={()=>router.push('/fairpath-ai' as never)}><Text style={s.back}>Explore Signal →</Text></Pressable>
   </ScrollView>
  </ScreenFrame>
 }

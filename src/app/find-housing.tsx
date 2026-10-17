@@ -11,6 +11,7 @@ import {
  trackProductEvent, unsaveHousing, type HousingCard, type HousingFilters, type HousingSort
 } from '@/core/opportunities/opportunity-service';
 import { isZip, normalizePlace, resolveZipCenter } from '@/core/opportunities/opportunity-service';
+import { VOUCHER_TYPE_OPTIONS, type VoucherType } from '@/core/housing/housing-filters';
 import { DEFAULT_SEARCH_RADIUS_MILES, loadLocationSettings } from '@/core/profile/location-service';
 import { supabase } from '@/lib/supabase';
 import { HousingMap } from '@/components/HousingMap';
@@ -168,6 +169,7 @@ export default function Housing(){
  }
  function patchDraft(p:Partial<HousingFilters>){setDraft(d=>({...d,filters:{...d.filters,...p}}))}
  function toggleDraftType(type:string){setDraft(d=>({...d,filters:{...d.filters,types:d.filters.types.includes(type)?d.filters.types.filter(x=>x!==type):[...d.filters.types,type]}}))}
+ function toggleDraftVoucherType(v:VoucherType){setDraft(d=>{const has=d.filters.voucherTypes.includes(v);const voucherTypes=has?d.filters.voucherTypes.filter(x=>x!==v):[...d.filters.voucherTypes,v];return {...d,filters:{...d.filters,voucherTypes,voucherAccepted:voucherTypes.length>0||d.filters.voucherAccepted}}})}
  function resetDraft(){setDraft({filters:EMPTY_HOUSING_FILTERS,sort:'featured',radius:DEFAULT_SEARCH_RADIUS_MILES})}
 
  function openHome(h:{id:string}){router.push(('/housing/'+h.id) as never)}
@@ -192,6 +194,7 @@ export default function Housing(){
    minRent:filters.minRent,maxRent:filters.maxRent,beds:filters.beds,baths:filters.baths,types:filters.types.join(','),minSqft:filters.minSqft,
    fastTrack:filters.fastTrack,pets:filters.pets,accessible:filters.accessible,garage:filters.garage,parking:filters.parking,furnished:filters.furnished,
    basement:filters.basement,yard:filters.yard,balcony:filters.balcony,laundry:filters.laundry,centralAir:filters.centralAir,moveInReady:filters.moveInReady,
+   felonyFriendly:filters.felonyFriendly,veteranFriendly:filters.veteranFriendly,voucherAccepted:filters.voucherAccepted,voucherTypes:filters.voucherTypes.join(','),
    sort,radius
   };
   try{
@@ -239,7 +242,7 @@ export default function Housing(){
    {where?<Pressable accessibilityRole="button" accessibilityLabel="Clear location" hitSlop={8} style={s.clearBtn} onPress={clearWhere}><Lucide name="x" color={C.mutedStrong} size={14}/></Pressable>:null}
   </View>
 
-  {savedZip&&where.trim()!==savedZip?<Pressable style={s.useSaved} onPress={useSavedZip}>
+  {savedZip&&where.trim()!==savedZip?<Pressable accessibilityRole="button" accessibilityLabel={'Use my saved ZIP, '+savedZip} style={s.useSaved} onPress={useSavedZip}>
    <Lucide name="crosshair" color={C.lime} size={12}/><Text style={s.useSavedText}>USE MY SAVED ZIP · {savedZip}</Text>
   </Pressable>:null}
 
@@ -262,17 +265,20 @@ export default function Housing(){
   <View style={s.filterCell}><SharpChip label="2+ beds" active={filters.beds==='2+'} onPress={()=>patchFilters({beds:filters.beds==='2+'?'ANY':'2+'})}/></View>
   <View style={s.filterCell}><SharpChip label="FastTrack" active={filters.fastTrack} onPress={()=>patchFilters({fastTrack:!filters.fastTrack})}/></View>
   <View style={s.filterCell}><SharpChip label="Pets OK" active={filters.pets} onPress={()=>patchFilters({pets:!filters.pets})}/></View>
+  <View style={s.filterCell}><SharpChip label="Felony Friendly" active={filters.felonyFriendly} onPress={()=>patchFilters({felonyFriendly:!filters.felonyFriendly})}/></View>
+  <View style={s.filterCell}><SharpChip label="Veteran Friendly" active={filters.veteranFriendly} onPress={()=>patchFilters({veteranFriendly:!filters.veteranFriendly})}/></View>
+  <View style={s.filterCell}><SharpChip label="Accepts Vouchers" active={filters.voucherAccepted} onPress={()=>patchFilters({voucherAccepted:!filters.voucherAccepted,voucherTypes:filters.voucherAccepted?[]:filters.voucherTypes})}/></View>
  </View>;
 
  const searchActions=<View style={s.searchActions}>
-  <Pressable style={s.searchAction} onPress={()=>void saveCurrentSearch()}><Lucide name="bookmark-plus" color={C.lime} size={13}/><Text style={s.searchActionText}>SAVE SEARCH</Text></Pressable>
-  {signedIn?<Pressable style={s.searchAction} onPress={()=>router.push('/saved-housing-searches' as never)}><Lucide name="history" color={C.lime} size={13}/><Text style={s.searchActionText}>SAVED SEARCHES</Text></Pressable>:null}
+  <Pressable accessibilityRole="button" accessibilityLabel="Save search" style={s.searchAction} onPress={()=>void saveCurrentSearch()}><Lucide name="bookmark-plus" color={C.lime} size={13}/><Text style={s.searchActionText}>SAVE SEARCH</Text></Pressable>
+  {signedIn?<Pressable accessibilityRole="button" accessibilityLabel="Saved searches" style={s.searchAction} onPress={()=>router.push('/saved-housing-searches' as never)}><Lucide name="history" color={C.lime} size={13}/><Text style={s.searchActionText}>SAVED SEARCHES</Text></Pressable>:null}
  </View>;
 
  function renderHome(h:HousingCard){
   const photo=h.housing_media?.filter(m=>m.media_type==='photo').sort((a,b)=>a.sort_order-b.sort_order)[0]?.url??'';
   const isSaved=Boolean(saved[h.id]);
-  return <Pressable key={h.id} style={s.card} onPress={()=>openHome(h)}>
+  return <Pressable key={h.id} accessibilityRole="button" accessibilityLabel={h.title} style={s.card} onPress={()=>openHome(h)}>
    <View style={s.media}>
     {photo?<Image source={{uri:photo}} style={s.photo}/>:<View style={s.noPhoto}><Text style={s.noPhotoText}>NO PHOTO AVAILABLE</Text></View>}
     <Pressable accessibilityRole="button" accessibilityLabel={isSaved?'Remove saved home':'Save home'} style={[s.saveBtn,isSaved&&s.saveBtnActive]} onPress={e=>{e.stopPropagation?.();void toggleSave(h.id)}}>
@@ -285,7 +291,7 @@ export default function Housing(){
     <Text style={s.homeTitle}>{h.title}</Text>
     <Text style={s.meta}>{[h.bedrooms!=null?(Number(h.bedrooms)===0?'Studio':h.bedrooms+' bd'):null,h.bathrooms!=null?h.bathrooms+' ba':null,h.square_feet?h.square_feet.toLocaleString()+' sq ft':null].filter(Boolean).join(' · ')}</Text>
     <View style={s.locationRow}><Lucide name="map-pin" color={C.muted} size={12}/><Text style={s.location}>{[h.city,h.state,h.postal_code].filter(Boolean).join(', ')}{h.distance_miles!=null?' · '+(h.distance_miles<10?h.distance_miles.toFixed(1):Math.round(h.distance_miles))+' mi':''}</Text></View>
-    <View style={s.badges}>{h.fasttrack_enabled?<InlineBadge tone="lime">FASTTRACK AVAILABLE</InlineBadge>:null}<InlineBadge>{h.property_type.toUpperCase()}</InlineBadge></View>
+    <View style={s.badges}>{h.fasttrack_enabled?<InlineBadge tone="lime">FASTTRACK AVAILABLE</InlineBadge>:null}{h.virtual_tour_url?<InlineBadge tone="lime">3D TOUR</InlineBadge>:null}<InlineBadge>{h.property_type.toUpperCase()}</InlineBadge></View>
     <View style={s.footer}><View><Text style={s.sourceLabel}>SOURCE</Text><Text style={s.source}>{h.source_label||'FairPath'}</Text></View><View style={s.viewRow}><Text style={s.viewText}>VIEW HOME</Text><Lucide name="arrow-right" color={C.lime} size={13}/></View></View>
    </View>
   </Pressable>;
@@ -297,7 +303,7 @@ export default function Housing(){
   {!loading&&homes.length===0&&!error&&lowCoverage?<View style={s.empty}>
    <Text style={s.emptyTitle}>FairPath does not have enough verified housing near {zip} yet.</Text>
    <Text style={s.emptyBody}>That's different from this search finding nothing — the market itself is still building. FairPath can notify you when it's ready.</Text>
-   <Pressable style={s.earlyAccessBtn} onPress={()=>router.push(('/early-access?zip='+zip) as never)}>
+   <Pressable accessibilityRole="button" accessibilityLabel="Join early access" style={s.earlyAccessBtn} onPress={()=>router.push(('/early-access?zip='+zip) as never)}>
     <Text style={s.earlyAccessBtnText}>JOIN EARLY ACCESS</Text>
     <Lucide name="arrow-right" color={C.black} size={14}/>
    </Pressable>
@@ -348,7 +354,16 @@ export default function Housing(){
      <SharpChip label="FastTrack" active={draft.filters.fastTrack} onPress={()=>patchDraft({fastTrack:!draft.filters.fastTrack})}/>
      <SharpChip label="Pets allowed" active={draft.filters.pets} onPress={()=>patchDraft({pets:!draft.filters.pets})}/>
      <SharpChip label="Accessible" active={draft.filters.accessible} onPress={()=>patchDraft({accessible:!draft.filters.accessible})}/>
+     <SharpChip label="Felony Friendly" active={draft.filters.felonyFriendly} onPress={()=>patchDraft({felonyFriendly:!draft.filters.felonyFriendly})}/>
+     <SharpChip label="Veteran Friendly" active={draft.filters.veteranFriendly} onPress={()=>patchDraft({veteranFriendly:!draft.filters.veteranFriendly})}/>
     </View>
+
+    <Text style={s.groupLabel}>ACCEPTS VOUCHER</Text>
+    <View style={s.wrapRow}>
+     <SharpChip label="Any voucher" active={draft.filters.voucherAccepted&&!draft.filters.voucherTypes.length} onPress={()=>patchDraft({voucherAccepted:!draft.filters.voucherAccepted,voucherTypes:[]})}/>
+     {VOUCHER_TYPE_OPTIONS.map(o=><SharpChip key={o.value} label={o.label} active={draft.filters.voucherTypes.includes(o.value)} onPress={()=>toggleDraftVoucherType(o.value)}/>)}
+    </View>
+    <Text style={s.groupHint}>Pick a specific voucher type to see only homes verified or self-reported to accept that one. "Any voucher" shows every listing that accepts some form of voucher.</Text>
 
     <Text style={s.groupLabel}>HOME FEATURES</Text>
     <View style={s.wrapRow}>{FEATURE_TOGGLES.map(([k,label])=><SharpChip key={k} label={label} active={Boolean(draft.filters[k])} onPress={()=>patchDraft({[k]:!draft.filters[k]} as Partial<HousingFilters>)}/>)}</View>
@@ -395,8 +410,8 @@ export default function Housing(){
    onEndReachedThreshold={0.6}
    ListHeaderComponent={<View>
     <View style={s.utilityRow}>
-     <Pressable style={s.utilityBtn} onPress={()=>router.replace('/find-jobs' as never)}><Lucide name="briefcase-business" color={C.lime} size={13}/><Text style={s.utilityText}>JOBS</Text></Pressable>
-     {signedIn?<><Pressable style={s.utilityBtn} onPress={()=>router.push('/saved-homes' as never)}><Lucide name="bookmark" color={C.lime} size={13}/><Text style={s.utilityText}>SAVED HOMES</Text></Pressable><Pressable style={s.utilityBtn} onPress={()=>router.push('/housing-applications' as never)}><Lucide name="file-check-2" color={C.lime} size={13}/><Text style={s.utilityText}>APPLICATIONS</Text></Pressable></>:<View style={s.utilityInfo}><Lucide name="house" color={C.lime} size={13}/><Text style={s.utilityText}>BROWSE WITHOUT AN ACCOUNT</Text></View>}
+     <Pressable accessibilityRole="button" accessibilityLabel="Jobs" style={s.utilityBtn} onPress={()=>router.replace('/find-jobs' as never)}><Lucide name="briefcase-business" color={C.lime} size={13}/><Text style={s.utilityText}>JOBS</Text></Pressable>
+     {signedIn?<><Pressable accessibilityRole="button" accessibilityLabel="Saved homes" style={s.utilityBtn} onPress={()=>router.push('/saved-homes' as never)}><Lucide name="bookmark" color={C.lime} size={13}/><Text style={s.utilityText}>SAVED HOMES</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Applications" style={s.utilityBtn} onPress={()=>router.push('/housing-applications' as never)}><Lucide name="file-check-2" color={C.lime} size={13}/><Text style={s.utilityText}>APPLICATIONS</Text></Pressable></>:<View style={s.utilityInfo}><Lucide name="house" color={C.lime} size={13}/><Text style={s.utilityText}>BROWSE WITHOUT AN ACCOUNT</Text></View>}
     </View>
     {searchControls}
     {quickChips}
@@ -432,9 +447,9 @@ const s=StyleSheet.create({
  filtersStrip:{height:52,paddingVertical:9,flexDirection:'row',gap:7},filterCell:{flex:1},
  searchActions:{paddingVertical:8,borderTopWidth:1,borderBottomWidth:1,borderColor:C.border,flexDirection:'row',gap:8},searchAction:{flex:1,minHeight:36,borderWidth:1,borderColor:C.borderStrong,flexDirection:'row',gap:6,alignItems:'center',justifyContent:'center'},searchActionText:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:.7},
  list:{paddingHorizontal:L.mobileGutter,paddingBottom:30},resultsTop:{height:46,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},results:{color:C.muted,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.1,flexShrink:1},
- viewToggle:{flexDirection:'row',borderWidth:1,borderColor:C.borderStrong},viewButton:{height:32,paddingHorizontal:10,flexDirection:'row',gap:5,alignItems:'center',justifyContent:'center',backgroundColor:'#090B09'},viewButtonActive:{backgroundColor:'#10150C'},viewButtonText:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8},viewButtonTextActive:{color:C.lime},
+ viewToggle:{flexDirection:'row',borderWidth:1,borderColor:C.borderStrong},viewButton:{height:44,paddingHorizontal:10,flexDirection:'row',gap:5,alignItems:'center',justifyContent:'center',backgroundColor:'#090B09'},viewButtonActive:{backgroundColor:'#10150C'},viewButtonText:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8},viewButtonTextActive:{color:C.lime},
  card:{borderTopWidth:1,borderTopColor:C.borderStrong,paddingVertical:18},media:{height:180,position:'relative',backgroundColor:'#0A0C0A',borderWidth:1,borderColor:C.borderStrong,overflow:'hidden'},photo:{width:'100%',height:'100%'},noPhoto:{flex:1,alignItems:'center',justifyContent:'center'},noPhotoText:{color:C.muted,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.2},
- saveBtn:{position:'absolute',right:8,top:8,width:34,height:34,borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#090A09DD',alignItems:'center',justifyContent:'center'},saveBtnActive:{backgroundColor:C.lime,borderColor:C.lime},
+ saveBtn:{position:'absolute',right:4,top:4,width:44,height:44,borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#090A09DD',alignItems:'center',justifyContent:'center'},saveBtnActive:{backgroundColor:C.lime,borderColor:C.lime},
  body:{paddingTop:13},priceRow:{flexDirection:'row',alignItems:'baseline'},price:{color:C.white,fontFamily:F.black,fontSize:25},per:{color:C.muted,fontSize:11},homeTitle:{color:C.white,fontFamily:F.extraBold,fontSize:19,lineHeight:22,marginTop:4},meta:{color:C.mutedStrong,fontSize:12,marginTop:7},locationRow:{flexDirection:'row',alignItems:'center',gap:6,marginTop:7},location:{color:C.muted,fontSize:11},badges:{flexDirection:'row',gap:6,flexWrap:'wrap',marginTop:11},
  footer:{marginTop:14,paddingTop:12,borderTopWidth:1,borderTopColor:C.border,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},sourceLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},source:{color:C.mutedStrong,fontSize:9,marginTop:3},viewRow:{flexDirection:'row',alignItems:'center',gap:6},viewText:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8},
  empty:{borderTopWidth:1,borderTopColor:C.border,paddingVertical:28},emptyTitle:{color:C.white,fontFamily:F.extraBold,fontSize:18},emptyBody:{color:C.muted,fontSize:13,lineHeight:20,marginTop:7},error:{color:C.danger,fontSize:12,paddingVertical:12},

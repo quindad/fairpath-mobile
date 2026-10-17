@@ -54,7 +54,7 @@ export const PATHWAYS: readonly Pathway[] = [
   {
     id: 'veterans',
     name: 'Veterans',
-    status: 'in_development',
+    status: 'live',
     sensitiveScopes: ['military_service'],
     shareableWith: ['employer', 'partner_org'],
     defaultLocationSharing: false,
@@ -63,7 +63,7 @@ export const PATHWAYS: readonly Pathway[] = [
   {
     id: 'housing_stability',
     name: 'Housing Stability',
-    status: 'planned',
+    status: 'live',
     sensitiveScopes: ['housing_situation', 'location'],
     shareableWith: ['housing_provider', 'partner_org', 'case_manager'],
     defaultLocationSharing: false,
@@ -72,7 +72,7 @@ export const PATHWAYS: readonly Pathway[] = [
   {
     id: 'food',
     name: 'Food & Essentials',
-    status: 'planned',
+    status: 'live',
     sensitiveScopes: ['food_need', 'location'],
     shareableWith: ['partner_org'],
     defaultLocationSharing: false,
@@ -81,7 +81,7 @@ export const PATHWAYS: readonly Pathway[] = [
   {
     id: 'giving',
     name: 'Giving & Community Support',
-    status: 'planned',
+    status: 'live',
     sensitiveScopes: ['food_need', 'housing_situation'],
     shareableWith: [],
     defaultLocationSharing: false,
@@ -90,7 +90,7 @@ export const PATHWAYS: readonly Pathway[] = [
   {
     id: 'safety_recovery',
     name: 'Safety & Recovery',
-    status: 'planned',
+    status: 'live',
     sensitiveScopes: ['safety_situation', 'location'],
     shareableWith: [],
     defaultLocationSharing: false,

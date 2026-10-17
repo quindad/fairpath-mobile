@@ -1,19 +1,27 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 import { PageHeader, ScreenFrame, SectionTitle } from '@/components/ProductChrome';
-import { useThemedStyles } from '@/core/theme/ThemeProvider';
+import { FormScrollView } from '@/components/FormScrollView';
+import { useFairPathTheme, useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
-import { STARTUP_ACADEMY_TRACK, PROGRAM_REFERENCES, trackPercent, nextStep, markStepComplete, type TrackProgress } from '@/core/entrepreneurship/tracks';
-import { ENTREPRENEURSHIP_STORAGE_KEY, parseProgress, serializeProgress } from '@/core/entrepreneurship/progress-store';
+import { STARTUP_ACADEMY_TRACK, PROGRAM_REFERENCES, trackPercent, nextStep, type TrackProgress, type TrackStep } from '@/core/entrepreneurship/tracks';
+import { ENTREPRENEURSHIP_STORAGE_KEY, parseProgress, persistStepCompletion } from '@/core/entrepreneurship/progress-store';
+import { getBusinessIdeaFeedback } from '@/core/ai/signal';
+import { router } from 'expo-router';
 
 type Load = 'loading' | 'ready' | 'error';
 
 export default function EntrepreneurshipScreen() {
   const s = useThemedStyles(styles);
+  const { tokens } = useFairPathTheme();
   const [load, setLoad] = useState<Load>('loading');
   const [progress, setProgress] = useState<TrackProgress>({ completedSteps: [] });
   const [message, setMessage] = useState<string | null>(null);
+  const [idea, setIdea] = useState('');
+  const [feedbackText, setFeedbackText] = useState('');
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [feedbackRequested, setFeedbackRequested] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -23,23 +31,38 @@ export default function EntrepreneurshipScreen() {
     return () => { alive = false; };
   }, []);
 
-  const save = async (next: TrackProgress) => {
-    setProgress(next);
-    try {
-      await AsyncStorage.setItem(ENTREPRENEURSHIP_STORAGE_KEY, serializeProgress(next));
-      setMessage(null);
-    } catch {
+  const save = async (step: TrackStep) => {
+    const result = await persistStepCompletion(AsyncStorage, progress, step);
+    if (!result.saved) {
       setMessage('Your progress could not be saved on this device. Try again.');
+      return;
     }
+    setProgress(result.progress);
+    setMessage(null);
   };
 
   const percent = trackPercent(progress);
   const next = nextStep(progress);
 
+  async function askSignal() {
+    const t = idea.trim();
+    if (!t || feedbackLoading) return;
+    setFeedbackLoading(true); setFeedbackRequested(true);
+    try {
+      const r = await getBusinessIdeaFeedback(t, next?.title);
+      if (r.status === 'ok') setFeedbackText(r.text);
+      else if (r.status === 'out_of_credits') setFeedbackText('You are out of Signal credits for now. They refresh with your plan.');
+      else if (r.status === 'rate_limited') setFeedbackText('Signal is busy across FairPath right now. Try again shortly.');
+      else if (r.status === 'signed_out') { router.push(('/sign-in?returnTo=' + encodeURIComponent('/entrepreneurship')) as never); return; }
+      else setFeedbackText(r.message);
+    } catch { setFeedbackText('Signal could not look at this right now. Please try again.'); }
+    finally { setFeedbackLoading(false); }
+  }
+
   return (
     <ScreenFrame>
       <PageHeader eyebrow="ENTREPRENEURSHIP · OPEN TO EVERYONE" title="Startup Academy" backTo="/explore" />
-      <ScrollView contentContainerStyle={s.content}>
+      <FormScrollView contentContainerStyle={s.content}>
         <View style={s.banner}>
           <Text style={s.bannerTitle}>Build at your own pace</Text>
           <Text style={s.body}>
@@ -61,13 +84,30 @@ export default function EntrepreneurshipScreen() {
                 <Text style={s.cardLabel}>NEXT</Text>
                 <Text style={s.cardTitle}>{next.title}</Text>
                 <Text style={s.body}>{next.description}</Text>
-                <Pressable style={s.primary} accessibilityRole="button" onPress={() => save(markStepComplete(progress, next.id))}>
+                <Pressable style={s.primary} accessibilityRole="button" onPress={() => void save(next.id)}>
                   <Text style={s.primaryText}>Mark complete</Text>
                 </Pressable>
               </View>
             ) : (
               <View style={s.card}><Text style={s.cardTitle}>All 15 steps complete.</Text></View>
             )}
+
+            <View style={s.card}>
+              <Text style={s.cardTitle}>Signal · Get feedback on your idea</Text>
+              <TextInput
+                style={s.input}
+                value={idea}
+                onChangeText={setIdea}
+                placeholder="Describe your business idea…"
+                placeholderTextColor={tokens.textMuted}
+                multiline
+                accessibilityLabel="Describe your business idea for Signal"
+              />
+              <Pressable style={s.primary} accessibilityRole="button" onPress={() => void askSignal()}>
+                <Text style={s.primaryText}>{feedbackLoading ? 'Asking Signal…' : 'Ask Signal'}</Text>
+              </Pressable>
+              {feedbackRequested ? <Text style={s.body}>{feedbackLoading ? 'Signal is thinking…' : feedbackText}</Text> : null}
+            </View>
 
             <SectionTitle>All steps</SectionTitle>
             {STARTUP_ACADEMY_TRACK.map((step) => {
@@ -92,7 +132,7 @@ export default function EntrepreneurshipScreen() {
         ) : null}
 
         {message ? <Text style={s.error} accessibilityRole="alert">{message}</Text> : null}
-      </ScrollView>
+      </FormScrollView>
     </ScreenFrame>
   );
 }
@@ -107,6 +147,7 @@ const styles = (t: ThemeTokens) => ({
   bar: { height: 8, backgroundColor: t.border },
   barFill: { height: 8, backgroundColor: t.accent },
   card: { borderWidth: 1, borderColor: t.border, backgroundColor: t.surface, padding: 14, gap: 8 },
+  input: { minHeight: 70, borderWidth: 1, borderColor: t.border, backgroundColor: t.input, color: t.text, fontSize: 15, padding: 10, textAlignVertical: 'top' as const },
   cardLabel: { color: t.accent, fontWeight: '700' as const, fontSize: 12, letterSpacing: 0.6 },
   cardTitle: { color: t.text, fontWeight: '700' as const, fontSize: 16 },
   meta: { color: t.textMuted, fontSize: 13 },

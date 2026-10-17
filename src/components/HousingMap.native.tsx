@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import MapView, { Marker } from 'react-native-maps';
-import { StyleSheet, Text, View } from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import Constants from 'expo-constants';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { FairPathColors as C, FairPathFonts as F } from '@/constants/fairpath';
 import type { HousingCard } from '@/core/housing/housing-service';
 import { HousingMapCard } from '@/components/HousingMapCard';
+import { mappableOnly } from '@/core/location/map-data';
 
 /** Fills its parent. Pins are selectable; the selected pin shows a preview with an OPEN HOME DETAILS action. */
 export function HousingMap({homes,onOpen}:{homes:HousingCard[];onOpen:(home:HousingCard)=>void}){
- const located=useMemo(()=>homes.filter(h=>h.latitude!=null&&h.longitude!=null),[homes]);
+ const located=useMemo(()=>mappableOnly(homes),[homes]);
  const ref=useRef<MapView>(null);
  const [selectedId,setSelectedId]=useState<string|null>(null);
  const selected=located.find(h=>h.id===selectedId)??null;
@@ -28,6 +30,7 @@ export function HousingMap({homes,onOpen}:{homes:HousingCard[];onOpen:(home:Hous
  return <View style={s.wrap}>
   <MapView
    ref={ref}
+   provider={Platform.OS==='android'||Constants.expoConfig?.extra?.googleMapsIosEnabled?PROVIDER_GOOGLE:undefined}
    style={StyleSheet.absoluteFill}
    rotateEnabled={false}
    pitchEnabled={false}

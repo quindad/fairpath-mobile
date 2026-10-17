@@ -1,4 +1,4 @@
-// Local (PGlite) SQL suite for the Credit Builder workspace. `npm run test:sql:credit`
+// Local (PGlite) SQL suite for the Credit Studio workspace. `npm run test:sql:credit`
 import { addUser, createLocalDb, tryAs } from './lib/local-db.mjs';
 import { makeRunner } from './lib/local-fixtures.mjs';
 

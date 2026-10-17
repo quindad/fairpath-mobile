@@ -5,6 +5,7 @@ import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, InlineBadge, SharpChip, FilterStrip } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { BENEFIT_TYPE_LABELS, DOMAIN_LABELS, MATCH_STATUS_LABELS, EconomicOpportunity, groupByDomain, loadMyEconomicOpportunities } from '@/core/economic-opportunities/economic-opportunities-service';
+import { ArticleCard, CURATED_ARTICLES } from '@/core/opportunities/articles';
 
 export default function OpportunitiesScreen(){
  const [opportunities,setOpportunities]=useState<EconomicOpportunity[]>([]);
@@ -39,16 +40,27 @@ export default function OpportunitiesScreen(){
 
     {!visible.length?<View style={s.state}><Lucide name="search" color={C.mutedStrong} size={20}/><Text style={s.stateTitle}>NO VERIFIED PROGRAMS YET</Text><Text style={s.stateBody}>FairPath hasn't verified a program covering your jurisdiction in this category yet. This list grows as more states and programs are researched - it's never a sign that nothing exists.</Text></View>
      :<View style={s.list}>{visible.map(o=><OpportunityCard key={o.matchId} o={o}/>)}</View>}
+
+    <Text style={[s.count,{marginTop:28}]}>WORTH READING</Text>
+    <View style={s.articleList}>{CURATED_ARTICLES.map(a=><ArticleRow key={a.id} a={a}/>)}</View>
    </>}
   </ScrollView>
  </ScreenFrame>;
+}
+
+function ArticleRow({a}:{a:ArticleCard}){
+ return <Pressable accessibilityRole="button" style={s.articleCard} onPress={()=>Linking.openURL(a.source.url)}>
+  <Text style={s.articleTitle}>{a.title}</Text>
+  <Text style={s.articleSummary}>{a.summary}</Text>
+  <View style={s.sourceLink}><Lucide name="external-link" color={C.lime} size={12}/><Text style={s.sourceLinkText}>{a.source.label.toUpperCase()}</Text></View>
+ </Pressable>;
 }
 
 function OpportunityCard({o}:{o:EconomicOpportunity}){
  const [open,setOpen]=useState(false);
  const valueText = o.max_value ? 'Up to $'+o.max_value.toLocaleString() : o.min_value ? 'From $'+o.min_value.toLocaleString() : 'Amount varies';
  const isNew = Date.now()-new Date(o.assessedAt).getTime() < 24*3600*1000;
- return <Pressable style={s.card} onPress={()=>setOpen(v=>!v)}>
+ return <Pressable accessibilityRole="button" style={s.card} onPress={()=>setOpen(v=>!v)}>
   <View style={s.cardTop}>
    <View style={{flexDirection:'row',gap:6,alignItems:'center'}}>
     <InlineBadge>{(DOMAIN_LABELS[o.program_domain]??o.program_domain).toUpperCase()}</InlineBadge>
@@ -61,7 +73,7 @@ function OpportunityCard({o}:{o:EconomicOpportunity}){
   {open?<View style={s.detail}>
    <Text style={s.detailBody}>FairPath matched this because its jurisdiction covers where you live. This is not an eligibility decision - FairPath has not evaluated your specific facts against this program's actual rules yet.</Text>
    {o.missingInformation.length?<Text style={s.detailLine}>• Still needed: {o.missingInformation.join(', ')}</Text>:null}
-   {o.source_url?<Pressable style={s.sourceLink} onPress={()=>Linking.openURL(o.source_url!)}><Lucide name="external-link" color={C.lime} size={12}/><Text style={s.sourceLinkText}>View official source</Text></Pressable>:null}
+   {o.source_url?<Pressable accessibilityRole="button" style={s.sourceLink} onPress={()=>Linking.openURL(o.source_url!)}><Lucide name="external-link" color={C.lime} size={12}/><Text style={s.sourceLinkText}>View official source</Text></Pressable>:null}
   </View>:null}
  </Pressable>;
 }
@@ -84,6 +96,10 @@ const s=StyleSheet.create({
  detailLine:{color:C.mutedStrong,fontSize:10,lineHeight:15},
  sourceLink:{flexDirection:'row',alignItems:'center',gap:5,marginTop:4},
  sourceLinkText:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:.6},
+ articleList:{marginTop:10,gap:10},
+ articleCard:{backgroundColor:C.surface,borderWidth:1,borderColor:C.borderStrong,borderRadius:4,padding:14},
+ articleTitle:{color:C.white,fontFamily:F.extraBold,fontSize:13},
+ articleSummary:{color:C.mutedStrong,fontSize:10,lineHeight:15,marginTop:6},
  state:{paddingVertical:48,alignItems:'center',gap:10},
  stateTitle:{color:C.white,fontFamily:F.extraBold,fontSize:11,letterSpacing:.6},
  stateBody:{color:C.mutedStrong,fontSize:10,lineHeight:16,textAlign:'center',paddingHorizontal:20},

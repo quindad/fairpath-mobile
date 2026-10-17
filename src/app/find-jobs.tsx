@@ -7,31 +7,33 @@ import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, SharpChip, InlineBadge } from '@/components/ProductChrome';
 import { JobMap } from '@/components/JobMap';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
-import { isZip, JOB_PAGE_SIZE, normalizePlace, loadSavedJobIds, resolveZipCenter, saveJob, searchJobs, unsaveJob, type Job } from '@/core/opportunities/opportunity-service';
+import { isZip, JOB_PAGE_SIZE, normalizePlace, loadSavedJobIds, resolveZipCenter, saveJob, saveJobSearch, searchJobs, unsaveJob, type Job } from '@/core/opportunities/opportunity-service';
 import { DEFAULT_SEARCH_RADIUS_MILES, loadLocationSettings } from '@/core/profile/location-service';
 import { getMarketCoverage, isLowCoverage, type MarketCoverage } from '@/core/coverage/coverage-service';
 import { supabase } from '@/lib/supabase';
 
-type Lane='all'|'second';
+type Lane='all'|'second'|'veteran';
 type Employment='any'|'full_time'|'part_time';
 type JobRow=Job&{distance_miles?:number|null};
 const RADIUS_CHOICES=[10,25,50,100];
 
 export default function FindJobs(){
- const params=useLocalSearchParams<{search?:string}>();
+ const params=useLocalSearchParams<{search?:string;lane?:string}>();
  const initialSearch=typeof params.search==='string'?params.search:'';
+ const initialLane:Lane=params.lane==='second'||params.lane==='veteran'?params.lane:'all';
  // search state (survives LIST <-> MAP because both render from the same state)
  const [query,setQuery]=useState(initialSearch);
  const [where,setWhere]=useState('');
  const [radius,setRadius]=useState(DEFAULT_SEARCH_RADIUS_MILES);
  const [remote,setRemote]=useState(false);
  const [employment,setEmployment]=useState<Employment>('any');
- const [lane,setLane]=useState<Lane>('all');
+ const [lane,setLane]=useState<Lane>(initialLane);
  const [nonce,setNonce]=useState(0);
  // results
  const [jobs,setJobs]=useState<JobRow[]>([]);
  const [total,setTotal]=useState(0);
  const [secondCount,setSecondCount]=useState(0);
+ const [veteranCount,setVeteranCount]=useState(0);
  const [hasMore,setHasMore]=useState(false);
  const [loading,setLoading]=useState(true);
  const [loadingMore,setLoadingMore]=useState(false);
@@ -61,6 +63,7 @@ export default function FindJobs(){
    remote,
    employmentType:employment==='any'?null:employment,
    secondChance:lane==='second',
+   veteranFriendly:lane==='veteran',
    limit:JOB_PAGE_SIZE,
    offset
   };
@@ -73,13 +76,13 @@ export default function FindJobs(){
   try{
    const r=await searchJobs(criteria(0));
    if(mine!==requestId.current)return;
-   setJobs(r.jobs);setTotal(r.total);setSecondCount(r.secondChanceCount);setHasMore(r.hasMore);
+   setJobs(r.jobs);setTotal(r.total);setSecondCount(r.secondChanceCount);setVeteranCount(r.veteranFriendlyCount);setHasMore(r.hasMore);
   }catch{
    if(mine!==requestId.current)return;
    // A failed search must never leave a PRIOR successful search's results on screen next to the error: that
    // reads as "these are today's results" when they are stale. Error state replaces result state, it never
    // stacks on top of it.
-   setJobs([]);setTotal(0);setSecondCount(0);setHasMore(false);
+   setJobs([]);setTotal(0);setSecondCount(0);setVeteranCount(0);setHasMore(false);
    setError('Jobs could not load. Check your connection and try again.');
   }finally{
    if(mine===requestId.current)setLoading(false);
@@ -150,8 +153,8 @@ export default function FindJobs(){
   return()=>{active=false};
  },[loading,zip,total]);
 
- const shownCount=lane==='second'?secondCount:total;
- const activeFilterCount=(remote?1:0)+(employment!=='any'?1:0)+(lane==='second'?1:0)+(zip&&radius!==DEFAULT_SEARCH_RADIUS_MILES?1:0);
+ const shownCount=lane==='second'?secondCount:lane==='veteran'?veteranCount:total;
+ const activeFilterCount=(remote?1:0)+(employment!=='any'?1:0)+(lane!=='all'?1:0)+(zip&&radius!==DEFAULT_SEARCH_RADIUS_MILES?1:0);
 
  function search(){setNonce(n=>n+1)}
  function changeWhere(v:string){whereTouched.current=true;setWhere(v)}
@@ -179,6 +182,16 @@ export default function FindJobs(){
   const {data:{user}}=await supabase.auth.getUser();
   if(user){router.push(route as never);return}
   router.push(('/sign-up?returnTo='+encodeURIComponent(route)) as never);
+ }
+
+ async function saveCurrentSearch(){
+  const {data:{user}}=await supabase.auth.getUser();
+  if(!user){router.push('/sign-up?returnTo=/find-jobs' as never);return}
+  const record:Record<string,string|boolean|number>={remote,employment,secondChance:lane==='second',veteranFriendly:lane==='veteran',radius};
+  try{
+   await saveJobSearch({name:[query.trim()||'Jobs',where.trim()].filter(Boolean).join(' · ')||'Job search',query,location:where,filters:record});
+   notify('Search saved','You can reopen this search from Saved searches.');
+  }catch{notify('Could not save search','Please try again.')}
  }
 
  function matchLabel(j:Job){
@@ -243,7 +256,7 @@ export default function FindJobs(){
    {where?<Pressable accessibilityRole="button" accessibilityLabel="Clear location" hitSlop={8} style={s.clearBtn} onPress={clearWhere}><Lucide name="x" color={C.mutedStrong} size={14}/></Pressable>:null}
   </View>
 
-  {savedZip&&where.trim()!==savedZip?<Pressable style={s.useSaved} onPress={useSavedZip}>
+  {savedZip&&where.trim()!==savedZip?<Pressable accessibilityRole="button" accessibilityLabel={'Use my saved ZIP, '+savedZip} style={s.useSaved} onPress={useSavedZip}>
    <Lucide name="crosshair" color={C.lime} size={12}/><Text style={s.useSavedText}>USE MY SAVED ZIP · {savedZip}</Text>
   </Pressable>:null}
 
@@ -255,6 +268,7 @@ export default function FindJobs(){
 
   <View style={s.actionRow}>
    {filtersButton}
+   <Pressable accessibilityRole="button" accessibilityLabel="Save search" style={s.filtersBtn} onPress={()=>void saveCurrentSearch()}><Lucide name="bookmark-plus" color={C.lime} size={16}/></Pressable>
    <Pressable accessibilityRole="button" style={s.primary} onPress={search}>
     <Text style={s.primaryText}>SEARCH JOBS</Text>
     <Lucide name="arrow-right" color={C.black} size={16}/>
@@ -269,13 +283,17 @@ export default function FindJobs(){
  </View>;
 
  const lanes=<View style={s.lanes}>
-  <Pressable style={[s.lane,lane==='all'&&s.laneActive]} onPress={()=>setLane('all')}>
+  <Pressable accessibilityRole="button" accessibilityLabel="All jobs" accessibilityState={{selected:lane==='all'}} style={[s.lane,lane==='all'&&s.laneActive]} onPress={()=>setLane('all')}>
    <Text style={[s.laneText,lane==='all'&&s.laneTextActive]}>ALL JOBS</Text>
    <Text style={[s.laneCount,lane==='all'&&s.laneCountActive]}>{total}</Text>
   </Pressable>
-  <Pressable style={[s.lane,lane==='second'&&s.laneActive]} onPress={()=>setLane('second')}>
+  <Pressable accessibilityRole="button" accessibilityLabel="Second chance jobs" accessibilityState={{selected:lane==='second'}} style={[s.lane,lane==='second'&&s.laneActive]} onPress={()=>setLane('second')}>
    <Text style={[s.laneText,lane==='second'&&s.laneTextActive]}>SECOND CHANCE</Text>
    <Text style={[s.laneCount,lane==='second'&&s.laneCountActive]}>{secondCount}</Text>
+  </Pressable>
+  <Pressable accessibilityRole="button" accessibilityLabel="Veteran-friendly jobs" accessibilityState={{selected:lane==='veteran'}} style={[s.lane,lane==='veteran'&&s.laneActive]} onPress={()=>setLane('veteran')}>
+   <Text style={[s.laneText,lane==='veteran'&&s.laneTextActive]}>VETERAN FRIENDLY</Text>
+   <Text style={[s.laneCount,lane==='veteran'&&s.laneCountActive]}>{veteranCount}</Text>
   </Pressable>
  </View>;
 
@@ -283,7 +301,7 @@ export default function FindJobs(){
 
  function renderJob(j:JobRow){
   const saved=Boolean(savedJobs[j.id]);
-  return <Pressable key={j.id} style={s.card} onPress={()=>openJob(j)}>
+  return <Pressable key={j.id} accessibilityRole="button" accessibilityLabel={j.title+' at '+j.company_name} style={s.card} onPress={()=>openJob(j)}>
    <View style={s.cardTop}>
     <View style={s.companyMark}><Text style={s.companyMarkText}>{j.company_name.slice(0,1).toUpperCase()}</Text></View>
     <View style={s.cardTopCopy}>
@@ -334,7 +352,7 @@ export default function FindJobs(){
   {!loading&&jobs.length===0&&!error&&lowCoverage?<View style={s.empty}>
    <Text style={s.emptyTitle}>FairPath does not have enough verified opportunities near {zip} yet.</Text>
    <Text style={s.emptyBody}>That's different from these filters finding nothing — the market itself is still building. FairPath can notify you when it's ready.</Text>
-   <Pressable style={s.earlyAccessBtn} onPress={()=>router.push(('/early-access?zip='+zip) as never)}>
+   <Pressable accessibilityRole="button" accessibilityLabel="Join early access" style={s.earlyAccessBtn} onPress={()=>router.push(('/early-access?zip='+zip) as never)}>
     <Text style={s.earlyAccessBtnText}>JOIN EARLY ACCESS</Text>
     <Lucide name="arrow-right" color={C.black} size={14}/>
    </Pressable>
@@ -414,9 +432,10 @@ export default function FindJobs(){
    onEndReachedThreshold={0.6}
    ListHeaderComponent={<View>
     <View style={s.utilityRow}>
-     <Pressable style={s.utilityBtn} onPress={()=>router.push('/find-housing' as never)}><Lucide name="house" color={C.lime} size={13}/><Text style={s.utilityText}>HOUSING</Text></Pressable>
-     <Pressable style={s.utilityBtn} onPress={()=>void openAccountArea('/saved-jobs')}><Lucide name="bookmark" color={C.lime} size={13}/><Text style={s.utilityText}>SAVED JOBS</Text></Pressable>
-     <Pressable style={s.utilityBtn} onPress={()=>void openAccountArea('/job-applications')}><Lucide name="file-check-2" color={C.lime} size={13}/><Text style={s.utilityText}>MY APPLICATIONS</Text></Pressable>
+     <Pressable accessibilityRole="button" accessibilityLabel="Housing" style={s.utilityBtn} onPress={()=>router.push('/find-housing' as never)}><Lucide name="house" color={C.lime} size={13}/><Text style={s.utilityText}>HOUSING</Text></Pressable>
+     <Pressable accessibilityRole="button" accessibilityLabel="Saved jobs" style={s.utilityBtn} onPress={()=>void openAccountArea('/saved-jobs')}><Lucide name="bookmark" color={C.lime} size={13}/><Text style={s.utilityText}>SAVED JOBS</Text></Pressable>
+     <Pressable accessibilityRole="button" accessibilityLabel="My applications" style={s.utilityBtn} onPress={()=>void openAccountArea('/job-applications')}><Lucide name="file-check-2" color={C.lime} size={13}/><Text style={s.utilityText}>MY APPLICATIONS</Text></Pressable>
+     <Pressable accessibilityRole="button" accessibilityLabel="Saved searches" style={s.utilityBtn} onPress={()=>void openAccountArea('/saved-job-searches')}><Lucide name="history" color={C.lime} size={13}/><Text style={s.utilityText}>SAVED SEARCHES</Text></Pressable>
     </View>
     {searchControls}
     {quickChips}
@@ -466,7 +485,7 @@ const s=StyleSheet.create({
  resultsTop:{height:46,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
  results:{color:C.muted,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.1,flexShrink:1},
  viewToggle:{flexDirection:'row',borderWidth:1,borderColor:C.borderStrong},
- viewButton:{height:32,paddingHorizontal:10,flexDirection:'row',gap:5,alignItems:'center',justifyContent:'center',backgroundColor:'#090B09'},
+ viewButton:{height:44,paddingHorizontal:10,flexDirection:'row',gap:5,alignItems:'center',justifyContent:'center',backgroundColor:'#090B09'},
  viewButtonActive:{backgroundColor:'#10150C'},
  viewButtonText:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8},
  viewButtonTextActive:{color:C.lime},
@@ -475,7 +494,7 @@ const s=StyleSheet.create({
  companyMark:{width:36,height:36,borderRadius:2,borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#0A0C0A',alignItems:'center',justifyContent:'center',marginRight:10},
  companyMarkText:{color:C.white,fontFamily:F.extraBold,fontSize:13},
  cardTopCopy:{flex:1,minWidth:0,paddingRight:10},
- saveBtn:{width:34,height:34,borderRadius:2,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center',backgroundColor:'#0A0C0A'},saveBtnActive:{backgroundColor:C.lime,borderColor:C.lime},
+ saveBtn:{width:44,height:44,borderRadius:2,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center',backgroundColor:'#0A0C0A'},saveBtnActive:{backgroundColor:C.lime,borderColor:C.lime},
  jobTitle:{color:C.white,fontFamily:F.extraBold,fontSize:20,lineHeight:22,letterSpacing:-.4},
  company:{color:C.mutedStrong,fontFamily:F.bold,fontSize:12,marginTop:3},
  metaRow:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:6,marginTop:12},

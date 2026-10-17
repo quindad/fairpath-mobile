@@ -11,12 +11,13 @@ import { useFairPathTheme, useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
 import { notify } from '@/core/ui/notify';
 import { supabase } from '@/lib/supabase';
+import { disablePushRegistration } from '@/core/notifications/push-registration';
 
 // YOUR PATH: the core FairPath tools, in the order a member typically moves through them.
 const PATH_LINKS: { title: string; body: (s: MemberSummary) => string; route: string }[] = [
   { title: 'Opportunity Profile', body: (s) => `${s.profile?.completed_sections ?? 0} of ${s.profile?.total_sections ?? 8} sections complete`, route: '/opportunity-profile' },
   { title: 'Resume Studio', body: () => 'Build a clean, ATS-friendly resume', route: '/resume-studio' },
-  { title: 'Credit Builder', body: (s) => (s.credit?.reports ?? 0) > 0 ? `${s.credit?.items_to_review ?? 0} item(s) to review` : 'Review a credit report and prepare disputes', route: '/credit' },
+  { title: 'Credit Studio', body: (s) => (s.credit?.reports ?? 0) > 0 ? `${s.credit?.items_to_review ?? 0} item(s) to review` : 'Review a credit report and prepare disputes', route: '/credit' },
   { title: 'Record Relief', body: (s) => (s.record_relief?.cases ?? 0) > 0 ? `${s.record_relief?.cases} case(s) tracked` : 'Check a case against verified rules', route: '/record-relief' },
 ];
 
@@ -67,9 +68,11 @@ export default function MeScreen() {
   useFocusEffect(load);
 
   async function signOut() {
-    router.replace('/find-jobs' as never);
+    try { await disablePushRegistration(); }
+    catch { notify('Could not sign out', 'Device notification cleanup failed. Please retry.'); return; }
     const { error: err } = await supabase.auth.signOut();
     if (err) notify('Could not sign out', 'Please try again.');
+    else router.replace('/find-jobs' as never);
   }
 
   const steps = nextSteps(summary);

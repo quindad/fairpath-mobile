@@ -1,32 +1,46 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Linking, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { FormScrollView } from '@/components/FormScrollView';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
+import { INVALID_RECOVERY_LINK, isTrustedRecoveryRedirect, parseRecoveryRedirect, recoveryCredentialKind } from '@/core/auth/password-recovery';
 
 const LIME='#A8F32C', BLACK='#090A09', CARD='#151715', BORDER='#303330', MUTED='#909690', ERROR='#FF8A8A';
 
 export default function ResetPasswordScreen(){
   const [ready,setReady]=useState(false),[password,setPassword]=useState(''),[confirm,setConfirm]=useState(''),[loading,setLoading]=useState(false),[errorMessage,setErrorMessage]=useState('');
 
-  useEffect(()=>{let active=true; async function recover(){
-    if(Platform.OS==='web'){
-      const p=new URLSearchParams(window.location.hash.replace(/^#/,''));
-      const access=p.get('access_token'),refresh=p.get('refresh_token'),err=p.get('error_description');
-      if(err){if(active)setErrorMessage(err.replace(/\+/g,' '));return;}
-      if(access&&refresh){const {error}=await supabase.auth.setSession({access_token:access,refresh_token:refresh});if(error){if(active)setErrorMessage('This reset link is invalid or expired.');return;}}
+  useEffect(()=>{let active=true;
+    async function recover(url:string|null){
+      if(!url){if(active)setErrorMessage(INVALID_RECOVERY_LINK);return;}
+      const webOrigin=Platform.OS==='web'?window.location.origin:undefined;
+      if(!isTrustedRecoveryRedirect(url,webOrigin)){if(active)setErrorMessage(INVALID_RECOVERY_LINK);return;}
+      const parsed=parseRecoveryRedirect(url),kind=recoveryCredentialKind(parsed);
+      if(kind==='invalid'){if(active)setErrorMessage(INVALID_RECOVERY_LINK);return;}
+      const result=kind==='pkce'
+        ? await supabase.auth.exchangeCodeForSession(parsed.code!)
+        : await supabase.auth.setSession({access_token:parsed.accessToken!,refresh_token:parsed.refreshToken!});
+      if(!active)return;
+      if(result.error||!result.data.session){setReady(false);setErrorMessage(INVALID_RECOVERY_LINK);return;}
+      setErrorMessage('');setReady(true);
     }
-    const {data}=await supabase.auth.getSession(); if(active){if(data.session)setReady(true);else setErrorMessage('This reset link is invalid or expired.');}
-  } recover(); return()=>{active=false}},[]);
+    if(Platform.OS==='web')void recover(window.location.href);
+    else {
+      void Linking.getInitialURL().then(recover);
+      const subscription=Linking.addEventListener('url',({url})=>void recover(url));
+      return()=>{active=false;subscription.remove()};
+    }
+    return()=>{active=false};
+  },[]);
 
   async function updatePassword(){
     if(loading||!ready)return;
     if(password.length<8){setErrorMessage('Create a password with at least 8 characters.');return;}
     if(password!==confirm){setErrorMessage('Those passwords do not match.');return;}
     setLoading(true);setErrorMessage('');
-    try{const {error}=await supabase.auth.updateUser({password});if(error){setErrorMessage(error.message);return;}await supabase.auth.signOut();router.replace('/sign-in');}
+    try{const {error}=await supabase.auth.updateUser({password});if(error){setErrorMessage('We could not update your password. Request a new link and try again.');return;}await supabase.auth.signOut({scope:'global'});router.replace('/sign-in');}
     catch{setErrorMessage('We could not update your password. Check your connection and try again.');}
     finally{setLoading(false);}
   }
@@ -37,8 +51,8 @@ export default function ResetPasswordScreen(){
       <Text style={styles.label}>New password</Text><TextInput value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" autoComplete="new-password" placeholder="At least 8 characters" placeholderTextColor="#666C66" style={styles.input}/>
       <Text style={styles.label}>Confirm new password</Text><TextInput value={confirm} onChangeText={setConfirm} secureTextEntry autoCapitalize="none" autoComplete="new-password" placeholder="Enter it again" placeholderTextColor="#666C66" style={styles.input} onSubmitEditing={updatePassword}/>
       {errorMessage?<Text style={styles.errorText}>{errorMessage}</Text>:null}
-      <Pressable style={[styles.primaryButton,loading&&styles.disabled]} onPress={updatePassword} disabled={loading}><Text style={styles.primaryText}>{loading?'Updating…':'Update password'}</Text><Text style={styles.arrow}>{loading?'•':'→'}</Text></Pressable>
-    </View>:<View>{errorMessage?<Text style={styles.errorText}>{errorMessage}</Text>:<Text style={styles.subtitle}>Securing your reset link…</Text>}<Pressable style={styles.secondaryButton} onPress={()=>router.replace('/forgot-password')}><Text style={styles.secondaryText}>Request a new link</Text></Pressable></View>}
+      <Pressable accessibilityRole="button" style={[styles.primaryButton,loading&&styles.disabled]} onPress={updatePassword} disabled={loading}><Text style={styles.primaryText}>{loading?'Updating…':'Update password'}</Text><Text style={styles.arrow}>{loading?'•':'→'}</Text></Pressable>
+    </View>:<View>{errorMessage?<Text style={styles.errorText}>{errorMessage}</Text>:<Text style={styles.subtitle}>Securing your reset link…</Text>}<Pressable accessibilityRole="button" style={styles.secondaryButton} onPress={()=>router.replace('/forgot-password')}><Text style={styles.secondaryText}>Request a new link</Text></Pressable></View>}
   </FormScrollView></SafeAreaView></View>
 }
 const styles=StyleSheet.create({

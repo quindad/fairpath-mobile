@@ -45,6 +45,7 @@ Deno.serve(async (req: Request) => {
   let amountReceived: number | null = null;
   let currency: string | null = null;
   let amountRefunded: number | null = null;
+  let refundAmount: number | null = null;
   let refundId: string | null = null;
   let failureCode: string | null = null;
   let failureMessage: string | null = null;
@@ -53,8 +54,11 @@ Deno.serve(async (req: Request) => {
     const charge = event.data.object as Stripe.Charge;
     intentId = typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id ?? null;
     amountRefunded = charge.amount_refunded;
-    const refunds = charge.refunds?.data ?? [];
-    refundId = refunds.length ? refunds[refunds.length - 1].id : null;
+    // Stripe returns charge.refunds.data newest-first; sort by created to be certain rather than trusting array order.
+    const refunds = [...(charge.refunds?.data ?? [])].sort((a, b) => b.created - a.created);
+    const latestRefund = refunds.length ? refunds[0] : null;
+    refundId = latestRefund?.id ?? null;
+    refundAmount = latestRefund?.amount ?? null;
   } else {
     const intent = event.data.object as Stripe.PaymentIntent;
     intentId = intent.id;
@@ -75,7 +79,7 @@ Deno.serve(async (req: Request) => {
     p_refund_id: refundId,
     p_failure_code: failureCode,
     p_failure_message: failureMessage,
-    p_payload: { id: event.id, type: event.type, created: event.created, livemode: event.livemode },
+    p_payload: { id: event.id, type: event.type, created: event.created, livemode: event.livemode, refund_amount: refundAmount },
   });
   if (error) return json(500, { error: 'processing_failed', detail: error.message }); // Stripe will retry
   return json(200, { received: true, outcome: data });

@@ -44,7 +44,7 @@ check(tk.DEFAULT_APPEARANCE === 'dark', 'Default appearance stays dark until eno
 check(tk.isAppearanceMode('system') && !tk.isAppearanceMode('auto') && !tk.isAppearanceMode(null), 'Stored appearance values must be validated.');
 
 // ---- progressive migration contract ----
-check(routes.isThemedRoute('/appearance') && !routes.isThemedRoute('/find-jobs'), 'Only listed routes are themed; legacy routes are forced dark.');
+check(routes.isThemedRoute('/appearance') && routes.isThemedRoute('/explore') && !routes.isThemedRoute('/find-jobs'), 'Only listed routes are themed; legacy routes are forced dark.');
 check(!routes.isThemedRoute('/appearance-legacy'), 'Route matching must not use loose prefixes.');
 
 const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));

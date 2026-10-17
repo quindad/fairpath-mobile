@@ -1,12 +1,13 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { FairPathColors as C, FairPathFonts as F } from '@/constants/fairpath';
 import type { HousingCard } from '@/core/housing/housing-service';
+import { mappableOnly } from '@/core/location/map-data';
 
 export function HousingMap({homes,onOpen}:{homes:HousingCard[];onOpen:(home:HousingCard)=>void}){
- const located=homes.filter(h=>h.latitude!=null&&h.longitude!=null);
+ const located=mappableOnly(homes);
  return <View style={s.wrap}>
   <View style={s.head}><Text style={s.label}>MAP VIEW</Text><Text style={s.count}>{located.length} LOCATED</Text></View>
-  {located.length===0?<Text style={s.empty}>Map coordinates are not available for the homes in this result set.</Text>:located.slice(0,20).map(h=><Pressable key={h.id} style={s.row} onPress={()=>onOpen(h)}><View style={s.pin}/><View style={s.copy}><Text style={s.title}>{h.title}</Text><Text style={s.meta}>{[h.city,h.state].filter(Boolean).join(', ')} · {'$'+Number(h.rent_monthly).toLocaleString()+'/mo'}</Text></View><Text style={s.open}>OPEN →</Text></Pressable>)}
+  {located.length===0?<Text style={s.empty}>Map coordinates are not available for the homes in this result set.</Text>:located.slice(0,20).map(h=><Pressable accessibilityRole="button" key={h.id} style={s.row} onPress={()=>onOpen(h)}><View style={s.pin}/><View style={s.copy}><Text style={s.title}>{h.title}</Text><Text style={s.meta}>{[h.city,h.state].filter(Boolean).join(', ')} · {'$'+Number(h.rent_monthly).toLocaleString()+'/mo'}</Text></View><Text style={s.open}>OPEN →</Text></Pressable>)}
   <Text style={s.note}>On web this is a coordinate-backed area list. Native builds use the interactive map.</Text>
  </View>
 }

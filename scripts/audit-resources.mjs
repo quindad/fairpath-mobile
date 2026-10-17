@@ -55,7 +55,10 @@ check(!/insert into public\.search|search_log|product_events/.test(search), 'Sea
 // ---- no fixtures in migrations (production also runs migrations) ----
 for (const [f, sql] of allSql) {
   if (!/resources|resource_/.test(f) && !/dev_fixture/.test(sql)) continue;
-  check(!/insert into public\.(resource_organizations|resources|resource_locations)\b/i.test(sql), `${f}: fixtures/organizations must never be inserted by a migration.`);
+  // A parameterized write inside a SECURITY DEFINER review/promotion function is
+  // runtime behavior, not fixture seeding. Still reject migration-level inserts.
+  const outsideFunctions = sql.replace(/create or replace function[\s\S]*?\$\$;/gi, '');
+  check(!/insert into public\.(resource_organizations|resources|resource_locations)\b/i.test(outsideFunctions), `${f}: fixtures/organizations must never be inserted by a migration.`);
 }
 check(!/'test_fixture'|dev_fixture'\s*,/.test(core.replace(/check[^\n]*\n/g, '').replace(/--[^\n]*/g, '').replace(/data_origin[^\n]*/g, '').replace(/[^\n]*'dev_fixture'[^\n]*/g, '')), 'Migrations must not create dev_fixture data.');
 

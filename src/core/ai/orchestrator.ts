@@ -13,8 +13,8 @@
 //     an eligibility determination.
 import { matchIntent, type IntentId } from './intents.ts';
 import { nextSteps, type MemberSummary } from '../profile/next-step.ts';
-import { OUTCOME_INFO, countdownText } from '../record-relief/relief-format.ts';
-import { STAGE_INFO, ISSUE_LABEL } from '../credit/credit-format.ts';
+import { OUTCOME_INFO, countdownText, OVERCLAIM_PATTERN } from '../record-relief/relief-format.ts';
+import { STAGE_INFO, ISSUE_LABEL, PROMISE_PATTERN } from '../credit/credit-format.ts';
 
 export type Basis = 'rule' | 'member' | 'extracted' | 'app_state' | 'ai';
 export type AnswerPart = { text: string; basis: Basis };
@@ -89,7 +89,10 @@ export async function answer(text: string, gw: AiGateway, ctx: AssistantContext 
     try {
       if (await adapter.available()) {
         const reworded = await adapter.rephrase(res.intent, res.parts);
-        if (reworded && reworded.trim().length > 0 && reworded.length < 1200) {
+        // The model may only reword; it must never introduce a promised outcome (removal, a higher score, a
+        // successful dispute, or expungement) that the deterministic template deliberately avoids. Discard rather
+        // than sanitize: a rewording that trips either pattern is dropped wholesale, never edited and re-shown.
+        if (reworded && reworded.trim().length > 0 && reworded.length < 1200 && !PROMISE_PATTERN.test(reworded) && !OVERCLAIM_PATTERN.test(reworded)) {
           res = { ...res, parts: [...res.parts.map((p) => p), { text: reworded.trim(), basis: 'ai' }], modelAssisted: true, provenance: { ...res.provenance, engine: 'model', confidence: 'medium' } };
         }
       }
@@ -158,7 +161,7 @@ async function build(id: IntentId, task: string, text: string, gw: AiGateway, ct
         parts.push({ text: `You have ${s.credit?.reports ?? 0} report(s). ${toConfirm} account(s) need your review, and ${open} possible issue(s) are waiting for you.`, basis: 'app_state' });
         parts.push({ text: 'Negative information that is accurate is not a reason to dispute. FairPath only helps with things that may be wrong, and you decide what is.', basis: 'rule' });
       }
-      return { intent: id, title: 'Your credit workspace', modelAssisted: false, parts, actions: [{ label: 'Open Credit Builder', route: '/credit', primary: true }],
+      return { intent: id, title: 'Your credit workspace', modelAssisted: false, parts, actions: [{ label: 'Open Credit Studio', route: '/credit', primary: true }],
         provenance: base('credit_explain', id, '/credit', { sourceRefs: [{ kind: 'summary', id: 'credit' }], officialSources: CREDIT_SOURCES }) };
     }
 
@@ -166,7 +169,7 @@ async function build(id: IntentId, task: string, text: string, gw: AiGateway, ct
       if (!(await gw.signedIn())) return signInNeeded(id, 'credit_explain');
       const items = await gw.creditItems();
       const pick = (ctx.routeHint?.kind === 'credit_item' ? items.find((i) => i.id === ctx.routeHint!.id) : null) ?? items.find((i) => i.stage === 'possible_inaccuracy') ?? items[0];
-      if (!pick) return { intent: id, title: 'Nothing is flagged', modelAssisted: false, parts: [{ text: 'FairPath has not flagged anything for you to review.', basis: 'app_state' }], actions: [{ label: 'Open Credit Builder', route: '/credit' }], provenance: base('credit_explain', id, '/credit') };
+      if (!pick) return { intent: id, title: 'Nothing is flagged', modelAssisted: false, parts: [{ text: 'FairPath has not flagged anything for you to review.', basis: 'app_state' }], actions: [{ label: 'Open Credit Studio', route: '/credit' }], provenance: base('credit_explain', id, '/credit') };
       return {
         intent: id, title: pick.title, modelAssisted: false,
         parts: [
@@ -242,7 +245,7 @@ async function build(id: IntentId, task: string, text: string, gw: AiGateway, ct
       if (!(await gw.signedIn())) return signInNeeded(id, 'dispute_status');
       return { intent: id, title: 'Your disputes', modelAssisted: false,
         parts: [{ text: 'The dispute tracker shows each dispute\'s status, when you sent it, and whether a response is due soon. You record what happened; FairPath never sends or checks anything for you.', basis: 'app_state' }],
-        actions: [{ label: 'Open Credit Builder', route: '/credit', primary: true }], provenance: base('dispute_status', id, '/credit') };
+        actions: [{ label: 'Open Credit Studio', route: '/credit', primary: true }], provenance: base('dispute_status', id, '/credit') };
     }
 
     case 'relief_coverage':

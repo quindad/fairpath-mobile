@@ -14,7 +14,7 @@ check(NEW.length >= 10, 'expected the new migrations, found ' + NEW.length);
 
 // Functions that guests (anon) may execute: only public, member-state-free reference reads.
 const ANON_OK = new Set(['resolve_resource_needs', 'search_resources', 'get_resource_detail', 'resource_location_open_now', 'resource_freshness',
-  'get_market_coverage']);
+  'get_market_coverage', 'search_jobs']);
 
 for (const f of NEW) {
   const sql = strip(read('supabase/migrations/' + f));
@@ -31,6 +31,16 @@ for (const f of NEW) {
   check(!/grant [^;]*\bon table [^;]*\bto [^;]*\banon\b/i.test(withoutTaxonomy), `${f}: grants table access to anon`);
   for (const m of sql.matchAll(/grant execute on function public\.(\w+)\([^)]*\)\s+to ([^;]+);/gi)) {
     if (/\banon\b/.test(m[2])) check(ANON_OK.has(m[1]), `${f}: function ${m[1]} is executable by anon`);
+  }
+  // Guest Jobs discovery was intentionally public in 20260926130000; retain only
+  // a SECURITY INVOKER, published-only, explicitly projected read contract.
+  // Do not generalize this exception to applications, profiles, or write RPCs.
+  if (f === '20261016100000_unified_jobs_housing_filters.sql') {
+    const jobs = sql.match(/create or replace function public\.search_jobs\([\s\S]*?\$\$;/i)?.[0] ?? '';
+    check(/\bsecurity invoker\b/i.test(jobs) && !/\bsecurity definer\b/i.test(jobs), `${f}: guest search_jobs must remain SECURITY INVOKER`);
+    check(/\bwhere j\.status = 'published'/i.test(jobs) && /j\.expires_at is null or j\.expires_at > now\(\)/i.test(jobs), `${f}: guest search_jobs must exclude unpublished/expired jobs`);
+    check(/jsonb_build_object\s*\(/i.test(jobs) && !/to_jsonb\s*\(\s*j\s*\)|row_to_json\s*\(\s*j\s*\)/i.test(jobs), `${f}: guest search_jobs must use explicit public fields`);
+    check(/\blimit lim offset off\b/i.test(jobs) && /least\(greatest\(coalesce\(p_limit, 20\), 1\), 50\)/i.test(jobs), `${f}: guest search_jobs must cap pagination`);
   }
   // 3. security definer functions pin search_path
   for (const m of sql.matchAll(/create or replace function public\.(\w+)\(([\s\S]*?)\$\$;/g)) {

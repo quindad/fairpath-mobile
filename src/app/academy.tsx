@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { router } from 'expo-router';
-import { Pressable, Text, TextInput, View } from 'react-native';
-import { NATIVE_FIXTURE_COURSE } from '@/core/academy/native-fixtures';
+import { Linking, Pressable, Text, TextInput, View } from 'react-native';
 import { FormScrollView } from '@/components/FormScrollView';
 import { FilterStrip, PageHeader, ScreenFrame, SectionTitle, SharpChip } from '@/components/ProductChrome';
 import { useThemedStyles } from '@/core/theme/ThemeProvider';
@@ -9,6 +8,8 @@ import type { ThemeTokens } from '@/core/theme/tokens';
 import { type CanonicalCourse, type CostClass } from '@/core/academy/catalog-contract';
 import { searchCourses } from '@/core/academy/catalog-search';
 import { DEV_FIXTURE_COURSES } from '@/core/academy/fixtures';
+
+const CATALOG = DEV_FIXTURE_COURSES;
 
 const COST_OPTIONS: { value: CostClass; label: string }[] = [
   { value: 'free', label: 'Free' },
@@ -33,7 +34,7 @@ export default function AcademyScreen() {
   const [costs, setCosts] = useState<CostClass[]>([]);
 
   const results = useMemo(
-    () => searchCourses(DEV_FIXTURE_COURSES, { query, costClasses: costs }),
+    () => searchCourses(CATALOG, { query, costClasses: costs }),
     [query, costs],
   );
 
@@ -45,21 +46,14 @@ export default function AcademyScreen() {
       <PageHeader eyebrow="FAIRPATH ACADEMY" title="Learn" backTo="/home" />
       <FormScrollView contentContainerStyle={s.content}>
         <View style={s.banner} accessibilityRole="summary">
-          <Text style={s.bannerTitle}>Development catalog</Text>
+          <Text style={s.bannerTitle}>Real, free national programs moved to Resources</Text>
           <Text style={s.bannerBody}>
-            These are development fixtures, not real courses. Live provider listings appear here only after written permission and verification.
+            CareerOneStop, Per Scholas, Job Corps, and other real free/low-cost national programs now live in the Resources tab, where you can search and filter them alongside local help. The catalog below is development fixtures only — real paid-provider catalogs like Coursera or Udemy, with their own recognized certificates, appear here once a real partnership or affiliate agreement is set up.
           </Text>
+          <Pressable accessibilityRole="link" onPress={() => router.push('/resources' as never)}>
+            <Text style={s.link}>OPEN RESOURCES →</Text>
+          </Pressable>
         </View>
-
-        <Pressable
-          style={s.card}
-          accessibilityRole="link"
-          accessibilityLabel="Open the native FairPath development course"
-          onPress={() => router.push(`/academy/${NATIVE_FIXTURE_COURSE.id}` as never)}
-        >
-          <Text style={s.cardTitle}>{NATIVE_FIXTURE_COURSE.title}</Text>
-          <Text style={s.cost}>FairPath course · lessons, assessment, progress</Text>
-        </Pressable>
 
         <TextInput
           style={s.search}
@@ -98,11 +92,17 @@ function CourseCard({ course }: { course: CanonicalCourse }) {
     <View style={s.card} accessibilityLabel={`${course.title}. ${COST_TEXT[course.costClass]}.`}>
       <Text style={s.cardTitle}>{course.title}</Text>
       <Text style={s.cost}>{COST_TEXT[course.costClass]}</Text>
+      {course.description ? <Text style={s.cardBody}>{course.description}</Text> : null}
       <Text style={s.cardBody}>
         {course.category} · {course.difficulty} · {course.durationHours ? `${course.durationHours} hours` : 'duration not listed'}
       </Text>
       <Text style={s.cardBody}>Eligibility: {course.eligibility}</Text>
       <Text style={s.help}>Provider: {course.providerId} · Verified {course.lastVerified?.slice(0, 10) ?? 'never'}</Text>
+      {course.enrollmentUrl ? (
+        <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(course.enrollmentUrl)}>
+          <Text style={s.link}>GO TO COURSE →</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -119,4 +119,5 @@ const styles = (t: ThemeTokens) => ({
   cardBody: { color: t.textSecondary, fontSize: 15, lineHeight: 21 },
   cost: { color: t.accent, fontWeight: '700' as const, fontSize: 14 },
   help: { color: t.textSecondary, fontSize: 13, lineHeight: 19 },
+  link: { color: t.accent, fontWeight: '700' as const, fontSize: 13, marginTop: 6 },
 });

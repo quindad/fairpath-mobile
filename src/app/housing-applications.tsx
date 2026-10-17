@@ -20,7 +20,7 @@ export default function HousingApplications(){
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH HOUSING" title="Applications" backTo="/me"/>
   <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-   <View style={s.head}><Text style={s.intro}>Draft, submit, and track every FairPath housing application in one place.</Text><Pressable style={s.find} onPress={()=>router.push('/find-housing' as never)}><Text style={s.findText}>FIND HOUSING</Text><Lucide name="arrow-right" color={C.lime} size={13}/></Pressable></View>
+   <View style={s.head}><Text style={s.intro}>Draft, submit, and track every FairPath housing application in one place.</Text><Pressable accessibilityRole="button" style={s.find} onPress={()=>router.push('/find-housing' as never)}><Text style={s.findText}>FIND HOUSING</Text><Lucide name="arrow-right" color={C.lime} size={13}/></Pressable></View>
    {loading?<State text="Loading applications…"/>:error?<State text={error}/>:rows.length===0?<Empty/>:<>
     <Text style={s.section}>ACTIVE</Text>
     {active.length?active.map(a=><Card key={a.id} item={a}/>):<Text style={s.none}>No active applications.</Text>}
@@ -32,7 +32,7 @@ export default function HousingApplications(){
 function Card({item:a}:{item:MyHousingApplication}){
  const draft=a.status==='started';
  const progress=draft?Math.max(0,Math.min(100,Math.round((Math.max(1,a.current_step)-1)/4*100))):100;
- return <Pressable style={s.card} onPress={()=>router.push(('/housing-application/'+a.id) as never)}>
+ return <Pressable accessibilityRole="button" style={s.card} onPress={()=>router.push(('/housing-application/'+a.id) as never)}>
   <View style={s.top}><InlineBadge tone={a.application_type==='fasttrack'?'lime':undefined}>{a.application_type==='fasttrack'?'FASTTRACK':'STANDARD'}</InlineBadge><Text style={s.status}>{LABEL[a.status]??a.status.toUpperCase()}</Text></View>
   <Text style={s.title}>{a.listing?.title??'Housing application'}</Text>
   {a.listing?<><Text style={s.price}>{'$'+Number(a.listing.rent_monthly).toLocaleString()+' / month'}</Text><Text style={s.location}>{a.listing.city}, {a.listing.state}</Text></>:null}
@@ -41,7 +41,7 @@ function Card({item:a}:{item:MyHousingApplication}){
   <View style={s.openRow}><Text style={s.open}>{draft?'CONTINUE APPLICATION':'VIEW STATUS'}</Text><Lucide name="arrow-right" color={C.lime} size={13}/></View>
  </Pressable>;
 }
-function Empty(){return <View style={s.empty}><Text style={s.emptyTitle}>NO HOUSING APPLICATIONS</Text><Text style={s.emptyBody}>Start an application from a home. Standard and FastTrack drafts both appear here.</Text><Pressable style={s.action} onPress={()=>router.push('/find-housing' as never)}><Text style={s.actionText}>FIND HOUSING</Text></Pressable></View>}
+function Empty(){return <View style={s.empty}><Text style={s.emptyTitle}>NO HOUSING APPLICATIONS</Text><Text style={s.emptyBody}>Start an application from a home. Standard and FastTrack drafts both appear here.</Text><Pressable accessibilityRole="button" style={s.action} onPress={()=>router.push('/find-housing' as never)}><Text style={s.actionText}>FIND HOUSING</Text></Pressable></View>}
 function State({text}:{text:string}){return <View style={s.state}><Text style={s.stateText}>{text}</Text></View>}
 
 const s=StyleSheet.create({

@@ -14,43 +14,29 @@ export type ConsentEventType =
 const CURRENT_TERMS_VERSION = 'v1';
 const CURRENT_PRIVACY_VERSION = 'v1';
 
-/**
- * Records a consent event in the append-only consent_events ledger and,
- * for terms/privacy specifically, also updates the denormalized
- * "current state" pointer columns on profiles so a fast check doesn't
- * need to query the ledger. Insert-only by design (see migration
- * 20260924150008_consent_events.sql) — there is no update/delete here.
- */
+/** Record document acceptance via the authenticated RPC; preserve other append-only events. */
 export async function recordConsent(
   eventType: ConsentEventType,
   input: { documentVersion?: string; granted?: boolean; metadata?: Record<string, unknown> } = {},
 ) {
   const user = await currentUser();
-  const now = new Date().toISOString();
-
-  const { error: insertError } = await supabase.from('consent_events').insert({
+  if (eventType === 'terms_accepted' || eventType === 'privacy_accepted') {
+    const { error } = await supabase.rpc('record_document_consent', {
+      p_event_type: eventType,
+      p_document_version: input.documentVersion ?? (eventType === 'terms_accepted' ? CURRENT_TERMS_VERSION : CURRENT_PRIVACY_VERSION),
+      p_granted: input.granted ?? true,
+    });
+    if (error) throw error;
+    return;
+  }
+  const { error } = await supabase.from('consent_events').insert({
     user_id: user.id,
     event_type: eventType,
     document_version: input.documentVersion ?? null,
     granted: input.granted ?? true,
     metadata: input.metadata ?? {},
   });
-  if (insertError) throw insertError;
-
-  if (eventType === 'terms_accepted') {
-    const { error } = await supabase
-      .from('profiles')
-      .update({ terms_accepted_version: input.documentVersion ?? CURRENT_TERMS_VERSION, terms_accepted_at: now })
-      .eq('id', user.id);
-    if (error) throw error;
-  }
-  if (eventType === 'privacy_accepted') {
-    const { error } = await supabase
-      .from('profiles')
-      .update({ privacy_accepted_version: input.documentVersion ?? CURRENT_PRIVACY_VERSION, privacy_accepted_at: now })
-      .eq('id', user.id);
-    if (error) throw error;
-  }
+  if (error) throw error;
 }
 
 /** Convenience: records both terms and privacy acceptance for the sign-up checkbox. */

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseEnrollments, serializeEnrollments, loadEnrollments, saveEnrollments, ACADEMY_STORAGE_KEY, type KeyValueStore } from '../src/core/academy/progress-store.ts';
-import { NATIVE_FIXTURE_COURSE, scoreQuiz } from '../src/core/academy/native-fixtures.ts';
+import { scoreQuiz, type QuizQuestion } from '../src/core/academy/enrollment-quiz.ts';
 
 const GOOD = {
   'c1': {
@@ -68,14 +68,14 @@ test('load and save use the versioned key and report failures without throwing',
   assert.equal(await saveEnrollments(broken, GOOD), false);
 });
 
-test('quiz scoring counts only correct answers and treats unanswered as wrong', () => {
-  const q = NATIVE_FIXTURE_COURSE.quiz;
-  assert.deepEqual(scoreQuiz(q, [0, 1, 0]), { correct: 3, total: 3 });
-  assert.deepEqual(scoreQuiz(q, [0, null, null]), { correct: 1, total: 3 });
-  assert.deepEqual(scoreQuiz(q, [1, 0, 1]), { correct: 0, total: 3 });
-});
+const TEST_QUIZ: QuizQuestion[] = [
+  { id: 'q1', prompt: 'test question 1', choices: ['a', 'b'], correctIndex: 0 },
+  { id: 'q2', prompt: 'test question 2', choices: ['a', 'b'], correctIndex: 1 },
+  { id: 'q3', prompt: 'test question 3', choices: ['a', 'b'], correctIndex: 0 },
+];
 
-test('native fixture is labeled as a fixture and is FairPath-authored', () => {
-  assert.equal(NATIVE_FIXTURE_COURSE.authoredBy, 'fairpath');
-  assert.ok(NATIVE_FIXTURE_COURSE.title.includes('DEV fixture'));
+test('quiz scoring counts only correct answers and treats unanswered as wrong', () => {
+  assert.deepEqual(scoreQuiz(TEST_QUIZ, [0, 1, 0]), { correct: 3, total: 3 });
+  assert.deepEqual(scoreQuiz(TEST_QUIZ, [0, null, null]), { correct: 1, total: 3 });
+  assert.deepEqual(scoreQuiz(TEST_QUIZ, [1, 0, 1]), { correct: 0, total: 3 });
 });

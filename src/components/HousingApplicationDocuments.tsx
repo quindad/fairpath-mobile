@@ -57,13 +57,13 @@ export function HousingApplicationDocuments({applicationId,readOnly=false,requir
   <View style={s.head}><View><Text style={s.kicker}>APPLICATION DOCUMENTS</Text><Text style={s.title}>{readOnly?'Submitted files':'Add supporting files'}</Text></View><Text style={s.count}>{rows.length}</Text></View>
   {requiredTypes.length?<View style={s.requiredBox}><Text style={s.requiredTitle}>REQUIRED FOR THIS PROPERTY</Text><Text style={s.requiredText}>{requiredTypes.map(x=>LABEL[x]).join(' · ')}</Text></View>:null}
   {!readOnly?<><Text style={s.help}>PDF, JPG, PNG, HEIC · max 10 MB. Do not upload Social Security cards, bank passwords, or unrelated sensitive records.</Text>
-  <View style={s.types}>{TYPES.map(x=><Pressable key={x} style={[s.type,kind===x&&s.typeOn]} onPress={()=>setKind(x)}><Text style={[s.typeText,kind===x&&s.typeTextOn]}>{LABEL[x]}</Text></Pressable>)}</View>
-  <Pressable style={[s.upload,uploading&&s.disabled]} onPress={()=>void pick()} disabled={uploading}><Text style={s.uploadText}>{uploading?'UPLOADING…':'CHOOSE FILE'}</Text><Lucide name="upload" color={C.black} size={15}/></Pressable></>:null}
+  <View style={s.types}>{TYPES.map(x=><Pressable accessibilityRole="button" key={x} style={[s.type,kind===x&&s.typeOn]} onPress={()=>setKind(x)}><Text style={[s.typeText,kind===x&&s.typeTextOn]}>{LABEL[x]}</Text></Pressable>)}</View>
+  <Pressable accessibilityRole="button" style={[s.upload,uploading&&s.disabled]} onPress={()=>void pick()} disabled={uploading}><Text style={s.uploadText}>{uploading?'UPLOADING…':'CHOOSE FILE'}</Text><Lucide name="upload" color={C.black} size={15}/></Pressable></>:null}
 
   {loading?<Text style={s.empty}>Loading documents…</Text>:rows.length===0?<Text style={s.empty}>No documents uploaded.</Text>:rows.map(doc=><View key={doc.id} style={s.row}>
    <View style={s.icon}><Lucide name="file-text" color={C.lime} size={14}/></View>
    <View style={s.copy}><Text style={s.name} numberOfLines={1}>{doc.file_name}</Text><Text style={s.meta}>{LABEL[doc.document_type]} · {doc.status.toUpperCase()}{doc.size_bytes?' · '+formatSize(doc.size_bytes):''}</Text>{doc.rejection_reason?<Text style={s.reject}>{doc.rejection_reason}</Text>:null}</View>
-   {!readOnly&&doc.status==='uploaded'?<Pressable style={s.remove} onPress={()=>remove(doc)}><Lucide name="trash-2" color={C.mutedStrong} size={14}/></Pressable>:null}
+   {!readOnly&&doc.status==='uploaded'?<Pressable accessibilityRole="button" style={s.remove} onPress={()=>remove(doc)}><Lucide name="trash-2" color={C.mutedStrong} size={14}/></Pressable>:null}
   </View>)}
  </View>
 }

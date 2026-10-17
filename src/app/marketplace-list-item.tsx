@@ -9,6 +9,7 @@ import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { MARKETPLACE_CATEGORIES, MARKETPLACE_CONDITIONS, createMarketplaceItem, setMarketplaceItemAvailability, uploadMarketplacePhoto } from '@/core/marketplace/marketplace-service';
 import { formatUsPhone } from '@/core/forms/formatters';
+import { draftMarketplaceListing } from '@/core/ai/signal';
 
 type Picked={name:string;uri:string;mimeType?:string|null;size?:number|null};
 
@@ -34,6 +35,22 @@ export default function MarketplaceListItem(){
  const [contactPhone,setContactPhone]=useState('');
  const [photos,setPhotos]=useState<Picked[]>([]);
  const [saving,setSaving]=useState(false);
+ const [drafting,setDrafting]=useState(false);
+
+ async function draftWithSignal(){
+  if(drafting||(!title.trim()&&!description.trim()))return;
+  setDrafting(true);
+  try{
+   const r=await draftMarketplaceListing(title,description,category,condition);
+   if(r.status==='ok')setDescription(r.text);
+   else if(r.status==='out_of_credits')notify('Out of Signal credits','They refresh with your plan.');
+   else if(r.status==='rate_limited')notify('Signal is busy','Try again shortly.');
+   else if(r.status==='signed_out')router.push(('/sign-up?returnTo='+encodeURIComponent('/marketplace-list-item')) as never);
+   else notify('Could not draft this',r.message);
+  }catch{
+   notify('Could not draft this','Please try again.');
+  }finally{setDrafting(false)}
+ }
 
  async function pickPhotos(){
   const result=await DocumentPicker.getDocumentAsync({multiple:true,copyToCacheDirectory:true,type:['image/jpeg','image/png','image/heic','image/heif','image/webp']});
@@ -68,10 +85,22 @@ export default function MarketplaceListItem(){
    for(let i=0;i<photos.length;i++){
     try{const response=await fetch(photos[i].uri);const bytes=await response.arrayBuffer();await uploadMarketplacePhoto(itemId,{name:photos[i].name,mimeType:photos[i].mimeType,bytes},i);uploaded++}catch{}
    }
-   await setMarketplaceItemAvailability(itemId,true);
-   notify('Item listed','Your free item is now available in FairPath Marketplace.'+(photos.length&&uploaded<photos.length?' '+uploaded+' of '+photos.length+' photos uploaded.':''),[
-    {text:'View listing',onPress:()=>router.replace(('/market-item/'+itemId) as never)}
-   ]);
+   const photoNote=photos.length&&uploaded<photos.length?' '+uploaded+' of '+photos.length+' photos uploaded.':'';
+   try{
+    await setMarketplaceItemAvailability(itemId,true);
+    notify('Item listed','Your free item is now available in FairPath Marketplace.'+photoNote,[
+     {text:'View listing',onPress:()=>router.replace(('/market-item/'+itemId) as never)}
+    ]);
+   }catch(availError){
+    // Every new listing is created in a pending-review state on purpose (a member can never self-approve their
+    // own listing) - this is not a failure, the listing was created successfully and just needs a quick staff
+    // review before it's visible to others.
+    if(availError instanceof Error&&availError.message==='MODERATION_REQUIRED'){
+     notify('Submitted for review','Your listing was created and is waiting on a quick safety review before it shows up in Marketplace. You\'ll be notified once it\'s live.'+photoNote,[
+      {text:'View listing',onPress:()=>router.replace(('/market-item/'+itemId) as never)}
+     ]);
+    }else{throw availError}
+   }
   }catch(e){
    if(e instanceof Error&&e.message==='SIGNED_OUT'){router.replace(('/sign-up?returnTo='+encodeURIComponent('/marketplace-list-item')) as never);return}
    notify('Could not list item','Please review the listing and try again.');
@@ -89,6 +118,8 @@ export default function MarketplaceListItem(){
    <Label text="CATEGORY"/><View style={s.chips}>{MARKETPLACE_CATEGORIES.map(x=><Chip key={x} label={x} active={category===x} onPress={()=>setCategory(x)}/>)}</View>
    <Label text="CONDITION"/><View style={s.chips}>{MARKETPLACE_CONDITIONS.map(x=><Chip key={x} label={x} active={condition===x} onPress={()=>setCondition(x)}/>)}</View>
 
+   <Pressable accessibilityRole="button" style={s.signalButton} onPress={()=>void draftWithSignal()}><Text style={s.signalButtonText}>{drafting?'SIGNAL IS WRITING…':'DRAFT DESCRIPTION WITH SIGNAL'}</Text></Pressable>
+
    <View style={s.two}><View style={{flex:1}}><Label text="QUANTITY"/><TextInput value={quantity} onChangeText={v=>setQuantity(v.replace(/D/g,'').slice(0,2))} style={s.field} keyboardType="number-pad"/></View><View style={{flex:1}}><Label text="LISTING TYPE"/><View style={s.inlineChoices}><Chip label="Individual" active={sellerType==='individual'} onPress={()=>setSellerType('individual')}/><Chip label="Organization" active={sellerType==='organization'} onPress={()=>setSellerType('organization')}/></View></View></View>
 
    <Text style={s.sectionTitle}>PUBLIC LOCATION</Text><Text style={s.sectionHelp}>People see only this approximate area before approval.</Text>
@@ -105,27 +136,28 @@ export default function MarketplaceListItem(){
    <TextInput value={instructions} onChangeText={setInstructions} style={s.areaSmall} multiline textAlignVertical="top" maxLength={800} placeholder="Pickup instructions: where to park, who to ask for, public meetup point, etc." placeholderTextColor={C.muted}/>
    <TextInput value={formatUsPhone(contactPhone)} onChangeText={v=>setContactPhone(formatUsPhone(v))} style={s.field} keyboardType="phone-pad" maxLength={14} placeholder="Pickup contact phone (optional)" placeholderTextColor={C.muted}/>
 
-   <Pressable style={[s.toggle,safePickup&&s.toggleOn]} onPress={()=>setSafePickup(v=>!v)}><View style={[s.box,safePickup&&s.boxOn]}>{safePickup?<Lucide name="check" color={C.black} size={12}/>:null}</View><View style={{flex:1}}><Text style={s.toggleTitle}>SAFE PICKUP</Text><Text style={s.toggleBody}>Use a well-lit/public pickup point when possible and complete the handoff with FairPath verification.</Text></View></Pressable>
+   <Pressable accessibilityRole="button" style={[s.toggle,safePickup&&s.toggleOn]} onPress={()=>setSafePickup(v=>!v)}><View style={[s.box,safePickup&&s.boxOn]}>{safePickup?<Lucide name="check" color={C.black} size={12}/>:null}</View><View style={{flex:1}}><Text style={s.toggleTitle}>SAFE PICKUP</Text><Text style={s.toggleBody}>Use a well-lit/public pickup point when possible and complete the handoff with FairPath verification.</Text></View></Pressable>
 
    <Text style={s.sectionTitle}>PHOTOS</Text><Text style={s.sectionHelp}>Up to 20 photos · JPG, PNG, HEIC or WebP · 12 MB each.</Text>
-   <Pressable style={s.photoButton} onPress={()=>void pickPhotos()} disabled={photos.length>=20}><Lucide name="images" color={C.lime} size={16}/><Text style={s.photoButtonText}>{photos.length?photos.length+' PHOTO'+(photos.length===1?'':'S')+' SELECTED':'CHOOSE PHOTOS'}</Text><Text style={s.photoCount}>{photos.length}/20</Text></Pressable>
-   {photos.length?<View style={s.fileList}>{photos.map((p,i)=><View key={p.uri+i} style={s.fileRow}><Text style={s.fileName} numberOfLines={1}>{i+1}. {p.name}</Text><Pressable onPress={()=>setPhotos(v=>v.filter((_,idx)=>idx!==i))}><Lucide name="x" color={C.mutedStrong} size={14}/></Pressable></View>)}</View>:null}
+   <Pressable accessibilityRole="button" style={s.photoButton} onPress={()=>void pickPhotos()} disabled={photos.length>=20}><Lucide name="images" color={C.lime} size={16}/><Text style={s.photoButtonText}>{photos.length?photos.length+' PHOTO'+(photos.length===1?'':'S')+' SELECTED':'CHOOSE PHOTOS'}</Text><Text style={s.photoCount}>{photos.length}/20</Text></Pressable>
+   {photos.length?<View style={s.fileList}>{photos.map((p,i)=><View key={p.uri+i} style={s.fileRow}><Text style={s.fileName} numberOfLines={1}>{i+1}. {p.name}</Text><Pressable accessibilityRole="button" onPress={()=>setPhotos(v=>v.filter((_,idx)=>idx!==i))}><Lucide name="x" color={C.mutedStrong} size={14}/></Pressable></View>)}</View>:null}
 
    <View style={s.rules}><Lucide name="shield-alert" color={C.lime} size={17}/><View style={{flex:1}}><Text style={s.rulesTitle}>MARKETPLACE RULES</Text><Text style={s.rulesBody}>Free useful goods only. No weapons, drugs, alcohol, prescription medication, stolen/counterfeit goods, unsafe products, or discriminatory claim selection. Do not put private pickup details in the public description.</Text></View></View>
 
-   <Pressable style={[s.publish,saving&&s.disabled]} disabled={saving} onPress={()=>void publish()}><Text style={s.publishText}>{saving?'PUBLISHING…':'PUBLISH FREE ITEM'}</Text><Lucide name="arrow-right" color={C.black} size={16}/></Pressable>
+   <Pressable accessibilityRole="button" style={[s.publish,saving&&s.disabled]} disabled={saving} onPress={()=>void publish()}><Text style={s.publishText}>{saving?'PUBLISHING…':'PUBLISH FREE ITEM'}</Text><Lucide name="arrow-right" color={C.black} size={16}/></Pressable>
   </FormScrollView>
  </ScreenFrame>
 }
 
 function Label({text}:{text:string}){return <Text style={s.label}>{text}</Text>}
-function Chip({label,active,onPress}:{label:string;active:boolean;onPress:()=>void}){return <Pressable style={[s.chip,active&&s.chipOn]} onPress={onPress}><Text style={[s.chipText,active&&s.chipTextOn]}>{label.toUpperCase()}</Text></Pressable>}
+function Chip({label,active,onPress}:{label:string;active:boolean;onPress:()=>void}){return <Pressable accessibilityRole="button" style={[s.chip,active&&s.chipOn]} onPress={onPress}><Text style={[s.chipText,active&&s.chipTextOn]}>{label.toUpperCase()}</Text></Pressable>}
 
 const s=StyleSheet.create({
  content:{padding:L.mobileGutter,paddingBottom:44},intro:{paddingBottom:18,borderBottomWidth:1,borderBottomColor:C.borderStrong},introTitle:{color:C.white,fontFamily:F.black,fontSize:28},introBody:{color:C.mutedStrong,fontSize:10,lineHeight:16,marginTop:7,maxWidth:520},
  label:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:1,marginTop:16,marginBottom:6},field:{minHeight:46,borderWidth:1,borderColor:C.borderStrong,color:C.white,paddingHorizontal:11,fontSize:11,marginBottom:7},area:{minHeight:130,borderWidth:1,borderColor:C.borderStrong,color:C.white,padding:11,fontSize:11},areaSmall:{minHeight:96,borderWidth:1,borderColor:C.borderStrong,color:C.white,padding:11,fontSize:11,marginBottom:7},
  chips:{flexDirection:'row',flexWrap:'wrap',gap:6},chip:{minHeight:36,borderWidth:1,borderColor:C.borderStrong,paddingHorizontal:9,alignItems:'center',justifyContent:'center'},chipOn:{backgroundColor:C.lime,borderColor:C.lime},chipText:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:6.5},chipTextOn:{color:C.black},
  two:{flexDirection:'row',gap:8},inlineChoices:{flexDirection:'row',gap:5,flexWrap:'wrap'},
+ signalButton:{height:44,borderWidth:1,borderColor:C.lime,alignItems:'center',justifyContent:'center',marginTop:12,paddingHorizontal:14,alignSelf:'flex-start'},signalButtonText:{color:C.lime,fontFamily:F.extraBold,fontSize:9,letterSpacing:.7},
  sectionTitle:{color:C.white,fontFamily:F.black,fontSize:17,marginTop:23},sectionHelp:{color:C.muted,fontSize:9,lineHeight:14,marginTop:4,marginBottom:9},
  toggle:{borderWidth:1,borderColor:C.borderStrong,padding:11,flexDirection:'row',gap:9,marginTop:8},toggleOn:{borderColor:'#526F2B',backgroundColor:'#0F150B'},box:{width:20,height:20,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center'},boxOn:{backgroundColor:C.lime,borderColor:C.lime},toggleTitle:{color:C.white,fontFamily:F.extraBold,fontSize:8,letterSpacing:.7},toggleBody:{color:C.muted,fontSize:8.5,lineHeight:13,marginTop:3},
  photoButton:{height:48,borderWidth:1,borderColor:C.borderStrong,flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:11},photoButtonText:{flex:1,color:C.white,fontFamily:F.extraBold,fontSize:8,letterSpacing:.7},photoCount:{color:C.lime,fontFamily:F.extraBold,fontSize:8},fileList:{borderBottomWidth:1,borderBottomColor:C.borderStrong},fileRow:{height:38,flexDirection:'row',alignItems:'center',gap:8,borderBottomWidth:1,borderBottomColor:C.border},fileName:{flex:1,color:C.mutedStrong,fontSize:8.5},

@@ -44,7 +44,7 @@ export default function RecordReliefHome() {
 
         {cases ? (
           <>
-            <PrimaryButton label="SCAN MY CASE WITH FAIRPATH AI" onPress={() => router.push('/record-relief/scan-packet' as never)} />
+            <PrimaryButton label="SCAN MY CASE WITH SIGNAL" onPress={() => router.push('/record-relief/scan-packet' as never)} />
             <SecondaryButton label="FIND MY COURT RECORD" onPress={() => router.push('/record-relief/court-finder' as never)} />
             <SecondaryButton label="ENTER CASE MANUALLY" onPress={() => router.push('/record-relief/add' as never)} />
             <View style={s.block}><SectionTitle>MY CASES</SectionTitle></View>
@@ -69,6 +69,7 @@ export default function RecordReliefHome() {
               <BodyText muted>Federal cases are tracked separately from state cases.</BodyText>
             </Panel>
             <ListRow title="Coverage by state" body="See exactly which jurisdictions have a verified rule loaded" onPress={() => router.push('/record-relief/coverage' as never)} />
+            <ListRow title="Explain my record" body="Write a private statement you can choose to attach to a job or housing application" onPress={() => router.push('/record-relief/my-statement' as never)} />
             <ListRow title="Find legal help" body="Legal aid and record-relief organizations near you" onPress={() => router.push('/resources' as never)} />
           </>
         ) : null}

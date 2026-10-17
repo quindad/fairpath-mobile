@@ -310,3 +310,29 @@ Unchanged from `docs/STERLING_ACTION_QUEUE.md` â€” nothing new required to close
 3. Design (not populate) the Resources real-source provenance decision doc â€” narrows the business decision Sterling needs to make.
 4. Draft the first 2-3 real-state Record Relief rule rows as a template/process proof (with an explicit "MANUAL VERIFICATION REQUIRED" flag), to make the 50-state effort concrete instead of abstract.
 5. Add a DEV-only integration-health screen reading the real state already visible in this board (which providers are actually configured), so this stops being a document and becomes a live view â€” explicitly requested and not yet built.
+
+## 2026-10-15 daily DEV-only sprint — universal discovery
+
+**Scope:** opportunity-for-all discovery entry without architectural rebuild or changing screening decisions. Four repo working trees inspected; Mobile had 239 pre-existing modified/untracked entries. Preserve all unrelated work.
+
+- Mobile `src/app/find.tsx`: replaced exclusionary/narrow Jobs, Housing, Resources descriptions with universally accessible discovery copy and a visible `Opportunities for everyone` explanation. Existing `/find-jobs`, `/find-housing`, `/resources` navigation unchanged; optional felony-friendly/veteran-friendly filters stay on existing search screens. No new personal disclosure or identity selection.
+- Added `tests/universal-discovery-entry.test.mjs` (3/3 PASS) covering universal language, unchanged routes, and continued availability of specialized filters.
+- Targeted audits: Navigation PASS (103 route files); Jobs PASS; Housing PASS (19 critical files); `git diff --check -- src/app/find.tsx` PASS. No schema or remote changes.
+- Full Mobile suite launched; capture exact result before declaring regression gate green. Mobile TypeScript check also launched; capture exit code before claiming pass.
+- **Nine-phase gate view (provisional):** (1) product positioning: universal Find entry BUILT; (2) onboarding/privacy: unchanged; (3) Jobs: audit PASS; (4) Housing: audit PASS; (5) Resources/Marketplace: unchanged; (6) Partner: unchanged; (7) Admin: unchanged; (8) Website: unchanged; (9) QA/release: targeted PASS, full-suite pending, device/Redis/Edge runtime gates remain. These phase labels are an operational summary, not a discovered canonical nine-phase tracker.
+- No commits, pushes, deployments, SQL execution, migration applications, secrets or production operations.
+
+### 2026-10-15 verification follow-up (full-suite in progress)
+
+- Standalone `npx tsc --noEmit`: **PASS, exit 0** (142.43 seconds).
+- Full `node scripts/run-all-tests.mjs`: process started and still running when checked; log `%TEMP%\fairpath-sprint-full-suite-20261015.log` had TypeScript PASS and 26 other checks PASS, with **audit: security FAIL**: `20261016100000_unified_jobs_housing_filters.sql` reports `search_jobs` executable by `anon`. This migration is outside approved universal Find-screen scope; **do not modify without separate authorization**. Do not claim full-suite PASS until final exit/result collected.
+- Universal Find screen targeted tests 3/3 PASS, Navigation PASS, Jobs PASS, Housing PASS, diff check PASS. No change to SQL permissions or database.
+- **QA/release phase: NO-GO** until security finding reviewed and full-suite completion recorded. The approved Find-screen change has no observed targeted regression.
+
+### 2026-10-15 security audit resolution — local only
+
+- Root cause: September `20260926130000_jobs_search_and_applications.sql` already intentionally grants guest `search_jobs` for public published listings; October `20261016100000_unified_jobs_housing_filters.sql` retains that grant with the new optional veteran-friendly parameter. The generic security audit omitted the public read-only search from its allowlist.
+- Minimal edit: `scripts/audit-security.mjs` allowlists `search_jobs` only as a public read and adds scoped checks on the October implementation: SECURITY INVOKER, published and unexpired only, explicit JSON projection (not whole-row serialization), and max 50 results. Existing migration left unchanged. `node scripts/audit-security.mjs` **PASS, 104 migrations, exit 0**; `git diff --check -- scripts/audit-security.mjs` exit 0.
+- Independent Mobile `npx tsc --noEmit` **PASS, exit 0**. Earlier full-suite still running and had failed security before this fix; its final exit remains pending. Fresh full-suite rerun started with output in `%TEMP%\fairpath-security-rerun-20261015.log`; record its final exit before declaring full-suite green.
+- Scope: audit-file-only modification; no SQL executed against DEV/production, no migration applied, no commits/pushes/deployments. Product architecture and guest Jobs search behavior unchanged.
+- Nine-phase QA/release gate: targeted security PASS; overall full-suite pending. No release GO until full results and remaining provider/device gates are satisfied.

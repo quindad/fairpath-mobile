@@ -49,7 +49,20 @@ export function parseResumeContent(raw: unknown): ResumeContent {
   };
 }
 
-export const RESUME_TEMPLATES: { value: 'classic' | 'compact'; label: string }[] = [
+/**
+ * A resume is "empty" if it has nothing an employer could actually use: no name, and no work/education history.
+ * Used by Easy Apply (src/app/job-apply/[id].tsx) so a brand-new, never-filled-in resume is never silently
+ * auto-selected or attached to a real job application without the applicant being warned.
+ */
+export function isResumeContentEmpty(content: ResumeContent): boolean {
+  return !content.contact.name.trim() && content.experience.length === 0 && content.education.length === 0;
+}
+
+export type ResumeTemplate = 'classic' | 'compact' | 'modern' | 'bold';
+
+export const RESUME_TEMPLATES: { value: ResumeTemplate; label: string }[] = [
   { value: 'classic', label: 'Classic' },
   { value: 'compact', label: 'Compact' },
+  { value: 'modern', label: 'Modern' },
+  { value: 'bold', label: 'Bold' },
 ];

@@ -14,7 +14,7 @@ const NATIONAL_TOOLS: [string, string, string][] = [
  ['Build your resume', 'Create a clean, ATS-friendly resume in minutes.', '/resume-studio'],
  ['Review your credit', 'Upload a report and start preparing disputes.', '/credit'],
  ['Explore Record Relief', 'See what expungement or sealing may apply to your case.', '/record-relief'],
- ['Ask FairPath AI', 'Get next steps based on what you have already built.', '/fairpath-ai'],
+ ['Ask Signal', 'Get next steps based on what you have already built.', '/fairpath-ai'],
  ['Complete your Opportunity Profile', 'The more it knows, the faster you move once your market opens.', '/opportunity-profile'],
 ];
 
@@ -58,14 +58,14 @@ export default function EarlyAccess(){
    <Text style={s.label}>YOUR ZIP CODE</Text>
    <View style={s.zipRow}>
     <TextInput style={s.zipInput} value={zip} onChangeText={setZip} keyboardType="number-pad" maxLength={5} placeholder="43215" placeholderTextColor={C.muted}/>
-    <Pressable style={s.checkBtn} onPress={()=>void check(zip)} disabled={checking}><Text style={s.checkBtnText}>{checking?'CHECKING…':'CHECK'}</Text></Pressable>
+    <Pressable accessibilityRole="button" style={s.checkBtn} onPress={()=>void check(zip)} disabled={checking}><Text style={s.checkBtnText}>{checking?'CHECKING…':'CHECK'}</Text></Pressable>
    </View>
 
    {showFullCoverage?<View style={s.fullCard}>
     <Lucide name="check-circle-2" color={C.lime} size={22}/>
     <Text style={s.fullTitle}>FairPath is active in {coverage.marketLabel ?? 'your area'}.</Text>
     <Text style={s.fullBody}>You do not need Early Access here — head back and search normally.</Text>
-    <Pressable style={s.primary} onPress={()=>router.push('/find-jobs')}><Text style={s.primaryText}>SEARCH JOBS</Text></Pressable>
+    <Pressable accessibilityRole="button" style={s.primary} onPress={()=>router.push('/find-jobs')}><Text style={s.primaryText}>SEARCH JOBS</Text></Pressable>
    </View>:null}
 
    {showLowCoverage&&!joined?<View style={s.card}>
@@ -77,7 +77,7 @@ export default function EarlyAccess(){
      <Switch value={consent} onValueChange={setConsent} trackColor={{false:C.borderStrong,true:C.lime}} thumbColor={C.white}/>
      <Text style={s.consentText}>Notify me when FairPath launches here</Text>
     </View>
-    <Pressable style={s.primary} onPress={()=>void join()} disabled={joining}>
+    <Pressable accessibilityRole="button" style={s.primary} onPress={()=>void join()} disabled={joining}>
      <Text style={s.primaryText}>{joining?'JOINING…':'JOIN EARLY ACCESS'}</Text>
      <Lucide name="arrow-right" color={C.black} size={15}/>
     </Pressable>
@@ -91,7 +91,7 @@ export default function EarlyAccess(){
 
    {(showLowCoverage||joined)?<>
     <Text style={s.sectionLabel}>KEEP GOING — THESE WORK EVERYWHERE</Text>
-    {NATIONAL_TOOLS.map(([title,body,href])=><Pressable key={href} style={s.toolRow} onPress={()=>router.push(href as never)}>
+    {NATIONAL_TOOLS.map(([title,body,href])=><Pressable accessibilityRole="button" key={href} style={s.toolRow} onPress={()=>router.push(href as never)}>
      <View style={s.toolCopy}><Text style={s.toolTitle}>{title}</Text><Text style={s.toolBody}>{body}</Text></View>
      <Lucide name="arrow-right" color={C.lime} size={16}/>
     </Pressable>)}

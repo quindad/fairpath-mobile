@@ -251,12 +251,17 @@ export function PreferencesEditor({ mode, onChanged }: { mode: 'preferences' | '
       const parsed = parseTitles(titles);
       const tErr = validateTitles(parsed, titles);
       if (tErr) errs.titles = tErr;
+      else if (!parsed.length) errs.titles = 'Enter at least one role.';
+      if (!p.employment_types.length) errs.employment_types = 'Choose at least one job type.';
       const pp = parsePay(pay);
       if (pp.error) errs.pay = pp.error;
       patch = { desired_titles: parsed, employment_types: p.employment_types, workplace_types: p.workplace_types, pay_min_hourly: pp.value };
     } else if (mode === 'availability') {
+      if (!p.available_days.length) errs.available_days = 'Choose at least one day.';
+      if (!p.shift_preferences.length) errs.shift_preferences = 'Choose at least one shift.';
       patch = { available_days: p.available_days, shift_preferences: p.shift_preferences, earliest_start_date: startText ? isoFromText(startText) : null };
     } else {
+      if (!p.transportation_modes.length) errs.transportation_modes = 'Choose at least one option.';
       patch = { transportation_modes: p.transportation_modes, has_drivers_license: p.has_drivers_license };
     }
     setErrors(errs);
@@ -270,6 +275,7 @@ export function PreferencesEditor({ mode, onChanged }: { mode: 'preferences' | '
         <>
           <Field label="ROLES YOU WANT" value={titles} onChangeText={(v) => { setSaved(false); setTitles(v); }} error={errors.titles} placeholder="Warehouse associate, cook, driver" hint="Up to 5, separated by commas." autoCapitalize="words" />
           <ChipGroup label="JOB TYPE" options={EMPLOYMENT_TYPES} selected={p.employment_types} onChange={(n) => upd({ employment_types: n })} />
+          {errors.employment_types ? <StatusLine tone="error">{errors.employment_types}</StatusLine> : null}
           <ChipGroup label="WORKPLACE" options={WORKPLACE_TYPES} selected={p.workplace_types} onChange={(n) => upd({ workplace_types: n })} />
           <Field label="MINIMUM HOURLY PAY" value={pay} onChangeText={(v) => { setSaved(false); setPay(v); }} error={errors.pay} keyboardType="decimal-pad" optional placeholder="18.00" hint="Private to you. It is never shared with employers." />
         </>
@@ -277,13 +283,16 @@ export function PreferencesEditor({ mode, onChanged }: { mode: 'preferences' | '
       {mode === 'availability' ? (
         <>
           <ChipGroup label="DAYS YOU CAN WORK" options={DAYS} selected={p.available_days} onChange={(n) => upd({ available_days: n })} />
+          {errors.available_days ? <StatusLine tone="error">{errors.available_days}</StatusLine> : null}
           <ChipGroup label="SHIFTS" options={SHIFTS} selected={p.shift_preferences} onChange={(n) => upd({ shift_preferences: n })} />
+          {errors.shift_preferences ? <StatusLine tone="error">{errors.shift_preferences}</StatusLine> : null}
           <FairPathDatePicker label="EARLIEST START DATE" value={startText} onChange={(v) => { setSaved(false); setStartText(v); }} kind="future" optional />
         </>
       ) : null}
       {mode === 'transportation' ? (
         <>
           <ChipGroup label="HOW YOU GET TO WORK" options={TRANSPORT} selected={p.transportation_modes} onChange={(n) => upd({ transportation_modes: n })} />
+          {errors.transportation_modes ? <StatusLine tone="error">{errors.transportation_modes}</StatusLine> : null}
           <ChipGroup single label="DRIVER'S LICENSE" options={[{ value: 'yes', label: 'I have one' }, { value: 'no', label: 'I do not' }]} selected={p.has_drivers_license === null ? [] : [p.has_drivers_license ? 'yes' : 'no']} onChange={(n) => upd({ has_drivers_license: n[0] === 'yes' ? true : n[0] === 'no' ? false : null })} hint="Optional. Only shared if you choose to include Transportation on an application." />
         </>
       ) : null}

@@ -2,9 +2,8 @@ import { router } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { PageHeader, ScreenFrame, SectionTitle } from '@/components/ProductChrome';
-import { useThemedStyles } from '@/core/theme/ThemeProvider';
+import { useFairPathTheme, useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
-import { FairPathColors as C } from '@/constants/fairpath';
 
 type Destination = {
   id: string;
@@ -21,21 +20,21 @@ const SECTIONS: { title: string; items: Destination[] }[] = [
     items: [
       { id: 'jobs', title: 'Jobs', body: 'Fair-chance job search and applications.', icon: 'briefcase', route: '/find-jobs', status: 'live' },
       { id: 'housing', title: 'Housing', body: 'Listings, filters and applications.', icon: 'house', route: '/find-housing', status: 'live' },
+      { id: 'opportunities', title: 'Opportunities', body: 'Grants, scholarships and financial assistance matched to you.', icon: 'sparkles', route: '/opportunities', status: 'live' },
     ],
   },
   {
     title: 'Learn',
     items: [
-      { id: 'academy', title: 'Academy', body: 'Free and affordable courses, matched to your goals.', icon: 'graduation-cap', route: '/academy', status: 'in_development' },
-      { id: 'entrepreneurship', title: 'Startup Academy', body: '15 practical steps to start a business, open to everyone.', icon: 'briefcase', route: '/entrepreneurship', status: 'in_development' },
+      { id: 'academy', title: 'Academy', body: 'Free and affordable courses, matched to your goals.', icon: 'graduation-cap', route: '/academy', status: 'live' },
+      { id: 'entrepreneurship', title: 'Startup Academy', body: '15 practical steps to start a business, open to everyone.', icon: 'briefcase', route: '/entrepreneurship', status: 'live' },
     ],
   },
   {
     title: 'Pathways',
     items: [
-      { id: 'veterans', title: 'Veterans', body: 'Transition, careers, housing and benefits navigation.', icon: 'flag', route: '/veterans', status: 'in_development' },
-      { id: 'food', title: 'Food & Essentials', body: 'Free and discounted food near you.', icon: 'gift', route: null, status: 'planned' },
-      { id: 'giving', title: 'Giving & Community Support', body: 'Verified needs and community support.', icon: 'gift', route: null, status: 'planned' },
+      { id: 'veterans', title: 'Veterans', body: 'Occupation translation, VA benefits links and veteran community organizations.', icon: 'flag', route: '/veterans', status: 'live' },
+      { id: 'food', title: 'Food Rescue', body: 'Free surplus food nearby, sorted by pickup time.', icon: 'gift', route: '/food-rescue', status: 'live' },
     ],
   },
   {
@@ -56,6 +55,7 @@ const STATUS_LABEL: Record<Destination['status'], string> = {
 
 export default function ExploreScreen() {
   const s = useThemedStyles(styles);
+  const { tokens } = useFairPathTheme();
   return (
     <ScreenFrame>
       <PageHeader eyebrow="DISCOVER" title="Explore" onBack={false} />
@@ -78,7 +78,7 @@ export default function ExploreScreen() {
                   style={[s.card, !open && s.cardMuted]}
                 >
                   <View style={s.iconWrap}>
-                    <Lucide name={item.icon as never} color={C.lime} size={18} />
+                    <Lucide name={item.icon as never} color={tokens.accentText} size={18} />
                   </View>
                   <View style={s.copy}>
                     <Text style={s.cardTitle}>{item.title}</Text>
@@ -100,9 +100,9 @@ const styles = (t: ThemeTokens) => ({
   section: { gap: 10 },
   card: { flexDirection: 'row' as const, gap: 12, borderWidth: 1, borderColor: t.border, backgroundColor: t.surface, padding: 14, alignItems: 'center' as const },
   cardMuted: { opacity: 0.6 },
-  iconWrap: { width: 36, height: 36, alignItems: 'center' as const, justifyContent: 'center' as const, borderWidth: 1, borderColor: t.accent },
+  iconWrap: { width: 36, height: 36, alignItems: 'center' as const, justifyContent: 'center' as const, borderWidth: 1, borderColor: t.accentBorder, backgroundColor: t.accentSubtle },
   copy: { flex: 1, gap: 2 },
   cardTitle: { color: t.text, fontWeight: '700' as const, fontSize: 16 },
   cardBody: { color: t.textSecondary, fontSize: 14, lineHeight: 20 },
-  status: { color: t.accent, fontSize: 12, fontWeight: '700' as const, letterSpacing: 0.4, marginTop: 2 },
+  status: { color: t.accentText, fontSize: 12, fontWeight: '700' as const, letterSpacing: 0.4, marginTop: 2 },
 });

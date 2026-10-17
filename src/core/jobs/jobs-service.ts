@@ -20,10 +20,11 @@ export type JobSearchParams={
  remote?:boolean;
  employmentType?:'full_time'|'part_time'|null;
  secondChance?:boolean;
+ veteranFriendly?:boolean;
  limit?:number;
  offset?:number;
 };
-export type JobSearchResult={jobs:(Job&{distance_miles:number|null})[];total:number;secondChanceCount:number;hasMore:boolean};
+export type JobSearchResult={jobs:(Job&{distance_miles:number|null})[];total:number;secondChanceCount:number;veteranFriendlyCount:number;hasMore:boolean};
 export const JOB_PAGE_SIZE=20;
 export { isZip, normalizePlace } from '@/core/jobs/location-utils';
 /** Server-side search (public.search_jobs): ZIP/radius, text, type and second-chance filters with pagination. */
@@ -39,17 +40,20 @@ export async function searchJobs(p:JobSearchParams={}):Promise<JobSearchResult>{
   p_employment_type:p.employmentType??null,
   p_second_chance:Boolean(p.secondChance),
   p_limit:limit,
-  p_offset:offset
+  p_offset:offset,
+  p_veteran_friendly:Boolean(p.veteranFriendly)
  });
  if(error)throw error;
- const rows=(data??[]) as {job:Job;distance_miles:number|null;total_count:number|string;second_chance_count:number|string}[];
+ const rows=(data??[]) as {job:Job;distance_miles:number|null;total_count:number|string;second_chance_count:number|string;veteran_friendly_count:number|string}[];
  const total=rows.length?Number(rows[0].total_count):0;
  const secondChanceCount=rows.length?Number(rows[0].second_chance_count):0;
- const listed=p.secondChance?secondChanceCount:total;
+ const veteranFriendlyCount=rows.length?Number(rows[0].veteran_friendly_count):0;
+ const listed=p.secondChance?secondChanceCount:p.veteranFriendly?veteranFriendlyCount:total;
  return {
   jobs:rows.map(r=>({...r.job,distance_miles:r.distance_miles})),
   total,
   secondChanceCount,
+  veteranFriendlyCount,
   hasMore:offset+rows.length<listed
  };
 }
@@ -72,6 +76,22 @@ export async function loadJobs(search='',location='',filters:{remote?:boolean;fu
 export async function loadJob(id:string){
  const {data,error}=await supabase.from('jobs').select(JOB_COLUMNS).eq('id',id).single();
  if(error)throw error;return data as Job;
+}
+
+export type SavedJobSearch={id:string;name:string;query:string;location:string;filters:Record<string,string|boolean|number>;created_at:string;updated_at:string};
+/** Saves a job search for later reuse. Alert delivery is not wired yet -- same known gap as saved housing searches. */
+export async function saveJobSearch(input:{name?:string;query:string;location:string;filters:Record<string,string|boolean|number>}){
+ const user=await currentUser();const now=new Date().toISOString();
+ const {data,error}=await supabase.from('saved_job_searches').insert({user_id:user.id,name:input.name?.trim()||'Job search',query:input.query.trim(),location:input.location.trim(),filters:input.filters,updated_at:now}).select('id,name,query,location,filters,created_at,updated_at').single();
+ if(error)throw error;return data as SavedJobSearch;
+}
+export async function loadSavedJobSearches():Promise<SavedJobSearch[]>{
+ const user=await currentUser();const {data,error}=await supabase.from('saved_job_searches').select('id,name,query,location,filters,created_at,updated_at').eq('user_id',user.id).order('updated_at',{ascending:false});
+ if(error)throw error;return (data??[]) as SavedJobSearch[];
+}
+export async function deleteSavedJobSearch(id:string){
+ const user=await currentUser();const {error}=await supabase.from('saved_job_searches').delete().eq('id',id).eq('user_id',user.id);
+ if(error)throw error;
 }
 
 export async function saveJob(jobId:string){
@@ -103,7 +123,7 @@ export async function loadSavedJobs():Promise<Job[]>{
  return (data??[]).map((row:any)=>row.job).filter(Boolean) as Job[];
 }
 
-export type JobApplicationAutofill={first_name:string;last_name:string;email:string;phone:string;education:string;skills:string;certifications:string;desired_roles:string;resume_ready:string};
+export type JobApplicationAutofill={first_name:string;last_name:string;email:string;phone:string;education:string;skills:string;certifications:string;desired_roles:string};
 /**
  * Skills/certifications/desired roles/education prefer the Opportunity Profile tables (member_skills,
  * member_credentials, member_education, member_job_preferences) — the profile screens the app actually surfaces —
@@ -137,7 +157,6 @@ export async function loadJobApplicationAutofill():Promise<JobApplicationAutofil
   skills:skillsText||text('employment.skills'),
   certifications:credsText||text('employment.licenses_certifications'),
   desired_roles:desiredText||text('employment.desired_roles'),
-  resume_ready:answers['documents.resume']===true?'Yes':answers['documents.resume']===false?'No':'',
  };
 }
 export async function saveJobApplicationProfile(form:JobApplicationAutofill){
@@ -151,7 +170,6 @@ export async function saveJobApplicationProfile(form:JobApplicationAutofill){
   ['employment.skills',list(form.skills)],
   ['employment.licenses_certifications',list(form.certifications)],
   ['employment.desired_roles',list(form.desired_roles)],
-  ['documents.resume',form.resume_ready.trim().toLowerCase()==='yes'?true:form.resume_ready.trim().toLowerCase()==='no'?false:null]
  ].filter(([,answer])=>answer!==''&&answer!==null&&(!Array.isArray(answer)||answer.length));
  if(rows.length){
   const payload=rows.map(([question_id,answer])=>({user_id:user.id,question_id,answer,source:'user',verification_state:'self_reported',updated_at:new Date().toISOString()}));
@@ -161,9 +179,9 @@ export async function saveJobApplicationProfile(form:JobApplicationAutofill){
 }
 /** Creates the application through public.submit_job_application (validated server-side, whitelisted fields only). */
 /** `share_opportunity_profile` + `share_sections` are only a member choice: the SERVER builds the snapshot from the member's own rows. */
-export async function submitJobApplication(jobId:string,answers:{profile:Partial<JobApplicationAutofill>;employer_questions:Record<string,string>;share_opportunity_profile?:boolean;share_sections?:string[]}){
- const {data,error}=await supabase.rpc('submit_job_application',{p_job_id:jobId,p_answers:answers});
- if(error)throw new Error(error.message.includes('ALREADY_APPLIED')?'ALREADY_APPLIED':error.message.includes('SIGNED_OUT')?'SIGNED_OUT':error.message);
+export async function submitJobApplication(jobId:string,answers:{profile:Partial<JobApplicationAutofill>;employer_questions:Record<string,string>;share_opportunity_profile?:boolean;share_sections?:string[]},resumeId?:string|null,includeStatement?:boolean){
+ const {data,error}=await supabase.rpc('submit_job_application',{p_job_id:jobId,p_answers:answers,p_resume_id:resumeId??null,p_include_statement:includeStatement??false});
+ if(error)throw new Error(error.message.includes('ALREADY_APPLIED')?'ALREADY_APPLIED':error.message.includes('SIGNED_OUT')?'SIGNED_OUT':error.message.includes('RESUME_NOT_FOUND')?'RESUME_NOT_FOUND':error.message);
  return data as string;
 }
 export type JobApplicationStatus='started'|'submitted'|'viewed'|'interview'|'offer'|'hired'|'withdrawn'|'rejected';

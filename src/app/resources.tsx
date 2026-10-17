@@ -8,6 +8,7 @@ import { FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { loadLocationSettings } from '@/core/profile/location-service';
 import { isZip5, radiusOptions } from '@/core/resources/resource-format';
 import { useResourceMemberState } from '@/core/resources/use-resource-states';
+import { getResourceGuidance } from '@/core/ai/signal';
 import {
   RESOURCE_PAGE_SIZE,
   loadResourceCategories,
@@ -52,6 +53,10 @@ export default function ResourcesScreen() {
   const requestId = useRef(0);
   const params = useLocalSearchParams<{ q?: string; urgent?: string }>();
   const autoRan = useRef(false);
+  const [situation, setSituation] = useState('');
+  const [guidance, setGuidance] = useState('');
+  const [guidanceLoading, setGuidanceLoading] = useState(false);
+  const [guidanceRequested, setGuidanceRequested] = useState(false);
   const member = useResourceMemberState('/resources');
   const refreshStates = member.refresh;
 
@@ -128,6 +133,25 @@ export default function ResourcesScreen() {
     void run(next);
   }
 
+  async function askSignal() {
+    const t = situation.trim();
+    if (!t || guidanceLoading) return;
+    setGuidanceLoading(true);
+    setGuidanceRequested(true);
+    try {
+      const r = await getResourceGuidance(t);
+      if (r.status === 'ok') setGuidance(r.text);
+      else if (r.status === 'out_of_credits') setGuidance('You are out of Signal credits for now. They refresh with your plan.');
+      else if (r.status === 'rate_limited') setGuidance('Signal is busy across FairPath right now. Try again shortly.');
+      else if (r.status === 'signed_out') { router.push(('/sign-up?returnTo=' + encodeURIComponent('/resources')) as never); return; }
+      else setGuidance(r.message);
+    } catch {
+      setGuidance('Signal could not look at this right now. Please try again.');
+    } finally {
+      setGuidanceLoading(false);
+    }
+  }
+
   function startNeed(need: ResourceNeed) {
     setDraftQuery(need.label);
     submit({ query: need.label, category: null, urgent: false });
@@ -174,6 +198,24 @@ export default function ResourcesScreen() {
     <ScreenFrame>
       <PageHeader eyebrow="RESOURCES" title="Find help" backTo="/home" onBack={searched ? reset : true} />
       <FormScrollView contentContainerStyle={s.content}>
+        {!searched ? (
+          <View style={s.signalBox}>
+            <Text style={s.label}>SIGNAL · NOT SURE WHERE TO START?</Text>
+            <TextInput
+              style={s.input}
+              value={situation}
+              onChangeText={setSituation}
+              placeholder="No job lined up yet, just got out, need somewhere to stay…"
+              placeholderTextColor={tokens.textMuted}
+              multiline
+              accessibilityLabel="Describe your situation for Signal"
+            />
+            <Pressable accessibilityRole="button" style={s.searchButton} onPress={() => void askSignal()} disabled={guidanceLoading}>
+              <Text style={s.searchButtonText}>{guidanceLoading ? 'ASKING SIGNAL…' : 'ASK SIGNAL'}</Text>
+            </Pressable>
+            {guidanceRequested ? <Text style={s.guidanceText}>{guidanceLoading ? 'Signal is thinking…' : guidance}</Text> : null}
+          </View>
+        ) : null}
         {!searched ? (
           <Pressable accessibilityRole="button" accessibilityLabel="I need help today" style={s.urgent} onPress={startUrgent}>
             <View style={s.urgentCopy}>
@@ -330,6 +372,8 @@ export default function ResourcesScreen() {
 
 const styles = (t: ThemeTokens) => ({
   content: { paddingHorizontal: L.mobileGutter, paddingBottom: 32 },
+  signalBox: { marginTop: 16, borderWidth: 1, borderColor: t.accentBorder, backgroundColor: t.surface, padding: 14 },
+  guidanceText: { color: t.textSecondary, fontSize: 13, lineHeight: 19, marginTop: 12 },
   urgent: { marginTop: 16, borderWidth: 1, borderColor: t.accentBorder, backgroundColor: t.accentSubtle, flexDirection: 'row' as const, alignItems: 'center' as const, padding: 16 },
   urgentCopy: { flex: 1, paddingRight: 12 },
   urgentTitle: { color: t.accentText, fontFamily: F.black, fontSize: 15, letterSpacing: 0.8 },

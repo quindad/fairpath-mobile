@@ -12,6 +12,8 @@ const signIn = read('src/app/sign-in.tsx');
 const signUp = read('src/app/sign-up.tsx');
 const app = JSON.parse(read('app.json'));
 const mig = read('supabase/migrations/20260929120000_auth_profile_hardening.sql');
+const forgotPassword = read('src/app/forgot-password.tsx');
+const resetPassword = read('src/app/reset-password.tsx');
 
 // entry points
 check(/signInWithApple/.test(social) && /signInWithGoogle/.test(social), 'Apple and Google entry points must exist.');
@@ -46,6 +48,11 @@ check(ok.accessToken === 'a1' && ok.refreshToken === 'r1' && !ok.error, 'Redirec
 const bad = parseAuthRedirect('fairpathmobile://auth/callback#error=access_denied&error_description=User+cancelled');
 check(bad.error === 'User cancelled' && !bad.accessToken, 'Provider errors must parse and carry no tokens.');
 check(!parseAuthRedirect('fairpathmobile://auth/callback').accessToken, 'A bare redirect has no tokens.');
+
+// recovery must require a recovery credential, handle PKCE/native warm links, and clear the session after use
+check(/resetPasswordForEmail/.test(forgotPassword) && /setSent\(true\)/.test(forgotPassword) && !/setErrorMessage\(error\.message\)/.test(forgotPassword), 'Recovery requests must not reveal whether an account exists.');
+check(/exchangeCodeForSession/.test(resetPassword) && /Linking\.addEventListener\('url'/.test(resetPassword), 'Password recovery must handle PKCE and native links opened while the app is running.');
+check(/recoveryCredentialKind/.test(resetPassword) && /isTrustedRecoveryRedirect/.test(resetPassword) && /signOut\(\{scope:'global'\}\)/.test(resetPassword), 'Only trusted recovery redirects may enable reset, and every account session must be revoked afterward.');
 
 // The auth callback must be reachable signed-out, or the route guard drops the URL fragment before the session is set
 // (DEV QA sign-in URL, email verification and OAuth returns all failed with /sign-in?returnTo=%2Fauth%2Fcallback).
