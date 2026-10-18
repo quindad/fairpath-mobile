@@ -104,9 +104,16 @@ Member loop: `docs/JOBS_MEMBER_LOOP_E2E.md` · Automated: `npm run test:jobs`, `
 
 ## PHASE 6 — Housing (054–060)
 
-- Member loop doc: `HOUSING_MEMBER_LOOP_E2E.md` (+ extended `test:housing` checks)
+Member loop: `docs/HOUSING_MEMBER_LOOP_E2E.md` · Automated: `npm run test:housing`, `npm run test:sql:housing-documents`
 
-- [ ] **054–060** (see Master Directive; FastTrack gated off)
+- [x] **054** Find housing discovery (`search_housing`, pagination, stale-result clear on error)
+- [x] **055** WHERE / radius / in-screen filters (saved ZIP, filter keys wired to RPC)
+- [x] **056** List ↔ map (`HousingMap`, single MAP toggle)
+- [x] **057** Listing detail (save, Signal fit, draft-first apply entry, signed-out `returnTo`)
+- [x] **058** Apply flow (`housing-apply/new`, draft at step 2+, documents, submit RPC, FastTrack retired)
+- [x] **059** Applications hub + workspace (timeline, withdraw, Signal application prep)
+- [x] **060** Saved homes + saved searches (save/remove, reopen find-housing)
+- [ ] **060 (manual)** DEV cloud housing loop proof (browser/device on published DEV listings)
 
 ## PHASE 7 — Record Relief (061–071)
 

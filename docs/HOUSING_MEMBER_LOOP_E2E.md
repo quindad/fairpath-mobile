@@ -32,7 +32,18 @@
 
 ## 5. Hub
 
-1. `/housing-applications` lists apps; workspace shows events, documents, withdraw flow.
+1. `/housing-applications` splits **ACTIVE** vs **HISTORY**; tap → `/housing-application/{id}`.
+2. Workspace: submitted fields, document manager, event timeline, **Withdraw** (submitted/reviewing/tour), link back to **All my applications**.
+3. **Application prep (Signal)** on workspace when listing is loaded → tips or honest fallback.
+
+## 6. Saved searches
+
+1. `/find-housing` → **Save search** → `/saved-housing-searches`.
+2. **Run search** restores query/location/filter params on find-housing (alert copy matches jobs: text + location only).
+
+## 7. Local SQL boundary (CI)
+
+`npm run test:sql:housing-documents` — submit blocked until required docs exist in storage; `test:local-cross-member-isolation` covers saved housing RLS.
 
 ## Preconditions
 

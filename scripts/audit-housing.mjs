@@ -170,6 +170,9 @@ if(!/onOpen=\{onOpen\}/.test(read('src/components/HousingMap.web.tsx')))failures
  const ws=read('src/app/housing-application/[id].tsx');
  if(!/WITHDRAW APPLICATION/.test(ws)||/WITHDRAW SUBMITTED|from workspace/i.test(ws)||!/Keep application/.test(ws))failures.push('Withdraw needs user-facing wording and a confirmation.');
  if(!/loadHousingApplicationEvents/.test(ws)||!/SUBMITTED INFORMATION/.test(ws)||!/HousingApplicationDocuments/.test(ws)||!/ALL MY APPLICATIONS/.test(ws))failures.push('Workspace must show history, submitted information, documents and a route to My Applications.');
+ if(!/prepareHousingApplication/.test(ws))failures.push('Application workspace must expose Signal application prep for the listing.');
+ const appsHub=read('src/app/housing-applications.tsx');
+ if(!/loadMyHousingApplications/.test(appsHub)||!/housing-application\//.test(appsHub))failures.push('Housing applications hub must list RPC rows and open workspace detail.');
  // sensitive data
  if(/user_convictions|convictions|supervision_records|registration_records|justice/i.test(svc))failures.push('housing-service must not read justice-history data.');
  if(!/\.in\('question_id',\['identity\.phone','identity\.date_of_birth','identity\.address','identity\.current_location','housing\.household_size'\]\)/.test(svc))failures.push('FastTrack prefill must read only the identity/household answers the form asks for.');
