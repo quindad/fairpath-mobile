@@ -22,10 +22,11 @@ Ship order for **sign-up → daily use → trust**. Each phase has a PASS gate b
 
 ## Phase 2 — First value (week 1)
 
-- Home reflects onboarding goals (jobs/housing/resources tiles).
-- Opportunity profile minimum (location + one-line experience for Signal).
+- Home reflects onboarding goals (jobs/housing/resources tiles). **Shipped:** personalized quick links + focus line on `/home`.
+- Opportunity profile minimum (location + one-line experience for Signal). **Shipped:** onboarding optional line + Contact editor `experience_summary` + DB column migration.
 - Signal on DEV deployed; one full path: job → Ask Signal → cover letter.
 - Credit + letter explainer smoke test.
+- **Consent loop fix:** ledger backfill + `record_document_consent` syncs profiles.
 
 ## Phase 3 — Core loops (week 2–3)
 

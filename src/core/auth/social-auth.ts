@@ -3,6 +3,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { supabase } from '@/lib/supabase';
 import { parseAuthRedirect } from '@/core/auth/auth-redirect';
+import { hasCurrentDocumentConsent } from '@/core/profile/consent-status';
 
 /**
  * Social sign-in (Apple, Google) through Supabase Auth.
@@ -32,7 +33,7 @@ async function resolveProfile(names?: { first?: string | null; last?: string | n
 
   const { data: profile, error } = await supabase
     .from('profiles')
-    .select('onboarding_completed,terms_accepted_at,first_name,last_name')
+    .select('onboarding_completed,terms_accepted_at,terms_accepted_version,privacy_accepted_at,privacy_accepted_version,first_name,last_name')
     .eq('id', user.id)
     .maybeSingle();
   if (error || !profile) {
@@ -44,9 +45,10 @@ async function resolveProfile(names?: { first?: string | null; last?: string | n
     await supabase.from('profiles').update({ first_name: names.first ?? null, last_name: names.last ?? null }).eq('id', user.id);
   }
 
+  const consentOk = await hasCurrentDocumentConsent(user.id, profile);
   return {
     status: 'success',
-    needsConsent: !profile.terms_accepted_at,
+    needsConsent: !consentOk,
     onboardingCompleted: Boolean(profile.onboarding_completed),
   };
 }

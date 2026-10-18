@@ -308,10 +308,18 @@ export function ContactEditor({ onChanged }: { onChanged: () => void }) {
   const [first, setFirst] = useState('');
   const [last, setLast] = useState('');
   const [phone, setPhone] = useState('');
+  const [signalSummary, setSignalSummary] = useState('');
   const [errors, setErrors] = useState<FieldErrors>({});
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
-  useEffect(() => { if (list.data) { setFirst(list.data.first_name); setLast(list.data.last_name); setPhone(list.data.phone); } }, [list.data]);
+  useEffect(() => {
+    if (list.data) {
+      setFirst(list.data.first_name);
+      setLast(list.data.last_name);
+      setPhone(list.data.phone);
+      setSignalSummary(list.data.experience_summary ?? '');
+    }
+  }, [list.data]);
   if (list.loading || list.error) return <LoadState {...list} />;
   const submit = async () => {
     const errs: FieldErrors = {};
@@ -321,7 +329,11 @@ export function ContactEditor({ onChanged }: { onChanged: () => void }) {
     setErrors(errs);
     if (Object.keys(errs).length) return;
     setBusy(true);
-    try { await saveContact({ first_name: first, last_name: last, phone }); setSaved(true); onChanged(); } catch (e) { notify('Could not save', profileErrorMessage(e)); } finally { setBusy(false); }
+    try {
+      await saveContact({ first_name: first, last_name: last, phone, experience_summary: signalSummary });
+      setSaved(true);
+      onChanged();
+    } catch (e) { notify('Could not save', profileErrorMessage(e)); } finally { setBusy(false); }
   };
   return (
     <View>
@@ -329,6 +341,16 @@ export function ContactEditor({ onChanged }: { onChanged: () => void }) {
       <Field label="LAST NAME" value={last} onChangeText={(v) => { setSaved(false); setLast(v); }} error={errors.last} autoCapitalize="words" />
       <Field label="PHONE" value={phone} onChangeText={(v) => { setSaved(false); setPhone(v); }} error={errors.phone} keyboardType="phone-pad" placeholder="(614) 555-0100" />
       <Panel><BodyText>Email: {list.data?.email || 'Not set'}</BodyText></Panel>
+      <Field
+        label="SIGNAL BACKGROUND (OPTIONAL)"
+        value={signalSummary}
+        onChangeText={(v) => { setSaved(false); setSignalSummary(v); }}
+        multiline
+        maxLength={500}
+        optional
+        hint="One line about your work background. Signal uses this for job fit, cover letters, and interview prep — never shown publicly."
+        placeholder="Warehouse, forklift, customer service, CDL…"
+      />
       <PrimaryButton label="SAVE" onPress={() => void submit()} busy={busy} />
       {saved ? <StatusLine tone="success">Saved.</StatusLine> : null}
     </View>

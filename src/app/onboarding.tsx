@@ -37,6 +37,7 @@ type Step = {
 function buildProfilePayload(
   answers: Record<number, string[]>,
   textAnswers: Record<number, string>,
+  experienceLine: string,
   complete: boolean,
 ) {
   const goals = new Set(answers[0] ?? []);
@@ -59,6 +60,9 @@ function buildProfilePayload(
     work_preferences: wh.filter((x) => WORK_CHOICES.includes(x)),
     housing_preferences: wh.filter((x) => HOUSING_CHOICES.includes(x)),
     ai_preferences: focus.filter((x) => FOCUS_CHOICES.slice(16).includes(x)),
+    ...(experienceLine.trim()
+      ? { experience_summary: experienceLine.trim().slice(0, 500) }
+      : {}),
     ...(complete
       ? { onboarding_completed: true, onboarding_completed_at: new Date().toISOString() }
       : {}),
@@ -110,6 +114,7 @@ export default function OnboardingScreen() {
   const [stepIndex, setStepIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string[]>>({});
   const [textAnswers, setTextAnswers] = useState<Record<number, string>>({});
+  const [experienceLine, setExperienceLine] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
 
@@ -163,7 +168,7 @@ export default function OnboardingScreen() {
 
     const { error } = await supabase
       .from('profiles')
-      .update(buildProfilePayload(answers, textAnswers, complete))
+      .update(buildProfilePayload(answers, textAnswers, experienceLine, complete))
       .eq('id', user.id);
 
     if (error) {
@@ -280,6 +285,22 @@ export default function OnboardingScreen() {
                 returnKeyType="next"
                 onSubmitEditing={() => void goNext()}
               />
+              {stepIndex === 1 ? (
+                <>
+                  <Text style={[styles.privacyNote, { marginTop: 22, color: LIME, fontWeight: '800', fontSize: 10, letterSpacing: 1 }]}>
+                    OPTIONAL — HELPS SIGNAL
+                  </Text>
+                  <TextInput
+                    value={experienceLine}
+                    onChangeText={setExperienceLine}
+                    placeholder="One line about your work background (e.g. warehouse, customer service, CDL)"
+                    placeholderTextColor="#666C66"
+                    autoCapitalize="sentences"
+                    style={[styles.input, { marginTop: 10, minHeight: 52 }]}
+                    maxLength={500}
+                  />
+                </>
+              ) : null}
               <Text style={styles.privacyNote}>Used for matching. Never shown publicly by default.</Text>
             </View>
           )}

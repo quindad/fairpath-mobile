@@ -5,7 +5,7 @@ import { Linking, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { supabase } from '../../lib/supabase';
-import { CURRENT_TERMS_VERSION, CURRENT_PRIVACY_VERSION } from '@/core/profile/consent-service';
+import { hasCurrentDocumentConsent } from '@/core/profile/consent-status';
 import { resolveNextRouteForSignedInUser } from '@/core/auth/post-auth-route';
 import { parseRecoveryRedirect } from '@/core/auth/password-recovery';
 
@@ -40,9 +40,7 @@ export default function AuthCallbackScreen() {
         .select('terms_accepted_at,terms_accepted_version,privacy_accepted_at,privacy_accepted_version')
         .eq('id', identity.user.id).maybeSingle();
       if (error) throw error;
-      if (!data || !data.terms_accepted_at || !data.privacy_accepted_at ||
-          data.terms_accepted_version !== CURRENT_TERMS_VERSION ||
-          data.privacy_accepted_version !== CURRENT_PRIVACY_VERSION) {
+      if (!(await hasCurrentDocumentConsent(identity.user.id, data))) {
         if (active) {
           setState('success');
           setMessage('Account verified. Please review and accept the current Terms and Privacy Policy.');

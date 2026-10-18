@@ -116,16 +116,33 @@ export async function savePreferences(patch: Partial<JobPreferences>) {
 }
 
 export type ContactInfo = { first_name: string; last_name: string; phone: string; zip_code: string; search_radius_miles: number };
-export async function loadContact(): Promise<ContactInfo & { email: string }> {
+export async function loadContact(): Promise<ContactInfo & { email: string; experience_summary: string }> {
   const user = await currentUser();
-  const { data, error } = await supabase.from('profiles').select('first_name,last_name,phone,zip_code,search_radius_miles').eq('id', user.id).single();
+  const { data, error } = await supabase.from('profiles').select('first_name,last_name,phone,zip_code,search_radius_miles,experience_summary').eq('id', user.id).single();
   if (error) throw error;
-  return { first_name: data?.first_name ?? '', last_name: data?.last_name ?? '', phone: data?.phone ?? '', zip_code: data?.zip_code ?? '', search_radius_miles: data?.search_radius_miles ?? 25, email: user.email ?? '' };
+  return {
+    first_name: data?.first_name ?? '',
+    last_name: data?.last_name ?? '',
+    phone: data?.phone ?? '',
+    zip_code: data?.zip_code ?? '',
+    search_radius_miles: data?.search_radius_miles ?? 25,
+    email: user.email ?? '',
+    experience_summary: data?.experience_summary ?? '',
+  };
 }
-export async function saveContact(input: { first_name: string; last_name: string; phone: string }) {
+export async function saveContact(input: { first_name: string; last_name: string; phone: string; experience_summary?: string }) {
   const user = await currentUser();
   const digits = input.phone.replace(/[^0-9]/g, '');
-  const { error } = await supabase.from('profiles').update({ first_name: input.first_name.trim(), last_name: input.last_name.trim(), phone: digits || null, updated_at: new Date().toISOString() }).eq('id', user.id);
+  const patch: Record<string, unknown> = {
+    first_name: input.first_name.trim(),
+    last_name: input.last_name.trim(),
+    phone: digits || null,
+    updated_at: new Date().toISOString(),
+  };
+  if (input.experience_summary !== undefined) {
+    patch.experience_summary = input.experience_summary.trim().slice(0, 500) || null;
+  }
+  const { error } = await supabase.from('profiles').update(patch).eq('id', user.id);
   if (error) throw error;
 }
 

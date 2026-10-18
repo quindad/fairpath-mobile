@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { CURRENT_PRIVACY_VERSION, CURRENT_TERMS_VERSION } from '@/core/profile/consent-service';
+import { hasCurrentDocumentConsent } from '@/core/profile/consent-status';
 
 /**
  * Where a signed-in user should land right now: mid-onboarding users (closed the app after verifying email but
@@ -12,10 +12,7 @@ export async function resolveNextRouteForSignedInUser(): Promise<string | null> 
   const { data: profile } = await supabase.from('profiles')
     .select('terms_accepted_at,terms_accepted_version,privacy_accepted_at,privacy_accepted_version,onboarding_completed')
     .eq('id', identity.user.id).maybeSingle();
-  const consentOk = Boolean(
-    profile?.terms_accepted_at && profile?.privacy_accepted_at &&
-    profile.terms_accepted_version === CURRENT_TERMS_VERSION && profile.privacy_accepted_version === CURRENT_PRIVACY_VERSION
-  );
+  const consentOk = await hasCurrentDocumentConsent(identity.user.id, profile);
   if (!consentOk) return '/accept-terms';
   if (!profile?.onboarding_completed) return '/onboarding';
   return '/home';

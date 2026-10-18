@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FormScrollView } from '@/components/FormScrollView';
 import * as DocumentPicker from 'expo-document-picker';
 import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
@@ -67,7 +68,7 @@ export default function LetterExplainerScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="SIGNAL" title="Explain a letter" backTo="/credit" />
-      <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+      <FormScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
         <Text style={s.lead}>
           Take a clear photo of mail or a notice (bureau, court, landlord, etc.). Signal summarizes what it says in plain English. This is not legal advice.
         </Text>
@@ -94,7 +95,7 @@ export default function LetterExplainerScreen() {
             <Text style={s.resultText}>{result}</Text>
           </View>
         ) : null}
-      </ScrollView>
+      </FormScrollView>
     </ScreenFrame>
   );
 }
