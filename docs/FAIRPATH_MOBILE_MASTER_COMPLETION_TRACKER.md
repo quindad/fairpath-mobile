@@ -163,7 +163,13 @@ Member loop: `docs/RECORD_RELIEF_MEMBER_LOOP_E2E.md` · Automated: `npm run test
 
 ## PHASE 15 — Supabase DEV ops (126–135)
 
-- [ ] **126–135** (migrations apply — APPROVAL REQUIRED on DEV)
+Runbook: `docs/DEV_SUPABASE_MOBILE_V1_MIGRATIONS.md` (operator checklist table)
+
+- [x] **126–129** Documented: link DEV, migration list, review pending batch
+- [ ] **130** `supabase db push` on DEV (**operator** — approval required)
+- [ ] **131–132** SQL verify RPC + profile columns on cloud
+- [ ] **133–134** Accept-terms + onboarding smoke on DEV app
+- [x] **135** Evidence template + local proof (`test:sql:consent`, `test:all` 63/63)
 
 ## PHASE 16 — QA (136–152)
 

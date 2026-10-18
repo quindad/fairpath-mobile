@@ -16,15 +16,34 @@ These migrations unblock **Task 018** (accept-terms persistence) and related mob
 
 Earlier dependency: `20261015130000_record_document_consent.sql` must already be on DEV (creates the RPC). If sign-up consent fails with “function does not exist”, push from an earlier baseline or apply that file first.
 
-## Apply on DEV (operator)
+## Operator checklist (Phase 15 — Tasks 126–135)
+
+Use this on **`fairpath-mobile-dev` only** (`znvhmuhojvwvjzmaqwff`). **Never** `db push` to production (`rqpczemdagoddhuwefxt`) from this branch without explicit release approval.
+
+| Step | Task | Action | Done |
+| ---: | --- | --- | --- |
+| 1 | **126** | Confirm CLI login: `npx supabase projects list` shows DEV **linked: true** | ☐ |
+| 2 | **127** | From repo root: `npx supabase link --project-ref znvhmuhojvwvjzmaqwff` (if not linked) | ☐ |
+| 3 | **128** | `npx supabase migration list` — screenshot or paste pending vs applied | ☐ |
+| 4 | **129** | Review pending files match table below; no surprise drops | ☐ |
+| 5 | **130** | `npx supabase db push` — confirm only DEV ref when prompted | ☐ |
+| 6 | **131** | SQL verify: `record_document_consent` exists (`20261015130000` or earlier on DEV) | ☐ |
+| 7 | **132** | SQL verify: profile columns after push (`terms_accepted_at`, `experience_summary` if migration applied) | ☐ |
+| 8 | **133** | Run consent queries in [Verify accept-terms sync](#verify-accept-terms-sync-sql-editor-on-dev) for one test user | ☐ |
+| 9 | **134** | App smoke: accept-terms once → no loop (checklist below) | ☐ |
+| 10 | **135** | Record evidence in tracker / PR comment: migration list output + test user id (no secrets) | ☐ |
+
+**Rollback:** do not `db reset` on shared DEV. If a migration fails, fix forward with a new migration file — do not revert production-like data without owner approval.
+
+## Apply on DEV (commands)
 
 Prerequisites: [Supabase CLI](https://supabase.com/docs/guides/cli) logged in, project linked to DEV (not production).
 
 ```powershell
 cd fairpath-mobile
-supabase link --project-ref znvhmuhojvwvjzmaqwff
-supabase migration list
-supabase db push
+npx supabase link --project-ref znvhmuhojvwvjzmaqwff
+npx supabase migration list
+npx supabase db push
 ```
 
 Review the pending list before confirming. **Do not** use `db reset` on shared DEV.
@@ -59,9 +78,22 @@ Both profile pointers and ledger rows should show version `v1` and non-null time
 ```powershell
 npm run test:sql:consent
 npm run test:auth
+npm run test:all
 ```
 
-`test:sql:consent` applies all migrations locally (PGlite) and asserts `record_document_consent` updates `profiles`.
+`test:sql:consent` applies all migrations locally (PGlite) and asserts `record_document_consent` updates `profiles`. Full suite **63/63** does not replace cloud `db push` — it only proves repo migrations apply cleanly in isolation.
+
+## Post-push regression (operator machine)
+
+After **130**, from repo with `.env.local` pointing at DEV:
+
+```powershell
+npm run typecheck
+npm run test:all
+npm run qa:dev-anon
+```
+
+Optional member flows: `docs/AUTH_E2E_BROWSER_CHECKLIST.md`, `docs/NEW_USER_JOURNEY_E2E.md`.
 
 ## Client fallback (already shipped)
 

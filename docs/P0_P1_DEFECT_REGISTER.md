@@ -8,7 +8,7 @@ Status: **OPEN** | **MITIGATED** (honest UI / blocked path) | **CLOSED** (eviden
 
 | ID | Summary | Status | Evidence / mitigation | Owner |
 | --- | --- | --- | --- | --- |
-| P0-001 | DEV cloud migrations not applied / not reconciled with repo | OPEN | Runbook `DEV_SUPABASE_MOBILE_V1_MIGRATIONS.md`; `test:sql` local only | Operator |
+| P0-001 | DEV cloud migrations not applied / not reconciled with repo | OPEN | Operator checklist **126–135** in `DEV_SUPABASE_MOBILE_V1_MIGRATIONS.md`; `test:sql` local only | Operator |
 | P0-002 | Sign in with Apple not proven on physical iOS dev build | OPEN | Task **013**; capability + Supabase provider | Sterling |
 | P0-003 | Google native OAuth not proven on device | OPEN | Task **014**; OAuth client + Supabase | Sterling |
 | P0-004 | Signal Edge provider secrets unset → no live model text proof | MITIGATED | Fallbacks in `signal.ts`; deploy OK — `SIGNAL_DEV_DEPLOY.md` | Operator |
