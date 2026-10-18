@@ -10,7 +10,7 @@
 | Metric | Count |
 |--------|------:|
 | Completed (verified) | Phases 2–4 partial, 5–11 member loops (automated), 8 Signal deploy |
-| In progress | Phase 0 (007/009), manual DEV proofs, legal gate 071 |
+| In progress | Manual DEV proofs, legal gate 071, Phase 13+ |
 | Blocked (external) | Signal **model smoke** (Edge secrets + device), DEV migrations apply on cloud, Apple/Google device OAuth, IAP sandbox |
 | Remaining | 152+ |
 
@@ -37,9 +37,9 @@
 - [x] **004** Create master tracker (this file)
 - [x] **005** Baseline quality (typecheck, test:all)
 - [x] **006** Route inventory → `docs/FAIRPATH_ROUTE_INVENTORY.md`
-- [ ] **007** Feature-to-backend matrix
+- [x] **007** Feature-to-backend matrix → `docs/FEATURE_BACKEND_MATRIX.md`
 - [x] **008** Environment isolation (.env.example → DEV ref only)
-- [ ] **009** P0/P1 defect register
+- [x] **009** P0/P1 defect register → `docs/P0_P1_DEFECT_REGISTER.md`
 
 ## PHASE 1 — Authentication (010–020)
 
