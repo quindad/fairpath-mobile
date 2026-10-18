@@ -88,7 +88,19 @@
 
 ## PHASE 5 — Jobs (043–053)
 
-- [ ] **043–053** (see Master Directive; member loop doc `JOBS_MEMBER_LOOP_E2E.md` + `test:jobs` loop checks)
+Member loop: `docs/JOBS_MEMBER_LOOP_E2E.md` · Automated: `npm run test:jobs`, `npm run test:sql:jobs-e2e`
+
+- [x] **043** Find jobs discovery (`/find-jobs`, guest `search_jobs`, pagination, error clears stale rows)
+- [x] **044** WHERE / radius / filter modal (saved ZIP, 10–100 mi, remote + second-chance filters)
+- [x] **045** List ↔ map (`JobMap`, pin → details, no duplicate map controls)
+- [x] **046** Job detail CTAs (Easy Apply, save, Signal, signed-out `returnTo`)
+- [x] **047** Saved jobs (`/saved-jobs`, save/unsave RPC, auth gate)
+- [x] **048** Signal on job (fit explanation + cover letter draft hooks)
+- [x] **049** Easy Apply (`/job-apply/[id]`, minimum fields, Opportunity Profile autofill, `ALREADY_APPLIED`)
+- [x] **050** Applications hub (`/job-applications`, refresh, deep links)
+- [x] **051** Application detail (timeline, withdraw, interview prep Signal)
+- [x] **052** Saved job searches (save from find-jobs, `/saved-job-searches`, honest alert copy)
+- [ ] **053** DEV cloud member loop proof (manual browser/device on published DEV jobs + optional Signal secrets)
 
 ## PHASE 6 — Housing (054–060)
 

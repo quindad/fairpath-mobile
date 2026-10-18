@@ -113,6 +113,20 @@ check(/ALREADY_APPLIED/.test(applyScreen), 'Easy Apply must handle duplicate sub
 const saved = read('src/app/saved-jobs.tsx');
 check(/loadSavedJobs|saved_jobs/.test(saved), 'saved jobs screen must load server-side bookmarks.');
 
+const appsHub = read('src/app/job-applications.tsx');
+check(/loadMyJobApplications/.test(appsHub) && /job-application\//.test(appsHub), 'My applications must load RPC list and open application detail.');
+check(/returnTo=\/job-applications/.test(appsHub), 'signed-out access to applications must preserve returnTo.');
+
+const appDetail = read('src/app/job-application/[id].tsx');
+check(/withdrawMyJobApplication/.test(appDetail) && /prepareForInterview/.test(appDetail), 'application detail must support withdraw and Signal interview prep.');
+check(/loadJobApplicationEvents/.test(appDetail), 'application detail must load the employer/applicant event timeline.');
+check(!/date_of_birth|HOME ADDRESS/.test(appDetail), 'application detail must not surface DOB or home address to the member UI.');
+
+const savedSearches = read('src/app/saved-job-searches.tsx');
+check(/loadSavedJobSearches/.test(savedSearches) && /deleteSavedJobSearch/.test(savedSearches), 'saved job searches must list and delete server-side rows.');
+check(/router\.push\(\('\/find-jobs\?'/.test(savedSearches), 'saved searches must reopen find-jobs with query params.');
+check(/saveJobSearch/.test(find) && /saved-job-searches/.test(find), 'find-jobs must save searches and link to the saved-search hub.');
+
 // Regression: Easy Apply's skills/certifications/desired-roles/education autofill must read the Opportunity Profile
 // tables FIRST (member_skills, member_credentials, member_education, member_job_preferences) — the profile screens
 // the app actually surfaces — with the legacy profile_answers questionnaire only as a fallback. Reading legacy-only

@@ -32,7 +32,20 @@ Requires DEV Edge deploy + secrets: `docs/SIGNAL_DEV_DEPLOY.md`.
 
 ## 5. Applications hub
 
-1. `/job-applications` lists submitted apps; interview prep Signal available from application detail when implemented on screen.
+1. `/job-applications` lists submitted apps (pull to refresh); tap a row → `/job-application/{id}`.
+2. Detail shows status copy, submitted profile fields (whitelist only — no DOB/address), and event timeline.
+3. **Withdraw** when status is submitted/viewed/interview/offer → status **WITHDRAWN** via `withdraw_job_application` RPC.
+4. **Interview prep (Signal)** on detail → text or honest fallback (credits/rate limit).
+
+## 6. Saved searches
+
+1. On `/find-jobs`, run filters/query → **Save search** (bookmark control).
+2. `/saved-job-searches` lists saved rows; **Run search** reopens find-jobs with the same query/location/filter params.
+3. Delete removes the row server-side. Alert copy is honest: notifications match **search text + location**, not every filter yet.
+
+## 7. Local SQL boundary (CI)
+
+`npm run test:sql:jobs-e2e` — submit/duplicate/withdraw, RLS, and employer-safe fields (no network).
 
 ## Preconditions
 
