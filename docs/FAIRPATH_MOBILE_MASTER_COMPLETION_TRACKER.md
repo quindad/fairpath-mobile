@@ -91,6 +91,8 @@
 
 ## PHASE 6 — Housing (054–060)
 
+- Member loop doc: `HOUSING_MEMBER_LOOP_E2E.md` (+ extended `test:housing` checks)
+
 - [ ] **054–060** (see Master Directive; FastTrack gated off)
 
 ## PHASE 7 — Record Relief (061–071)

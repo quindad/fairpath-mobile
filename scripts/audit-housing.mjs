@@ -179,6 +179,10 @@ if(!/onOpen=\{onOpen\}/.test(read('src/components/HousingMap.web.tsx')))failures
  if(!/sending\.current/.test(inq)||!/setError\(/.test(inq)||!/not a chat|not a full messaging/i.test(inq))failures.push('Inquiry must be double-tap safe, show errors, and state it is one-shot (not messaging).');
  if(!/notify\('Could not remove saved home'/.test(saved))failures.push('Saved-home removal must surface failures.');
  if(!/saveHousingSearch/.test(browse)||!/housingFiltersFromRecord\(params\)/.test(browse)||!/deleteSavedHousingSearch/.test(read('src/app/saved-housing-searches.tsx')))failures.push('Saved searches must be saved, restored and removable.');
+ if(!/explainHousingFit/.test(detailSrc)||!/saveHousing/.test(detailSrc)||!/unsaveHousing/.test(detailSrc))failures.push('Housing detail must expose Signal fit and saved-home toggles.');
+ if(!/returnTo=.*encodeURIComponent\('\/housing\/'\+item\.id\)/.test(detailSrc))failures.push('Signed-out housing save/Signal/apply must preserve returnTo for this listing.');
+ if(!/loadSavedHousing/.test(saved))failures.push('saved-homes must load bookmarks via loadSavedHousing.');
+ if(!/housing-apply\/new\?listing=/.test(detailSrc)||!/save_housing_application_draft/.test(svc))failures.push('Member loop must start apply without a draft until save_housing_application_draft runs.');
  if(!/ABOUT THIS HOME/.test(detailSrc)||!/NO PROPERTY PHOTOS/.test(detailSrc))failures.push('Property details must show the description and an honest no-photo state.');
  // fake data / overlap
  for(const f of ['src/app/housing/[id].tsx','src/app/housing-apply/[id].tsx','src/app/housing-application/[id].tsx','src/app/find-housing.tsx'])if(/DEMO_|demo-media|mockListings|sampleHomes/i.test(read(f)))failures.push(f+' contains fake fallback data.');
