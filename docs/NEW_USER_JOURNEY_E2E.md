@@ -2,6 +2,18 @@
 
 Automated: `npm run test:onboarding`, `npm run test:auth`, `npm run test:auth-post-auth`, `npm run test:sql:consent`.
 
+## Onboarding steps (021–029)
+
+| Step | Eyebrow | Captures |
+| --- | --- | --- |
+| 1 | START WITH YOU | Goals (work, housing, reentry, veteran, etc.) |
+| 2 | YOUR LOCATION | `location_text` + optional `experience_summary` |
+| 3 | YOUR TOOLS | Reentry / veteran tools → `justice_impacted` (private) |
+| 4 | WORK & HOME | Work + housing preference chips |
+| 5 | YOUR FOCUS | Opportunity + AI focus preferences |
+
+Automated invariants: `npm run test:onboarding`.
+
 ## Happy path (email, DEV)
 
 1. **Sign up** → check-email or instant session (`docs/AUTH_E2E_BROWSER_CHECKLIST.md`).

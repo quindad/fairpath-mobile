@@ -18,6 +18,11 @@ check(/finishLater[\s\S]*router\.replace\('\/find-jobs'\)/.test(onboarding), 'Fi
 check(/buildProfilePayload/.test(onboarding) && /experience_summary/.test(onboarding), 'Location step may capture experience_summary for Signal.');
 check(/!profile\?\.onboarding_completed/.test(postAuth), 'Post-auth routing must send incomplete members to /onboarding.');
 check(/pathname==='\/onboarding'/.test(layout) && /PUBLIC_BROWSE\(pathname\)/.test(layout), 'Root layout must allow browse routes while onboarding is incomplete.');
+check(/Reentry & record relief/.test(onboarding) && /Veteran transition/.test(onboarding), 'Onboarding must offer reentry and veteran tool choices without employer labeling.');
+check(/justice_impacted:/.test(onboarding) && /experience_summary/.test(onboarding), 'Profile payload must map tools to justice_impacted and optional experience_summary.');
+check(/Finish later — browse jobs and housing first/.test(onboarding), 'Finish later affordance must be visible on early steps.');
+check(/FormScrollView/.test(onboarding) && /progress/.test(onboarding), 'Onboarding must scroll safely with keyboard and show step progress.');
+check(/router\.replace\('\/home'\)/.test(onboarding), 'Completing onboarding must land on Home.');
 
 if (failures.length) {
   console.error('Onboarding audit failed:\n- ' + failures.join('\n- '));

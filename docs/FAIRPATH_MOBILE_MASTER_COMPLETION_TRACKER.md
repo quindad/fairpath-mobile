@@ -57,16 +57,18 @@
 
 ## PHASE 2 — Onboarding (021–030)
 
-- [ ] **021** Review five-step onboarding
-- [ ] **022** Welcome experience
-- [ ] **023** Personalize goals → Home
-- [ ] **024** Location collection
-- [ ] **025** Reentry information respect
-- [ ] **026** Veteran preferences
-- [ ] **027** Experience summary + migration
+Journey: `docs/NEW_USER_JOURNEY_E2E.md` · Automated: `npm run test:onboarding`
+
+- [x] **021** Five-step funnel (goals → location → tools → work/home → focus)
+- [x] **022** Welcome copy on step 1 (progress bar, back to browse on step 0)
+- [x] **023** Goals persisted → Home personalization (`goals`, `homeQuickLinks` — `test:home`)
+- [x] **024** Location collection (`location_text`, saved search radius via profile)
+- [x] **025** Reentry tools (`justice_impacted`, private copy — not employer-facing)
+- [x] **026** Veteran transition tools (optional step 3, merged into goals)
+- [x] **027** Experience summary on location step (optional `experience_summary`, max 500 chars)
 - [x] **028** Finish later / resume (partial save → `/find-jobs`; private routes resume `/onboarding`)
-- [ ] **029** Onboarding polish
-- [x] **030** Full new-user journey E2E (`docs/NEW_USER_JOURNEY_E2E.md`, `npm run test:onboarding`)
+- [x] **029** UX polish (FormScrollView, progress, error/retry on save)
+- [x] **030** Full new-user journey E2E (`docs/NEW_USER_JOURNEY_E2E.md`, auth + onboarding audits)
 
 ## PHASE 3 — Home (031–038)
 
