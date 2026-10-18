@@ -1,8 +1,8 @@
 # FairPath Mobile — Master Completion Tracker
 
 **Branch:** `development/mobile-v1-completion`  
-**HEAD (session start):** `12a2572`  
-**Test baseline:** `npm run test:all` → **63/63**; `npm run typecheck` → pass  
+**HEAD (session start):** see `git log -1`  
+**Test baseline:** `npm run test:all` → **63/63**; `npm run typecheck` → pass; `test:signal-deploy` → pass (17 aligned)  
 **Directive:** FAIRPATH MOBILE — MASTER COMPLETION DIRECTIVE (160 tasks)
 
 ## Progress snapshot
@@ -11,14 +11,15 @@
 |--------|------:|
 | Completed (verified) | 8 |
 | In progress | Phase 3 Home |
-| Blocked (external) | Signal **live** deploy (runbook ready), DEV migrations apply on cloud, Apple/Google device OAuth, IAP sandbox |
+| Blocked (external) | Signal **model smoke** (Edge secrets + device), DEV migrations apply on cloud, Apple/Google device OAuth, IAP sandbox |
 | Remaining | 152+ |
 
 ## Evidence log (newest first)
 
 | Task | Status | Evidence |
 |------|--------|----------|
-| 034 | in progress | Home loads `get_member_home_summary` for application/saved counts |
+| 072–085 | done (deploy) | 17 functions on DEV; `npm run test:signal-deploy`; runbook `SIGNAL_DEV_DEPLOY.md`; live text needs secrets |
+| 034 | done | Home loads `get_member_home_summary` for application/saved counts |
 | 032 | in progress | Home greeting uses `first_name` from personalization |
 | 006 | done | `docs/FAIRPATH_ROUTE_INVENTORY.md` |
 | 005 | done | typecheck pass; test:all 55/55 |

@@ -12,6 +12,8 @@ npm run test:signal-deploy
 npm run deploy:signal:dev -- --dry-run
 ```
 
+Dry-run must print project **`znvhmuhojvwvjzmaqwff`**. On Windows, `npm` can inject extra argv; the deploy script ignores non-ref tokens and falls back to `FAIRPATH_DEV_PROJECT_REF` or the DEV ref above. Override explicitly: `node scripts/deploy-dev-signal.mjs znvhmuhojvwvjzmaqwff --dry-run`.
+
 ## Edge secrets (DEV)
 
 Set **at least one** provider key (chain skips missing providers):

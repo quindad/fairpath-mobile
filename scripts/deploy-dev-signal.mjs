@@ -9,8 +9,10 @@
 import { spawnSync } from 'node:child_process';
 
 const dryRun = process.argv.includes('--dry-run');
+const REF_RE = /^[a-z0-9]{20}$/;
 const positional = process.argv.slice(2).filter((a) => a !== '--dry-run' && !a.startsWith('-'));
-const ref = positional[0] || process.env.FAIRPATH_DEV_PROJECT_REF || 'znvhmuhojvwvjzmaqwff';
+const refArg = positional.find((a) => REF_RE.test(a));
+const ref = refArg || process.env.FAIRPATH_DEV_PROJECT_REF || 'znvhmuhojvwvjzmaqwff';
 const fns = [
   'job-fit-explanation',
   'cover-letter-draft',
