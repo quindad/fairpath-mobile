@@ -1,16 +1,16 @@
 # FairPath Mobile — Master Completion Tracker
 
 **Branch:** `development/mobile-v1-completion`  
-**HEAD (session start):** see `git log -1`  
-**Test baseline:** `npm run test:all` → **63/63**; `npm run typecheck` → pass; `test:signal-deploy` → pass (17 aligned)  
+**HEAD (session start):** `b098aca` (after regression: see latest commit)  
+**Test baseline (2026-10-17):** `npm run typecheck` → pass; `npm run test:all` → **63/63**  
 **Directive:** FAIRPATH MOBILE — MASTER COMPLETION DIRECTIVE (160 tasks)
 
 ## Progress snapshot
 
 | Metric | Count |
 |--------|------:|
-| Completed (verified) | 8 |
-| In progress | Phase 3 Home |
+| Completed (verified) | Phases 2–4 partial, 5–11 member loops (automated), 8 Signal deploy |
+| In progress | Phase 0 (007/009), manual DEV proofs, legal gate 071 |
 | Blocked (external) | Signal **model smoke** (Edge secrets + device), DEV migrations apply on cloud, Apple/Google device OAuth, IAP sandbox |
 | Remaining | 152+ |
 
