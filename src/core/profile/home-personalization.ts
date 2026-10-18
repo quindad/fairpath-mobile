@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 
 export type HomePersonalization = {
+  firstName: string | null;
   goals: string[];
   locationText: string | null;
   experienceSummary: string | null;
@@ -26,11 +27,12 @@ export async function loadHomePersonalization(): Promise<HomePersonalization | n
   if (!identity.user) return null;
   const { data, error } = await supabase
     .from('profiles')
-    .select('goals,location_text,experience_summary,work_preferences,housing_preferences')
+    .select('first_name,goals,location_text,experience_summary,work_preferences,housing_preferences')
     .eq('id', identity.user.id)
     .maybeSingle();
   if (error || !data) return null;
   return {
+    firstName: data.first_name?.trim() || null,
     goals: Array.isArray(data.goals) ? data.goals : [],
     locationText: data.location_text ?? null,
     experienceSummary: data.experience_summary ?? null,
