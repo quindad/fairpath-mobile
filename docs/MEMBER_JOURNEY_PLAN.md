@@ -30,10 +30,11 @@ Ship order for **sign-up → daily use → trust**. Each phase has a PASS gate b
 
 ## Phase 3 — Core loops (week 2–3)
 
-- Jobs: save, apply, applications list.
-- Housing: search, apply (single path; FastTrack hidden from members).
-- Resources + Early Access honest empty states.
+- Jobs: save, apply, applications list. **In progress:** home shortcuts to applications/saved jobs; nested save button fix on web.
+- Housing: search, apply (single path; FastTrack hidden from members). **Shipped:** `HOUSING_FASTTRACK_MEMBER_ENABLED = false`.
+- Resources + Early Access honest empty states. **Shipped:** national tools + low-coverage copy on Early Access.
 - Credit studio upload → review → dispute draft.
+- **DEV Signal deploy:** `npm run deploy:signal:dev` (after API keys in Supabase secrets).
 
 ## Phase 4 — Trust & money (week 4+)
 

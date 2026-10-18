@@ -82,6 +82,7 @@
     "test:notification-events": "node scripts/audit-notification-events.mjs",
     "test:observability": "node scripts/audit-observability.mjs",
     "test:all": "node scripts/run-all-tests.mjs",
+    "deploy:signal:dev": "node scripts/deploy-dev-signal.mjs",
     "test:sql:credit": "node scripts/test-local-credit.mjs",
     "test:sql:relief": "node scripts/test-local-relief.mjs",
     "test:client-user-id": "node scripts/test-client-user-id.mjs",
