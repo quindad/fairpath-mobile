@@ -117,7 +117,19 @@ Member loop: `docs/HOUSING_MEMBER_LOOP_E2E.md` · Automated: `npm run test:housi
 
 ## PHASE 7 — Record Relief (061–071)
 
-- [ ] **061–071** (preserve engine; legal QA)
+Member loop: `docs/RECORD_RELIEF_MEMBER_LOOP_E2E.md` · Automated: `npm run test:relief`, `npm run test:sql:relief`, `npm run test:relief-fixtures`
+
+- [x] **061** Hub (`/record-relief`, disclaimer, case list, add entry)
+- [x] **062** Coverage + jurisdiction catalog (verified-only reads; TEST DATA labeled)
+- [x] **063** Add case validation (`validateCase`, payload without guessing unknowns)
+- [x] **064** Shared evaluation (`evaluate-record-relief` Edge, `reevaluateCase`)
+- [x] **065** Case workspace hedged outcomes (stale/changed rules, federal branch)
+- [x] **066** Document exports (summary/checklist/worksheet/forms guide; registry rules)
+- [x] **067** Scan packet consent + packet service (no silent uploads)
+- [x] **068** SQL boundaries (RLS, no anon grants, no unverified rules in migration)
+- [x] **069** Checklist + filing status on case screen
+- [x] **070** Legal-safety wording audit (no overclaims across relief screens)
+- [ ] **071** Legal review gate + live DEV proof (`RECORD_RELIEF_LEGAL_REVIEW_GATE.md`, operator QA)
 
 ## PHASE 8 — Signal AI (072–085)
 
