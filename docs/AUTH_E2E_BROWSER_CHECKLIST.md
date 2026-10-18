@@ -36,6 +36,7 @@ Use `dev-free@fairpath.test` (password in your vault). Expo web: often `http://l
 ## Automated gates
 
 - `npm run test:auth` — screen inventory, email/password funnels, recovery invariants, public routes.
+- `npm run test:auth-boundaries` — guest vs member routes, account_type lock, no partner/employer screens.
 - `npm run test:auth-post-auth` — `returnTo` only applies after terms + onboarding (`applyPostAuthReturnTo`).
 - `npm run test:sql:consent` — `record_document_consent` syncs profile pointers (Task 018).
 

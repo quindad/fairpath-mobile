@@ -52,7 +52,7 @@
 - [x] **017** Post-auth routing comprehensive (`resolvePostAuthRoute` on accept-terms + instant sign-up session; browser proof: `docs/AUTH_E2E_BROWSER_CHECKLIST.md`)
 - [x] **018** Accept-terms persistence + DEV migration (RPC sync + ledger fallback; runbook `DEV_SUPABASE_MOBILE_V1_MIGRATIONS.md`; apply on DEV Supabase)
 - [x] **019** Account recovery (forgot/reset + PKCE tests; manual inbox link optional)
-- [ ] **020** Authorization boundaries
+- [x] **020** Authorization boundaries (`npm run test:auth-boundaries`, `docs/AUTH_AUTHORIZATION_BOUNDARIES.md`)
 
 ## PHASE 2 — Onboarding (021–030)
 
