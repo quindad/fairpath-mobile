@@ -2,7 +2,7 @@
 
 **Branch:** `development/mobile-v1-completion`  
 **HEAD (session start):** `12a2572`  
-**Test baseline:** `npm run test:all` → **59/59** (includes auth-boundaries, onboarding, signal-deploy audits); `npm run typecheck` → pass  
+**Test baseline:** `npm run test:all` → **60/60** (includes home, auth-boundaries, onboarding, signal-deploy audits); `npm run typecheck` → pass  
 **Directive:** FAIRPATH MOBILE — MASTER COMPLETION DIRECTIVE (160 tasks)
 
 ## Progress snapshot
@@ -69,14 +69,14 @@
 
 ## PHASE 3 — Home (031–038)
 
-- [ ] **031** Audit home + HomeStatus
-- [ ] **032** Personalized hero greeting
-- [ ] **033** Quick actions
-- [ ] **034** Application shortcuts with counts
-- [ ] **035** Recommended opportunities
-- [ ] **036** Member status cards
-- [ ] **037** Empty/loading/error states
-- [ ] **038** Responsive QA
+- [x] **031** Audit home + HomeStatus (`npm run test:home`)
+- [x] **032** Personalized hero greeting (first name + goals eyebrow)
+- [x] **033** Quick actions (goal pills via `homeQuickLinks`)
+- [x] **034** Application shortcuts with counts (`loadMemberSummary` strip)
+- [x] **035** Recommended opportunities (featured jobs + see all)
+- [x] **036** Member status cards (`HomeStatus` + readiness panel)
+- [x] **037** Empty/loading/error states (featured jobs + retry)
+- [ ] **038** Responsive QA (device/browser pass — manual)
 
 ## PHASE 4 — Explore (039–042)
 
