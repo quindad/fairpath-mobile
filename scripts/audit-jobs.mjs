@@ -101,6 +101,17 @@ check(/onOpen=\{onOpenJob\}/.test(nativeMap) && /onOpen=\{onOpenJob\}/.test(read
 // Job details CTA must sit above the global nav
 const detail = read('src/app/job/[id].tsx');
 check(!/position:\s*'absolute'/.test(detail), 'job details CTA must be in normal flow above the global nav, not absolutely positioned');
+check(/draftCoverLetter/.test(detail) && /explainJobFit/.test(detail), 'job details must expose Signal fit + cover letter drafts.');
+check(/saveJob/.test(detail) && /unsaveJob/.test(detail), 'job details must toggle saved_jobs.');
+check(/returnTo=.*encodeURIComponent\('\/job\/'\+job\.id\)/.test(detail), 'signed-out save/Signal/apply must preserve returnTo for this job.');
+check(!/<Pressable[^>]*onPress=\{apply\}[\s\S]*<Pressable[^>]*onPress=\{[^}]*save/.test(detail), 'apply CTA must not nest the save control (accessibility + tap target).');
+
+const applyScreen = read('src/app/job-apply/[id].tsx');
+check(/submitJobApplication/.test(applyScreen) && /router\.replace\(\('\/job-application\/'/.test(applyScreen), 'Easy Apply must submit via RPC and land on the application record.');
+check(/ALREADY_APPLIED/.test(applyScreen), 'Easy Apply must handle duplicate submission honestly.');
+
+const saved = read('src/app/saved-jobs.tsx');
+check(/loadSavedJobs|saved_jobs/.test(saved), 'saved jobs screen must load server-side bookmarks.');
 
 // Regression: Easy Apply's skills/certifications/desired-roles/education autofill must read the Opportunity Profile
 // tables FIRST (member_skills, member_credentials, member_education, member_job_preferences) — the profile screens

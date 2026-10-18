@@ -87,7 +87,7 @@
 
 ## PHASE 5 — Jobs (043–053)
 
-- [ ] **043–053** (see Master Directive)
+- [ ] **043–053** (see Master Directive; member loop doc `JOBS_MEMBER_LOOP_E2E.md` + `test:jobs` loop checks)
 
 ## PHASE 6 — Housing (054–060)
 
