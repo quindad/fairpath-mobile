@@ -18,6 +18,7 @@ const steps = [
   ['SQL: resources', NODE, ['scripts/test-local-resources.mjs']],
   ['SQL: opportunity profile', NODE, ['scripts/test-local-profile.mjs']],
   ['SQL: documents', NODE, ['scripts/test-local-documents.mjs']],
+  ['SQL: document consent', NODE, ['scripts/test-local-document-consent.mjs']],
   ['SQL: housing document gate', NODE, ['scripts/test-local-housing-documents.mjs']],
   ['SQL: notification delivery', NODE, ['scripts/test-local-notification-delivery.mjs']],
   ['notification worker mocks', NODE, ['scripts/test-notification-worker.mjs']],

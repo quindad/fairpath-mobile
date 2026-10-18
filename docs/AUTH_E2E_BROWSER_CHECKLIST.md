@@ -37,6 +37,9 @@ Use `dev-free@fairpath.test` (password in your vault). Expo web: often `http://l
 
 - `npm run test:auth` — screen inventory, email/password funnels, recovery invariants, public routes.
 - `npm run test:auth-post-auth` — `returnTo` only applies after terms + onboarding (`applyPostAuthReturnTo`).
+- `npm run test:sql:consent` — `record_document_consent` syncs profile pointers (Task 018).
+
+Before cloud QA, apply DEV migrations in `docs/DEV_SUPABASE_MOBILE_V1_MIGRATIONS.md`.
 
 ## DEV accounts (password in vault)
 

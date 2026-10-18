@@ -16,6 +16,7 @@ const forgotPassword = read('src/app/forgot-password.tsx');
 const resetPassword = read('src/app/reset-password.tsx');
 const acceptTerms = read('src/app/accept-terms.tsx');
 const checkEmail = read('src/app/check-email.tsx');
+const consentStatus = read('src/core/profile/consent-status.ts');
 
 // entry points
 check(/signInWithApple/.test(social) && /signInWithGoogle/.test(social), 'Apple and Google entry points must exist.');
@@ -68,6 +69,8 @@ check(/check-email\?email=/.test(signUp) && /data\.session/.test(signUp), 'Sign-
 check(/recordSignUpConsent/.test(signUp) && /data\.session/.test(signUp), 'Instant sign-up must record consent before post-auth routing.');
 check(/password\.length < 8/.test(signUp), 'Sign-up must enforce an 8-character minimum password.');
 check(/verification link/i.test(checkEmail), 'Check-email must explain verification next steps.');
+check(/ledgerHasCurrentDocumentConsent/.test(consentStatus) && /profileHasCurrentDocumentConsent/.test(consentStatus), 'Consent checks must use profile pointers with ledger fallback (accept-terms loop guard).');
+check(fs.existsSync('supabase/migrations/20261017193000_record_document_consent_sync_profiles.sql'), 'DEV must ship migration that syncs record_document_consent to profiles.');
 
 // recovery must require a recovery credential, handle PKCE/native warm links, and clear the session after use
 check(/resetPasswordForEmail/.test(forgotPassword) && /setSent\(true\)/.test(forgotPassword) && !/setErrorMessage\(error\.message\)/.test(forgotPassword), 'Recovery requests must not reveal whether an account exists.');

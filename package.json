@@ -99,6 +99,7 @@
     "test:sql:resources": "node scripts/test-local-resources.mjs",
     "test:sql:profile": "node scripts/test-local-profile.mjs",
     "test:sql:documents": "node scripts/test-local-documents.mjs",
+    "test:sql:consent": "node scripts/test-local-document-consent.mjs",
     "test:sql:housing-documents": "node scripts/test-local-housing-documents.mjs",
     "test:sql:notifications": "node scripts/test-local-notification-delivery.mjs",
     "test:notification-worker": "node scripts/test-notification-worker.mjs",
