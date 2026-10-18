@@ -1,5 +1,8 @@
 import { supabase } from '@/lib/supabase';
+import { applyPostAuthReturnTo } from '@/core/auth/post-auth-return-to';
 import { hasCurrentDocumentConsent } from '@/core/profile/consent-status';
+
+export { applyPostAuthReturnTo } from '@/core/auth/post-auth-return-to';
 
 /**
  * Where a signed-in user should land right now: mid-onboarding users (closed the app after verifying email but
@@ -22,7 +25,5 @@ export async function resolveNextRouteForSignedInUser(): Promise<string | null> 
 export async function resolvePostAuthRoute(returnTo?: string | null): Promise<string> {
   const next = await resolveNextRouteForSignedInUser();
   if (!next) return '/sign-in';
-  if (next === '/accept-terms' || next === '/onboarding') return next;
-  if (returnTo?.startsWith('/')) return returnTo;
-  return next;
+  return applyPostAuthReturnTo(next, returnTo);
 }

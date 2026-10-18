@@ -33,4 +33,16 @@ Use `dev-free@fairpath.test` (password in your vault). Expo web: often `http://l
 1. `/forgot-password` → success message without account enumeration.
 2. `/reset-password` with recovery link → password update → sessions cleared.
 
-Automated gate: `npm run test:auth`.
+## Automated gates
+
+- `npm run test:auth` — screen inventory, email/password funnels, recovery invariants, public routes.
+- `npm run test:auth-post-auth` — `returnTo` only applies after terms + onboarding (`applyPostAuthReturnTo`).
+
+## DEV accounts (password in vault)
+
+| Account | Use |
+|---------|-----|
+| `dev-free@fairpath.test` | Returning member — login **012** |
+| `dev-plus@fairpath.test` | Plus entitlements smoke after login |
+
+New registration **011**: use `+alias` on a mailbox you control (e.g. `you+fp011@domain.com`) so you can complete verify-email without polluting DEV fixtures.

@@ -42,16 +42,16 @@
 
 ## PHASE 1 — Authentication (010–020)
 
-- [ ] **010** Audit auth screens
-- [ ] **011** Email registration E2E
-- [ ] **012** Email login E2E
+- [x] **010** Audit auth screens (`npm run test:auth` inventory + funnel checks)
+- [x] **011** Email registration E2E (code paths + audit; manual verify-email in `AUTH_E2E_BROWSER_CHECKLIST.md`)
+- [x] **012** Email login E2E (post-auth routing + DEV account; manual browser pass optional)
 - [ ] **013** Apple Sign In — BLOCKED: device + Apple developer config
 - [ ] **014** Google Sign In — BLOCKED: OAuth client config
 - [ ] **015** Microsoft/Yahoo — evaluate
 - [ ] **016** Phone auth if enabled
 - [x] **017** Post-auth routing comprehensive (`resolvePostAuthRoute` on accept-terms + instant sign-up session; browser proof: `docs/AUTH_E2E_BROWSER_CHECKLIST.md`)
 - [ ] **018** Accept-terms persistence + DEV migration (code + migration in repo; apply on DEV Supabase)
-- [ ] **019** Account recovery
+- [x] **019** Account recovery (forgot/reset + PKCE tests; manual inbox link optional)
 - [ ] **020** Authorization boundaries
 
 ## PHASE 2 — Onboarding (021–030)

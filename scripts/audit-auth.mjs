@@ -14,6 +14,8 @@ const app = JSON.parse(read('app.json'));
 const mig = read('supabase/migrations/20260929120000_auth_profile_hardening.sql');
 const forgotPassword = read('src/app/forgot-password.tsx');
 const resetPassword = read('src/app/reset-password.tsx');
+const acceptTerms = read('src/app/accept-terms.tsx');
+const checkEmail = read('src/app/check-email.tsx');
 
 // entry points
 check(/signInWithApple/.test(social) && /signInWithGoogle/.test(social), 'Apple and Google entry points must exist.');
@@ -31,7 +33,7 @@ check(!/signInAnonymously|setSession\(\{\s*access_token:\s*['"`]/.test(socialCod
 check(/ERR_REQUEST_CANCELED/.test(social) && /status: 'cancelled'/.test(social), 'Cancellation must be handled cleanly.');
 check(/!profile\.first_name && !profile\.last_name/.test(social) && /credential\.fullName\?\./.test(social), 'Apple names arrive only once and may be hidden: fill blanks only, never assume them.');
 check(!/email\s*===|\.email\s*==|merge|linkIdentity/i.test(socialCode), 'The client must not implement its own email-based account merging/linking.');
-check(/needsConsent/.test(social) && fs.existsSync('src/app/accept-terms.tsx') && /recordSignUpConsent/.test(read('src/app/accept-terms.tsx')), 'First-time social members must accept Terms/Privacy through the consent ledger.');
+check(/needsConsent/.test(social) && fs.existsSync('src/app/accept-terms.tsx') && /recordSignUpConsent/.test(acceptTerms), 'First-time social members must accept Terms/Privacy through the consent ledger.');
 check(/agreedToTerms/.test(signUp.split('<SocialAuthButtons')[1] ?? ''), 'Sign-up must require the terms checkbox before social sign-up.');
 // config
 check(app.expo.ios.usesAppleSignIn === true && app.expo.plugins.includes('expo-apple-authentication'), 'app.json must enable the Sign in with Apple capability.');
@@ -48,6 +50,24 @@ check(ok.accessToken === 'a1' && ok.refreshToken === 'r1' && !ok.error, 'Redirec
 const bad = parseAuthRedirect('fairpathmobile://auth/callback#error=access_denied&error_description=User+cancelled');
 check(bad.error === 'User cancelled' && !bad.accessToken, 'Provider errors must parse and carry no tokens.');
 check(!parseAuthRedirect('fairpathmobile://auth/callback').accessToken, 'A bare redirect has no tokens.');
+
+// auth screen inventory + email/password funnels (010–012)
+for (const p of [
+  'src/app/sign-in.tsx',
+  'src/app/sign-up.tsx',
+  'src/app/forgot-password.tsx',
+  'src/app/reset-password.tsx',
+  'src/app/check-email.tsx',
+  'src/app/accept-terms.tsx',
+  'src/app/auth/callback.tsx',
+]) check(fs.existsSync(p), `Auth screen missing: ${p}`);
+check(/resolvePostAuthRoute/.test(signIn) && /resolvePostAuthRoute/.test(signUp) && /resolvePostAuthRoute/.test(acceptTerms), 'Email sign-in, sign-up (instant session) and accept-terms must share resolvePostAuthRoute.');
+check(/Invalid login credentials/.test(signIn) && /That email or password does not match/.test(signIn), 'Sign-in must map invalid credentials to a member-safe message.');
+check(/emailRedirectTo/.test(signUp) && /\/auth\/callback/.test(signUp), 'Sign-up verification links must target /auth/callback.');
+check(/check-email\?email=/.test(signUp) && /data\.session/.test(signUp), 'Sign-up without an instant session must land on check-email.');
+check(/recordSignUpConsent/.test(signUp) && /data\.session/.test(signUp), 'Instant sign-up must record consent before post-auth routing.');
+check(/password\.length < 8/.test(signUp), 'Sign-up must enforce an 8-character minimum password.');
+check(/verification link/i.test(checkEmail), 'Check-email must explain verification next steps.');
 
 // recovery must require a recovery credential, handle PKCE/native warm links, and clear the session after use
 check(/resetPasswordForEmail/.test(forgotPassword) && /setSent\(true\)/.test(forgotPassword) && !/setErrorMessage\(error\.message\)/.test(forgotPassword), 'Recovery requests must not reveal whether an account exists.');
