@@ -8,7 +8,9 @@
  */
 import { spawnSync } from 'node:child_process';
 
-const ref = process.argv[2] || process.env.FAIRPATH_DEV_PROJECT_REF || 'znvhmuhojvwvjzmaqwff';
+const dryRun = process.argv.includes('--dry-run');
+const positional = process.argv.slice(2).filter((a) => a !== '--dry-run' && !a.startsWith('-'));
+const ref = positional[0] || process.env.FAIRPATH_DEV_PROJECT_REF || 'znvhmuhojvwvjzmaqwff';
 const fns = [
   'job-fit-explanation',
   'cover-letter-draft',
@@ -29,7 +31,12 @@ const fns = [
   'marketplace-listing-draft',
 ];
 
-console.log(`Deploying ${fns.length} Signal functions to project ${ref}…`);
+console.log(`${dryRun ? 'Dry run — would deploy' : 'Deploying'} ${fns.length} Signal functions to project ${ref}…`);
+if (dryRun) {
+  for (const name of fns) console.log(`  • ${name}`);
+  console.log('Run without --dry-run after secrets are set (see docs/SIGNAL_DEV_DEPLOY.md).');
+  process.exit(0);
+}
 for (const name of fns) {
   const r = spawnSync('npx', ['supabase', 'functions', 'deploy', name, '--project-ref', ref], {
     stdio: 'inherit',

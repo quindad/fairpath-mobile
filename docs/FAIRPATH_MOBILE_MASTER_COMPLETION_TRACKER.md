@@ -11,7 +11,7 @@
 |--------|------:|
 | Completed (verified) | 8 |
 | In progress | Phase 3 Home |
-| Blocked (external) | Signal deploy, DEV migrations apply, Apple/Google device OAuth, IAP sandbox |
+| Blocked (external) | Signal **live** deploy (runbook ready), DEV migrations apply on cloud, Apple/Google device OAuth, IAP sandbox |
 | Remaining | 152+ |
 
 ## Evidence log (newest first)
@@ -99,7 +99,7 @@
 
 ## PHASE 8 — Signal AI (072–085)
 
-- [ ] **072–085** (deploy DEV — BLOCKED without secrets/CLI auth)
+- [ ] **072–085** (deploy DEV — runbook `SIGNAL_DEV_DEPLOY.md`, `test:signal-deploy`; **live deploy** needs operator secrets + `npm run deploy:signal:dev`)
 
 ## PHASE 9 — My Path (086–091)
 
