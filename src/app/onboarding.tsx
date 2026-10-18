@@ -3,7 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useMemo, useState } from 'react';
 
 import { supabase } from '../lib/supabase';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { FormScrollView, KeyboardFooterLayout } from '@/components/FormScrollView';
 import { FairBackButton } from '@/components/ProductChrome';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,6 +14,14 @@ const CARD = '#151715';
 const BORDER = '#303330';
 const MUTED = '#909690';
 
+const WORK_CHOICES = ['Direct hire', 'Temporary staffing', 'Contract work', 'Temp-to-hire', 'Part-time', 'Remote', 'Open to anything'];
+const HOUSING_CHOICES = ['Apartment', 'House', 'Room', 'Transitional housing', 'Emergency housing', 'Housing stability help', 'Not looking right now'];
+const FOCUS_CHOICES = [
+  'Jobs & staffing', 'Housing', 'Resources', 'Record relief', 'Academy', 'Entrepreneurship', 'Marketplace', 'My plan',
+  'Food', 'Transportation', 'Identification documents', 'Benefits', 'Legal help', 'Safety support', 'Recovery support', 'Nothing urgent',
+  'Job matching help', 'Résumé help', 'Interview prep', 'Resource guidance', 'Personal plan', 'Record-relief explanations', 'Do not personalize AI yet',
+];
+
 type Step = {
   eyebrow: string;
   title: string;
@@ -22,71 +30,79 @@ type Step = {
   choices?: string[];
   placeholder?: string;
   optional?: boolean;
+  /** Single-select steps (tools). */
+  single?: boolean;
 };
 
+function buildProfilePayload(
+  answers: Record<number, string[]>,
+  textAnswers: Record<number, string>,
+  complete: boolean,
+) {
+  const goals = new Set(answers[0] ?? []);
+  const tools = answers[2] ?? [];
+  if (tools.includes('Reentry & record relief')) goals.add('Reentry');
+  if (tools.includes('Veteran transition')) goals.add('Veteran transition');
+
+  const wh = answers[3] ?? [];
+  const focus = answers[4] ?? [];
+
+  return {
+    goals: Array.from(goals),
+    location_text: textAnswers[1]?.trim() ?? '',
+    justice_impacted: tools.includes('Reentry & record relief')
+      ? 'Yes'
+      : tools.includes('Neither — skip for now')
+        ? 'Prefer not to say'
+        : 'Prefer not to say',
+    opportunity_priorities: focus.filter((x) => FOCUS_CHOICES.slice(0, 16).includes(x)),
+    work_preferences: wh.filter((x) => WORK_CHOICES.includes(x)),
+    housing_preferences: wh.filter((x) => HOUSING_CHOICES.includes(x)),
+    ai_preferences: focus.filter((x) => FOCUS_CHOICES.slice(16).includes(x)),
+    ...(complete
+      ? { onboarding_completed: true, onboarding_completed_at: new Date().toISOString() }
+      : {}),
+    updated_at: new Date().toISOString(),
+  };
+}
+
+/** Five focused steps — full detail lives in Opportunity Profile later. */
 const steps: Step[] = [
   {
     eyebrow: 'START WITH YOU',
     title: 'What do you want to move forward?',
-    body: 'Pick every area that matters right now. FairPath uses this to shape your home screen and next steps — not to put you in a box.',
+    body: 'Pick every area that matters right now. FairPath uses this to shape your home screen — not to put you in a box.',
     type: 'choices',
     choices: ['Work & income', 'Housing', 'Food & essentials', 'Reentry', 'Veteran transition', 'Safety & recovery', 'Give or help someone', 'Learn new skills', 'Build a business'],
   },
   {
     eyebrow: 'YOUR LOCATION',
     title: 'Where should FairPath look first?',
-    body: 'Enter your city, state or ZIP. We use location to find nearby jobs, housing, resources and jurisdiction-specific tools. It is not shared publicly by default.',
+    body: 'City, state or ZIP. We use this for nearby jobs, housing and resources. Not shared publicly by default.',
     type: 'text',
     placeholder: 'Columbus, OH or 43215',
   },
   {
-    eyebrow: 'PRIVATE REENTRY SETUP',
-    title: 'Should FairPath turn on reentry tools for you?',
-    body: 'This can unlock fair-chance job help, record-relief tools and reentry resources. Your answer stays private and is never used as an employer label.',
+    eyebrow: 'YOUR TOOLS',
+    title: 'Turn on extra FairPath tools?',
+    body: 'Optional. Reentry and veteran tools stay private — never an employer label.',
     type: 'choices',
-    choices: ['Yes — turn on reentry tools', 'No', 'Not right now'],
+    single: true,
+    choices: ['Reentry & record relief', 'Veteran transition', 'Both', 'Neither — skip for now'],
   },
   {
-    eyebrow: 'VETERANS',
-    title: 'Should FairPath turn on veteran tools?',
-    body: 'Veteran tools can help translate military experience, organize transition goals and find civilian opportunities. Service history is not shared with employers unless you choose to share it.',
+    eyebrow: 'WORK & HOME',
+    title: 'What are you looking for?',
+    body: 'Pick everything you would consider today. You can change this anytime in your profile.',
     type: 'choices',
-    choices: ['Yes — turn on veteran tools', 'No', 'Not right now'],
+    choices: [...WORK_CHOICES, ...HOUSING_CHOICES],
   },
   {
-    eyebrow: 'WORK',
-    title: 'How do you want to work?',
-    body: 'Direct hire and FairPath Staffing can live in the same job experience. Pick everything you would consider.',
-    type: 'choices',
-    choices: ['Direct hire', 'Temporary staffing', 'Contract work', 'Temp-to-hire', 'Part-time', 'Remote', 'Open to anything'],
-  },
-  {
-    eyebrow: 'HOUSING',
-    title: 'What housing should we prioritize?',
-    body: 'Choose what fits today. Emergency and stability resources stay separate from ordinary rental browsing so urgent needs do not get buried.',
-    type: 'choices',
-    choices: ['Apartment', 'House', 'Room', 'Transitional housing', 'Emergency housing', 'Housing stability help', 'Not looking right now'],
-  },
-  {
-    eyebrow: 'HELP TODAY',
-    title: 'Anything you need help with right now?',
-    body: 'These choices help FairPath bring practical resources forward. Choosing one does not automatically share the need with another organization.',
-    type: 'choices',
-    choices: ['Food', 'Transportation', 'Identification documents', 'Benefits', 'Legal help', 'Safety support', 'Recovery support', 'Nothing urgent'],
-  },
-  {
-    eyebrow: 'YOUR NEXT MOVE',
+    eyebrow: 'YOUR FOCUS',
     title: 'What should FairPath put first?',
-    body: 'This controls what rises to the top of your experience. You can change it anytime.',
+    body: 'Pick what matters most right now — including urgent needs and how AI can help (you stay in control).',
     type: 'choices',
-    choices: ['Jobs & staffing', 'Housing', 'Resources', 'Record relief', 'Academy', 'Entrepreneurship', 'Marketplace', 'My plan'],
-  },
-  {
-    eyebrow: 'SIGNAL',
-    title: 'Choose how AI can help.',
-    body: 'AI can help you do the work, but it does not make hiring, housing, legal or eligibility decisions. Nothing is submitted or changed without your action.',
-    type: 'choices',
-    choices: ['Job matching help', 'Résumé help', 'Interview prep', 'Resource guidance', 'Personal plan', 'Record-relief explanations', 'Do not personalize AI yet'],
+    choices: FOCUS_CHOICES,
   },
 ];
 
@@ -108,69 +124,62 @@ export default function OnboardingScreen() {
 
   const buttonLabel = useMemo(
     () => (stepIndex === steps.length - 1 ? 'Finish setup' : 'Continue'),
-    [stepIndex]
+    [stepIndex],
   );
 
   function toggleChoice(choice: string) {
-    const singleChoice = stepIndex === 2 || stepIndex === 3;
+    const singleChoice = step.single === true;
     setAnswers((current) => {
       const currentSelected = current[stepIndex] ?? [];
-      const next = singleChoice
-        ? [choice]
-        : currentSelected.includes(choice)
-          ? currentSelected.filter((item) => item !== choice)
-          : [...currentSelected, choice];
+      if (singleChoice) {
+        if (choice === 'Both') return { ...current, [stepIndex]: ['Reentry & record relief', 'Veteran transition'] };
+        return { ...current, [stepIndex]: [choice] };
+      }
+      const next = currentSelected.includes(choice)
+        ? currentSelected.filter((item) => item !== choice)
+        : [...currentSelected, choice];
       return { ...current, [stepIndex]: next };
     });
   }
 
   function goBack() {
     if (stepIndex === 0) {
-      router.back();
+      router.replace('/find-jobs');
       return;
     }
     setStepIndex((current) => current - 1);
   }
 
+  async function persistProfile(complete: boolean) {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      setSaveError('Your session expired. Sign in again so FairPath can securely save your setup.');
+      return false;
+    }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update(buildProfilePayload(answers, textAnswers, complete))
+      .eq('id', user.id);
+
+    if (error) {
+      setSaveError('We could not save your setup. Your answers are still here — try again.');
+      return false;
+    }
+    return true;
+  }
+
   async function finishOnboarding() {
     if (saving) return;
-
     setSaving(true);
     setSaveError('');
-
     try {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError || !user) {
-        setSaveError('Your session expired. Sign in again so FairPath can securely save your setup.');
-        return;
-      }
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          goals: Array.from(new Set([...(answers[0] ?? []), ...(answers[3]?.[0]?.startsWith('Yes') ? ['Veteran transition'] : [])])),
-          location_text: textAnswers[1]?.trim() ?? '',
-          justice_impacted: answers[2]?.[0]?.startsWith('Yes') ? 'Yes' : answers[2]?.[0] === 'No' ? 'No' : 'Prefer not to say',
-          opportunity_priorities: [...(answers[6] ?? []), ...(answers[7] ?? [])],
-          work_preferences: answers[4] ?? [],
-          housing_preferences: answers[5] ?? [],
-          ai_preferences: answers[8] ?? [],
-          onboarding_completed: true,
-          onboarding_completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', user.id);
-
-      if (error) {
-        setSaveError('We could not save your setup. Your answers are still here — try again.');
-        return;
-      }
-
-      router.replace('/home');
+      const ok = await persistProfile(true);
+      if (ok) router.replace('/home');
     } catch {
       setSaveError('We could not save your setup. Check your connection and try again.');
     } finally {
@@ -178,16 +187,38 @@ export default function OnboardingScreen() {
     }
   }
 
-  function goNext() {
+  async function finishLater() {
+    if (saving) return;
+    setSaving(true);
+    setSaveError('');
+    try {
+      const ok = await persistProfile(true);
+      if (ok) router.replace('/home');
+    } catch {
+      setSaveError('We could not save. Try again or sign out and back in.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function goNext() {
     if (!canContinue || saving) return;
 
     if (stepIndex === steps.length - 1) {
-      void finishOnboarding();
+      await finishOnboarding();
       return;
     }
 
     setSaveError('');
-    setStepIndex((current) => current + 1);
+    setSaving(true);
+    try {
+      await persistProfile(false);
+      setStepIndex((current) => current + 1);
+    } catch {
+      setSaveError('We could not save this step. Check your connection and try again.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -218,13 +249,14 @@ export default function OnboardingScreen() {
           {step.type === 'choices' ? (
             <View style={styles.choiceList}>
               {step.choices?.map((choice) => {
-                const isSelected = selected.includes(choice);
+                const isSelected = selected.includes(choice)
+                  || (choice === 'Both' && selected.includes('Reentry & record relief') && selected.includes('Veteran transition'));
                 return (
                   <Pressable
                     key={choice}
                     accessibilityRole="button"
                     accessibilityLabel={choice}
-                    accessibilityState={{selected:isSelected}}
+                    accessibilityState={{ selected: isSelected }}
                     onPress={() => toggleChoice(choice)}
                     style={[styles.choice, isSelected && styles.choiceSelected]}
                   >
@@ -246,7 +278,7 @@ export default function OnboardingScreen() {
                 autoCapitalize="words"
                 style={styles.input}
                 returnKeyType="next"
-                onSubmitEditing={goNext}
+                onSubmitEditing={() => void goNext()}
               />
               <Text style={styles.privacyNote}>Used for matching. Never shown publicly by default.</Text>
             </View>
@@ -257,7 +289,7 @@ export default function OnboardingScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={saving ? 'Saving your FairPath' : buttonLabel}
-            onPress={goNext}
+            onPress={() => void goNext()}
             disabled={!canContinue || saving}
             style={[styles.primaryButton, (!canContinue || saving) && styles.primaryButtonDisabled]}
           >
@@ -265,6 +297,17 @@ export default function OnboardingScreen() {
             <Text style={styles.arrow}>→</Text>
           </Pressable>
           {saveError ? <Text style={styles.errorText}>{saveError}</Text> : null}
+          {stepIndex === 0 ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Finish setup later and browse FairPath"
+              onPress={() => void finishLater()}
+              disabled={saving}
+              style={styles.skipLink}
+            >
+              <Text style={styles.skipLinkText}>Finish later — browse jobs and housing first</Text>
+            </Pressable>
+          ) : null}
           <Text style={styles.footerNote}>You stay in control of what FairPath uses to personalize your experience.</Text>
         </View>
         </KeyboardFooterLayout>
@@ -284,17 +327,6 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 16,
   },
-  backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: CARD,
-    borderWidth: 1,
-    borderColor: BORDER,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backArrow: { color: '#F6F7F5', fontSize: 23, lineHeight: 25 },
   stepCount: { color: '#777D77', fontSize: 12, fontWeight: '800', letterSpacing: 0.8 },
   progressTrack: { height: 3, backgroundColor: '#202320', marginHorizontal: 24, borderRadius: 99, overflow: 'hidden' },
   progressFill: { height: '100%', backgroundColor: LIME, borderRadius: 99 },
@@ -355,4 +387,6 @@ const styles = StyleSheet.create({
   arrow: { color: BLACK, fontSize: 25 },
   errorText: { color: '#FF8A8A', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 12, paddingHorizontal: 14 },
   footerNote: { color: '#626762', fontSize: 10, lineHeight: 15, textAlign: 'center', marginTop: 11, paddingHorizontal: 14 },
+  skipLink: { alignItems: 'center', paddingVertical: 12, marginTop: 4 },
+  skipLinkText: { color: MUTED, fontSize: 13, fontWeight: '700', textDecorationLine: 'underline' },
 });

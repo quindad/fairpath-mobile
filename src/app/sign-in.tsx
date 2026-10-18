@@ -1,12 +1,13 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { FormScrollView } from '@/components/FormScrollView';
 import { FairBackButton } from '@/components/ProductChrome';
 import { SocialAuthButtons } from '@/components/SocialAuthButtons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { resolvePostAuthRoute } from '@/core/auth/post-auth-route';
 import { supabase } from '../lib/supabase';
 
 const LIME = '#A8F32C';
@@ -43,24 +44,29 @@ export default function SignInScreen() {
       });
 
       if (error) {
-        setErrorMessage(error.message === 'Invalid login credentials'
-          ? 'That email or password does not match a FairPath account.'
-          : error.message);
+        const msg = error.message ?? '';
+        setErrorMessage(
+          msg === 'Invalid login credentials'
+            ? 'That email or password does not match a FairPath account.'
+            : /email not confirmed/i.test(msg)
+              ? 'Verify your email first — check your inbox for the FairPath link, or create a new account.'
+              : msg || 'We could not sign you in. Try again.',
+        );
         return;
       }
 
-      const { data: profile, error: profileError } = await supabase
+      const { error: profileError } = await supabase
         .from('profiles')
-        .select('onboarding_completed')
-        .single();
+        .select('id')
+        .maybeSingle();
 
       if (profileError) {
         setErrorMessage('You are signed in, but FairPath could not load your profile. Try again.');
         return;
       }
 
-      if(returnTo&&profile?.onboarding_completed){router.replace(returnTo as never);return;}
-      router.replace(profile?.onboarding_completed ? '/home' : '/onboarding');
+      const dest = await resolvePostAuthRoute(returnTo);
+      router.replace(dest as never);
     } catch {
       setErrorMessage('We could not sign you in right now. Check your connection and try again.');
     } finally {

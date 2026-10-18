@@ -122,5 +122,5 @@ function friendlyProviderError(message: string, provider: string) {
 export function routeAfterSocialSignIn(result: Extract<SocialAuthResult, { status: 'success' }>, returnTo: string | null): string {
   if (result.needsConsent) return '/accept-terms' + (returnTo ? '?returnTo=' + encodeURIComponent(returnTo) : '');
   if (!result.onboardingCompleted) return '/onboarding';
-  return returnTo ?? '/find-jobs';
+  return returnTo ?? '/home';
 }

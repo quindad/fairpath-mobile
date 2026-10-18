@@ -20,3 +20,12 @@ export async function resolveNextRouteForSignedInUser(): Promise<string | null> 
   if (!profile?.onboarding_completed) return '/onboarding';
   return '/home';
 }
+
+/** After email/password or OAuth sign-in — honors returnTo only when terms + onboarding are complete. */
+export async function resolvePostAuthRoute(returnTo?: string | null): Promise<string> {
+  const next = await resolveNextRouteForSignedInUser();
+  if (!next) return '/sign-in';
+  if (next === '/accept-terms' || next === '/onboarding') return next;
+  if (returnTo?.startsWith('/')) return returnTo;
+  return next;
+}

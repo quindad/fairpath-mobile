@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { supabase } from '../../lib/supabase';
 import { CURRENT_TERMS_VERSION, CURRENT_PRIVACY_VERSION } from '@/core/profile/consent-service';
+import { resolveNextRouteForSignedInUser } from '@/core/auth/post-auth-route';
 import { parseRecoveryRedirect } from '@/core/auth/password-recovery';
 
 /** Native deep link for email verification is fairpathmobile://auth/callback -- only trust that exact shape. */
@@ -51,10 +52,15 @@ export default function AuthCallbackScreen() {
       return true;
     }
     async function afterSessionEstablished() {
-      if (!(await checkDocumentConsent())) { if (active) router.replace('/accept-terms' as never); return; }
+      if (!(await checkDocumentConsent())) {
+        if (active) router.replace('/accept-terms' as never);
+        return;
+      }
+      const dest = await resolveNextRouteForSignedInUser();
       if (active) {
         setState('success');
         setMessage('Email verified. Your FairPath account is ready.');
+        router.replace((dest ?? '/onboarding') as never);
       }
     }
 

@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { FormScrollView } from '@/components/FormScrollView';
 import { FairBackButton } from '@/components/ProductChrome';
 import { SocialAuthButtons } from '@/components/SocialAuthButtons';
@@ -78,7 +78,12 @@ export default function SignUpScreen() {
       });
 
       if (error) {
-        setErrorMessage(error.message);
+        const msg = error.message ?? '';
+        setErrorMessage(
+          /already registered|already exists/i.test(msg)
+            ? 'That email already has a FairPath account. Sign in instead.'
+            : msg || 'We could not create your account. Try again.',
+        );
         return;
       }
 

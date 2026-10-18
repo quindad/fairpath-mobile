@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { FairBackButton } from '@/components/ProductChrome';
 
 const LIME = '#A8F32C';
 const BLACK = '#090A09';
@@ -18,6 +19,7 @@ export default function CheckEmailScreen() {
       <StatusBar style="light" />
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
+          <FairBackButton onPress={() => router.replace('/sign-in')} label="Back to sign in" />
           <View style={styles.icon}>
             <Text style={styles.iconText}>✓</Text>
           </View>
@@ -32,6 +34,9 @@ export default function CheckEmailScreen() {
               Check your spam or junk folder. Keep this screen open while you verify your email.
             </Text>
           </View>
+          <Pressable accessibilityRole="button" style={styles.primaryButton} onPress={() => router.replace('/sign-in')}>
+            <Text style={styles.primaryButtonText}>Back to sign in</Text>
+          </Pressable>
           <Pressable accessibilityRole="button" style={styles.secondaryButton} onPress={() => router.replace('/sign-up')}>
             <Text style={styles.secondaryButtonText}>Use a different email</Text>
           </Pressable>
@@ -45,7 +50,9 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: BLACK },
   safeArea: { flex: 1, width: '100%', maxWidth: 620, alignSelf: 'center' },
   content: { flex: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 32 },
-  icon: { width: 64, height: 64, borderRadius: 20, backgroundColor: LIME, alignItems: 'center', justifyContent: 'center', marginBottom: 28 },
+  icon: { width: 64, height: 64, borderRadius: 20, backgroundColor: LIME, alignItems: 'center', justifyContent: 'center', marginBottom: 28, marginTop: 24 },
+  primaryButton: { minHeight: 56, borderRadius: 17, backgroundColor: LIME, alignItems: 'center', justifyContent: 'center', marginTop: 24 },
+  primaryButtonText: { color: BLACK, fontSize: 15, fontWeight: '800' },
   iconText: { color: BLACK, fontSize: 30, fontWeight: '900' },
   kicker: { color: LIME, fontSize: 11, fontWeight: '800', letterSpacing: 1.6, marginBottom: 14 },
   title: { color: '#F7F8F6', fontSize: 44, lineHeight: 48, fontWeight: '800', letterSpacing: -1.8 },
