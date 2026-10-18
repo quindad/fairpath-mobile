@@ -43,6 +43,18 @@ node scripts/deploy-dev-signal.mjs znvhmuhojvwvjzmaqwff
 
 Functions: `job-fit-explanation`, `cover-letter-draft`, `letter-explainer`, `interview-prep`, `housing-fit-explanation`, `housing-application-prep`, `resource-guidance`, `member-focus-guidance`, `resume-bullet-draft`, `dispute-letter-draft`, `credit-report-explanation`, `record-relief-explanation`, `veteran-experience-translation`, `academy-lesson-question`, `business-idea-feedback`, `meeting-prep`, `marketplace-listing-draft`.
 
+## Live DEV deploy (operator)
+
+From repo root with Supabase CLI logged in and DEV linked:
+
+```powershell
+npm run deploy:signal:dev
+```
+
+All **17** functions target project `znvhmuhojvwvjzmaqwff`. Dashboard: [Edge Functions](https://supabase.com/dashboard/project/znvhmuhojvwvjzmaqwff/functions).
+
+Provider keys are **not** in git — set in Dashboard → Edge Functions → Secrets before expecting model-generated text (otherwise members see honest fallbacks, not crashes).
+
 ## Smoke test (signed-in DEV member)
 
 1. Sign in as `dev-plus@fairpath.test` (Signal credits on server).

@@ -101,7 +101,7 @@
 
 ## PHASE 8 — Signal AI (072–085)
 
-- [ ] **072–085** (deploy DEV — runbook `SIGNAL_DEV_DEPLOY.md`, `test:signal-deploy`; **live deploy** needs operator secrets + `npm run deploy:signal:dev`)
+- [x] **072–085** Signal DEV deploy (`npm run deploy:signal:dev` → 17 functions on `znvhmuhojvwvjzmaqwff`; **model live proof** still needs Edge secrets in Dashboard)
 
 ## PHASE 9 — My Path (086–091)
 
