@@ -13,6 +13,7 @@ const steps = [
   ['resource availability contract', NODE, ['scripts/test-resource-availability-contract.mjs']],
   ['QA harness column checks', NODE, ['scripts/test-qa-harness-columns.mjs']],
   ['credit extraction boundary', NODE, ['scripts/test-credit-extraction.mjs']],
+  ['audit: credit-member', NODE, ['scripts/audit-credit-member.mjs']],
   ['render-document handler', NODE, ['scripts/test-render-handler.mjs']],
   ['SQL: all migrations apply', NODE, ['scripts/local-sql-check.mjs']],
   ['SQL: resources', NODE, ['scripts/test-local-resources.mjs']],

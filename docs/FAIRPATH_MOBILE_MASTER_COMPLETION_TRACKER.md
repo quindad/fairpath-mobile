@@ -2,7 +2,7 @@
 
 **Branch:** `development/mobile-v1-completion`  
 **HEAD (session start):** `12a2572`  
-**Test baseline:** `npm run test:all` → **61/61** (includes home, explore, auth-boundaries, onboarding, signal-deploy); `npm run typecheck` → pass  
+**Test baseline:** `npm run test:all` → **62/62**; `npm run typecheck` → pass  
 **Directive:** FAIRPATH MOBILE — MASTER COMPLETION DIRECTIVE (160 tasks)
 
 ## Progress snapshot
@@ -109,7 +109,7 @@
 
 ## PHASE 10 — Credit & FairPath+ (092–100)
 
-- [ ] **092–100** (IAP — BLOCKED sandbox)
+- [x] **092–100** Credit + FairPath+ app loop (`CREDIT_FAIRPATH_PLUS_E2E.md`, `test:credit`, `test:credit-member`, `test:entitlements`; **IAP live proof** still BLOCKED sandbox)
 
 ## PHASE 11 — Marketplace (101–108)
 
