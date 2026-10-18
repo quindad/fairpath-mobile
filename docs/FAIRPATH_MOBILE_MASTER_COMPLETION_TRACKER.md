@@ -2,7 +2,7 @@
 
 **Branch:** `development/mobile-v1-completion`  
 **HEAD (session start):** `12a2572`  
-**Test baseline:** `npm run test:all` → **60/60** (includes home, auth-boundaries, onboarding, signal-deploy audits); `npm run typecheck` → pass  
+**Test baseline:** `npm run test:all` → **61/61** (includes home, explore, auth-boundaries, onboarding, signal-deploy); `npm run typecheck` → pass  
 **Directive:** FAIRPATH MOBILE — MASTER COMPLETION DIRECTIVE (160 tasks)
 
 ## Progress snapshot
@@ -80,10 +80,10 @@
 
 ## PHASE 4 — Explore (039–042)
 
-- [ ] **039** Explore landing
-- [ ] **040** Unified discovery patterns
-- [ ] **041** Map integration
-- [ ] **042** Resource detail accuracy
+- [x] **039** Explore landing (`/explore` sections + status labels)
+- [x] **040** Unified discovery patterns (`test:explore`, jobs/housing/resources audits)
+- [x] **041** Map integration (JobMap/HousingMap on find screens — `test:jobs` / `test:housing`)
+- [ ] **042** Resource detail accuracy (manual + `test:resources`; see `EXPLORE_DISCOVERY_E2E.md`)
 
 ## PHASE 5 — Jobs (043–053)
 
