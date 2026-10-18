@@ -2,7 +2,7 @@
 
 **Branch:** `development/mobile-v1-completion`  
 **HEAD (session start):** `12a2572`  
-**Test baseline (session start):** `npm run test:all` → **55/55**; `npm run typecheck` → pass; `expo-doctor` → 10 packages out of date (non-blocking)  
+**Test baseline:** `npm run test:all` → **59/59** (includes auth-boundaries, onboarding, signal-deploy audits); `npm run typecheck` → pass  
 **Directive:** FAIRPATH MOBILE — MASTER COMPLETION DIRECTIVE (160 tasks)
 
 ## Progress snapshot
