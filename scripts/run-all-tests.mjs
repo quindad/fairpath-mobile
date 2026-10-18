@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 const NODE = process.execPath;
 const steps = [
   ['TypeScript', 'npx', ['tsc', '--noEmit']],
-  ...['baseline', 'canonical-profile', 'seed', 'navigation', 'housing', 'marketplace', 'jobs', 'home', 'explore', 'keyboard', 'dates', 'notifications', 'auth', 'auth-boundaries', 'onboarding', 'signal-deploy', 'payments', 'entitlements',
+  ...['baseline', 'canonical-profile', 'seed', 'navigation', 'housing', 'marketplace', 'jobs', 'home', 'explore', 'my-path', 'keyboard', 'dates', 'notifications', 'auth', 'auth-boundaries', 'onboarding', 'signal-deploy', 'payments', 'entitlements',
     'theme', 'resources', 'profile', 'member', 'credit', 'relief', 'ai', 'security', 'notification-events', 'observability', 'failure-states'].map((n) => [`audit: ${n}`, NODE, [`scripts/audit-${n}.mjs`]]),
   ['documents render', NODE, ['scripts/test-documents-render.mjs']],
   ['client user_id checks', NODE, ['scripts/test-client-user-id.mjs']],

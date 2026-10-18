@@ -90,6 +90,7 @@
     "test:home": "node scripts/audit-home.mjs",
     "test:explore": "node scripts/audit-explore.mjs",
     "test:credit-member": "node scripts/audit-credit-member.mjs",
+    "test:my-path": "node scripts/audit-my-path.mjs",
     "test:sql:credit": "node scripts/test-local-credit.mjs",
     "test:sql:relief": "node scripts/test-local-relief.mjs",
     "test:client-user-id": "node scripts/test-client-user-id.mjs",

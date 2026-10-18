@@ -2,7 +2,7 @@
 
 **Branch:** `development/mobile-v1-completion`  
 **HEAD (session start):** `12a2572`  
-**Test baseline:** `npm run test:all` → **62/62**; `npm run typecheck` → pass  
+**Test baseline:** `npm run test:all` → **63/63**; `npm run typecheck` → pass  
 **Directive:** FAIRPATH MOBILE — MASTER COMPLETION DIRECTIVE (160 tasks)
 
 ## Progress snapshot
@@ -105,7 +105,7 @@
 
 ## PHASE 9 — My Path (086–091)
 
-- [ ] **086–091**
+- [x] **086–091** My Path (`MY_PATH_E2E.md`, `test:my-path`; server sync/case tasks remain planned in UI)
 
 ## PHASE 10 — Credit & FairPath+ (092–100)
 
