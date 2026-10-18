@@ -21,7 +21,7 @@ Use `dev-free@fairpath.test` (password in your vault). Expo web: often `http://l
 ## Onboarding
 
 1. Complete 5 steps → `/home`.
-2. **Finish later** on step 1 → `/home` with partial profile saved.
+2. **Finish later** on step 1 → `/find-jobs` with partial profile saved (`onboarding_completed` still false).
 3. Back on step 1 → `/find-jobs` (guest browse).
 
 ## Email verification

@@ -197,8 +197,8 @@ export default function OnboardingScreen() {
     setSaving(true);
     setSaveError('');
     try {
-      const ok = await persistProfile(true);
-      if (ok) router.replace('/home');
+      const ok = await persistProfile(false);
+      if (ok) router.replace('/find-jobs');
     } catch {
       setSaveError('We could not save. Try again or sign out and back in.');
     } finally {

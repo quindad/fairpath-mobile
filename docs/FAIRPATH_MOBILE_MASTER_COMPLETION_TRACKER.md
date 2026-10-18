@@ -63,9 +63,9 @@
 - [ ] **025** Reentry information respect
 - [ ] **026** Veteran preferences
 - [ ] **027** Experience summary + migration
-- [ ] **028** Finish later / resume
+- [x] **028** Finish later / resume (partial save → `/find-jobs`; private routes resume `/onboarding`)
 - [ ] **029** Onboarding polish
-- [ ] **030** Full new-user journey E2E
+- [x] **030** Full new-user journey E2E (`docs/NEW_USER_JOURNEY_E2E.md`, `npm run test:onboarding`)
 
 ## PHASE 3 — Home (031–038)
 

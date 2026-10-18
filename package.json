@@ -70,6 +70,7 @@
     "test:notifications": "node scripts/audit-notifications.mjs",
     "test:auth": "node scripts/audit-auth.mjs",
     "test:auth-post-auth": "node --test --experimental-strip-types tests/auth-post-auth-route.test.ts",
+    "test:onboarding": "node scripts/audit-onboarding.mjs",
     "test:payments": "node scripts/audit-payments.mjs",
     "test:entitlements": "node scripts/audit-entitlements.mjs",
     "test:theme": "node scripts/audit-theme.mjs",
