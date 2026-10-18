@@ -113,7 +113,7 @@
 
 ## PHASE 11 — Marketplace (101–108)
 
-- [ ] **101–108** (claimant read-only messages shipped)
+- [x] **101–108** Marketplace member/donor loop (`MARKETPLACE_MEMBER_LOOP_E2E.md`, `test:marketplace`; claimant read-only donor notes, no claimant messaging)
 
 ## PHASE 12 — Education & resources (109–113)
 

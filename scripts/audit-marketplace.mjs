@@ -38,6 +38,10 @@ if(service.includes('claimant_message')||donorManage.includes('claimant_message'
 if(!donorManage.includes('sendMarketplaceMessage')||!donorManage.includes('PICKUP LOGISTICS MESSAGE'))failures.push('Donor-only post-selection pickup messaging is missing.');
 if(!service.includes("send_marketplace_pickup_message"))failures.push('Donor pickup messaging is not RPC-backed.');
 if(!service.includes("status:'draft'"))failures.push('New Marketplace listings must start as private drafts before publish.');
+const savedMp=read('src/app/saved-marketplace.tsx');
+if(!savedMp.includes('loadSavedMarketplace')&&!savedMp.includes('saved_marketplace'))failures.push('saved-marketplace must load server bookmarks.');
+if(!claimDetail.includes('FormScrollView')&&!claimDetail.includes('KeyboardFooterLayout'))failures.push('Claim workspace should use scroll/keyboard-safe layout.');
+if(!read('src/app/marketplace-claims.tsx').includes('loadMyMarketplaceClaims'))failures.push('marketplace-claims hub must load member claims from server.');
 if(!read('src/app/marketplace-list-item.tsx').includes('setMarketplaceItemAvailability(itemId,true)'))failures.push('Listing create flow does not explicitly publish after media upload.');
 
 // Regression: same fix/finding as Jobs/Housing/Resources - a failed fresh search must clear items before setting
