@@ -8,6 +8,7 @@ import { SocialAuthButtons } from '@/components/SocialAuthButtons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { supabase } from '../lib/supabase';
+import { resolvePostAuthRoute } from '@/core/auth/post-auth-route';
 import { recordSignUpConsent } from '@/core/profile/consent-service';
 
 const LIME = '#A8F32C';
@@ -97,7 +98,8 @@ export default function SignUpScreen() {
           router.replace('/accept-terms' as never);
           return;
         }
-        router.replace('/auth/callback');
+        const dest = await resolvePostAuthRoute(returnTo);
+        router.replace(dest as never);
         return;
       }
 

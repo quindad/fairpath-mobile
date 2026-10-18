@@ -49,8 +49,8 @@
 - [ ] **014** Google Sign In — BLOCKED: OAuth client config
 - [ ] **015** Microsoft/Yahoo — evaluate
 - [ ] **016** Phone auth if enabled
-- [ ] **017** Post-auth routing comprehensive
-- [ ] **018** Accept-terms persistence + DEV migration
+- [x] **017** Post-auth routing comprehensive (`resolvePostAuthRoute` on accept-terms + instant sign-up session; browser proof: `docs/AUTH_E2E_BROWSER_CHECKLIST.md`)
+- [ ] **018** Accept-terms persistence + DEV migration (code + migration in repo; apply on DEV Supabase)
 - [ ] **019** Account recovery
 - [ ] **020** Authorization boundaries
 

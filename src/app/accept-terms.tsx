@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FormScrollView } from '@/components/FormScrollView';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
+import { resolvePostAuthRoute } from '@/core/auth/post-auth-route';
 import { recordSignUpConsent } from '@/core/profile/consent-service';
 import { supabase } from '@/lib/supabase';
 
@@ -22,8 +23,8 @@ export default function AcceptTerms(){
   setSaving(true);setError('');
   try{
    await recordSignUpConsent();
-   const {data:profile}=await supabase.from('profiles').select('onboarding_completed').maybeSingle();
-   router.replace((profile?.onboarding_completed?(returnTo??'/find-jobs'):'/onboarding') as never);
+   const dest = await resolvePostAuthRoute(returnTo);
+   router.replace(dest as never);
   }catch{setError('We could not save your agreement. Please try again.')}
   finally{setSaving(false)}
  }
