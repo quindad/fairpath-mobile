@@ -26,7 +26,7 @@ Use this on **`fairpath-mobile-dev` only** (`znvhmuhojvwvjzmaqwff`). **Never** `
 | 2 | **127** | From repo root: `npx supabase link --project-ref znvhmuhojvwvjzmaqwff` (if not linked) | ☐ |
 | 3 | **128** | `npx supabase migration list` — screenshot or paste pending vs applied | ☐ |
 | 4 | **129** | Review pending files match table below; no surprise drops | ☐ |
-| 5 | **130** | `npx supabase db push` — confirm only DEV ref when prompted | ☐ |
+| 5 | **130** | **BLOCKED:** Do not run `db push`; use separately approved isolated four-file runbook only | ☐ |
 | 6 | **131** | SQL verify: `record_document_consent` exists (`20261015130000` or earlier on DEV) | ☐ |
 | 7 | **132** | SQL verify: profile columns after push (`terms_accepted_at`, `experience_summary` if migration applied) | ☐ |
 | 8 | **133** | Run consent queries in [Verify accept-terms sync](#verify-accept-terms-sync-sql-editor-on-dev) for one test user | ☐ |
@@ -37,13 +37,17 @@ Use this on **`fairpath-mobile-dev` only** (`znvhmuhojvwvjzmaqwff`). **Never** `
 
 ## Apply on DEV (commands)
 
-Prerequisites: [Supabase CLI](https://supabase.com/docs/guides/cli) logged in, project linked to DEV (not production).
+**Drift (Oct 2026):** `db push` would apply **26** pending locals (22 unreconciled + 4 Oct 17). **Do not push** until `docs/DEV_MIGRATION_RECONCILIATION_2026-10-20.md` is resolved.
+
+**Proposed path for Oct 17 only (requires separate execution approval):** manual four-file apply — **`docs/DEV_MIGRATION_OCT17_ISOLATED_APPLY.md`** (no CLI push, no repair of the 22).
+
+Legacy CLI flow (blocked until reconciliation):
 
 ```powershell
 cd fairpath-mobile
 npx supabase link --project-ref znvhmuhojvwvjzmaqwff
 npx supabase migration list
-npx supabase db push
+# npx supabase db push   # NO-PUSH until drift reconciled
 ```
 
 Review the pending list before confirming. **Do not** use `db reset` on shared DEV.
@@ -81,11 +85,11 @@ npm run test:auth
 npm run test:all
 ```
 
-`test:sql:consent` applies all migrations locally (PGlite) and asserts `record_document_consent` updates `profiles`. Full suite **63/63** does not replace cloud `db push` — it only proves repo migrations apply cleanly in isolation.
+`test:sql:consent` applies all migrations locally (PGlite) and asserts `record_document_consent` updates `profiles`. Full suite (run fresh; historical count may differ) does not replace cloud `db push` — it only proves repo migrations apply cleanly in isolation.
 
 ## Post-push regression (operator machine)
 
-After **130**, from repo with `.env.local` pointing at DEV:
+After a separately approved isolated DEV apply, from repo with `.env.local` pointing at DEV:
 
 ```powershell
 npm run typecheck
