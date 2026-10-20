@@ -3,7 +3,7 @@
 **When:** After DEV migrations applied (`DEV_SUPABASE_MOBILE_V1_MIGRATIONS.md`) and `.env.local` points at `znvhmuhojvwvjzmaqwff`.  
 **Accounts:** `docs/DEV_TEST_ACCOUNTS.md` (vault — not in git). Suggested: `dev-plus@fairpath.test` (Signal credits), `dev-free@fairpath.test` (baseline).
 
-**Surfaces:** Expo web on PC (`npm run web`) and/or **development build on phone** (`npx expo start --tunnel`). Native-only flows (maps, Apple Sign-In) require dev client.
+**Surfaces:** Expo web on PC (`npm run web`) and/or **development build on phone** — setup: `docs/DEVICE_DEV_QUICKSTART.md` (`npx expo start --tunnel`). Native-only flows (maps, Apple Sign-In) require dev client.
 
 Record **PASS / FAIL / BLOCKED** and date. Do not mark PASS without running the step.
 
