@@ -2,7 +2,7 @@
 
 **Branch:** `development/mobile-v1-completion`  
 **HEAD (session start):** `b098aca` (after regression: see latest commit)  
-**Test baseline (2026-10-17):** `npm run typecheck` → pass; `npm run test:all` → **63/63**  
+**Test baseline:** `npm run typecheck` → pass; `npm run test:all` → **64/64** (includes `test:education`)  
 **Directive:** FAIRPATH MOBILE — MASTER COMPLETION DIRECTIVE (160 tasks)
 
 ## Progress snapshot
@@ -151,7 +151,13 @@ Member loop: `docs/RECORD_RELIEF_MEMBER_LOOP_E2E.md` · Automated: `npm run test
 
 ## PHASE 12 — Education & resources (109–113)
 
-- [ ] **109–113**
+Loop: `docs/EDUCATION_RESOURCES_E2E.md` · `npm run test:education`, `npm run test:resources`
+
+- [x] **109** Academy fixture catalog + honest cost labels + external links
+- [x] **110** No in-app certificate theater (`/academy/[id]` redirect copy)
+- [x] **111** Resources search + Explore links + Academy → Resources banner
+- [x] **112** Resource detail RPC + save (automated); manual **042** on DEV content
+- [x] **113** Saved resources hub
 
 ## PHASE 13 — Notifications (114–118)
 
