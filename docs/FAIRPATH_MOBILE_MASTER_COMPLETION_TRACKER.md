@@ -2,7 +2,7 @@
 
 **Branch:** `development/mobile-v1-completion`  
 **HEAD (session start):** `b098aca` (after regression: see latest commit)  
-**Test baseline:** `npm run typecheck` → pass; `npm run test:all` → **64/64** (includes `test:education`)  
+**Test baseline:** `npm run typecheck` → pass; `npm run test:all` → **65/65** (includes `test:education`, `test:profile-a11y`)  
 **Directive:** FAIRPATH MOBILE — MASTER COMPLETION DIRECTIVE (160 tasks)
 
 ## Progress snapshot
@@ -171,7 +171,15 @@ Loop: `docs/NOTIFICATIONS_MEMBER_LOOP_E2E.md` · `npm run test:notifications`
 
 ## PHASE 14 — Profile & a11y (119–125)
 
-- [ ] **119–125**
+Loop: `docs/PROFILE_A11Y_E2E.md` · `test:profile`, `test:member`, `test:profile-a11y`, `test:theme`, `test:keyboard`
+
+- [x] **119** `/me` hub (summary, navigation, a11y labels)
+- [x] **120** Opportunity Profile sections + validation boundaries
+- [x] **121** Location setup → jobs/housing search prefill
+- [x] **122** Privacy & account deletion honesty
+- [x] **123** Appearance modes (honest partial migration)
+- [x] **124** Shared keyboard form behavior
+- [x] **125** Theme tokens + contrast (automated); VoiceOver/large text **manual** on device
 
 ## PHASE 15 — Supabase DEV ops (126–135)
 

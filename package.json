@@ -78,6 +78,7 @@
     "test:resources": "node scripts/audit-resources.mjs",
     "test:education": "node scripts/audit-education.mjs",
     "test:profile": "node scripts/audit-profile.mjs",
+    "test:profile-a11y": "node scripts/audit-profile-a11y.mjs",
     "test:member": "node scripts/audit-member.mjs",
     "test:credit": "node scripts/audit-credit.mjs",
     "test:relief": "node scripts/audit-relief.mjs",
