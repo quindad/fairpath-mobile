@@ -102,7 +102,7 @@ Member loop: `docs/JOBS_MEMBER_LOOP_E2E.md` · Automated: `npm run test:jobs`, `
 - [x] **050** Applications hub (`/job-applications`, refresh, deep links)
 - [x] **051** Application detail (timeline, withdraw, interview prep Signal)
 - [x] **052** Saved job searches (save from find-jobs, `/saved-job-searches`, honest alert copy)
-- [ ] **053** DEV cloud member loop proof (manual browser/device on published DEV jobs + optional Signal secrets)
+- [ ] **053** DEV cloud member loop proof → `docs/DEV_MANUAL_MEMBER_QA.md` § B
 
 ## PHASE 6 — Housing (054–060)
 
@@ -115,7 +115,7 @@ Member loop: `docs/HOUSING_MEMBER_LOOP_E2E.md` · Automated: `npm run test:housi
 - [x] **058** Apply flow (`housing-apply/new`, draft at step 2+, documents, submit RPC, FastTrack retired)
 - [x] **059** Applications hub + workspace (timeline, withdraw, Signal application prep)
 - [x] **060** Saved homes + saved searches (save/remove, reopen find-housing)
-- [ ] **060 (manual)** DEV cloud housing loop proof (browser/device on published DEV listings)
+- [ ] **060 (manual)** DEV cloud housing loop → `docs/DEV_MANUAL_MEMBER_QA.md` § C
 
 ## PHASE 7 — Record Relief (061–071)
 
