@@ -161,7 +161,13 @@ Loop: `docs/EDUCATION_RESOURCES_E2E.md` · `npm run test:education`, `npm run te
 
 ## PHASE 13 — Notifications (114–118)
 
-- [ ] **114–118**
+Loop: `docs/NOTIFICATIONS_MEMBER_LOOP_E2E.md` · `npm run test:notifications`
+
+- [x] **114** In-app inbox (load, mark one, mark all, settings link)
+- [x] **115** Unread count on Home
+- [x] **116** Settings + `register_push_token` / `unregister_push_token` (code complete)
+- [x] **117** Notification tap routing in `_layout.tsx`
+- [ ] **118** Device push proof (manual — **P0-005**)
 
 ## PHASE 14 — Profile & a11y (119–125)
 

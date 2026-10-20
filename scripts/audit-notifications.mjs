@@ -63,6 +63,24 @@ check(/NEW REPLY/.test(act) && /markHousingInquiryReplyRead/.test(act) && /inqui
 check(/loadUnreadNotificationCount/.test(read('src/app/home.tsx')), 'Home must show the unread notification count.');
 check(/loadUnreadNotificationCount/.test(read('src/core/notifications/notifications-service.ts')), 'Unread count loader missing.');
 
+const inbox = read('src/app/notifications.tsx');
+check(/loadUserNotifications/.test(inbox) && /markNotificationRead/.test(inbox) && /markAllNotificationsRead/.test(inbox), 'Notifications inbox must load and mark read via server.');
+check(/notification-settings/.test(inbox), 'Inbox must link to notification settings.');
+
+const settings = read('src/app/notification-settings.tsx');
+check(/syncPushRegistration/.test(settings) && /disablePushRegistration/.test(settings), 'Settings must register/unregister push via push-registration helper.');
+check(/push_enabled/.test(settings), 'Settings must expose push_enabled preference.');
+
+const prefs = read('src/core/notifications/notification-preferences.ts');
+check(/register_push_token/.test(prefs) && /unregister_push_token/.test(prefs), 'Push tokens must use register/unregister RPCs only.');
+
+const push = read('src/core/notifications/push-registration.ts');
+check(/getExpoPushTokenAsync/.test(push) && /registerNotificationToken/.test(push), 'Push registration must obtain Expo token and persist server-side.');
+check(/Device\.isDevice/.test(push), 'Push sync must refuse simulators/emulators honestly.');
+
+const layout = read('src/app/_layout.tsx');
+check(/addNotificationResponseReceivedListener/.test(layout) && /syncPushRegistration/.test(layout), 'Root layout must handle notification taps and attempt push sync on launch.');
+
 if (failures.length) {
   console.error('Notifications/inquiry audit failed:\n- ' + failures.join('\n- '));
   process.exit(1);
