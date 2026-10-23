@@ -18,6 +18,7 @@ export const EXPLORE_READINESS: Record<string, ExploreReadiness> = {
   veterans: 'live',
   food: 'in_development',
   resources: 'live',
+  credit: 'live',
   'record-relief': 'in_development',
   market: 'live',
   signal: 'in_development',

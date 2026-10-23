@@ -153,15 +153,18 @@ export function resolveGrowthDiscovery(category: string): { resourceSlugs: strin
     const p = v1PathwayById('family_center');
     return { resourceSlugs: [...p.resourceCategorySlugs], route: '/find-housing', pathwayId: 'family_center' };
   }
+  if (key === 'employment') {
+    const p = v1PathwayById('skills_exchange');
+    return { resourceSlugs: [...p.resourceCategorySlugs], route: '/find-jobs', pathwayId: 'skills_exchange' };
+  }
+  if (key === 'financial') {
+    const p = v1PathwayById('benefits_navigator');
+    return { resourceSlugs: [...p.resourceCategorySlugs], route: '/credit', pathwayId: 'benefits_navigator' };
+  }
 
   const direct: Record<string, V1PathwayId> = {
-    employment: 'skills_exchange',
     education: 'education_scholarships',
     entrepreneurship: 'microbusiness',
-    financial: 'benefits_navigator',
-    legal: 'benefits_navigator',
-    record_relief: 'skills_exchange',
-    housing: 'family_center',
     skills_exchange: 'skills_exchange',
     microbusiness: 'microbusiness',
     education_scholarships: 'education_scholarships',
@@ -177,7 +180,7 @@ export function resolveGrowthDiscovery(category: string): { resourceSlugs: strin
     health: 'health_wellness',
     mentorship_program: 'mentorship',
   };
-  const pid = direct[category] ?? null;
+  const pid = direct[key] ?? null;
   if (!pid) return { resourceSlugs: [], route: null, pathwayId: null };
   const p = v1PathwayById(pid);
   return { resourceSlugs: [...p.resourceCategorySlugs], route: p.primaryRoute, pathwayId: pid };
