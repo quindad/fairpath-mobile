@@ -9,6 +9,7 @@ import { BRANCHES, type Branch, type BranchId } from '@/core/veterans/branches';
 import { VETERAN_SECTIONS, sectionUsable, type VeteranSection } from '@/core/veterans/dashboard';
 import { translateOccupation } from '@/core/veterans/translation';
 import { translateVeteranExperience } from '@/core/ai/signal';
+import { VeteranToolsGate } from '@/components/VeteranToolsGate';
 
 const COMPONENT_LABEL: Record<string, string> = {
   active: 'Active Duty',
@@ -51,6 +52,7 @@ export default function VeteransScreen() {
   }
 
   return (
+    <VeteranToolsGate eyebrow="VETERANS" title="Veteran-specific tools" backTo="/home">
     <ScreenFrame>
       <PageHeader eyebrow="VETERANS" title="Veteran-specific tools" backTo="/home" />
       <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
@@ -165,6 +167,7 @@ export default function VeteransScreen() {
         {signalRequested ? <View style={s.card}><Text style={s.cardBody}>{signalLoading ? 'Signal is thinking…' : signalText}</Text></View> : null}
       </FormScrollView>
     </ScreenFrame>
+    </VeteranToolsGate>
   );
 }
 

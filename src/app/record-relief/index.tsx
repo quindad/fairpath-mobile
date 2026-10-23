@@ -8,6 +8,7 @@ import { DISCLAIMER, OUTCOME_INFO, countdownText, headlineOutcome } from '@/core
 import { loadCases, loadCoveredJurisdictions, loadCurrentEvaluations, loadJurisdictions, type Jurisdiction, type ReliefCase } from '@/core/record-relief/relief-service';
 import { useFairPathTheme, useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
+import { JusticeToolsGate } from '@/components/JusticeToolsGate';
 
 export default function RecordReliefHome() {
   const s = useThemedStyles(styles);
@@ -35,6 +36,7 @@ export default function RecordReliefHome() {
   const testCovered = jurisdictions.filter((j) => covered.has(j.code) && j.kind === 'test').length;
 
   return (
+    <JusticeToolsGate eyebrow="FREE FAIRPATH TOOL" title="Record Relief" backTo="/home">
     <ScreenFrame>
       <PageHeader eyebrow="FREE FAIRPATH TOOL" title="Record Relief" backTo="/home" />
       <ScreenScroll contentContainerStyle={s.content}>
@@ -73,6 +75,7 @@ export default function RecordReliefHome() {
         ) : null}
       </ScreenScroll>
     </ScreenFrame>
+    </JusticeToolsGate>
   );
 }
 

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { filterGoalLabels, type MemberCapabilities } from '@/core/profile/member-capabilities';
 
 export type HomePersonalization = {
   firstName: string | null;
@@ -12,11 +13,11 @@ export type HomePersonalization = {
 const GOAL_ROUTES: Record<string, { label: string; route: string }> = {
   'Work & income': { label: 'Jobs', route: '/find-jobs' },
   Housing: { label: 'Housing', route: '/find-housing' },
-  'Food & essentials': { label: 'Resources', route: '/resources' },
+  'Food & essentials': { label: 'Community', route: '/community' },
   Reentry: { label: 'Record relief', route: '/record-relief' },
   'Veteran transition': { label: 'Veterans', route: '/veterans' },
   'Safety & recovery': { label: 'Safety', route: '/safety' },
-  'Give or help someone': { label: 'Marketplace', route: '/marketplace' },
+  'Give or help someone': { label: 'I can help', route: '/community/can-help' },
   'Learn new skills': { label: 'Academy', route: '/academy' },
   'Build a business': { label: 'Entrepreneurship', route: '/entrepreneurship' },
 };
@@ -42,8 +43,12 @@ export async function loadHomePersonalization(): Promise<HomePersonalization | n
 }
 
 /** Ordered quick links from onboarding goals (deduped, max 4). */
-export function homeQuickLinks(p: HomePersonalization | null): { label: string; route: string }[] {
-  if (!p?.goals.length) {
+export function homeQuickLinks(
+  p: HomePersonalization | null,
+  caps: MemberCapabilities | null = null,
+): { label: string; route: string }[] {
+  const goals = filterGoalLabels(p?.goals ?? [], caps);
+  if (!goals.length) {
     return [
       { label: 'Jobs', route: '/find-jobs' },
       { label: 'Housing', route: '/find-housing' },
@@ -53,7 +58,7 @@ export function homeQuickLinks(p: HomePersonalization | null): { label: string; 
   }
   const out: { label: string; route: string }[] = [];
   const seen = new Set<string>();
-  for (const goal of p.goals) {
+  for (const goal of goals) {
     const link = GOAL_ROUTES[goal];
     if (!link || seen.has(link.route)) continue;
     seen.add(link.route);
@@ -64,10 +69,11 @@ export function homeQuickLinks(p: HomePersonalization | null): { label: string; 
   return out.slice(0, 4);
 }
 
-export function homeFocusLine(p: HomePersonalization | null): string | null {
+export function homeFocusLine(p: HomePersonalization | null, caps: MemberCapabilities | null = null): string | null {
   if (!p) return null;
   const parts: string[] = [];
   if (p.locationText?.trim()) parts.push(`Near ${p.locationText.trim()}`);
-  if (p.goals.length) parts.push(p.goals.slice(0, 2).join(' · '));
+  const goals = filterGoalLabels(p.goals, caps);
+  if (goals.length) parts.push(goals.slice(0, 2).join(' · '));
   return parts.length ? parts.join(' — ') : null;
 }

@@ -9,6 +9,7 @@ import { parseProfile, VETERAN_PROFILE_KEY, type VeteranProfile } from '@/core/v
 import { BRANCHES } from '@/core/veterans/branches';
 import { getFocusGuidance } from '@/core/ai/signal';
 import { homeQuickLinks, loadHomePersonalization, type HomePersonalization } from '@/core/profile/home-personalization';
+import { loadMemberCapabilities, veteranToolsEnabled, type MemberCapabilities } from '@/core/profile/member-capabilities';
 import { loadOpportunityPlan, type OpportunityPlan } from '@/core/opportunity/plan-store';
 import { loadMyResourceReferralRequests, type MemberReferralRow } from '@/core/opportunity/referral-service';
 
@@ -31,6 +32,7 @@ export default function MyPathScreen() {
   const [focusRequested, setFocusRequested] = useState(false);
   const [opportunityPlan, setOpportunityPlan] = useState<OpportunityPlan | null>(null);
   const [resourceReferrals, setResourceReferrals] = useState<MemberReferralRow[]>([]);
+  const [caps, setCaps] = useState<MemberCapabilities | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -39,11 +41,13 @@ export default function MyPathScreen() {
       loadHomePersonalization().catch(() => null),
       loadOpportunityPlan().catch(() => ({ items: [] })),
       loadMyResourceReferralRequests().catch(() => []),
+      loadMemberCapabilities().catch(() => null),
     ])
-      .then(([raw, p, plan, referrals]) => {
+      .then(([raw, p, plan, referrals, capabilities]) => {
         if (!alive) return;
         setVeteran(raw ? parseProfile(raw, new Date().toISOString()) : null);
         setPersonalization(p);
+        setCaps(capabilities);
         setOpportunityPlan(plan);
         setResourceReferrals(referrals);
         setLoad('ready');
@@ -84,7 +88,7 @@ export default function MyPathScreen() {
             <SectionTitle>Your focus areas</SectionTitle>
             <Text style={s.body}>{personalization.goals.join(' · ')}</Text>
             <View style={s.row}>
-              {homeQuickLinks(personalization).map((l) => (
+              {homeQuickLinks(personalization, caps).map((l) => (
                 <Pressable key={l.route} style={s.chip} accessibilityRole="link" onPress={() => router.push(l.route as never)}>
                   <Text style={s.chipText}>{l.label}</Text>
                 </Pressable>
@@ -189,16 +193,20 @@ export default function MyPathScreen() {
               <Text style={s.body}>DEV demo. Once placed on a FairPath Staffing assignment, it shows up here.</Text>
             </Pressable>
 
-            <SectionTitle>Veterans</SectionTitle>
-            <Pressable style={s.card} accessibilityRole="link" onPress={() => router.push('/veterans/profile' as never)}>
-              <Text style={s.cardTitle}>Service profile</Text>
-              <Text style={s.body}>
-                {branch ? `Branch: ${branch}` : 'No branch selected. Optional.'}
-              </Text>
-              <Text style={s.body}>
-                {veteran ? `${veteran.consents.filter((c) => c.granted).length} details shared with your profile` : 'No details shared yet'}
-              </Text>
-            </Pressable>
+            {veteranToolsEnabled(caps) ? (
+              <>
+                <SectionTitle>Veterans</SectionTitle>
+                <Pressable style={s.card} accessibilityRole="link" onPress={() => router.push('/veterans/profile' as never)}>
+                  <Text style={s.cardTitle}>Service profile</Text>
+                  <Text style={s.body}>
+                    {branch ? `Branch: ${branch}` : 'No branch selected. Optional.'}
+                  </Text>
+                  <Text style={s.body}>
+                    {veteran ? `${veteran.consents.filter((c) => c.granted).length} details shared with your profile` : 'No details shared yet'}
+                  </Text>
+                </Pressable>
+              </>
+            ) : null}
           </>
         ) : null}
 

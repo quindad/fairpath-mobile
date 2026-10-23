@@ -1,5 +1,12 @@
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import {
+  justiceToolsEnabled,
+  loadMemberCapabilities,
+  veteranToolsEnabled,
+  type MemberCapabilities,
+} from '@/core/profile/member-capabilities';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { PageHeader, ScreenFrame, ScreenScroll, SectionTitle } from '@/components/ProductChrome';
 import { FairPathFonts as F } from '@/constants/fairpath';
@@ -63,12 +70,35 @@ const STATUS_LABEL: Record<Destination['status'], string> = {
 export default function ExploreScreen() {
   const s = useThemedStyles(styles);
   const { tokens } = useFairPathTheme();
+  const [caps, setCaps] = useState<MemberCapabilities | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadMemberCapabilities()
+        .then((c) => setCaps(c))
+        .catch(() => setCaps(null));
+    }, []),
+  );
+
+  const sections = useMemo(
+    () =>
+      SECTIONS.map((section) => ({
+        ...section,
+        items: section.items.filter((item) => {
+          if (item.id === 'record-relief' && !justiceToolsEnabled(caps)) return false;
+          if (item.id === 'veterans' && !veteranToolsEnabled(caps)) return false;
+          return true;
+        }),
+      })).filter((section) => section.items.length > 0),
+    [caps],
+  );
+
   return (
     <ScreenFrame>
       <PageHeader eyebrow="DISCOVER" title="Explore" onBack={false} />
       <ScreenScroll contentContainerStyle={s.content}>
         <Text style={s.lead}>Everything FairPath offers beyond the five tabs — pick a destination.</Text>
-        {SECTIONS.map((section) => (
+        {sections.map((section) => (
           <View key={section.title} style={s.section}>
             <SectionTitle>{section.title}</SectionTitle>
             <View style={s.group}>

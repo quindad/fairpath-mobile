@@ -4,6 +4,7 @@ import { useFocusEffect } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { FairPathFonts as F } from '@/constants/fairpath';
+import { filterNextStepsForCapabilities, justiceToolsEnabled, loadMemberCapabilities, type MemberCapabilities } from '@/core/profile/member-capabilities';
 import { loadMemberSummary } from '@/core/profile/member-summary';
 import { nextSteps, type MemberSummary, type NextStep } from '@/core/profile/next-step';
 import { myEarlyAccessEnrollments } from '@/core/coverage/coverage-service';
@@ -40,10 +41,12 @@ export function HomeStatus() {
   const [summary, setSummary] = useState<MemberSummary | null>(null);
   const [nextMeeting, setNextMeeting] = useState<NextMeeting | null>(null);
   const [waitlistZip, setWaitlistZip] = useState<string | null>(null);
+  const [caps, setCaps] = useState<MemberCapabilities | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       let live = true;
+      loadMemberCapabilities().then((x) => live && setCaps(x)).catch(() => live && setCaps(null));
       loadMemberSummary().then((x) => live && setSummary(x)).catch(() => live && setSummary(null));
       loadNextMeeting().then((x) => live && setNextMeeting(x)).catch(() => live && setNextMeeting(null));
       myEarlyAccessEnrollments()
@@ -55,10 +58,11 @@ export function HomeStatus() {
 
   if (!summary) return null;
 
-  const steps: NextStep[] = nextSteps(summary);
+  const steps: NextStep[] = filterNextStepsForCapabilities(nextSteps(summary), caps);
   const alerts: { label: string; route: string }[] = [];
   const c = summary.credit;
   const r = summary.record_relief;
+  const showJustice = justiceToolsEnabled(caps);
   if (nextMeeting) {
     alerts.push({ label: `${nextMeeting.title} — ${meetingWhen(nextMeeting.start_at)}`, route: `/meetings/${nextMeeting.id}` });
   }
@@ -66,8 +70,8 @@ export function HomeStatus() {
     alerts.push({ label: `${c?.items_to_review} credit item${c?.items_to_review === 1 ? '' : 's'} to review`, route: '/credit' });
   }
   if ((c?.response_due_soon ?? 0) > 0) alerts.push({ label: 'Dispute response due soon', route: '/credit' });
-  if ((r?.eligible_now ?? 0) > 0) alerts.push({ label: 'Record relief may be ready to review', route: '/record-relief' });
-  if ((r?.countdowns_due_soon ?? 0) > 0) alerts.push({ label: 'Waiting period ending soon', route: '/record-relief' });
+  if (showJustice && (r?.eligible_now ?? 0) > 0) alerts.push({ label: 'Record relief may be ready to review', route: '/record-relief' });
+  if (showJustice && (r?.countdowns_due_soon ?? 0) > 0) alerts.push({ label: 'Waiting period ending soon', route: '/record-relief' });
   if ((summary.documents?.expiring_soon ?? 0) > 0) alerts.push({ label: 'Document expiring soon', route: '/documents' });
   if ((summary.resources?.unavailable_saved ?? 0) > 0) alerts.push({ label: 'Saved resource unavailable', route: '/saved-resources' });
   if (waitlistZip) alerts.push({ label: `Early access waitlist (${waitlistZip})`, route: `/early-access?zip=${waitlistZip}` });

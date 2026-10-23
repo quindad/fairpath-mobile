@@ -3,6 +3,11 @@ import { StatusBar } from 'expo-status-bar';
 import { useMemo, useState } from 'react';
 
 import { supabase } from '../lib/supabase';
+import {
+  VETERAN_TOOLS_QUESTION_ID,
+  capabilitiesFromOnboardingToolStep,
+  toProfileJusticeField,
+} from '@/core/profile/member-capabilities';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { FormScrollView, KeyboardFooterLayout } from '@/components/FormScrollView';
 import { FairBackButton } from '@/components/ProductChrome';
@@ -42,8 +47,9 @@ function buildProfilePayload(
 ) {
   const goals = new Set(answers[0] ?? []);
   const tools = answers[2] ?? [];
-  if (tools.includes('Reentry & record relief')) goals.add('Reentry');
-  if (tools.includes('Veteran transition')) goals.add('Veteran transition');
+  const caps = capabilitiesFromOnboardingToolStep(tools);
+  if (caps.justice === 'yes') goals.add('Reentry');
+  if (caps.veteran === 'yes') goals.add('Veteran transition');
 
   const wh = answers[3] ?? [];
   const focus = answers[4] ?? [];
@@ -51,11 +57,7 @@ function buildProfilePayload(
   return {
     goals: Array.from(goals),
     location_text: textAnswers[1]?.trim() ?? '',
-    justice_impacted: tools.includes('Reentry & record relief')
-      ? 'Yes'
-      : tools.includes('Neither — skip for now')
-        ? 'Prefer not to say'
-        : 'Prefer not to say',
+    justice_impacted: toProfileJusticeField(caps.justice),
     opportunity_priorities: focus.filter((x) => FOCUS_CHOICES.slice(0, 16).includes(x)),
     work_preferences: wh.filter((x) => WORK_CHOICES.includes(x)),
     housing_preferences: wh.filter((x) => HOUSING_CHOICES.includes(x)),
@@ -167,13 +169,28 @@ export default function OnboardingScreen() {
       return false;
     }
 
-    const { error } = await supabase
-      .from('profiles')
-      .update(buildProfilePayload(answers, textAnswers, experienceLine, complete))
-      .eq('id', user.id);
+    const payload = buildProfilePayload(answers, textAnswers, experienceLine, complete);
+    const { error } = await supabase.from('profiles').update(payload).eq('id', user.id);
 
     if (error) {
       setSaveError('We could not save your setup. Your answers are still here — try again.');
+      return false;
+    }
+    const tools = answers[2] ?? [];
+    const caps = capabilitiesFromOnboardingToolStep(tools);
+    const { error: vetErr } = await supabase.from('profile_answers').upsert(
+      {
+        user_id: user.id,
+        question_id: VETERAN_TOOLS_QUESTION_ID,
+        answer: caps.veteran,
+        source: 'user',
+        verification_state: 'self_reported',
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id,question_id' },
+    );
+    if (vetErr) {
+      setSaveError('We could not save your veteran tool preference. Try again.');
       return false;
     }
     return true;

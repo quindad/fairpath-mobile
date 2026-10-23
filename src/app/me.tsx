@@ -12,15 +12,43 @@ import type { ThemeTokens } from '@/core/theme/tokens';
 import { notify } from '@/core/ui/notify';
 import { supabase } from '@/lib/supabase';
 import { disablePushRegistration } from '@/core/notifications/push-registration';
+import {
+  filterNextStepsForCapabilities,
+  justiceToolsEnabled,
+  loadMemberCapabilities,
+  type MemberCapabilities,
+} from '@/core/profile/member-capabilities';
 
-// YOUR PATH: the core FairPath tools, in the order a member typically moves through them.
-const PATH_LINKS: { title: string; body: (s: MemberSummary) => string; route: string }[] = [
-  { title: 'Opportunity Profile', body: (s) => `${s.profile?.completed_sections ?? 0} of ${s.profile?.total_sections ?? 8} sections · professional credibility for employers`, route: '/opportunity-profile' },
-  { title: 'Resume Studio', body: () => 'Build a clean, ATS-friendly resume', route: '/resume-studio' },
-  { title: 'Credit Studio', body: (s) => (s.credit?.reports ?? 0) > 0 ? `${s.credit?.items_to_review ?? 0} item(s) to review` : 'Review a credit report and prepare disputes', route: '/credit' },
-  { title: 'My Justice Records', body: (s) => (s.record_relief?.cases ?? 0) > 0 ? `${s.record_relief?.cases} case(s) · unified view` : 'Cases, charges & relief in one place', route: '/justice-records' },
-  { title: 'Record Relief', body: (s) => (s.record_relief?.cases ?? 0) > 0 ? `${s.record_relief?.cases} case(s) tracked` : 'Check a case against verified rules', route: '/record-relief' },
-];
+function pathLinks(caps: MemberCapabilities | null): { title: string; body: (s: MemberSummary) => string; route: string }[] {
+  const base = [
+    { title: 'Opportunity Profile', body: (s: MemberSummary) => `${s.profile?.completed_sections ?? 0} of ${s.profile?.total_sections ?? 8} sections · professional credibility for employers`, route: '/opportunity-profile' },
+    { title: 'Resume Studio', body: () => 'Build a clean, ATS-friendly resume', route: '/resume-studio' },
+    { title: 'Credit Studio', body: (s: MemberSummary) => (s.credit?.reports ?? 0) > 0 ? `${s.credit?.items_to_review ?? 0} item(s) to review` : 'Review a credit report and prepare disputes', route: '/credit' },
+  ];
+  if (!justiceToolsEnabled(caps)) return base;
+  return [
+    ...base,
+    { title: 'My Justice Records', body: (s: MemberSummary) => (s.record_relief?.cases ?? 0) > 0 ? `${s.record_relief?.cases} case(s) · unified view` : 'Cases, charges & relief in one place', route: '/justice-records' },
+    { title: 'Record Relief', body: (s: MemberSummary) => (s.record_relief?.cases ?? 0) > 0 ? `${s.record_relief?.cases} case(s) tracked` : 'Check a case against verified rules', route: '/record-relief' },
+  ];
+}
+
+function accountLinks(caps: MemberCapabilities | null): { title: string; body: string; route: string }[] {
+  const links = [
+    { title: 'FairPath tools', body: 'Justice and veteran tool visibility (private to you)', route: '/member-tool-preferences' },
+    { title: 'Your location', body: 'ZIP code and search radius', route: '/location-setup' },
+    { title: 'Notifications', body: 'Housing, Marketplace, jobs and FairPath updates', route: '/notifications' },
+    { title: 'Payments', body: 'Receipts and payment history', route: '/payments' },
+    { title: 'FairPath+', body: 'Your membership and access', route: '/plus' },
+  ];
+  if (justiceToolsEnabled(caps)) {
+    return [
+      { title: 'Justice readiness', body: 'Your private readiness checklist. Never shared with employers.', route: '/profile-readiness' },
+      ...links,
+    ];
+  }
+  return links;
+}
 
 // ACTIVITY: what the member has done across FairPath.
 const ACTIVITY_LINKS: { title: string; body: string; route: string }[] = [
@@ -38,15 +66,6 @@ const ACTIVITY_LINKS: { title: string; body: string; route: string }[] = [
   { title: 'Saved Marketplace', body: 'Free items you bookmarked', route: '/saved-marketplace' },
 ];
 
-// ACCOUNT: settings and account-level controls.
-const ACCOUNT_LINKS: { title: string; body: string; route: string }[] = [
-  { title: 'Justice readiness', body: 'Your private readiness checklist. Never shared with employers.', route: '/profile-readiness' },
-  { title: 'Your location', body: 'ZIP code and search radius', route: '/location-setup' },
-  { title: 'Notifications', body: 'Housing, Marketplace, jobs and FairPath updates', route: '/notifications' },
-  { title: 'Payments', body: 'Receipts and payment history', route: '/payments' },
-  { title: 'FairPath+', body: 'Your membership and access', route: '/plus' },
-];
-
 export default function MeScreen() {
   const s = useThemedStyles(styles);
   const { tokens } = useFairPathTheme();
@@ -55,12 +74,14 @@ export default function MeScreen() {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [caps, setCaps] = useState<MemberCapabilities | null>(null);
 
   const load = useCallback(() => {
     setError('');
-    Promise.all([loadMemberSummary(), loadContact().catch(() => null)])
-      .then(([sum, contact]) => {
+    Promise.all([loadMemberSummary(), loadContact().catch(() => null), loadMemberCapabilities().catch(() => null)])
+      .then(([sum, contact, capabilities]) => {
         setSummary(sum);
+        setCaps(capabilities);
         if (contact) { setName(`${contact.first_name} ${contact.last_name}`.trim()); setEmail(contact.email); }
       })
       .catch(() => { setSummary(null); setError('We could not load your summary. Check your connection and try again.'); })
@@ -76,7 +97,7 @@ export default function MeScreen() {
     else router.replace('/find-jobs' as never);
   }
 
-  const steps = nextSteps(summary);
+  const steps = filterNextStepsForCapabilities(nextSteps(summary), caps);
   const primary = steps[0];
   const more = steps.slice(1, 3);
   const plus = summary?.plus;
@@ -120,7 +141,7 @@ export default function MeScreen() {
             {more.map((m) => <ListRow key={m.key} title={m.title} body={m.body} onPress={() => router.push(m.route as never)} />)}
 
             <View style={s.block}><SectionTitle>YOUR PATH</SectionTitle></View>
-            {PATH_LINKS.map((l) => <ListRow key={l.route} title={l.title} body={l.body(summary)} onPress={() => router.push(l.route as never)} />)}
+            {pathLinks(caps).map((l) => <ListRow key={l.route} title={l.title} body={l.body(summary)} onPress={() => router.push(l.route as never)} />)}
 
             <View style={s.block}><SectionTitle>ACTIVITY</SectionTitle></View>
             {ACTIVITY_LINKS.map((l) => <ListRow key={l.route} title={l.title} body={l.body} onPress={() => router.push(l.route as never)} />)}
@@ -128,7 +149,7 @@ export default function MeScreen() {
         ) : null}
 
         <View style={s.block}><SectionTitle>ACCOUNT</SectionTitle></View>
-        {ACCOUNT_LINKS.map((l) => <ListRow key={l.route} title={l.title} body={l.body} onPress={() => router.push(l.route as never)} />)}
+        {accountLinks(caps).map((l) => <ListRow key={l.route} title={l.title} body={l.body} onPress={() => router.push(l.route as never)} />)}
         <ListRow title="Appearance" body="Dark, light or system" onPress={() => router.push('/appearance' as never)} />
         <ListRow title="Privacy and account" body="What FairPath shares, your data, and deleting your account" onPress={() => router.push('/privacy' as never)} />
         {__DEV__ ? <ListRow title="Integration health (DEV)" body="Live + static status of every external system" onPress={() => router.push('/dev-integration-health' as never)} /> : null}

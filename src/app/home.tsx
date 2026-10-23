@@ -10,12 +10,14 @@ import { HomeStatus } from '@/components/HomeStatus';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { loadFairPathReadiness } from '@/core/profile/profile-service';
 import { homeFocusLine, loadHomePersonalization, type HomePersonalization } from '@/core/profile/home-personalization';
+import { loadMemberCapabilities, type MemberCapabilities } from '@/core/profile/member-capabilities';
 import { loadJobs, loadSavedJobIds, loadUnreadNotificationCount, saveJob, unsaveJob, type Job } from '@/core/opportunities/opportunity-service';
 import { loadMemberSummary } from '@/core/profile/member-summary';
 
 export default function Home() {
   const pathname = usePathname();
   const [personalization, setPersonalization] = useState<HomePersonalization | null>(null);
+  const [caps, setCaps] = useState<MemberCapabilities | null>(null);
   const [readiness, setReadiness] = useState<number | null>(null);
   const [jobAppCount, setJobAppCount] = useState(0);
   const [savedJobCount, setSavedJobCount] = useState(0);
@@ -27,7 +29,7 @@ export default function Home() {
   const [savedJobs, setSavedJobs] = useState<Record<string, boolean>>({});
 
   const greetingName = personalization?.firstName?.trim() || null;
-  const contextLine = homeFocusLine(personalization);
+  const contextLine = homeFocusLine(personalization, caps);
 
   useEffect(() => {
     let a = true;
@@ -45,6 +47,9 @@ export default function Home() {
     loadHomePersonalization()
       .then((x) => { if (active) setPersonalization(x); })
       .catch(() => { if (active) setPersonalization(null); });
+    loadMemberCapabilities()
+      .then((x) => { if (active) setCaps(x); })
+      .catch(() => { if (active) setCaps(null); });
     loadMemberSummary()
       .then((x) => {
         if (!active) return;
