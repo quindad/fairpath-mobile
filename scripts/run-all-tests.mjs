@@ -39,6 +39,7 @@ const steps = [
   ['opportunity intent parser', NODE, ['--test', '--experimental-strip-types', 'tests/opportunity-intent-parser.test.ts']],
   ['opportunity orchestrator helpers', NODE, ['--test', '--experimental-strip-types', 'tests/opportunity-orchestrator.test.ts']],
   ['V1 opportunity pathways', NODE, ['--test', '--experimental-strip-types', 'tests/v1-pathways.test.ts']],
+  ['academy Signal worksheet', NODE, ['--test', '--experimental-strip-types', 'tests/academy-signal-worksheet.test.ts']],
   ['V1 pathway connections audit', NODE, ['scripts/audit-v1-pathways.mjs']],
   ['opportunity alert prefs', NODE, ['--test', '--experimental-strip-types', 'tests/opportunity-alert-prefs.test.ts']],
   ['client user_id checks', NODE, ['scripts/test-client-user-id.mjs']],
