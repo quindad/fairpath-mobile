@@ -51,7 +51,11 @@ async function call<T>(fn: string, args: Record<string, unknown>): Promise<T> {
   return data as T;
 }
 export const loadCaseDetail = (id: string) => call<ReliefDetail>('get_record_relief_case_detail', { p_case: id });
-export const saveCase = (id: string | null, payload: Record<string, unknown>) => call<ReliefCase>('save_record_relief_case', { p_id: id, p: payload });
+export const saveCase = (id: string | null, payload: Record<string, unknown>) =>
+  call<ReliefCase>('save_record_relief_case', {
+    p_id: id,
+    p: { ...payload, skip_legacy_eval: payload.skip_legacy_eval ?? true },
+  });
 
 /** Re-runs the same shared evaluation engine the AI-review flow uses (evaluate-record-relief), built from the
  * saved case's own fields. Previously called the legacy evaluate_record_relief_case RPC, which reads from the

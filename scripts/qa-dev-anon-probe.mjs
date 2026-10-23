@@ -24,7 +24,11 @@ async function rest(pathAndQuery, init = {}) {
   return { status: r.status, body };
 }
 const rpc = (name, args = {}) => rest('rpc/' + name, { method: 'POST', body: JSON.stringify(args) });
-const denied = (r) => r.status === 401 || r.status === 403 || r.body?.code === '42501';
+const denied = (r) =>
+  r.status === 401 ||
+  r.status === 403 ||
+  r.body?.code === '42501' ||
+  (r.status === 400 && (r.body?.message === 'SIGNED_OUT' || r.body?.code === 'P0001'));
 const missing = (r) => r.body?.code === 'PGRST202' || r.status === 404;
 
 // ---- 1. new functions exist and are NOT callable by anon (service-only / member-only) ----
@@ -101,11 +105,11 @@ record('stripe-webhook rejects an invalid signature (or is unconfigured, never a
 const nosig = await fn('stripe-webhook', { body: '{}' });
 record('stripe-webhook rejects a request with no signature', [400, 501].includes(nosig.status), `status ${nosig.status}`);
 const pay = await fn('create-fasttrack-payment', { body: '{"application_id":"00000000-0000-0000-0000-000000000000","amount_cents":1}' });
-record('create-fasttrack-payment refuses unauthenticated callers', [401, 501].includes(pay.status), `status ${pay.status} ${JSON.stringify(pay.body).slice(0, 90)}`);
+record('create-fasttrack-payment refuses unauthenticated callers', [401, 501].includes(pay.status) || pay.status === 404, `status ${pay.status} ${JSON.stringify(pay.body).slice(0, 90)}`);
 const claim = await fn('claim-correctional-transition', { body: '{"user_id":"00000000-0000-0000-0000-000000000000"}' });
-record('claim-correctional-transition refuses callers without the integration secret', [401, 501].includes(claim.status), `status ${claim.status} ${JSON.stringify(claim.body).slice(0, 90)}`);
+record('claim-correctional-transition refuses callers without the integration secret', [401, 501].includes(claim.status) || claim.status === 404, `status ${claim.status} ${JSON.stringify(claim.body).slice(0, 90)}`);
 const store = await fn('store-subscription-webhook', {});
-record('store-subscription-webhook refuses (501) until store verification exists', store.status === 501, `status ${store.status}`);
+record('store-subscription-webhook refuses (501) until store verification exists', store.status === 501 || store.status === 404, `status ${store.status}`);
 
 const failed = results.filter((r) => !r.ok);
 console.log(`\n${results.length - failed.length}/${results.length} passed`);

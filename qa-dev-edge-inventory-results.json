@@ -1,0 +1,271 @@
+{
+  "generatedAt": "2026-10-23T23:07:14.123Z",
+  "projectRef": "znvhmuhojvwvjzmaqwff",
+  "repoFunctionCount": 32,
+  "deployedCount": 28,
+  "notDeployed": [
+    "claim-correctional-transition",
+    "create-fasttrack-payment",
+    "public-record-relief-dev",
+    "store-subscription-webhook"
+  ],
+  "critical": [
+    {
+      "name": "evaluate-record-relief",
+      "inRepo": true,
+      "status": 401,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"unauthorized\"}"
+    },
+    {
+      "name": "extract-record-relief-case",
+      "inRepo": true,
+      "status": 401,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"unauthorized\"}"
+    },
+    {
+      "name": "member-focus-guidance",
+      "inRepo": true,
+      "status": 400,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"credit_spend_failed\",\"reason\":\"permission denied for function spend_ai_credits\"}"
+    },
+    {
+      "name": "render-document",
+      "inRepo": true,
+      "status": 401,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"unauthorized\"}"
+    },
+    {
+      "name": "extract-credit-report",
+      "inRepo": true,
+      "status": 401,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"unauthorized\"}"
+    },
+    {
+      "name": "stripe-webhook",
+      "inRepo": true,
+      "status": 501,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"payments_not_configured\"}"
+    },
+    {
+      "name": "create-fasttrack-payment",
+      "inRepo": true,
+      "status": 404,
+      "deployed": false,
+      "bodySnippet": "{\"code\":\"NOT_FOUND\",\"message\":\"Requested function was not found\"}"
+    },
+    {
+      "name": "store-subscription-webhook",
+      "inRepo": true,
+      "status": 404,
+      "deployed": false,
+      "bodySnippet": "{\"code\":\"NOT_FOUND\",\"message\":\"Requested function was not found\"}"
+    },
+    {
+      "name": "claim-correctional-transition",
+      "inRepo": true,
+      "status": 404,
+      "deployed": false,
+      "bodySnippet": "{\"code\":\"NOT_FOUND\",\"message\":\"Requested function was not found\"}"
+    }
+  ],
+  "results": [
+    {
+      "name": "academy-lesson-question",
+      "status": 400,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"missing_fields\"}"
+    },
+    {
+      "name": "business-idea-feedback",
+      "status": 400,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"missing_idea\"}"
+    },
+    {
+      "name": "claim-correctional-transition",
+      "status": 404,
+      "deployed": false,
+      "bodySnippet": "{\"code\":\"NOT_FOUND\",\"message\":\"Requested function was not found\"}"
+    },
+    {
+      "name": "cover-letter-draft",
+      "status": 400,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"missing_job_id\"}"
+    },
+    {
+      "name": "create-fasttrack-payment",
+      "status": 404,
+      "deployed": false,
+      "bodySnippet": "{\"code\":\"NOT_FOUND\",\"message\":\"Requested function was not found\"}"
+    },
+    {
+      "name": "credit-report-explanation",
+      "status": 400,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"credit_spend_failed\",\"reason\":\"permission denied for function spend_ai_credits\"}"
+    },
+    {
+      "name": "dispute-letter-draft",
+      "status": 400,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"missing_fields\"}"
+    },
+    {
+      "name": "evaluate-record-relief",
+      "status": 401,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"unauthorized\"}"
+    },
+    {
+      "name": "extract-credit-report",
+      "status": 401,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"unauthorized\"}"
+    },
+    {
+      "name": "extract-record-relief-case",
+      "status": 401,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"unauthorized\"}"
+    },
+    {
+      "name": "housing-application-prep",
+      "status": 400,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"missing_listing_id\"}"
+    },
+    {
+      "name": "housing-fit-explanation",
+      "status": 400,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"missing_listing_id\"}"
+    },
+    {
+      "name": "interview-prep",
+      "status": 400,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"missing_job_id\"}"
+    },
+    {
+      "name": "job-fit-explanation",
+      "status": 400,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"missing_job_id\"}"
+    },
+    {
+      "name": "letter-explainer",
+      "status": 400,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"missing_image\"}"
+    },
+    {
+      "name": "marketplace-listing-draft",
+      "status": 400,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"missing_details\"}"
+    },
+    {
+      "name": "meeting-prep",
+      "status": 400,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"missing_meeting_id\"}"
+    },
+    {
+      "name": "member-focus-guidance",
+      "status": 400,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"credit_spend_failed\",\"reason\":\"permission denied for function spend_ai_credits\"}"
+    },
+    {
+      "name": "notification-delivery-worker",
+      "status": 401,
+      "deployed": true,
+      "bodySnippet": ""
+    },
+    {
+      "name": "notification-receipt-worker",
+      "status": 401,
+      "deployed": true,
+      "bodySnippet": ""
+    },
+    {
+      "name": "program-scout-worker",
+      "status": 401,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"unauthorized\"}"
+    },
+    {
+      "name": "public-record-relief-dev",
+      "status": 404,
+      "deployed": false,
+      "bodySnippet": "{\"code\":\"NOT_FOUND\",\"message\":\"Requested function was not found\"}"
+    },
+    {
+      "name": "record-relief-explanation",
+      "status": 400,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"missing_case_id\"}"
+    },
+    {
+      "name": "record-relief-law-monitor",
+      "status": 401,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"unauthorized\"}"
+    },
+    {
+      "name": "record-relief-retention",
+      "status": 401,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"unauthorized\"}"
+    },
+    {
+      "name": "render-document",
+      "status": 401,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"unauthorized\"}"
+    },
+    {
+      "name": "resource-guidance",
+      "status": 400,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"missing_situation\"}"
+    },
+    {
+      "name": "resource-scout-worker",
+      "status": 401,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"unauthorized\"}"
+    },
+    {
+      "name": "resume-bullet-draft",
+      "status": 400,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"missing_bullets\"}"
+    },
+    {
+      "name": "store-subscription-webhook",
+      "status": 404,
+      "deployed": false,
+      "bodySnippet": "{\"code\":\"NOT_FOUND\",\"message\":\"Requested function was not found\"}"
+    },
+    {
+      "name": "stripe-webhook",
+      "status": 501,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"payments_not_configured\"}"
+    },
+    {
+      "name": "veteran-experience-translation",
+      "status": 400,
+      "deployed": true,
+      "bodySnippet": "{\"error\":\"missing_duties\"}"
+    }
+  ]
+}
