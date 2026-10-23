@@ -7,6 +7,7 @@ import { notify } from '@/core/ui/notify';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { COMMUNITY_HELP_CATEGORIES, COMMUNITY_URGENCY, type CommunityHelpCategoryId, type CommunityHelpUrgency } from '@/core/community/categories';
 import { createCommunityHelpRequest } from '@/core/community/community-help-service';
+import { communityExchangeNotifyCopy } from '@/core/community/exchange-flow-errors';
 import { syncCommunityRequestPlan } from '@/core/opportunity/community-plan-sync';
 
 function defaultExpiry(urgency: CommunityHelpUrgency): string {
@@ -56,11 +57,9 @@ export default function NewCommunityRequestScreen() {
       notify('Request posted', 'FairPath will show resources and community offers that may fit.');
       router.replace(('/community/need-help/' + row.id) as never);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : '';
-      if (msg.includes('SIGNED_OUT')) router.push('/sign-in?returnTo=/community/need-help/new' as never);
-      else if (msg.includes('TOO_MANY_OPEN')) notify('Too many open requests', 'Close or fulfill an existing request before posting another.');
-      else if (msg.includes('DUPLICATE_REQUEST')) notify('Similar request recently', 'You already posted something like this in the last day.');
-      else notify('Could not post request', 'Try again shortly.');
+      const copy = communityExchangeNotifyCopy('create_request', e);
+      if (copy.signedOut) router.push(('/sign-in?returnTo=' + (copy.returnTo ?? '/community/need-help/new')) as never);
+      else notify(copy.title, copy.body);
     } finally {
       setSaving(false);
     }

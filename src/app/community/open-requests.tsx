@@ -9,11 +9,13 @@ import {
   loadCommunityHelpBoard,
   type CommunityHelpBoardRow,
 } from '@/core/community/community-help-service';
+import { COMMUNITY_BOARD_UNAVAILABLE } from '@/core/community/exchange-flow-errors';
 
 export default function OpenCommunityRequestsScreen() {
   const [rows, setRows] = useState<CommunityHelpBoardRow[]>([]);
   const [ready, setReady] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -27,7 +29,18 @@ export default function OpenCommunityRequestsScreen() {
       }
       try {
         const list = await loadCommunityHelpBoard();
-        if (live) setRows(list);
+        if (live) {
+          setRows(list);
+          setLoadError(null);
+        }
+      } catch (e) {
+        if (!live) return;
+        const msg = e instanceof Error ? e.message : '';
+        if (msg.includes('SIGNED_OUT')) {
+          router.push('/sign-in?returnTo=/community/open-requests' as never);
+          return;
+        }
+        setLoadError('Could not load open requests. Check your connection and try again.');
       } finally {
         if (live) setLoading(false);
       }
@@ -43,10 +56,8 @@ export default function OpenCommunityRequestsScreen() {
       <ScreenScroll contentContainerStyle={s.content}>
         {ready === false ? (
           <View style={s.panel}>
-            <Text style={s.panelTitle}>Open requests unavailable</Text>
-            <Text style={s.panelBody}>
-              The community help board is not available on this environment yet. You can still donate goods on Marketplace or food through Food Rescue.
-            </Text>
+            <Text style={s.panelTitle}>{COMMUNITY_BOARD_UNAVAILABLE.title}</Text>
+            <Text style={s.panelBody}>{COMMUNITY_BOARD_UNAVAILABLE.body}</Text>
             <Pressable style={s.btn} onPress={() => router.push('/marketplace' as never)}>
               <Text style={s.btnText}>BROWSE MARKETPLACE</Text>
             </Pressable>
@@ -57,6 +68,7 @@ export default function OpenCommunityRequestsScreen() {
             <Text style={s.lead}>
               These are open asks from members in your area. Tap one to read details and offer help — only approximate city and category are shown.
             </Text>
+            {loadError ? <Text style={s.error}>{loadError}</Text> : null}
             {loading ? <Text style={s.muted}>Loading open requests…</Text> : null}
             {!loading && rows.length === 0 ? (
               <Text style={s.muted}>No open requests right now. Check back later or list free items to help neighbors.</Text>
@@ -87,6 +99,7 @@ const s = {
   content: { padding: L.mobileGutter, paddingBottom: 48, gap: 12 },
   lead: { color: C.mutedStrong, fontSize: 12, lineHeight: 18 },
   muted: { color: C.mutedStrong, fontSize: 12, lineHeight: 18 },
+  error: { color: '#E8A598', fontSize: 12, lineHeight: 18 },
   row: { borderWidth: 1, borderColor: C.borderStrong, padding: 14, backgroundColor: '#0A0C0A' },
   rowTitle: { color: C.lime, fontFamily: F.extraBold, fontSize: 12 },
   rowBody: { color: C.white, fontFamily: F.semiBold, fontSize: 14, marginTop: 6, lineHeight: 20 },

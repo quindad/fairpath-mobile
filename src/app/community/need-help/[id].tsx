@@ -21,6 +21,7 @@ import type { OpportunityResult } from '@/core/opportunity/types';
 import { OpportunityResultsList } from '@/components/opportunity/OpportunityResultsList';
 import { syncCommunityRequestPlan } from '@/core/opportunity/community-plan-sync';
 import { communityPlanStatusHint, communityRequestStatusLabel } from '@/core/community/status-copy';
+import { communityExchangeNotifyCopy } from '@/core/community/exchange-flow-errors';
 
 export default function CommunityRequestDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -81,10 +82,9 @@ export default function CommunityRequestDetailScreen() {
       notify('Offer sent', 'The member will be notified. Coordinate pickup safely if they accept.');
       router.push('/marketplace' as never);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : '';
-      if (msg.includes('SIGNED_OUT')) router.push('/sign-in' as never);
-      else if (msg.includes('OWN_REQUEST')) notify('That is your request', 'Browse other open requests under I can help.');
-      else notify('Could not send offer', 'Try again or list a free Marketplace item instead.');
+      const copy = communityExchangeNotifyCopy('offer_help', e);
+      if (copy.signedOut) router.push(('/sign-in?returnTo=' + (copy.returnTo ?? '/community/can-help')) as never);
+      else notify(copy.title, copy.body);
     } finally {
       setActionBusy(false);
     }
@@ -100,8 +100,9 @@ export default function CommunityRequestDetailScreen() {
         accept ? 'Offer accepted' : 'Offer declined',
         accept ? 'Status is matched — not fulfilled until you confirm assistance happened.' : '',
       );
-    } catch {
-      notify('Could not update offer', 'Try again.');
+    } catch (e) {
+      const copy = communityExchangeNotifyCopy('respond_offer', e);
+      notify(copy.title, copy.body);
     } finally {
       setActionBusy(false);
     }
@@ -114,8 +115,10 @@ export default function CommunityRequestDetailScreen() {
       await cancelCommunityHelpRequest(id);
       notify('Request cancelled', '');
       router.back();
-    } catch {
-      notify('Could not cancel', 'Try again.');
+    } catch (e) {
+      const copy = communityExchangeNotifyCopy('cancel_request', e);
+      if (copy.signedOut) router.push(('/sign-in?returnTo=/community/need-help/' + id) as never);
+      else notify(copy.title, copy.body);
     } finally {
       setActionBusy(false);
     }
@@ -128,8 +131,10 @@ export default function CommunityRequestDetailScreen() {
       await fulfillCommunityHelpRequest(id);
       notify('Marked fulfilled', 'Thank you for closing the loop.');
       await reload();
-    } catch {
-      notify('Could not update', 'Try again.');
+    } catch (e) {
+      const copy = communityExchangeNotifyCopy('fulfill_request', e);
+      if (copy.signedOut) router.push(('/sign-in?returnTo=/community/need-help/' + id) as never);
+      else notify(copy.title, copy.body);
     } finally {
       setActionBusy(false);
     }
