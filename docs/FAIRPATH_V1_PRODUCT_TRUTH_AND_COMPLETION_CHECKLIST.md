@@ -17,7 +17,8 @@
 - EXP-001 (in progress): `explore-readiness.ts` wired in Explore UI; P0-001 inventory in engineering queue doc.
 - PATH-001 (partial): **`324d645` + `6e22f7c`** — employment/financial/record_relief/housing discovery fixes; ten pathway `primaryRoute` values dedicated (`tests/v1-pathways.test.ts` 9/9, `scripts/audit-v1-pathways.mjs`).
 - RR-001: **`9d40728`** (merged `2d45dee`) — canonical Edge eval after save, `partitionEvaluationsForDisplay`, multi-charge bundle + scan note, parity tests **10/10**, local relief **17/17**. DRAFT `20261023120000_record_relief_save_skip_legacy_eval_DRAFT.sql` — **DEF-RR-001 RPC still runs legacy eval on save until migration approved**. iPhone/DEV NOT TESTED.
-- START-001 (partial): **`4502213` + `97b853d`** — F-1 routes; F-2 lesson exercises + gated completion (`tests/academy-lesson-progress.test.ts`). Plan/budget editors still placeholder. Backlog: `docs/STARTUP_ACADEMY_V1_IMPLEMENTATION_BACKLOG.md`.
+- START-001 (partial): **`4502213` + `97b853d` + `3909f6f`** — F-3 idea/plan/budget workspace + next actions (`tests/academy-workspace.test.ts`, academy suite **79/79**). Device NOT TESTED.
+- FOOD-001 (partial): **`5a8eba5`** — `src/core/food-rescue/*` donor intake, browse filters, in-app claim, status mapping, My Path sync; **13** food-rescue tests pass. DEV two-sided pickup E2E NOT RUN.
 - GIVE-001 (partial): **`4e26315`** — exchange-flow-errors + open-requests/need-help copy; `tests/community-exchange-flow.test.ts`. DEV two-account E2E **NOT RUN** (script ready, needs `--confirm-dev` approval for writes).
 - SIG-001: prior Signal UI and gateway commits exist; do not infer native tool execution, backend conversation sync, or streaming completion from test names.
 - WORKTREE: extensive modified/untracked files belong to parallel agents; never use git add -A, git reset, git clean, blanket stash, or rewrite their work.
