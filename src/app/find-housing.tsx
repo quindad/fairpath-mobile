@@ -4,7 +4,7 @@ import { FlatList, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextIn
 import { FormScrollView, KEYBOARD_LIST_PROPS } from '@/components/FormScrollView';
 import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
-import { ScreenFrame, PageHeader, SharpChip, InlineBadge } from '@/components/ProductChrome';
+import { ScreenFrame, PageHeader, SharpChip } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import {
  countHousingFilters, EMPTY_HOUSING_FILTERS, housingFiltersFromRecord, HOUSING_PAGE_SIZE, loadSavedHousingIds, saveHousing, saveHousingSearch, searchHousing,
@@ -291,8 +291,7 @@ export default function Housing(){
     <Text style={s.homeTitle}>{h.title}</Text>
     <Text style={s.meta}>{[h.bedrooms!=null?(Number(h.bedrooms)===0?'Studio':h.bedrooms+' bd'):null,h.bathrooms!=null?h.bathrooms+' ba':null,h.square_feet?h.square_feet.toLocaleString()+' sq ft':null].filter(Boolean).join(' · ')}</Text>
     <View style={s.locationRow}><Lucide name="map-pin" color={C.muted} size={12}/><Text style={s.location}>{[h.city,h.state,h.postal_code].filter(Boolean).join(', ')}{h.distance_miles!=null?' · '+(h.distance_miles<10?h.distance_miles.toFixed(1):Math.round(h.distance_miles))+' mi':''}</Text></View>
-    <View style={s.badges}>{h.virtual_tour_url?<InlineBadge tone="lime">3D TOUR</InlineBadge>:null}<InlineBadge>{h.property_type.toUpperCase()}</InlineBadge></View>
-    <View style={s.footer}><View><Text style={s.sourceLabel}>SOURCE</Text><Text style={s.source}>{h.source_label||'FairPath'}</Text></View><View style={s.viewRow}><Text style={s.viewText}>VIEW HOME</Text><Lucide name="arrow-right" color={C.lime} size={13}/></View></View>
+    <Text style={s.typeLine}>{h.property_type.replace('_',' ')}{h.virtual_tour_url?' · 3D tour':''}</Text>
    </View>
   </Pressable>;
  }
@@ -436,7 +435,7 @@ export default function Housing(){
 
 const s=StyleSheet.create({
  listFlex:{flex:1},
- utilityRow:{height:44,flexDirection:'row',borderBottomWidth:1,borderBottomColor:C.borderStrong,marginHorizontal:-L.mobileGutter},utilityBtn:{flex:1,flexDirection:'row',gap:7,alignItems:'center',justifyContent:'center',borderRightWidth:1,borderRightColor:C.borderStrong},utilityInfo:{flex:1,flexDirection:'row',gap:7,alignItems:'center',justifyContent:'center'},utilityText:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},
+ utilityRow:{height:44,flexDirection:'row',borderBottomWidth:1,borderBottomColor:C.borderStrong,marginHorizontal:-L.mobileGutter},utilityBtn:{flex:1,flexDirection:'row',gap:7,alignItems:'center',justifyContent:'center',borderRightWidth:1,borderRightColor:C.borderStrong},utilityInfo:{flex:1,flexDirection:'row',gap:7,alignItems:'center',justifyContent:'center'},utilityText:{color:C.lime,fontFamily:F.extraBold,fontSize:9,letterSpacing:.5},
  searchBlock:{paddingTop:14,paddingBottom:14,borderBottomWidth:1,borderBottomColor:C.borderStrong},
  searchRow:{minHeight:54,flexDirection:'row',alignItems:'center',borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#0A0C0A',marginBottom:8},fieldIcon:{width:42,alignItems:'center',justifyContent:'center'},fieldCopy:{flex:1,minWidth:0,paddingVertical:8},fieldLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:1.25,marginBottom:2},input:{color:C.white,fontFamily:F.medium,fontSize:14,paddingVertical:2,paddingHorizontal:0},
  clearBtn:{width:40,height:40,alignItems:'center',justifyContent:'center'},
@@ -448,13 +447,12 @@ const s=StyleSheet.create({
  filtersCount:{minWidth:16,height:16,paddingHorizontal:4,backgroundColor:C.lime,alignItems:'center',justifyContent:'center'},filtersCountText:{color:C.black,fontFamily:F.extraBold,fontSize:9},
  primary:{flex:1,height:44,backgroundColor:C.lime,paddingHorizontal:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},primaryText:{color:C.black,fontFamily:F.extraBold,fontSize:10,letterSpacing:1},
  filtersStrip:{height:52,paddingVertical:9,flexDirection:'row',gap:7},filterCell:{flex:1},
- searchActions:{paddingVertical:8,borderTopWidth:1,borderBottomWidth:1,borderColor:C.border,flexDirection:'row',gap:8},searchAction:{flex:1,minHeight:36,borderWidth:1,borderColor:C.borderStrong,flexDirection:'row',gap:6,alignItems:'center',justifyContent:'center'},searchActionText:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:.7},
+ searchActions:{paddingVertical:8,borderTopWidth:1,borderBottomWidth:1,borderColor:C.border,flexDirection:'row',gap:8},searchAction:{flex:1,minHeight:36,borderWidth:1,borderColor:C.borderStrong,flexDirection:'row',gap:6,alignItems:'center',justifyContent:'center'},searchActionText:{color:C.lime,fontFamily:F.extraBold,fontSize:9,letterSpacing:.5},
  list:{paddingHorizontal:L.mobileGutter,paddingBottom:30},resultsTop:{height:46,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},results:{color:C.muted,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.1,flexShrink:1},
  viewToggle:{flexDirection:'row',borderWidth:1,borderColor:C.borderStrong},viewButton:{height:44,paddingHorizontal:10,flexDirection:'row',gap:5,alignItems:'center',justifyContent:'center',backgroundColor:'#090B09'},viewButtonActive:{backgroundColor:'#10150C'},viewButtonText:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8},viewButtonTextActive:{color:C.lime},
  card:{borderTopWidth:1,borderTopColor:C.borderStrong,paddingVertical:18},media:{height:180,position:'relative',backgroundColor:'#0A0C0A',borderWidth:1,borderColor:C.borderStrong,overflow:'hidden'},photo:{width:'100%',height:'100%'},noPhoto:{flex:1,alignItems:'center',justifyContent:'center'},noPhotoText:{color:C.muted,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.2},
  saveBtn:{position:'absolute',right:4,top:4,width:44,height:44,borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#090A09DD',alignItems:'center',justifyContent:'center'},saveBtnActive:{backgroundColor:C.lime,borderColor:C.lime},
- body:{paddingTop:13},priceRow:{flexDirection:'row',alignItems:'baseline'},price:{color:C.white,fontFamily:F.black,fontSize:25},per:{color:C.muted,fontSize:11},homeTitle:{color:C.white,fontFamily:F.extraBold,fontSize:19,lineHeight:22,marginTop:4},meta:{color:C.mutedStrong,fontSize:12,marginTop:7},locationRow:{flexDirection:'row',alignItems:'center',gap:6,marginTop:7},location:{color:C.muted,fontSize:11},badges:{flexDirection:'row',gap:6,flexWrap:'wrap',marginTop:11},
- footer:{marginTop:14,paddingTop:12,borderTopWidth:1,borderTopColor:C.border,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},sourceLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},source:{color:C.mutedStrong,fontSize:9,marginTop:3},viewRow:{flexDirection:'row',alignItems:'center',gap:6},viewText:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8},
+ body:{paddingTop:13},priceRow:{flexDirection:'row',alignItems:'baseline'},price:{color:C.white,fontFamily:F.black,fontSize:25},per:{color:C.muted,fontSize:11},homeTitle:{color:C.white,fontFamily:F.extraBold,fontSize:19,lineHeight:22,marginTop:4},meta:{color:C.mutedStrong,fontSize:12,marginTop:7}, locationRow:{flexDirection:'row',alignItems:'center',gap:6,marginTop:7},location:{color:C.muted,fontSize:11},typeLine:{color:C.muted,fontSize:11,marginTop:8,textTransform:'capitalize' as const},
  empty:{borderTopWidth:1,borderTopColor:C.border,paddingVertical:28},emptyTitle:{color:C.white,fontFamily:F.extraBold,fontSize:18},emptyBody:{color:C.muted,fontSize:13,lineHeight:20,marginTop:7},error:{color:C.danger,fontSize:12,paddingVertical:12},
  earlyAccessBtn:{height:46,backgroundColor:C.lime,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:8,marginTop:16,paddingHorizontal:16,alignSelf:'flex-start'},
  earlyAccessBtnText:{color:C.black,fontFamily:F.extraBold,fontSize:9,letterSpacing:.8},

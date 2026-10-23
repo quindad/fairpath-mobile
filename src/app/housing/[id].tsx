@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View, type ScrollView as ScrollViewType } from 'react-native';
 import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
-import {ScreenFrame, PageHeader, InlineBadge, ScreenScroll, ScreenColumn } from '@/components/ProductChrome';
+import { ScreenFrame, PageHeader, InlineBadge, ScreenScroll, ScreenColumn } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { isHousingSaved, loadHousingListing, loadMyHousingApplication, saveHousing, unsaveHousing, type HousingApplicationStatus, type HousingListing } from '@/core/opportunities/opportunity-service';
 import { explainHousingFit } from '@/core/ai/signal';
@@ -110,6 +110,7 @@ export default function HousingDetail(){
     <Lucide name={saved?'bookmark-check':'bookmark'} color={saved?C.black:C.white} size={14}/><Text style={[s.saveText,saved&&s.saveTextActive]}>{saved?'SAVED':'SAVE'}</Text>
    </Pressable>
   }/>
+  <ScreenColumn>
   <ScreenScroll style={s.mainScroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <View style={s.gallery} onLayout={e=>setGalleryWidth(e.nativeEvent.layout.width)}>
     {photos.length&&galleryWidth>0?<ScrollView
@@ -219,13 +220,16 @@ export default function HousingDetail(){
     <Lucide name="shield-check" color={C.lime} size={16}/>
     <Text style={s.noticeText}>{application?(application.status==='started'?'You have a saved draft for this home. Continue where you left off.':'Your application is in FairPath. Open it to review its status and history.'):'Nothing is saved until you finish the first section, and nothing is submitted until you review and confirm.'}</Text>
    </View>
+  </ScreenScroll>
 
+  <View style={s.bottom}>
    {application?<Pressable accessibilityRole="button" style={s.primary} onPress={()=>openApplication()}>
     <Text style={s.primaryText}>{application.status==='started'?'CONTINUE':'OPEN'} APPLICATION</Text><Lucide name="arrow-right" color={C.black} size={16}/>
    </Pressable>:<Pressable accessibilityRole="button" style={s.primary} onPress={()=>void startApplication()}>
     <Text style={s.primaryText}>START APPLICATION</Text><Lucide name="arrow-right" color={C.black} size={16}/>
    </Pressable>}
-  </ScreenScroll>
+  </View>
+  </ScreenColumn>
  </ScreenFrame>;
 }
 
@@ -236,7 +240,8 @@ function LinkRow({label,onPress}:{label:string;onPress:()=>void}){return <Pressa
 
 const s=StyleSheet.create({
  mainScroll:{flex:1},
- content:{paddingHorizontal:L.mobileGutter,paddingTop:16,paddingBottom:36},state:{padding:L.mobileGutter},muted:{color:C.muted},error:{color:C.danger},
+ content:{paddingHorizontal:L.mobileGutter,paddingTop:16,paddingBottom:24},state:{padding:L.mobileGutter},muted:{color:C.muted},error:{color:C.danger},
+ bottom:{paddingHorizontal:L.mobileGutter,paddingTop:10,paddingBottom:14,backgroundColor:C.black,borderTopWidth:1,borderTopColor:C.border},
  save:{height:34,borderWidth:1,borderColor:C.borderStrong,paddingHorizontal:9,flexDirection:'row',gap:6,alignItems:'center',justifyContent:'center'},saveActive:{backgroundColor:C.lime,borderColor:C.lime},saveText:{color:C.white,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},saveTextActive:{color:C.black},
  scoreRow:{flexDirection:'row',gap:8},score:{flex:1,borderWidth:1,borderColor:C.borderStrong,paddingVertical:12,alignItems:'center'},scoreValue:{color:C.white,fontFamily:F.black,fontSize:23},scoreLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:1,marginTop:2},sourceNote:{color:C.muted,fontSize:9,lineHeight:14,marginTop:8},
  areaRow:{minHeight:54,flexDirection:'row',alignItems:'center',gap:10,borderTopWidth:1,borderTopColor:C.border,paddingVertical:11},areaRowFirst:{borderTopWidth:0},areaIcon:{width:28,height:28,borderRadius:2,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center'},areaCopy:{flex:1,minWidth:0},areaTitle:{color:C.white,fontFamily:F.bold,fontSize:12},areaMeta:{color:C.mutedStrong,fontSize:10,marginTop:3},areaSource:{color:C.muted,fontFamily:F.extraBold,fontSize:7,letterSpacing:.7,marginTop:3},quality:{color:C.lime,fontFamily:F.extraBold,fontSize:9,marginRight:4},gallery:{height:230,width:'100%',backgroundColor:'#0A0C0A',borderWidth:1,borderColor:C.borderStrong,position:'relative',overflow:'hidden'},noPhoto:{flex:1,alignItems:'center',justifyContent:'center',padding:18},noPhotoTitle:{color:C.white,fontFamily:F.extraBold,fontSize:10,letterSpacing:.8,marginTop:9},noPhotoBody:{color:C.muted,fontSize:9,marginTop:4},hero:{height:228,backgroundColor:'#0A0C0A'},photoCount:{position:'absolute',right:9,bottom:9,height:27,paddingHorizontal:9,backgroundColor:'#090A09DD',borderWidth:1,borderColor:C.borderStrong,flexDirection:'row',gap:6,alignItems:'center'},photoCountText:{color:C.white,fontFamily:F.extraBold,fontSize:8,letterSpacing:.5},demoFlag:{position:'absolute',left:9,top:9,height:25,paddingHorizontal:8,backgroundColor:'#090A09DD',borderWidth:1,borderColor:'#526F2B',justifyContent:'center'},demoFlagText:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},thumbs:{gap:7,paddingVertical:9},thumbWrap:{width:64,height:48,borderWidth:1,borderColor:C.borderStrong,opacity:.65},thumbActive:{borderColor:C.lime,opacity:1},thumb:{width:'100%',height:'100%'},intro:{paddingVertical:17,borderBottomWidth:1,borderBottomColor:C.borderStrong},price:{color:C.white,fontFamily:F.black,fontSize:29},month:{color:C.mutedStrong,fontFamily:F.regular,fontSize:12},title:{color:C.white,fontFamily:F.extraBold,fontSize:23,lineHeight:26,marginTop:5},meta:{color:C.mutedStrong,fontSize:12,marginTop:8},locationRow:{flexDirection:'row',alignItems:'center',gap:6,marginTop:8},location:{color:C.muted,fontSize:11,flex:1},badges:{flexDirection:'row',gap:6,flexWrap:'wrap',marginTop:12},

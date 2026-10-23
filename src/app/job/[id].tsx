@@ -140,13 +140,13 @@ export default function JobDetail(){
     <Text style={s.companySiteAction}>VISIT ↗</Text>
    </Pressable>:null}
 
+   <Text style={s.metaLine}>{[job.workplace_type.replace('_',' '),job.employment_type.replace('_',' ')].join(' · ')}</Text>
    <View style={s.badges}>
     {lifecycleLabel?<InlineBadge tone={inactive?'default':'lime'}>{lifecycleLabel}</InlineBadge>:null}
-    <InlineBadge tone={second?'lime':'default'}>{second?'VERIFIED SECOND-CHANCE':'POLICY REVIEW NEEDED'}</InlineBadge>
+    {second?<InlineBadge tone="lime">VERIFIED SECOND-CHANCE</InlineBadge>:null}
     {job.easy_apply_enabled?<InlineBadge tone="lime">EASY APPLY</InlineBadge>:null}
-    <InlineBadge>{job.workplace_type.toUpperCase()}</InlineBadge>
-    <InlineBadge>{job.employment_type.replace('_',' ').toUpperCase()}</InlineBadge>
    </View>
+   {!second&&job.background_policy_summary?<Text style={s.policyHint}>Employer background policy is summarized below — review before you apply.</Text>:null}
 
    <View style={s.fact}>
     <Text style={s.factLabel}>PAY</Text>
@@ -219,7 +219,9 @@ const s=StyleSheet.create({
  locationRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12,marginTop:10},
  location:{color:C.mutedStrong,fontSize:13,flex:1},approx:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},
  companySite:{marginTop:14,paddingVertical:11,borderTopWidth:1,borderBottomWidth:1,borderColor:C.border,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},companySiteLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:8,letterSpacing:1},companySiteAction:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8},
- badges:{flexDirection:'row',gap:6,flexWrap:'wrap',marginTop:15},
+ metaLine:{color:C.mutedStrong,fontSize:13,marginTop:12,textTransform:'capitalize' as const},
+ badges:{flexDirection:'row',gap:6,flexWrap:'wrap',marginTop:10},
+ policyHint:{color:C.muted,fontSize:12,lineHeight:17,marginTop:8},
  fact:{paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.border},
  factLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:8,letterSpacing:1},
  factValue:{color:C.white,fontFamily:F.extraBold,fontSize:17,marginTop:5},

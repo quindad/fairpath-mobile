@@ -319,6 +319,8 @@ export default function FindJobs(){
     <Text style={s.meta}>{j.location_text||[j.city,j.state].filter(Boolean).join(', ')||'Location not listed'}</Text>
     <View style={s.metaDot}/>
     <Text style={s.meta}>{j.workplace_type.replace('_',' ')}</Text>
+    <View style={s.metaDot}/>
+    <Text style={s.meta}>{j.employment_type.replace('_',' ')}</Text>
     {j.distance_miles!=null?<><View style={s.metaDot}/><Text style={s.meta}>{j.distance_miles<10?j.distance_miles.toFixed(1):Math.round(j.distance_miles)} mi</Text></>:null}
    </View>
 
@@ -326,24 +328,13 @@ export default function FindJobs(){
     {'$'+Number(j.pay_min).toLocaleString()+(j.pay_max?' – $'+Number(j.pay_max).toLocaleString():'')+' / '+(j.pay_period||'period')}
    </Text>:null}
 
-   <View style={s.badgeRow}>
-    <InlineBadge tone={j.eligibility_rules?.second_chance_evidence==='explicit'?'lime':'default'}>{matchLabel(j)}</InlineBadge>
+   {(j.eligibility_rules?.second_chance_evidence==='explicit'||j.easy_apply_enabled)?<View style={s.badgeRow}>
+    {j.eligibility_rules?.second_chance_evidence==='explicit'?<InlineBadge tone="lime">{matchLabel(j)}</InlineBadge>:null}
     {j.easy_apply_enabled?<InlineBadge tone="lime">EASY APPLY</InlineBadge>:null}
-    <InlineBadge>{j.employment_type.replace('_',' ').toUpperCase()}</InlineBadge>
-   </View>
+   </View>:null}
 
    <Text style={s.desc} numberOfLines={2}>{j.description}</Text>
-
-   <View style={s.cardFooter}>
-    <View>
-     <Text style={s.sourceLabel}>SOURCE</Text>
-     <Text style={s.source}>{j.source_label||'FairPath'}</Text>
-    </View>
-    <View style={s.viewAction}>
-     <Text style={s.viewText}>VIEW JOB</Text>
-     <Lucide name="arrow-right" color={C.lime} size={14}/>
-    </View>
-   </View>
+   {j.source_label&&j.source_label!=='FairPath'?<Text style={s.sourceHint}>Listed via {j.source_label}</Text>:null}
   </Pressable>;
  }
 
@@ -462,7 +453,7 @@ export default function FindJobs(){
 
 const s=StyleSheet.create({
  listFlex:{flex:1},
- utilityRow:{height:44,flexDirection:'row',borderBottomWidth:1,borderBottomColor:C.borderStrong,marginHorizontal:-L.mobileGutter},utilityBtn:{flex:1,flexDirection:'row',gap:7,alignItems:'center',justifyContent:'center',borderRightWidth:1,borderRightColor:C.borderStrong},utilityText:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},
+ utilityRow:{height:44,flexDirection:'row',borderBottomWidth:1,borderBottomColor:C.borderStrong,marginHorizontal:-L.mobileGutter},utilityBtn:{flex:1,flexDirection:'row',gap:7,alignItems:'center',justifyContent:'center',borderRightWidth:1,borderRightColor:C.borderStrong},utilityText:{color:C.lime,fontFamily:F.extraBold,fontSize:9,letterSpacing:.5},
  searchBlock:{paddingTop:14,paddingBottom:14,borderBottomWidth:1,borderBottomColor:C.borderStrong},
  searchRow:{minHeight:54,flexDirection:'row',alignItems:'center',borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#0A0C0A',marginBottom:8},
  fieldIcon:{width:42,alignItems:'center',justifyContent:'center'},
@@ -508,11 +499,7 @@ const s=StyleSheet.create({
  pay:{color:C.white,fontFamily:F.extraBold,fontSize:14,marginTop:11},
  badgeRow:{flexDirection:'row',gap:6,flexWrap:'wrap',marginTop:11},
  desc:{color:C.mutedStrong,fontSize:11,lineHeight:17,marginTop:13},
- cardFooter:{marginTop:15,paddingTop:12,borderTopWidth:1,borderTopColor:C.border,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
- sourceLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},
- source:{color:C.mutedStrong,fontSize:9,marginTop:3},
- viewAction:{flexDirection:'row',alignItems:'center',gap:6},
- viewText:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:.9},
+ sourceHint:{color:C.muted,fontSize:10,marginTop:8},
  empty:{borderTopWidth:1,borderTopColor:C.border,paddingVertical:28},
  emptyTitle:{color:C.white,fontFamily:F.extraBold,fontSize:18},
  emptyBody:{color:C.muted,fontSize:13,lineHeight:20,marginTop:7},
