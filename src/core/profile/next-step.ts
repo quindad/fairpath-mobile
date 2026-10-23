@@ -64,6 +64,16 @@ export function nextSteps(s: MemberSummary | null | undefined): NextStep[] {
     out.push({ key: 'saved_unavailable', title: 'A saved resource is no longer available', body: 'It was removed or is being re-verified. Find a replacement.', route: '/saved-resources', reason: 'resources.unavailable_saved' });
   }
 
+  if (n(s.marketplace?.ready_for_pickup) > 0) {
+    out.push({
+      key: 'marketplace_pickup',
+      title: 'Marketplace pickup ready',
+      body: `${n(s.marketplace?.ready_for_pickup)} item${n(s.marketplace?.ready_for_pickup) === 1 ? '' : 's'} ready for pickup.`,
+      route: '/marketplace-claims',
+      reason: 'marketplace.ready_for_pickup',
+    });
+  }
+
   // 3. Unfinished work.
   if (n(s.housing?.drafts) > 0) {
     out.push({ key: 'housing_draft', title: 'Finish your housing application', body: `You have ${n(s.housing?.drafts)} draft${n(s.housing?.drafts) === 1 ? '' : 's'}.`, route: '/housing-applications', reason: 'housing.drafts' });

@@ -133,23 +133,23 @@ export default function MeScreen() {
                 <Text style={s.eyebrow}>YOUR NEXT STEP</Text>
                 <Text style={s.stepTitle}>{primary.title}</Text>
                 <BodyText>{primary.body}</BodyText>
-                <PrimaryButton label="GO" onPress={() => router.push(primary.route as never)} />
+                <PrimaryButton label="GO" accessibilityLabel={`Go to ${primary.title}`} onPress={() => router.push(primary.route as never)} />
               </Panel>
             ) : (
               <Panel><BodyText>You are up to date. Nothing needs your attention right now.</BodyText></Panel>
             )}
-            {more.map((m) => <ListRow key={m.key} title={m.title} body={m.body} onPress={() => router.push(m.route as never)} />)}
+            {more.map((m) => <ListRow key={m.key} title={m.title} body={m.body} accessibilityLabel={m.title} accessibilityRole="button" onPress={() => router.push(m.route as never)} />)}
 
             <View style={s.block}><SectionTitle>YOUR PATH</SectionTitle></View>
-            {pathLinks(caps).map((l) => <ListRow key={l.route} title={l.title} body={l.body(summary)} onPress={() => router.push(l.route as never)} />)}
+            {pathLinks(caps).map((l) => <ListRow key={l.route} title={l.title} body={l.body(summary)} accessibilityLabel={l.title} onPress={() => router.push(l.route as never)} />)}
 
             <View style={s.block}><SectionTitle>ACTIVITY</SectionTitle></View>
-            {ACTIVITY_LINKS.map((l) => <ListRow key={l.route} title={l.title} body={l.body} onPress={() => router.push(l.route as never)} />)}
+            {ACTIVITY_LINKS.map((l) => <ListRow key={l.route} title={l.title} body={l.body} accessibilityLabel={l.title} onPress={() => router.push(l.route as never)} />)}
           </>
         ) : null}
 
         <View style={s.block}><SectionTitle>ACCOUNT</SectionTitle></View>
-        {accountLinks(caps).map((l) => <ListRow key={l.route} title={l.title} body={l.body} onPress={() => router.push(l.route as never)} />)}
+        {accountLinks(caps).map((l) => <ListRow key={l.route} title={l.title} body={l.body} accessibilityLabel={l.title} onPress={() => router.push(l.route as never)} />)}
         <ListRow title="Appearance" body="Dark, light or system" onPress={() => router.push('/appearance' as never)} />
         <ListRow title="Privacy and account" body="What FairPath shares, your data, and deleting your account" onPress={() => router.push('/privacy' as never)} />
         {__DEV__ ? <ListRow title="Integration health (DEV)" body="Live + static status of every external system" onPress={() => router.push('/dev-integration-health' as never)} /> : null}

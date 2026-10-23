@@ -1,7 +1,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, Text, TextInput, View } from 'react-native';
-import { FormScrollView, KeyboardFooterLayout } from '@/components/FormScrollView';
+import { FormScrollView } from '@/components/FormScrollView';
 import { FairBackButton, ScreenColumn, ScreenFrame, SharpChip } from '@/components/ProductChrome';
 import { SignalTurn } from '@/components/signal/SignalMessageBubble';
 import { TextButton } from '@/components/ui-kit';
@@ -280,13 +280,13 @@ export default function FairPathAssistant() {
         </View>
       </View>
 
-      <KeyboardFooterLayout>
-        <ScreenColumn>
+      <ScreenColumn>
           <FormScrollView
             ref={scrollRef}
-            style={s.chatScroll}
+            style={{ flex: 1 }}
             contentContainerStyle={s.chatContent}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
             {showEmpty ? (
               <View style={s.welcome}>
@@ -314,7 +314,6 @@ export default function FairPathAssistant() {
                 onAction={(route) => router.push(route as never)}
               />
             ))}
-          </FormScrollView>
 
           <View style={s.composer}>
             <TextInput
@@ -368,8 +367,8 @@ export default function FairPathAssistant() {
               <TextButton label="Clear logged history" onPress={confirmDeleteHistory} />
             </View>
           ) : null}
+          </FormScrollView>
         </ScreenColumn>
-      </KeyboardFooterLayout>
 
       <Modal visible={toolsOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setToolsOpen(false)}>
         <View style={s.modal}>

@@ -87,12 +87,12 @@ export function ChipGroup({ label, options, selected, onChange, single, hint }: 
   );
 }
 
-export function PrimaryButton({ label, onPress, busy, disabled }: { label: string; onPress: () => void; busy?: boolean; disabled?: boolean }) {
+export function PrimaryButton({ label, onPress, busy, disabled, accessibilityLabel }: { label: string; onPress: () => void; busy?: boolean; disabled?: boolean; accessibilityLabel?: string }) {
   const s = useThemedStyles(styles);
   const { tokens } = useFairPathTheme();
   const off = disabled || busy;
   return (
-    <Pressable accessibilityRole="button" accessibilityState={{ disabled: Boolean(off), busy: Boolean(busy) }} disabled={off} style={[s.primary, off && s.primaryOff]} onPress={onPress}>
+    <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel ?? label} accessibilityState={{ disabled: Boolean(off), busy: Boolean(busy) }} disabled={off} style={[s.primary, off && s.primaryOff]} onPress={onPress}>
       {busy ? <ActivityIndicator color={tokens.onAccent} /> : <Text style={s.primaryText}>{label}</Text>}
     </Pressable>
   );
@@ -128,7 +128,7 @@ export function StatusLine({ tone, children }: { tone: 'error' | 'success' | 'wa
   return <Text style={[s.status, tone === 'error' && s.statusError, tone === 'success' && s.statusSuccess, tone === 'warning' && s.statusWarning, tone === 'muted' && s.statusMuted]}>{children}</Text>;
 }
 
-export function ListRow({ title, body, meta, onPress, trailing }: { title: string; body?: string; meta?: string; onPress?: () => void; trailing?: React.ReactNode }) {
+export function ListRow({ title, body, meta, onPress, trailing, accessibilityLabel, accessibilityRole = 'button' }: { title: string; body?: string; meta?: string; onPress?: () => void; trailing?: React.ReactNode; accessibilityLabel?: string; accessibilityRole?: 'button' }) {
   const s = useThemedStyles(styles);
   const copy = (
     <View style={s.rowCopy}>
@@ -142,8 +142,9 @@ export function ListRow({ title, body, meta, onPress, trailing }: { title: strin
   // produced an actual React hydration warning and an inaccessible nested-control structure when trailing held
   // its own Pressable/TextButton.
   if (!onPress) return <View style={s.row}>{copy}{trailing ?? null}</View>;
-  if (trailing) return <View style={s.row}><Pressable accessibilityRole="button" style={s.rowPressable} onPress={onPress}>{copy}</Pressable>{trailing}</View>;
-  return <Pressable accessibilityRole="button" style={s.row} onPress={onPress}>{copy}<Text style={s.rowArrow}>→</Text></Pressable>;
+  const a11y = accessibilityLabel ?? title;
+  if (trailing) return <View style={s.row}><Pressable accessibilityRole={accessibilityRole} accessibilityLabel={a11y} style={s.rowPressable} onPress={onPress}>{copy}</Pressable>{trailing}</View>;
+  return <Pressable accessibilityRole={accessibilityRole} accessibilityLabel={a11y} style={s.row} onPress={onPress}>{copy}<Text style={s.rowArrow}>→</Text></Pressable>;
 }
 
 const styles = (t: ThemeTokens) => StyleSheet.create({

@@ -72,7 +72,9 @@ export default function CreditWorkspace() {
       await load();
     } catch (e) { notify('Could not upload', creditErrorMessage(e)); } finally { setBusy(false); }
   }
+  /** LOAD SAMPLE (DEV) — only wired when __DEV__; production builds never call loadSampleReports. */
   async function sample() {
+    if (!__DEV__) return;
     setBusy(true);
     try { await loadSampleReports(); setNote('Sample reports loaded. These are TEST DATA, not a real person.'); await load(); } catch (e) { notify('Could not load samples', creditErrorMessage(e)); } finally { setBusy(false); }
   }
@@ -139,7 +141,7 @@ export default function CreditWorkspace() {
             signalLoading={signalLoading}
             signalText={signalText}
             onUpload={() => void pickAndUpload()}
-            onSample={() => void sample()}
+            onSample={__DEV__ ? () => void sample() : undefined}
             onAskSignal={() => void askSignalAboutReport()}
             onGoAccounts={() => setTab('accounts')}
             onGoReview={() => setTab('review')}
