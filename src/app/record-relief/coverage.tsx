@@ -4,6 +4,7 @@ import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { InlineBadge, PageHeader, ScreenFrame } from '@/components/ProductChrome';
 import { BodyText, Panel, StatusLine, SecondaryButton } from '@/components/ui-kit';
 import { FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
+import { ENGINE_COVERAGE_LAYER } from '@/core/record-relief/engine-coverage';
 import { loadCoveredJurisdictions, loadEngineSupportedJurisdictionCodes, loadJurisdictions, type Jurisdiction } from '@/core/record-relief/relief-service';
 import { useFairPathTheme, useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
@@ -40,8 +41,8 @@ export default function Coverage() {
       <View key={j.code} style={s.row}>
         <Text style={s.name}>{j.name}</Text>
         <View style={s.badges}>
-          <InlineBadge tone={engine ? 'lime' : 'default'}>{engine ? 'ENGINE' : 'NO ENGINE'}</InlineBadge>
-          <InlineBadge tone={verified ? 'lime' : 'default'}>{verified ? 'DB RULE' : 'NO DB RULE'}</InlineBadge>
+          <InlineBadge tone={engine ? 'lime' : 'default'}>{engine ? ENGINE_COVERAGE_LAYER.engine : 'NO ENGINE'}</InlineBadge>
+          <InlineBadge tone={verified ? 'lime' : 'default'}>{verified ? ENGINE_COVERAGE_LAYER.dbRule : 'NO DB RULE'}</InlineBadge>
         </View>
       </View>
     );

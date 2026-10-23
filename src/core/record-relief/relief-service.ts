@@ -5,7 +5,7 @@ import { RECORD_RELIEF_ENGINE_VERSION, daysUntil, getRuleFreshness } from '@/cor
 import { planRecordReliefEvaluation } from '@/core/record-relief/engine-registry';
 import { executeRecordRelief, type EngineFacts } from '@/core/record-relief/engine-executor';
 import { caseRowToEngineFacts } from '@/core/record-relief/case-engine-facts';
-import { caseToCaseBundle } from '@/core/record-relief/case-bundle';
+import { caseToCaseBundle, caseToCaseBundleWithPayload } from '@/core/record-relief/case-bundle';
 import { loadEngineSupportedJurisdictionCodes } from '@/core/record-relief/engine-coverage';
 import type { CaseBundle } from '@/core/record-relief/jurisdiction-engine';
 import type { CaseDocumentExtraction } from '@/core/record-relief/ai-intake';
@@ -23,16 +23,7 @@ export type ReliefEvaluation = {
 };
 export type ReliefDetail = Omit<ReliefDetailForDoc, 'evaluations'> & { evaluations: ReliefEvaluation[]; events: { event_type: string; detail: string | null; created_at: string }[] };
 
-export function reliefErrorMessage(e: unknown): string {
-  const text = e instanceof Error ? e.message : typeof e === 'object' && e && 'message' in e ? String((e as { message: unknown }).message) : '';
-  const map: [string, string][] = [
-    ['JURISDICTION_CONFLICT', 'Edit this case and choose the jurisdiction where the court heard it. Clear the different-state selection before re-checking.'],
-    ['SIGNED_OUT', 'Sign in to continue.'], ['CASE_LIMIT', 'You have reached the case limit. Delete a case you no longer need.'], ['INVALID_JURISDICTION', 'Choose where the case was heard.'],
-    ['INVALID_DATE', 'That date cannot be in the future.'], ['INVALID_STATUS', 'That status is not valid.'], ['violates check', 'Please check the dates and values you entered.'],
-  ];
-  for (const [k, v] of map) if (text.includes(k)) return v;
-  return 'Something went wrong. Please try again.';
-}
+export { reliefErrorMessage } from '@/core/record-relief/relief-format';
 
 const one = async <T>(q: PromiseLike<{ data: T | null; error: unknown }>): Promise<T> => {
   const { data, error } = await q;
@@ -73,7 +64,12 @@ export const reevaluateCase = (c: ReliefCase, asOf = new Date()) => {
   return evaluateSharedCaseServer(c.id, caseToCaseBundle(c), caseRowToEngineFacts(c, asOf));
 };
 
-export type SaveCaseEvalOptions = { throwOnEvalFailure?: boolean; asOf?: Date };
+export type SaveCaseEvalOptions = {
+  throwOnEvalFailure?: boolean;
+  asOf?: Date;
+  caseBundleOverride?: CaseBundle;
+  factsOverride?: EngineFacts;
+};
 
 /** Persists the case, then runs the shared Edge engine when jurisdiction allows. */
 export async function saveCaseAndAutoEvaluate(id: string | null, payload: Record<string, unknown>, options: SaveCaseEvalOptions = {}): Promise<ReliefCase> {
@@ -82,7 +78,9 @@ export async function saveCaseAndAutoEvaluate(id: string | null, payload: Record
   // rule_unavailable even when the Edge engine would succeed — treat Edge as authoritative; re-check replaces it.
   if (!saved.out_of_state_conviction) {
     try {
-      await reevaluateCase(saved, options.asOf);
+      const bundle = options.caseBundleOverride ?? caseToCaseBundleWithPayload(saved, payload);
+      const facts = options.factsOverride ?? caseRowToEngineFacts(saved, options.asOf);
+      await evaluateSharedCaseServer(saved.id, bundle, facts);
     } catch (e) {
       if (typeof __DEV__ !== 'undefined' && __DEV__) {
         console.warn('[record-relief] Edge evaluation failed after save; case detail may still reflect legacy RPC eval until re-check succeeds.', e);
@@ -101,10 +99,12 @@ export const toggleChecklist = (id: string, kind: 'step' | 'document', key: stri
 export const deleteCase = (id: string) => call<void>('delete_record_relief_case', { p_id: id });
 
 /** Latest (non-superseded) evaluations for many cases, for list rows. Owner-only via RLS. */
-export async function loadCurrentEvaluations(): Promise<Record<string, { outcome: Outcome; eligibility_date: string | null }[]>> {
-  const rows = await one<{ case_id: string; outcome: Outcome; eligibility_date: string | null }[]>(supabase.from('record_relief_evaluations').select('case_id,outcome,eligibility_date').eq('superseded', false));
-  const out: Record<string, { outcome: Outcome; eligibility_date: string | null }[]> = {};
-  for (const r of rows) (out[r.case_id] ??= []).push({ outcome: r.outcome, eligibility_date: r.eligibility_date });
+export async function loadCurrentEvaluations(): Promise<Record<string, { outcome: Outcome; eligibility_date: string | null; inputs_used: Record<string, unknown> }[]>> {
+  const rows = await one<{ case_id: string; outcome: Outcome; eligibility_date: string | null; inputs_used: Record<string, unknown> }[]>(
+    supabase.from('record_relief_evaluations').select('case_id,outcome,eligibility_date,inputs_used').eq('superseded', false),
+  );
+  const out: Record<string, { outcome: Outcome; eligibility_date: string | null; inputs_used: Record<string, unknown> }[]> = {};
+  for (const r of rows) (out[r.case_id] ??= []).push({ outcome: r.outcome, eligibility_date: r.eligibility_date, inputs_used: r.inputs_used ?? {} });
   return out;
 }
 

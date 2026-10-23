@@ -15,8 +15,9 @@ import type { DocumentSpec } from '@/core/documents/spec';
 import { isoFromText } from '@/core/profile/opportunity-forms';
 import { loadContact } from '@/core/profile/opportunity-service';
 import {
-  ANCHOR_LABEL, DISCLAIMER, FILING_STATUS_OPTIONS, MISSING_LABEL, OUTCOME_INFO, REMEDY_LABEL, countdownText, headlineOutcome, outOfStateNotice, ruleChangedNotice, staleRuleNotice,
+  ANCHOR_LABEL, DISCLAIMER, FILING_STATUS_OPTIONS, LEGACY_PLACEHOLDER_EVAL_NOTICE, MISSING_LABEL, OUTCOME_INFO, REMEDY_LABEL, countdownText, headlineOutcome, outOfStateNotice, partitionEvaluationsForDisplay, ruleChangedNotice, staleRuleNotice,
 } from '@/core/record-relief/relief-format';
+import { jurisdictionHasEngineSupport } from '@/core/record-relief/engine-coverage';
 import {
   deleteCase, loadCase, loadCaseDetail, loadJurisdictions, reevaluateCase, reliefErrorMessage, setCaseStatus, toggleChecklist,
   type ReliefCase, type ReliefDetail, type ReliefEvaluation,
@@ -104,7 +105,10 @@ export default function ReliefCaseScreen() {
   if (error) return <ScreenFrame><PageHeader eyebrow="RECORD RELIEF" title="Case" backTo="/record-relief" alwaysBackTo /><View style={{ paddingHorizontal: L.mobileGutter }}><StatusLine tone="error">{error}</StatusLine></View></ScreenFrame>;
   if (!c || !detail || !docCase) return <ScreenFrame><PageHeader eyebrow="RECORD RELIEF" title="Case" backTo="/record-relief" alwaysBackTo /><ActivityIndicator color={tokens.accentText} style={{ marginTop: 32 }} /></ScreenFrame>;
 
-  const evs = c.out_of_state_conviction ? [] : detail.evaluations;
+  const evalPartition = c.out_of_state_conviction
+    ? { primary: [] as ReliefEvaluation[], supersededPlaceholders: [] as ReliefEvaluation[], treatAsUnchecked: false }
+    : partitionEvaluationsForDisplay(detail.evaluations, { engineSupported: jurisdictionHasEngineSupport(c.jurisdiction_code) });
+  const evs = evalPartition.primary;
   const headline = headlineOutcome(evs);
   const openLink = (url: string | null | undefined) => { if (url) void Linking.openURL(url); };
   const steps = new Map<string, { key: string; title: string; body?: string }>();
@@ -126,7 +130,14 @@ export default function ReliefCaseScreen() {
         ) : null}
 
         <View style={s.block}><SectionTitle>ELIGIBILITY REVIEW</SectionTitle></View>
-        {evs.length === 0 && !c.out_of_state_conviction ? <Panel><BodyText>This case has not been checked yet.</BodyText><PrimaryButton label="CHECK NOW" onPress={() => void run(() => reevaluateCase(c), 'Could not check')} busy={busy} /></Panel> : null}
+        {evalPartition.treatAsUnchecked && !c.out_of_state_conviction ? (
+          <Panel tone="warning">
+            <BodyText strong>Placeholder check only</BodyText>
+            <BodyText muted>{LEGACY_PLACEHOLDER_EVAL_NOTICE}</BodyText>
+            <PrimaryButton label="RUN ELIGIBILITY CHECK" onPress={() => void run(() => reevaluateCase(c), 'Could not check')} busy={busy} />
+          </Panel>
+        ) : null}
+        {evs.length === 0 && !c.out_of_state_conviction && !evalPartition.treatAsUnchecked ? <Panel><BodyText>This case has not been checked yet.</BodyText><PrimaryButton label="CHECK NOW" onPress={() => void run(() => reevaluateCase(c), 'Could not check')} busy={busy} /></Panel> : null}
         {evs.map((e: ReliefEvaluation) => {
           const info = OUTCOME_INFO[e.outcome] ?? OUTCOME_INFO.rule_not_verified;
           const count = countdownText(e.outcome, e.eligibility_date, e.days_remaining);
@@ -154,6 +165,11 @@ export default function ReliefCaseScreen() {
             </Panel>
           );
         })}
+        {evalPartition.supersededPlaceholders.length ? (
+          <Panel>
+            <BodyText muted>{evalPartition.supersededPlaceholders.length} older database-only check{evalPartition.supersededPlaceholders.length === 1 ? '' : 's'} hidden — the results above use the shared eligibility engine.</BodyText>
+          </Panel>
+        ) : null}
         {evs.length ? <SecondaryButton label="RE-CHECK THIS CASE" onPress={() => void run(() => reevaluateCase(c), 'Could not re-check')} disabled={busy} /> : null}
 
         {headline ? (

@@ -32,6 +32,22 @@ export const OUTCOME_INFO: Record<Outcome, { label: string; tone: 'good' | 'wait
 
 export const DISCLAIMER = 'FairPath provides legal information, not legal advice, and is not a law firm. Record-relief rules are specific to each jurisdiction and change. A court decides whether relief is granted. A legal aid organization or the court clerk can confirm what applies to you.';
 
+export function reliefErrorMessage(e: unknown): string {
+  const text = e instanceof Error ? e.message : typeof e === 'object' && e && 'message' in e ? String((e as { message: unknown }).message) : '';
+  const map: [string, string][] = [
+    ['JURISDICTION_CONFLICT', 'Edit this case and choose the jurisdiction where the court heard it. Clear the different-state selection before re-checking.'],
+    ['SIGNED_OUT', 'Sign in to continue.'], ['CASE_LIMIT', 'You have reached the case limit. Delete a case you no longer need.'], ['INVALID_JURISDICTION', 'Choose where the case was heard.'],
+    ['INVALID_DATE', 'That date cannot be in the future.'], ['INVALID_STATUS', 'That status is not valid.'], ['violates check', 'Please check the dates and values you entered.'],
+    ['EVALUATION_FAILED', 'FairPath could not finish the eligibility check. Try Re-check in a moment.'],
+    ['evaluation_failed', 'FairPath could not finish the eligibility check. Try Re-check in a moment.'],
+    ['SUPABASE_CONFIG_MISSING', 'FairPath is not configured to reach the eligibility service. Try again after updating the app.'],
+    ['invalid_request', 'FairPath could not run the check with the saved case details. Edit the case and try again.'],
+    ['evaluation_input_invalid', 'Some case details are incomplete for an eligibility check. Add the missing fields and try again.'],
+  ];
+  for (const [k, v] of map) if (text.includes(k)) return v;
+  return 'Something went wrong. Please try again.';
+}
+
 export const OFFENSE_CLASS_OPTIONS = [
   { value: 'misdemeanor', label: 'Misdemeanor' }, { value: 'non_violent_felony', label: 'Non-violent felony' }, { value: 'violent_felony', label: 'Violent felony' },
   { value: 'sex_offense', label: 'Sex offense' }, { value: 'dui_dwi', label: 'DUI / DWI' }, { value: 'traffic_infraction', label: 'Traffic infraction' }, { value: 'other', label: 'Other / not sure' },
@@ -89,6 +105,47 @@ export function countdownText(outcome: Outcome, eligibilityDate: string | null, 
   if (outcome !== 'waiting_period' || !eligibilityDate) return '';
   const left = describeRemaining(todayIso(now), eligibilityDate);
   return `Potentially eligible on ${eligibilityDate}${left ? ` · ${left} remaining` : ''}${daysRemaining != null ? ` (${daysRemaining} days)` : ''}`;
+}
+
+export type EvalDisplayRow = {
+  outcome: Outcome;
+  eligibility_date: string | null;
+  rule_key?: string | null;
+  inputs_used?: Record<string, unknown>;
+  reasons?: { code: string; text: string }[];
+};
+
+const SHARED_ENGINE_CONSUMERS = new Set(['mobile', 'web', 'command_center']);
+
+export function evaluationPersistedBySharedEngine(e: EvalDisplayRow): boolean {
+  const consumer = e.inputs_used?.consumer;
+  return typeof consumer === 'string' && SHARED_ENGINE_CONSUMERS.has(consumer);
+}
+
+export function evaluationFromLegacySaveRpc(e: EvalDisplayRow): boolean {
+  if (evaluationPersistedBySharedEngine(e)) return false;
+  if (e.outcome === 'rule_unavailable' && (e.reasons ?? []).some((r) => r.code === 'no_verified_rules')) return true;
+  if (e.rule_key && e.inputs_used && 'waiting_anchor' in e.inputs_used) return true;
+  return false;
+}
+
+export const LEGACY_PLACEHOLDER_EVAL_NOTICE =
+  'FairPath saved your case using a placeholder database check. Tap Re-check to run the shared eligibility engine for this jurisdiction.';
+
+export function partitionEvaluationsForDisplay(
+  evals: EvalDisplayRow[],
+  opts: { engineSupported: boolean },
+): { primary: EvalDisplayRow[]; supersededPlaceholders: EvalDisplayRow[]; treatAsUnchecked: boolean } {
+  const engine = evals.filter(evaluationPersistedBySharedEngine);
+  if (engine.length) {
+    return { primary: engine, supersededPlaceholders: evals.filter((e) => !evaluationPersistedBySharedEngine(e)), treatAsUnchecked: false };
+  }
+  const legacyOnly = evals.length > 0 && evals.every(evaluationFromLegacySaveRpc);
+  const stubUnavailable = legacyOnly && evals.every((e) => e.outcome === 'rule_unavailable');
+  if (opts.engineSupported && stubUnavailable) {
+    return { primary: [], supersededPlaceholders: evals, treatAsUnchecked: true };
+  }
+  return { primary: evals, supersededPlaceholders: [], treatAsUnchecked: false };
 }
 
 /** Best (most actionable) outcome across a case's evaluations, for list rows. Deterministic. */

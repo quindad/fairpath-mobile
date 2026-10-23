@@ -4,7 +4,8 @@ import { ActivityIndicator, Text, View } from 'react-native';
 import { InlineBadge, PageHeader, ScreenFrame, ScreenScroll, SectionTitle } from '@/components/ProductChrome';
 import { BodyText, EmptyState, ListRow, Panel, PrimaryButton, SecondaryButton, StatusLine } from '@/components/ui-kit';
 import { FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
-import { DISCLAIMER, OUTCOME_INFO, countdownText, headlineOutcome } from '@/core/record-relief/relief-format';
+import { DISCLAIMER, OUTCOME_INFO, countdownText, headlineOutcome, partitionEvaluationsForDisplay } from '@/core/record-relief/relief-format';
+import { jurisdictionHasEngineSupport } from '@/core/record-relief/engine-coverage';
 import { loadCases, loadCoveredJurisdictions, loadCurrentEvaluations, loadJurisdictions, type Jurisdiction, type ReliefCase } from '@/core/record-relief/relief-service';
 import { useFairPathTheme, useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
@@ -52,7 +53,8 @@ export default function RecordReliefHome() {
             <View style={s.block}><SectionTitle>MY CASES</SectionTitle></View>
             {cases.length === 0 ? <EmptyState title="No cases yet" body="Add a case to see whether any verified rule may apply, track a waiting period, and prepare your paperwork. You enter the details, and you can edit or delete them any time." /> : null}
             {cases.map((c) => {
-              const head = c.out_of_state_conviction ? { outcome: 'manual_review' as const, eligibility_date: null } : headlineOutcome(evals[c.id] ?? []);
+              const rows = c.out_of_state_conviction ? [] : partitionEvaluationsForDisplay(evals[c.id] ?? [], { engineSupported: jurisdictionHasEngineSupport(c.jurisdiction_code) }).primary;
+              const head = c.out_of_state_conviction ? { outcome: 'manual_review' as const, eligibility_date: null } : headlineOutcome(rows);
               const info = head ? OUTCOME_INFO[head.outcome] : null;
               const count = head ? countdownText(head.outcome, head.eligibility_date, null) : '';
               return (
