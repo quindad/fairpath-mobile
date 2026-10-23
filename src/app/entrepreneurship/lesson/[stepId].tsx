@@ -13,8 +13,18 @@ import {
   getAcademyLesson,
   isTrackStepId,
 } from '@/core/academy/catalog';
+import { getLessonContentOrNull } from '@/core/academy/lessons';
+import {
+  ACADEMY_LESSON_EXERCISES_STORAGE_KEY,
+  academyExerciseTrackPercent,
+  canMarkLessonComplete,
+  isExerciseChecked,
+  parseLessonExerciseProgress,
+  persistExerciseToggle,
+  type LessonExerciseProgress,
+} from '@/core/academy/lesson-progress-store';
 import { ENTREPRENEURSHIP_STORAGE_KEY, parseProgress, persistStepCompletion } from '@/core/entrepreneurship/progress-store';
-import { trackPercent, type TrackProgress, type TrackStep } from '@/core/entrepreneurship/tracks';
+import { type TrackProgress, type TrackStep } from '@/core/entrepreneurship/tracks';
 
 type Load = 'loading' | 'ready' | 'error';
 
@@ -25,14 +35,19 @@ export default function AcademyLessonScreen() {
   const s = useThemedStyles(styles);
   const [load, setLoad] = useState<Load>('loading');
   const [progress, setProgress] = useState<TrackProgress>({ completedSteps: [] });
+  const [exerciseProgress, setExerciseProgress] = useState<LessonExerciseProgress>({ checkedByStep: {} });
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
-    AsyncStorage.getItem(ENTREPRENEURSHIP_STORAGE_KEY)
-      .then((raw) => {
+    Promise.all([
+      AsyncStorage.getItem(ENTREPRENEURSHIP_STORAGE_KEY),
+      AsyncStorage.getItem(ACADEMY_LESSON_EXERCISES_STORAGE_KEY),
+    ])
+      .then(([trackRaw, exerciseRaw]) => {
         if (alive) {
-          setProgress(parseProgress(raw));
+          setProgress(parseProgress(trackRaw));
+          setExerciseProgress(parseLessonExerciseProgress(exerciseRaw));
           setLoad('ready');
         }
       })
@@ -44,11 +59,31 @@ export default function AcademyLessonScreen() {
     };
   }, []);
 
+  const content = lesson ? getLessonContentOrNull(lesson.id) : null;
   const done = lesson ? progress.completedSteps.includes(lesson.id) : false;
-  const percent = trackPercent(progress);
+  const percent = academyExerciseTrackPercent(exerciseProgress);
+  const exercisesComplete = lesson && isTrackStepId(lesson.id) ? canMarkLessonComplete(exerciseProgress, lesson.id) : false;
+
+  const toggleExercise = useCallback(
+    async (exerciseId: string, checked: boolean) => {
+      if (!lesson || !isTrackStepId(lesson.id)) return;
+      const result = await persistExerciseToggle(AsyncStorage, exerciseProgress, lesson.id, exerciseId, checked);
+      if (!result.saved) {
+        setMessage('Your exercise progress could not be saved on this device. Try again.');
+        return;
+      }
+      setExerciseProgress(result.progress);
+      setMessage(null);
+    },
+    [lesson, exerciseProgress],
+  );
 
   const markComplete = useCallback(async () => {
     if (!lesson || !isTrackStepId(lesson.id)) return;
+    if (!canMarkLessonComplete(exerciseProgress, lesson.id)) {
+      setMessage('Complete every required exercise before marking this lesson done.');
+      return;
+    }
     const result = await persistStepCompletion(AsyncStorage, progress, lesson.id as TrackStep);
     if (!result.saved) {
       setMessage('Your progress could not be saved on this device. Try again.');
@@ -56,7 +91,7 @@ export default function AcademyLessonScreen() {
     }
     setProgress(result.progress);
     setMessage(null);
-  }, [lesson, progress]);
+  }, [lesson, progress, exerciseProgress]);
 
   if (!lesson) {
     return (
@@ -96,17 +131,56 @@ export default function AcademyLessonScreen() {
           <>
             <Text style={s.section}>Track progress · {percent}%</Text>
             <Text style={s.body}>{lesson.description}</Text>
-            <Text style={s.body}>
-              Full lesson exercises and checklists arrive in the next academy update. For now, use this screen to read the step and mark it complete when you have done the work offline.
-            </Text>
+            {content ? (
+              <>
+                <Text style={s.section}>Read</Text>
+                <Text style={s.body}>{content.read}</Text>
+                <Text style={s.section}>Reflect</Text>
+                <Text style={s.body}>{content.reflectPrompt}</Text>
+                <Text style={s.section}>Exercises</Text>
+                <Text style={s.meta}>Check each item when you have done the work. Required items must be checked before you can mark this lesson complete.</Text>
+                {content.exercises.map((ex) => {
+                  const checked = isExerciseChecked(exerciseProgress, lesson.id, ex.id);
+                  const required = ex.required !== false;
+                  return (
+                    <Pressable
+                      key={ex.id}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked }}
+                      style={s.checkRow}
+                      onPress={() => void toggleExercise(ex.id, !checked)}
+                    >
+                      <View style={[s.box, checked && s.boxOn]} />
+                      <View style={s.checkBody}>
+                        <Text style={s.checkLabel}>
+                          {ex.label}
+                          {required ? '' : ' (optional)'}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </>
+            ) : null}
             {done ? (
               <View style={s.card}>
                 <Text style={s.cardTitle}>You marked this step complete.</Text>
               </View>
             ) : (
-              <Pressable style={s.primary} accessibilityRole="button" onPress={() => void markComplete()}>
-                <Text style={s.primaryText}>Mark step complete</Text>
-              </Pressable>
+              <>
+                {!exercisesComplete ? (
+                  <Text style={s.meta}>Finish the required exercises above to unlock marking this lesson complete.</Text>
+                ) : null}
+                <Pressable
+                  style={[s.primary, !exercisesComplete && s.primaryDisabled]}
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: !exercisesComplete }}
+                  disabled={!exercisesComplete}
+                  onPress={() => void markComplete()}
+                >
+                  <Text style={s.primaryText}>Mark step complete</Text>
+                </Pressable>
+              </>
             )}
           </>
         ) : null}
@@ -130,6 +204,13 @@ const styles = (t: ThemeTokens) => ({
   section: { color: t.text, fontWeight: '700' as const, fontSize: 17 },
   card: { borderWidth: 1, borderColor: t.border, backgroundColor: t.surface, padding: 14, gap: 8 },
   cardTitle: { color: t.text, fontWeight: '700' as const, fontSize: 16 },
+  meta: { color: t.textMuted, fontSize: 13, lineHeight: 18 },
+  checkRow: { flexDirection: 'row' as const, gap: 12, alignItems: 'flex-start' as const, paddingVertical: 6 },
+  box: { width: 22, height: 22, borderWidth: 2, borderColor: t.border, marginTop: 2 },
+  boxOn: { backgroundColor: t.accent, borderColor: t.accent },
+  checkBody: { flex: 1 },
+  checkLabel: { color: t.textSecondary, fontSize: 15, lineHeight: 21 },
   primary: { minHeight: 44, justifyContent: 'center' as const, alignItems: 'center' as const, backgroundColor: t.accent },
+  primaryDisabled: { opacity: 0.45 },
   primaryText: { color: t.onAccent, fontWeight: '700' as const },
 });

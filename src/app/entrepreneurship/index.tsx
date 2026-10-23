@@ -5,8 +5,14 @@ import { PageHeader, ScreenFrame, SectionTitle } from '@/components/ProductChrom
 import { FormScrollView } from '@/components/FormScrollView';
 import { useFairPathTheme, useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
-import { PROGRAM_REFERENCES, trackPercent, nextStep, type TrackProgress } from '@/core/entrepreneurship/tracks';
+import { PROGRAM_REFERENCES, nextStep, type TrackProgress } from '@/core/entrepreneurship/tracks';
 import { ENTREPRENEURSHIP_STORAGE_KEY, parseProgress } from '@/core/entrepreneurship/progress-store';
+import {
+  ACADEMY_LESSON_EXERCISES_STORAGE_KEY,
+  academyExerciseTrackPercent,
+  parseLessonExerciseProgress,
+  type LessonExerciseProgress,
+} from '@/core/academy/lesson-progress-store';
 import {
   ACADEMY_HONESTY_BANNER,
   ACADEMY_LESSON_MODULES,
@@ -23,6 +29,7 @@ export default function EntrepreneurshipHomeScreen() {
   const { tokens } = useFairPathTheme();
   const [load, setLoad] = useState<Load>('loading');
   const [progress, setProgress] = useState<TrackProgress>({ completedSteps: [] });
+  const [exerciseProgress, setExerciseProgress] = useState<LessonExerciseProgress>({ checkedByStep: {} });
   const [idea, setIdea] = useState('');
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackLoading, setFeedbackLoading] = useState(false);
@@ -30,10 +37,14 @@ export default function EntrepreneurshipHomeScreen() {
 
   useEffect(() => {
     let alive = true;
-    AsyncStorage.getItem(ENTREPRENEURSHIP_STORAGE_KEY)
-      .then((raw) => {
+    Promise.all([
+      AsyncStorage.getItem(ENTREPRENEURSHIP_STORAGE_KEY),
+      AsyncStorage.getItem(ACADEMY_LESSON_EXERCISES_STORAGE_KEY),
+    ])
+      .then(([trackRaw, exerciseRaw]) => {
         if (alive) {
-          setProgress(parseProgress(raw));
+          setProgress(parseProgress(trackRaw));
+          setExerciseProgress(parseLessonExerciseProgress(exerciseRaw));
           setLoad('ready');
         }
       })
@@ -45,7 +56,7 @@ export default function EntrepreneurshipHomeScreen() {
     };
   }, []);
 
-  const percent = trackPercent(progress);
+  const percent = academyExerciseTrackPercent(exerciseProgress);
   const next = nextStep(progress);
 
   async function askSignal() {
