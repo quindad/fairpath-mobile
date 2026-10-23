@@ -32,10 +32,10 @@ Statuses: `TODO` · `IN PROGRESS` · `TESTING` · `VERIFIED` · `COMMITTED` · `
 
 | ID | P | Task | Status | Verification | SHA |
 |----|---|------|--------|--------------|-----|
-| SIG-001 | P0 | Conversation-first Signal tab (header, chat, fixed composer) | COMMITTED | `audit-ai`, `signal-ui-contract`, `audit-scroll` | *(pending commit)* |
-| SIG-002 | P0 | Contextual suggestion chips (goals + next step) | COMMITTED | unit via suggestions module | *(pending commit)* |
-| SIG-003 | P0 | Typed read/write tool registry | COMMITTED | `signal-ui-contract` | *(pending commit)* |
-| SIG-004 | P1 | Move specialized catalog to modal (not main scroll) | COMMITTED | `signal-ui-contract` | *(pending commit)* |
+| SIG-001 | P0 | Conversation-first Signal tab (header, chat, fixed composer) | COMMITTED | `audit-ai`, `signal-ui-contract`, `audit-scroll` | `d08d1d2` |
+| SIG-002 | P0 | Contextual suggestion chips (goals + next step) | COMMITTED | `loadSignalSuggestions` | `d08d1d2` |
+| SIG-003 | P0 | Typed read/write tool registry | COMMITTED | `signal-ui-contract` | `d08d1d2` |
+| SIG-004 | P1 | Move specialized catalog to modal (not main scroll) | COMMITTED | `signal-ui-contract` | `d08d1d2` |
 | SIG-005 | P1 | Intelligent model routing (server-side) | TODO | `audit-signal-deploy` | — |
 | SIG-006 | P1 | Streaming responses | BLOCKED | No client streaming contract yet | — |
 | SIG-007 | P1 | Conversation history + titles (member-owned) | BLOCKED | No persistence RPC | — |
@@ -91,8 +91,8 @@ Statuses: `TODO` · `IN PROGRESS` · `TESTING` · `VERIFIED` · `COMMITTED` · `
 
 ## Checkpoint — resume here if session ends
 
-1. **HEAD after next commit:** run `git log -1 --oneline`
-2. **Active task:** SIG-005 (server model routing inspection) or PATH-001
+1. **HEAD:** `d08d1d2` — Signal conversation IA
+2. **Active task:** SIG-005 (server model routing) or finish RR/MKT device QA (NOT TESTED)
 3. **Commands:** `node scripts/audit-ai.mjs`; `node --test --experimental-strip-types tests/signal-ui-contract.test.ts`
 4. **Do not touch:** unstaged files in `src/core/auth/*`, `package.json`, proposed migrations (other agents)
 5. **Next implementation:** `supabase/functions/_shared/core/ai-gateway/signal-chains.ts` routing doc + client hook for enriched answers without cluttering UI
