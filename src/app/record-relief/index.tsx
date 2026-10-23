@@ -1,7 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
-import { InlineBadge, PageHeader, ScreenFrame, SectionTitle } from '@/components/ProductChrome';
+import { ActivityIndicator, Text, View } from 'react-native';
+import { InlineBadge, PageHeader, ScreenFrame, ScreenScroll, SectionTitle } from '@/components/ProductChrome';
 import { BodyText, EmptyState, ListRow, Panel, PrimaryButton, SecondaryButton, StatusLine } from '@/components/ui-kit';
 import { FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { DISCLAIMER, OUTCOME_INFO, countdownText, headlineOutcome } from '@/core/record-relief/relief-format';
@@ -37,7 +37,7 @@ export default function RecordReliefHome() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="FREE FAIRPATH TOOL" title="Record Relief" backTo="/home" />
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
+      <ScreenScroll contentContainerStyle={s.content}>
         <Panel tone="warning"><BodyText>{DISCLAIMER}</BodyText></Panel>
         {!cases && !error ? <ActivityIndicator color={tokens.accentText} style={s.spinner} /> : null}
         {error ? <View><StatusLine tone="error">{error}</StatusLine><SecondaryButton label="TRY AGAIN" onPress={() => void load()} /></View> : null}
@@ -45,8 +45,8 @@ export default function RecordReliefHome() {
         {cases ? (
           <>
             <PrimaryButton label="SCAN MY CASE WITH SIGNAL" onPress={() => router.push('/record-relief/scan-packet' as never)} />
-            <SecondaryButton label="FIND MY COURT RECORD" onPress={() => router.push('/record-relief/court-finder' as never)} />
-            <SecondaryButton label="ENTER CASE MANUALLY" onPress={() => router.push('/record-relief/add' as never)} />
+            <ListRow title="Find my court record" body="Look up where a case was filed" onPress={() => router.push('/record-relief/court-finder' as never)} />
+            <ListRow title="Enter case manually" body="Add charges and dates yourself" onPress={() => router.push('/record-relief/add' as never)} />
             <View style={s.block}><SectionTitle>MY CASES</SectionTitle></View>
             {cases.length === 0 ? <EmptyState title="No cases yet" body="Add a case to see whether any verified rule may apply, track a waiting period, and prepare your paperwork. You enter the details, and you can edit or delete them any time." /> : null}
             {cases.map((c) => {
@@ -61,19 +61,17 @@ export default function RecordReliefHome() {
               );
             })}
 
-            <View style={s.block}><SectionTitle>WHAT FAIRPATH CAN CHECK</SectionTitle></View>
+            <View style={s.block}><SectionTitle>COVERAGE & TOOLS</SectionTitle></View>
             <Panel>
-              <BodyText>Record-relief law is different in every jurisdiction, so FairPath only checks a case against rules that have been verified from an official source. It does not use one universal calculator.</BodyText>
-              {coveredNames.length ? <BodyText strong>Verified rules loaded for: {coveredNames.join(', ')}.</BodyText> : <BodyText muted>No jurisdiction has verified rules loaded yet. You can still add and track a case, and FairPath will tell you plainly what it cannot check.</BodyText>}
-              {testCovered ? <BodyText muted>This development build also includes fictional TEST jurisdictions used to test the rules engine. They are not real law.</BodyText> : null}
-              <BodyText muted>Federal cases are tracked separately from state cases.</BodyText>
+              {coveredNames.length ? <BodyText strong>Verified rules: {coveredNames.join(', ')}.</BodyText> : <BodyText muted>No verified jurisdiction rules loaded yet. You can still track a case; FairPath will say what it cannot check.</BodyText>}
+              {testCovered ? <BodyText muted>DEV build includes fictional TEST jurisdictions — not real law.</BodyText> : null}
             </Panel>
             <ListRow title="Coverage by state" body="See exactly which jurisdictions have a verified rule loaded" onPress={() => router.push('/record-relief/coverage' as never)} />
             <ListRow title="Explain my record" body="Write a private statement you can choose to attach to a job or housing application" onPress={() => router.push('/record-relief/my-statement' as never)} />
             <ListRow title="Find legal help" body="Legal aid and record-relief organizations near you" onPress={() => router.push('/resources' as never)} />
           </>
         ) : null}
-      </ScrollView>
+      </ScreenScroll>
     </ScreenFrame>
   );
 }

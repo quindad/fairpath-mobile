@@ -68,7 +68,7 @@ export default function Marketplace(){
   <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.page} showsVerticalScrollIndicator={false}>
    <View style={s.hero}>
     <Text style={s.heroTitle}>Good stuff. Free. Local.</Text>
-    <Text style={s.heroBody}>Claim useful items from people and organizations in your community. FairPath keeps claimant selection anonymous, protects private pickup details, and verifies pickup.</Text>
+    <Text style={s.heroBody}>Free local items — anonymous claims, private pickup details, verified pickup codes.</Text>
     <View style={s.heroActions}>
      <Pressable accessibilityRole="button" accessibilityLabel="List a free item" style={s.primarySmall} onPress={()=>router.push('/marketplace-list-item' as never)}><Lucide name="plus" color={C.black} size={14}/><Text style={s.primarySmallText}>LIST A FREE ITEM</Text></Pressable>
      <Pressable accessibilityRole="button" accessibilityLabel="My claims" style={s.outlineSmall} onPress={()=>router.push('/marketplace-claims' as never)}><Text style={s.outlineSmallText}>MY CLAIMS</Text></Pressable>
@@ -130,25 +130,22 @@ export default function Marketplace(){
     </Pressable>
    })}</View>
 
-   <View style={s.safety}>
-    <Lucide name="shield" color={C.lime} size={17}/>
-    <View style={{flex:1}}><Text style={s.safetyTitle}>FAIRPATH MARKETPLACE SAFETY</Text><Text style={s.safetyBody}>Exact pickup details stay private until a claim is approved. Claimants are shown anonymously during selection, and pickup is verified with a code.</Text></View>
-   </View>
+   <Text style={s.safetyFoot}>Pickup stays private until a claim is approved; use the verification code at pickup.</Text>
   </FormScrollView>
  </ScreenFrame>
 }
 
 const s=StyleSheet.create({
  page:{paddingHorizontal:L.mobileGutter,paddingBottom:40},
- hero:{paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.borderStrong},heroTitle:{color:C.white,fontFamily:F.black,fontSize:27,letterSpacing:-.7},heroBody:{color:C.mutedStrong,fontSize:10,lineHeight:16,marginTop:7,maxWidth:520},
+ hero:{paddingVertical:16,borderBottomWidth:1,borderBottomColor:C.borderStrong},heroTitle:{color:C.white,fontFamily:F.black,fontSize:24,letterSpacing:-.7},heroBody:{color:C.mutedStrong,fontSize:12,lineHeight:17,marginTop:6,maxWidth:520},
  heroActions:{flexDirection:'row',gap:8,marginTop:14},primarySmall:{height:40,backgroundColor:C.lime,paddingHorizontal:12,flexDirection:'row',gap:7,alignItems:'center'},primarySmallText:{color:C.black,fontFamily:F.extraBold,fontSize:8,letterSpacing:.7},outlineSmall:{height:40,borderWidth:1,borderColor:C.borderStrong,paddingHorizontal:12,justifyContent:'center'},outlineSmallText:{color:C.white,fontFamily:F.extraBold,fontSize:8,letterSpacing:.7},
  foodRescueBanner:{marginTop:14,borderWidth:1,borderColor:'#526F2B',backgroundColor:'#0F150B',padding:13,flexDirection:'row',gap:10,alignItems:'center'},foodRescueTitle:{color:C.lime,fontFamily:F.extraBold,fontSize:9,letterSpacing:.8},foodRescueBody:{color:C.mutedStrong,fontSize:9,lineHeight:13,marginTop:3},
  quota:{minHeight:70,borderBottomWidth:1,borderBottomColor:C.borderStrong,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},quotaLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:1},quotaTitle:{color:C.white,fontFamily:F.extraBold,fontSize:15,marginTop:5},quotaCount:{flexDirection:'row',alignItems:'baseline'},quotaBig:{color:C.white,fontFamily:F.black,fontSize:27},quotaOf:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:10},quotaGuest:{minHeight:72,borderBottomWidth:1,borderBottomColor:C.borderStrong,justifyContent:'center',paddingRight:28,position:'relative'},quotaGuestText:{color:C.white,fontFamily:F.extraBold,fontSize:12,marginTop:5},
  searchCard:{paddingVertical:14,borderBottomWidth:1,borderBottomColor:C.borderStrong},searchRow:{height:46,borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#0A0C0A',flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:11,marginBottom:7},input:{flex:1,color:C.white,fontSize:11,paddingVertical:0},searchBtn:{height:46,backgroundColor:C.lime,flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:13},searchBtnText:{color:C.black,fontFamily:F.extraBold,fontSize:8,letterSpacing:.9},
- quickLinks:{flexDirection:'row',flexWrap:'wrap',gap:7,paddingVertical:12},quick:{minHeight:36,borderWidth:1,borderColor:C.borderStrong,paddingHorizontal:10,flexDirection:'row',alignItems:'center',gap:6},quickText:{color:C.white,fontFamily:F.extraBold,fontSize:7,letterSpacing:.7},quickTextOn:{color:C.black},
+ quickLinks:{flexDirection:'row',flexWrap:'wrap',gap:7,paddingVertical:12},quick:{minHeight:36,borderWidth:1,borderColor:C.borderStrong,paddingHorizontal:10,flexDirection:'row',alignItems:'center',gap:6},quickText:{color:C.white,fontFamily:F.extraBold,fontSize:9,letterSpacing:.5},quickTextOn:{color:C.black},
  conditionHead:{paddingTop:10},conditionLabel:{color:C.muted,fontFamily:F.extraBold,fontSize:6.5,letterSpacing:.9},resultsHead:{paddingVertical:13,borderBottomWidth:1,borderBottomColor:C.border},results:{color:C.white,fontFamily:F.extraBold,fontSize:10,letterSpacing:.8},resultsSub:{color:C.muted,fontSize:8.5,marginTop:3},error:{color:C.danger,fontSize:10,paddingVertical:12},
  empty:{paddingVertical:34,alignItems:'flex-start'},emptyTitle:{color:C.white,fontFamily:F.black,fontSize:19,marginTop:10},emptyBody:{color:C.muted,fontSize:10,lineHeight:16,marginTop:5,maxWidth:320},
  grid:{flexDirection:'row',flexWrap:'wrap',marginHorizontal:-5,paddingTop:10},card:{width:'50%',paddingHorizontal:5,paddingBottom:18},media:{aspectRatio:1.08,backgroundColor:'#0A0C0A',borderWidth:1,borderColor:C.borderStrong,position:'relative',overflow:'hidden'},photo:{width:'100%',height:'100%'},noPhoto:{flex:1,alignItems:'center',justifyContent:'center'},noPhotoText:{color:C.muted,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8,marginTop:6},saveBtn:{position:'absolute',right:7,top:7,width:31,height:31,borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#080A08DD',alignItems:'center',justifyContent:'center'},saveBtnOn:{backgroundColor:C.lime,borderColor:C.lime},featured:{position:'absolute',left:0,bottom:0,backgroundColor:C.lime,paddingHorizontal:7,paddingVertical:4},featuredText:{color:C.black,fontFamily:F.extraBold,fontSize:6,letterSpacing:.7},
  cardBody:{paddingTop:8},topline:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:5},free:{color:C.lime,fontFamily:F.black,fontSize:15},itemTitle:{color:C.white,fontFamily:F.extraBold,fontSize:13,lineHeight:16,marginTop:4},location:{color:C.mutedStrong,fontSize:9,marginTop:5},condition:{color:C.muted,fontSize:8,marginTop:4},
- safety:{borderWidth:1,borderColor:'#526F2B',backgroundColor:'#0F150B',padding:13,flexDirection:'row',gap:10,marginTop:8},safetyTitle:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:.9},safetyBody:{color:C.mutedStrong,fontSize:9,lineHeight:14,marginTop:5}
+ safetyFoot:{color:C.muted,fontSize:11,lineHeight:16,marginTop:12,paddingBottom:8}
 });
