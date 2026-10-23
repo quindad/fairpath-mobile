@@ -4,7 +4,7 @@ import { ActivityIndicator, Linking, Platform, Pressable, Text, View } from 'rea
 import { ExportPanel } from '@/components/ExportPanel';
 import { FairPathDatePicker } from '@/components/FairPathDatePicker';
 import { FormScrollView } from '@/components/FormScrollView';
-import { InlineBadge, PageHeader, ScreenFrame, SectionTitle } from '@/components/ProductChrome';
+import {InlineBadge, PageHeader, ScreenFrame, SectionTitle, ScreenScroll, ScreenColumn } from '@/components/ProductChrome';
 import { BodyText, ChipGroup, ListRow, Panel, PrimaryButton, SecondaryButton, StatusLine, TextButton } from '@/components/ui-kit';
 import { FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { buildCaseSummary, buildFilingChecklist, buildFormsGuide, buildWorksheet, type ReliefCaseForDoc } from '@/core/documents/builders/record-relief';
@@ -114,7 +114,7 @@ export default function ReliefCaseScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow={jName.toUpperCase()} title={c.label} backTo="/record-relief" alwaysBackTo />
-      <FormScrollView contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 56 }}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 56 }}>
         <Panel tone="warning"><BodyText muted>{DISCLAIMER}</BodyText></Panel>
 
         {outOfStateNotice(c.out_of_state_conviction, jName) ? (

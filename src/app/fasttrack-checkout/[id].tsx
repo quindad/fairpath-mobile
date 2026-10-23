@@ -8,7 +8,7 @@ export default function FastTrackCheckout() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="HOUSING" title="Application checkout" backTo="/housing-applications" />
-      <ScrollView contentContainerStyle={s.content}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
         <Text style={s.title}>FastTrack housing is no longer offered</Text>
         <Text style={s.body}>
           FairPath uses one standard application path for every listing. Property owners still make approval decisions — no paid path speeds that up in the app anymore.

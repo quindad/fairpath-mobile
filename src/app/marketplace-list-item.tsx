@@ -10,6 +10,7 @@ import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/
 import { MARKETPLACE_CATEGORIES, MARKETPLACE_CONDITIONS, createMarketplaceItem, setMarketplaceItemAvailability, uploadMarketplacePhoto } from '@/core/marketplace/marketplace-service';
 import { formatUsPhone } from '@/core/forms/formatters';
 import { draftMarketplaceListing } from '@/core/ai/signal';
+import { foodListingRequiresBestBy, validateFoodListingText } from '@/core/community/food-listing-rules';
 
 type Picked={name:string;uri:string;mimeType?:string|null;size?:number|null};
 
@@ -34,6 +35,8 @@ export default function MarketplaceListItem(){
  const [instructions,setInstructions]=useState('');
  const [contactPhone,setContactPhone]=useState('');
  const [photos,setPhotos]=useState<Picked[]>([]);
+ const [bestByNote,setBestByNote]=useState('');
+ const [foodRescue,setFoodRescue]=useState(false);
  const [saving,setSaving]=useState(false);
  const [drafting,setDrafting]=useState(false);
 
@@ -69,6 +72,11 @@ export default function MarketplaceListItem(){
   if(!condition)return 'Choose the item condition.';
   if(!city.trim()||state.trim().length<2)return 'Add the public city and state.';
   if(!pickupCity.trim()||pickupState.trim().length<2)return 'Add the private pickup city and state.';
+  if(category==='Food'){
+   const foodCheck=validateFoodListingText(title,description);
+   if(!foodCheck.ok)return foodCheck.reason;
+   if(foodListingRequiresBestBy(category)&&bestByNote.trim().length<3)return 'Add best-by or expiration info for food listings.';
+  }
   return '';
  }
 
@@ -79,7 +87,8 @@ export default function MarketplaceListItem(){
   try{
    const itemId=await createMarketplaceItem({
     title,description,category,condition,quantity:Number(quantity)||1,city,state,postal_code:postal,pickup_area:pickupArea,safe_pickup:safePickup,seller_type:sellerType,
-    location_name:locationName,address_line1:address1,address_line2:address2,pickup_city:pickupCity,pickup_state:pickupState,pickup_postal_code:pickupPostal,instructions,contact_phone:contactPhone
+    location_name:locationName,address_line1:address1,address_line2:address2,pickup_city:pickupCity,pickup_state:pickupState,pickup_postal_code:pickupPostal,instructions,contact_phone:contactPhone,
+    isFoodRescue:category==='Food'?foodRescue:false,bestByNote:category==='Food'?bestByNote:undefined
    });
    let uploaded=0;
    for(let i=0;i<photos.length;i++){
@@ -109,7 +118,7 @@ export default function MarketplaceListItem(){
 
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH MARKETPLACE" title="List a free item" backTo="/marketplace"/>
-  <FormScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+  <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <View style={s.intro}><Text style={s.introTitle}>Give it forward.</Text><Text style={s.introBody}>FairPath Marketplace is for free items. No selling, bidding, or hidden fees. Claimants are anonymous while you choose, and exact pickup details stay private until approval.</Text></View>
 
    <Label text="ITEM TITLE"/><TextInput value={title} onChangeText={setTitle} style={s.field} maxLength={100} placeholder="Example: Solid wood dining table" placeholderTextColor={C.muted}/>
@@ -117,6 +126,13 @@ export default function MarketplaceListItem(){
 
    <Label text="CATEGORY"/><View style={s.chips}>{MARKETPLACE_CATEGORIES.map(x=><Chip key={x} label={x} active={category===x} onPress={()=>setCategory(x)}/>)}</View>
    <Label text="CONDITION"/><View style={s.chips}>{MARKETPLACE_CONDITIONS.map(x=><Chip key={x} label={x} active={condition===x} onPress={()=>setCondition(x)}/>)}</View>
+
+   {category==='Food'?<>
+    <Text style={s.sectionTitle}>FOOD SHARING (V1)</Text>
+    <Text style={s.sectionHelp}>List sealed shelf-stable groceries or properly packaged eligible foods only. FairPath does not verify food safety — donors and recipients must use judgment.</Text>
+    <Label text="BEST-BY / EXPIRATION"/><TextInput value={bestByNote} onChangeText={setBestByNote} style={s.field} placeholder="Example: Best by 12/2026, unopened boxes" placeholderTextColor={C.muted}/>
+    <Pressable accessibilityRole="button" style={[s.toggle,foodRescue&&s.toggleOn]} onPress={()=>setFoodRescue(v=>!v)}><View style={[s.box,foodRescue&&s.boxOn]}>{foodRescue?<Lucide name="check" color={C.black} size={12}/>:null}</View><View style={{flex:1}}><Text style={s.toggleTitle}>SHOW IN FOOD RESCUE</Text><Text style={s.toggleBody}>Eligible surplus food sorted by pickup window on the Food Rescue screen.</Text></View></Pressable>
+   </>:null}
 
    <Pressable accessibilityRole="button" style={s.signalButton} onPress={()=>void draftWithSignal()}><Text style={s.signalButtonText}>{drafting?'SIGNAL IS WRITING…':'DRAFT DESCRIPTION WITH SIGNAL'}</Text></Pressable>
 

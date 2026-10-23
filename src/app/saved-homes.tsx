@@ -15,7 +15,7 @@ export default function SavedHomes(){
  useFocusEffect(useCallback(()=>{load()},[load]));
  async function remove(id:string){try{await unsaveHousing(id);setRows(v=>v.filter(x=>x.id!==id))}catch{notify('Could not remove saved home','Please try again.')}}
  return <ScreenFrame><PageHeader eyebrow="FAIRPATH HOUSING" title="Saved homes" backTo="/me"/>
-  <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+  <ScrollView style={{ flex: 1 }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <View style={s.introRow}><Text style={s.intro}>Homes you bookmarked for another look.</Text><Pressable accessibilityRole="button" onPress={()=>router.push('/saved-housing-searches' as never)}><Text style={s.searches}>SAVED SEARCHES →</Text></Pressable></View>
    {loading?<State text="Loading saved homes…"/>:error?<State text={error}/>:rows.length===0?<View style={s.empty}><Text style={s.emptyTitle}>NO SAVED HOMES YET</Text><Text style={s.emptyBody}>Save homes from Housing and they will stay organized here.</Text><Pressable accessibilityRole="button" style={s.action} onPress={()=>router.push('/find-housing' as never)}><Text style={s.actionText}>BROWSE HOUSING</Text></Pressable></View>:rows.map((h)=>{
     const photo=h.housing_media?.filter(m=>m.media_type==='photo').sort((a,b)=>a.sort_order-b.sort_order)[0]?.url??'';

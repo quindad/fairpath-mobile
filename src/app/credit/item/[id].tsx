@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { FormScrollView } from '@/components/FormScrollView';
-import { InlineBadge, PageHeader, ScreenFrame, SectionTitle } from '@/components/ProductChrome';
+import {InlineBadge, PageHeader, ScreenFrame, SectionTitle, ScreenScroll, ScreenColumn } from '@/components/ProductChrome';
 import { BodyText, Field, ListRow, Panel, PrimaryButton, SecondaryButton, StatusLine } from '@/components/ui-kit';
 import { FairPathLayout as L } from '@/constants/fairpath';
 import { ISSUE_LABEL, PAYMENT_STATUS_LABEL, STAGE_INFO, formatCents } from '@/core/credit/credit-format';
@@ -76,7 +76,7 @@ export default function CreditItemScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow={ISSUE_LABEL[item.issue_type]?.toUpperCase() ?? 'REVIEW'} title="Review item" backTo="/credit" alwaysBackTo />
-      <FormScrollView contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40 }}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40 }}>
         <View style={{ flexDirection: 'row', gap: 6, marginTop: 16 }}>
           <InlineBadge tone={item.stage === 'confirmed_dispute_issue' ? 'lime' : 'default'}>{info.label}</InlineBadge>
           {item.origin === 'member' ? <InlineBadge>YOUR CLAIM</InlineBadge> : <InlineBadge>FAIRPATH RULE CHECK</InlineBadge>}

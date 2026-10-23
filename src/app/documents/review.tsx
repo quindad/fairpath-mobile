@@ -25,7 +25,7 @@ export default function DocumentReviewScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="DOCUMENT REVIEW" title="Review extracted details" backTo="/documents" />
-      <FormScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
         <View style={s.banner}>
           <Text style={s.bannerTitle}>Review before you use it</Text>
           <Text style={s.body}>

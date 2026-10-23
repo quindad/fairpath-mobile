@@ -72,7 +72,7 @@ export default function MarketItem(){
   <PageHeader eyebrow="FAIRPATH MARKETPLACE" title="Item details" backTo="/marketplace" trailing={
    !isOwner?<Pressable accessibilityRole="button" style={[s.save,saved&&s.saveOn]} onPress={()=>void toggleSave()}><Lucide name={saved?'bookmark-check':'bookmark'} color={saved?C.black:C.white} size={14}/></Pressable>:undefined
   }/>
-  <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+  <ScrollView style={{ flex: 1 }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <View style={s.gallery} onLayout={e=>setGalleryWidth(e.nativeEvent.layout.width)}>
     {photos.length&&galleryWidth>0?<ScrollView ref={galleryRef} horizontal pagingEnabled showsHorizontalScrollIndicator={false} onMomentumScrollEnd={e=>setGalleryIndex(Math.round(e.nativeEvent.contentOffset.x/galleryWidth))}>
      {photos.map((url,index)=><Image key={url+index} source={{uri:url}} style={[s.hero,{width:galleryWidth}]}/>)}

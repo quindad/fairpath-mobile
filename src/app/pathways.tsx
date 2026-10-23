@@ -17,7 +17,7 @@ const statusLabel=(s:string)=>s==='live'?'LIVE':s==='in_development'?'IN DEVELOP
 
 export default function PathwaysScreen(){
  return <ScreenFrame><PageHeader eyebrow="YOUR FAIRPATH" title="Choose your path" backTo="/home" alwaysBackTo/>
-  <FormScrollView contentContainerStyle={s.content}>
+  <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
    <Text style={s.lede}>One FairPath. Different needs. Turn toward the part of life you need to move forward — your pathway does not become a public label.</Text>
    <View style={s.rule}/>
    {PATHWAYS.map((p,i)=>{const x=COPY[p.id];return <Pressable key={p.id} style={s.card} onPress={()=>router.push(x.route as never)} accessibilityRole="link">

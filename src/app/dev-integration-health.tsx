@@ -81,7 +81,7 @@ export default function DevIntegrationHealth() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="DEV ONLY — NEVER SHIPPED" title="Integration health" backTo="/me" />
-      <ScrollView contentContainerStyle={s.content}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
         {!__DEV__ ? (
           <Text style={s.blocked}>This screen only renders in a development build.</Text>
         ) : !rows ? (

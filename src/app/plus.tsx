@@ -33,7 +33,7 @@ export default function Plus(){
  }
 
  return <ScreenFrame><PageHeader eyebrow="MEMBERSHIP" title="FairPath+"/>
-  <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+  <ScrollView style={{ flex: 1 }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <View style={[s.status,view.tone==='complimentary'||view.tone==='active'?s.statusOn:null,isExpiringSoon(status)&&s.statusSoon]}>
     <Text style={s.statusLabel}>{loading?'CHECKING…':view.tone==='complimentary'?'COMPLIMENTARY ACCESS':view.tone==='active'?'ACTIVE':view.tone==='expired'?'ENDED':'YOUR PLAN'}</Text>
     <Text style={s.statusTitle}>{loading?'Loading your membership…':view.headline}</Text>

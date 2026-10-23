@@ -1,13 +1,13 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View, type ScrollView as ScrollViewType } from 'react-native';
 import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
-import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome';
+import {ScreenFrame, PageHeader, InlineBadge, ScreenScroll, ScreenColumn } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { isHousingSaved, loadHousingListing, loadMyHousingApplication, saveHousing, unsaveHousing, type HousingApplicationStatus, type HousingListing } from '@/core/opportunities/opportunity-service';
 import { explainHousingFit } from '@/core/ai/signal';
-import { supabase } from '@/lib/supabase';
+import { requireMemberAccess } from '@/core/auth/member-access';
 import { openGoogleMapsDirections } from '@/core/location/maps';
 
 const STATUS_LABEL:Record<HousingApplicationStatus,string>={
@@ -23,7 +23,7 @@ export default function HousingDetail(){
  const [application,setApplication]=useState<{id:string;status:HousingApplicationStatus;application_type:'standard'|'fasttrack';current_step:number}|null>(null);
  const [galleryIndex,setGalleryIndex]=useState(0);
  const [galleryWidth,setGalleryWidth]=useState(0);
- const galleryRef=useRef<ScrollView|null>(null);
+ const galleryRef=useRef<ScrollViewType|null>(null);
  const [fitText,setFitText]=useState('');
  const [fitLoading,setFitLoading]=useState(false);
  const [fitRequested,setFitRequested]=useState(false);
@@ -43,11 +43,12 @@ export default function HousingDetail(){
 
  async function toggleSave(){
   if(!item)return;
+  if(!(await requireMemberAccess('/housing/'+item.id,'save')))return;
   try{
    if(saved){await unsaveHousing(item.id);setSaved(false)}
    else{await saveHousing(item.id);setSaved(true)}
   }catch(e){
-   if(e instanceof Error&&e.message==='SIGNED_OUT'){router.push(('/sign-up?returnTo='+encodeURIComponent('/housing/'+item.id)) as never);return}
+   if(e instanceof Error&&e.message==='SIGNED_OUT'){await requireMemberAccess('/housing/'+item.id,'save');return}
    notify('Could not update saved home','Please try again.');
   }
  }
@@ -56,8 +57,7 @@ export default function HousingDetail(){
  // completed section (server function save_housing_application_draft).
  async function startApplication(){
   if(!item)return;
-  const {data:{user}}=await supabase.auth.getUser();
-  if(!user){router.push(('/sign-up?returnTo='+encodeURIComponent('/housing/'+item.id)) as never);return}
+  if(!(await requireMemberAccess('/housing/'+item.id,'apply')))return;
   openApplication();
  }
  function openApplication(){
@@ -68,15 +68,14 @@ export default function HousingDetail(){
 
  async function askSignal(){
   if(!item||fitLoading)return;
-  const {data:{user}}=await supabase.auth.getUser();
-  if(!user){router.push(('/sign-up?returnTo='+encodeURIComponent('/housing/'+item.id)) as never);return}
+  if(!(await requireMemberAccess('/housing/'+item.id,'member_feature')))return;
   setFitLoading(true);setFitRequested(true);
   try{
    const r=await explainHousingFit(item.id);
    if(r.status==='ok')setFitText(r.text);
    else if(r.status==='out_of_credits')setFitText('You are out of Signal credits for now. They refresh with your plan.');
    else if(r.status==='rate_limited')setFitText('Signal is busy across FairPath right now. Try again shortly.');
-   else if(r.status==='signed_out'){router.push(('/sign-up?returnTo='+encodeURIComponent('/housing/'+item.id)) as never);return}
+   else if(r.status==='signed_out'){await requireMemberAccess('/housing/'+item.id,'member_feature');return}
    else setFitText(r.message);
   }catch{
    setFitText('Signal could not explain this home right now. Please try again.');
@@ -111,7 +110,7 @@ export default function HousingDetail(){
     <Lucide name={saved?'bookmark-check':'bookmark'} color={saved?C.black:C.white} size={14}/><Text style={[s.saveText,saved&&s.saveTextActive]}>{saved?'SAVED':'SAVE'}</Text>
    </Pressable>
   }/>
-  <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+  <ScreenScroll style={s.mainScroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <View style={s.gallery} onLayout={e=>setGalleryWidth(e.nativeEvent.layout.width)}>
     {photos.length&&galleryWidth>0?<ScrollView
      ref={galleryRef}
@@ -226,7 +225,7 @@ export default function HousingDetail(){
    </Pressable>:<Pressable accessibilityRole="button" style={s.primary} onPress={()=>void startApplication()}>
     <Text style={s.primaryText}>START APPLICATION</Text><Lucide name="arrow-right" color={C.black} size={16}/>
    </Pressable>}
-  </ScrollView>
+  </ScreenScroll>
  </ScreenFrame>;
 }
 
@@ -236,6 +235,7 @@ function Score({label,value}:{label:string;value:number}){return <View style={s.
 function LinkRow({label,onPress}:{label:string;onPress:()=>void}){return <Pressable accessibilityRole="button" accessibilityLabel={label} style={s.linkRow} onPress={onPress}><Text style={s.linkText}>{label}</Text><Lucide name="external-link" color={C.lime} size={14}/></Pressable>}
 
 const s=StyleSheet.create({
+ mainScroll:{flex:1},
  content:{paddingHorizontal:L.mobileGutter,paddingTop:16,paddingBottom:36},state:{padding:L.mobileGutter},muted:{color:C.muted},error:{color:C.danger},
  save:{height:34,borderWidth:1,borderColor:C.borderStrong,paddingHorizontal:9,flexDirection:'row',gap:6,alignItems:'center',justifyContent:'center'},saveActive:{backgroundColor:C.lime,borderColor:C.lime},saveText:{color:C.white,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},saveTextActive:{color:C.black},
  scoreRow:{flexDirection:'row',gap:8},score:{flex:1,borderWidth:1,borderColor:C.borderStrong,paddingVertical:12,alignItems:'center'},scoreValue:{color:C.white,fontFamily:F.black,fontSize:23},scoreLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:1,marginTop:2},sourceNote:{color:C.muted,fontSize:9,lineHeight:14,marginTop:8},

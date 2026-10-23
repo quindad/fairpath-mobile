@@ -49,7 +49,7 @@ export default function FoodRescueScreen() {
 
   return <ScreenFrame>
     <PageHeader eyebrow="FAIRPATH" title="Food Rescue" backTo="/marketplace" />
-    <FormScrollView contentContainerStyle={s.page} showsVerticalScrollIndicator={false}>
+    <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.page} showsVerticalScrollIndicator={false}>
       <View style={s.hero}>
         <Text style={s.heroTitle}>Good food. Going to waste. Go get it.</Text>
         <Text style={s.heroBody}>Real surplus food from local businesses and neighbors, free, with a real pickup window today. Sorted by what's closing soonest.</Text>

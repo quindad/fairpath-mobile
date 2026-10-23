@@ -27,7 +27,7 @@ export default function DocumentUploadScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="DOCUMENTS" title="Upload a document" backTo="/documents" />
-      <ScrollView contentContainerStyle={s.content}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
         <View style={s.banner}>
           <Text style={s.bannerTitle}>Secure upload</Text>
           <Text style={s.body}>

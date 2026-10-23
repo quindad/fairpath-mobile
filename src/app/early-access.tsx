@@ -54,7 +54,7 @@ export default function EarlyAccess(){
  const showFullCoverage = coverage && !isLowCoverage(coverage.status);
 
  return <ScreenFrame><PageHeader eyebrow="FAIRPATH IS EXPANDING" title="Early Access" backTo="/find-jobs"/>
-  <FormScrollView contentContainerStyle={s.content}>
+  <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
    <Text style={s.label}>YOUR ZIP CODE</Text>
    <View style={s.zipRow}>
     <TextInput style={s.zipInput} value={zip} onChangeText={setZip} keyboardType="number-pad" maxLength={5} placeholder="43215" placeholderTextColor={C.muted}/>

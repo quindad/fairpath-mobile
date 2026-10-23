@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import { Lucide } from '@react-native-vector-icons/lucide';
-import { PageHeader, ScreenFrame, SectionTitle } from '@/components/ProductChrome';
+import { PageHeader, ScreenFrame, ScreenScroll, SectionTitle } from '@/components/ProductChrome';
 import { useFairPathTheme, useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
 
@@ -16,6 +16,14 @@ type Destination = {
 
 const SECTIONS: { title: string; items: Destination[] }[] = [
   {
+    title: 'Community exchange',
+    items: [
+      { id: 'community', title: 'FairPath Exchange', body: 'I need help, I can help, resources, and your exchanges — practical community infrastructure.', icon: 'handshake', route: '/community', status: 'live' },
+      { id: 'community-need', title: 'I need help', body: 'Request groceries, essentials, or other permitted necessities without public hardship proof.', icon: 'life-buoy', route: '/community/need-help', status: 'live' },
+      { id: 'community-give', title: 'I can help', body: 'Give free items and respond to nearby community requests.', icon: 'gift', route: '/community/can-help', status: 'live' },
+    ],
+  },
+  {
     title: 'Work and housing',
     items: [
       { id: 'jobs', title: 'Jobs', body: 'Fair-chance job search and applications.', icon: 'briefcase', route: '/find-jobs', status: 'live' },
@@ -24,8 +32,9 @@ const SECTIONS: { title: string; items: Destination[] }[] = [
     ],
   },
   {
-    title: 'Learn',
+    title: 'Learn & grow',
     items: [
+      { id: 'v1-pathways', title: 'V1 opportunity pathways', body: 'Ten approved paths — skills, business, education, family, benefits, health, mentorship, transport, volunteering, and drives.', icon: 'route', route: '/grow', status: 'live' },
       { id: 'academy', title: 'Academy', body: 'Free and affordable courses, matched to your goals.', icon: 'graduation-cap', route: '/academy', status: 'live' },
       { id: 'entrepreneurship', title: 'Startup Academy', body: '15 practical steps to start a business, open to everyone.', icon: 'briefcase', route: '/entrepreneurship', status: 'live' },
     ],
@@ -61,7 +70,7 @@ export default function ExploreScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="DISCOVER" title="Explore" onBack={false} />
-      <View style={s.content}>
+      <ScreenScroll contentContainerStyle={s.content}>
         {SECTIONS.map((section) => (
           <View key={section.title} style={s.section}>
             <SectionTitle>{section.title}</SectionTitle>
@@ -92,13 +101,13 @@ export default function ExploreScreen() {
             })}
           </View>
         ))}
-      </View>
+      </ScreenScroll>
     </ScreenFrame>
   );
 }
 
 const styles = (t: ThemeTokens) => ({
-  content: { padding: 16, gap: 20, paddingBottom: 120 },
+  content: { padding: 16, gap: 20, paddingBottom: 24 },
   section: { gap: 10 },
   card: { flexDirection: 'row' as const, gap: 12, borderWidth: 1, borderColor: t.border, backgroundColor: t.surface, padding: 14, alignItems: 'center' as const },
   cardMuted: { opacity: 0.6 },

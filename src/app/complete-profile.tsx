@@ -122,7 +122,7 @@ export default function CompleteProfile(){
  return <View style={s.screen}><StatusBar style="light"/><SafeAreaView style={s.safe}><KeyboardFooterLayout>
   <View style={s.top}><FairBackButton onPress={goToPreviousQuestion}/><Text style={s.percent}>{percent}% READY</Text></View>
   <View style={s.track}><View style={[s.fill,{width:`${percent}%`}]}/></View>
-  <FormScrollView contentContainerStyle={[s.content,desktop&&s.contentDesktop,compact&&s.contentCompact]} keyboardShouldPersistTaps="handled">
+  <FormScrollView style={{ flex: 1 }} contentContainerStyle={[s.content,desktop&&s.contentDesktop,compact&&s.contentCompact]} keyboardShouldPersistTaps="handled">
    <Text style={s.kicker}>{areaNames[question.area]}</Text>
    <Text style={s.title}>{question.label}</Text>
    <Text style={s.help}>{question.helpText}</Text>

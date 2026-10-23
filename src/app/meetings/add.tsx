@@ -52,7 +52,7 @@ export default function AddMeeting() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="MEETINGS" title="Add a meeting" backTo="/meetings" alwaysBackTo />
-      <FormScrollView contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40 }}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40 }}>
         <Panel><BodyText muted>FairPath does not host the call — add the link or location the host gave you, and FairPath keeps track of it for you.</BodyText></Panel>
         <Field label="TITLE" value={title} onChangeText={setTitle} placeholder="Interview with Acme Logistics" />
         <ChipGroup single label="TYPE" options={TYPES} selected={type} onChange={(n) => setType(n.length ? n : type)} />

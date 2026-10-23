@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { ExportPanel } from '@/components/ExportPanel';
 import { FormScrollView } from '@/components/FormScrollView';
-import { PageHeader, ScreenFrame, SectionTitle } from '@/components/ProductChrome';
+import {PageHeader, ScreenFrame, SectionTitle, ScreenScroll, ScreenColumn } from '@/components/ProductChrome';
 import { SpecPreview } from '@/components/SpecPreview';
 import { BodyText, ChipGroup, Field, Panel, PrimaryButton, SecondaryButton, StatusLine, TextButton } from '@/components/ui-kit';
 import { FairPathLayout as L } from '@/constants/fairpath';
@@ -104,7 +104,7 @@ export default function ResumeEditor() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="RESUME STUDIO" title={title || 'Resume'} backTo="/resume-studio" alwaysBackTo onBack={saved ? true : () => notify('Discard unsaved changes?', 'You have unsaved edits to this résumé. Leaving now will lose them.', [{ text: 'Keep editing', style: 'cancel' }, { text: 'Discard changes', style: 'destructive', onPress: () => router.replace('/resume-studio' as never) }])} />
-      <FormScrollView contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40 }}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40 }}>
         <Field label="RESUME TITLE" value={title} onChangeText={touch(setTitle)} />
         <Field label="TARGET ROLE" value={targetRole} onChangeText={touch(setTargetRole)} optional />
         <ChipGroup single label="TEMPLATE" options={RESUME_TEMPLATES} selected={template} onChange={(n) => touch(setTemplate)(n.length ? n : template)} />

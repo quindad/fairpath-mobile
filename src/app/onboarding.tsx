@@ -85,6 +85,7 @@ const steps: Step[] = [
     body: 'City, state or ZIP. We use this for nearby jobs, housing and resources. Not shared publicly by default.',
     type: 'text',
     placeholder: 'Columbus, OH or 43215',
+    optional: true,
   },
   {
     eyebrow: 'YOUR TOOLS',
@@ -240,7 +241,7 @@ export default function OnboardingScreen() {
           <View style={[styles.progressFill, { width: `${progress}%` }]} />
         </View>
 
-        <FormScrollView
+        <FormScrollView style={{ flex: 1 }}
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}

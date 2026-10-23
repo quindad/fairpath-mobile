@@ -1,7 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
-import { InlineBadge, PageHeader, ScreenFrame, SectionTitle } from '@/components/ProductChrome';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { InlineBadge, PageHeader, ScreenFrame, ScreenScroll, SectionTitle } from '@/components/ProductChrome';
 import { BodyText, ListRow, Panel, PrimaryButton, SecondaryButton, StatusLine } from '@/components/ui-kit';
 import { FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { loadMemberSummary } from '@/core/profile/member-summary';
@@ -15,9 +15,10 @@ import { disablePushRegistration } from '@/core/notifications/push-registration'
 
 // YOUR PATH: the core FairPath tools, in the order a member typically moves through them.
 const PATH_LINKS: { title: string; body: (s: MemberSummary) => string; route: string }[] = [
-  { title: 'Opportunity Profile', body: (s) => `${s.profile?.completed_sections ?? 0} of ${s.profile?.total_sections ?? 8} sections complete`, route: '/opportunity-profile' },
+  { title: 'Opportunity Profile', body: (s) => `${s.profile?.completed_sections ?? 0} of ${s.profile?.total_sections ?? 8} sections · professional credibility for employers`, route: '/opportunity-profile' },
   { title: 'Resume Studio', body: () => 'Build a clean, ATS-friendly resume', route: '/resume-studio' },
   { title: 'Credit Studio', body: (s) => (s.credit?.reports ?? 0) > 0 ? `${s.credit?.items_to_review ?? 0} item(s) to review` : 'Review a credit report and prepare disputes', route: '/credit' },
+  { title: 'My Justice Records', body: (s) => (s.record_relief?.cases ?? 0) > 0 ? `${s.record_relief?.cases} case(s) · unified view` : 'Cases, charges & relief in one place', route: '/justice-records' },
   { title: 'Record Relief', body: (s) => (s.record_relief?.cases ?? 0) > 0 ? `${s.record_relief?.cases} case(s) tracked` : 'Check a case against verified rules', route: '/record-relief' },
 ];
 
@@ -94,7 +95,7 @@ export default function MeScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="YOUR ACCOUNT" title="Me" onBack={false} />
-      <ScrollView contentContainerStyle={s.content}>
+      <ScreenScroll contentContainerStyle={s.content}>
         {loading ? <ActivityIndicator color={tokens.accentText} style={s.spinner} /> : null}
         {error ? <View><StatusLine tone="error">{error}</StatusLine><SecondaryButton label="TRY AGAIN" onPress={load} /></View> : null}
 
@@ -157,7 +158,7 @@ export default function MeScreen() {
         {__DEV__ ? <ListRow title="Integration health (DEV)" body="Live + static status of every external system" onPress={() => router.push('/dev-integration-health' as never)} /> : null}
 
         <SecondaryButton label="SIGN OUT" onPress={() => void signOut()} />
-      </ScrollView>
+      </ScreenScroll>
     </ScreenFrame>
   );
 }
@@ -172,11 +173,11 @@ const styles = (t: ThemeTokens) => ({
   identityCopy: { flex: 1 },
   name: { color: t.text, fontFamily: F.extraBold, fontSize: 17 },
   email: { color: t.textMuted, fontSize: 12, marginTop: 2 },
-  eyebrow: { color: t.accentText, fontFamily: F.extraBold, fontSize: 9, letterSpacing: 1.4 },
+  eyebrow: { color: t.accentText, fontFamily: F.extraBold, fontSize: 11, letterSpacing: 0.8 },
   stepTitle: { color: t.text, fontFamily: F.black, fontSize: 20, lineHeight: 24, marginVertical: 6 },
   alertTitle: { color: t.warning, fontFamily: F.extraBold, fontSize: 14, marginBottom: 4 },
   grid: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, marginHorizontal: -4 },
   tile: { width: '33.333%' as const, padding: 4 },
   tileValue: { color: t.text, fontFamily: F.black, fontSize: 26, borderWidth: 1, borderColor: t.border, borderBottomWidth: 0, backgroundColor: t.surface, paddingHorizontal: 10, paddingTop: 10 },
-  tileLabel: { color: t.textMuted, fontFamily: F.extraBold, fontSize: 8, letterSpacing: 0.8, borderWidth: 1, borderColor: t.border, borderTopWidth: 0, backgroundColor: t.surface, paddingHorizontal: 10, paddingBottom: 10, paddingTop: 2, minHeight: 34 },
+  tileLabel: { color: t.textMuted, fontFamily: F.extraBold, fontSize: 11, borderWidth: 1, borderColor: t.border, borderTopWidth: 0, backgroundColor: t.surface, paddingHorizontal: 10, paddingBottom: 10, paddingTop: 4, minHeight: 38 },
 });

@@ -73,7 +73,7 @@ export default function Home() {
 
   return (
     <ScreenFrame>
-      <FormScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+      <FormScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         <View style={s.top}>
           <FairPathLogo width={108} />
           <Pressable
@@ -239,7 +239,8 @@ export default function Home() {
 }
 
 const s = StyleSheet.create({
-  content: { paddingHorizontal: L.mobileGutter, paddingTop: 8, paddingBottom: 108 },
+  scroll: { flex: 1 },
+  content: { paddingHorizontal: L.mobileGutter, paddingTop: 8, paddingBottom: 32 },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
   bell: {
     width: 44,

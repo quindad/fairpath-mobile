@@ -33,7 +33,7 @@ export default function ForgotPasswordScreen() {
   }
 
   return <View style={styles.screen}><StatusBar style="light"/><SafeAreaView style={styles.safeArea}>
-    <FormScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <FormScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <FairBackButton onPress={()=>router.replace('/sign-in')}/>
       <View style={styles.heading}>
         <Text style={styles.kicker}>ACCOUNT RECOVERY</Text>

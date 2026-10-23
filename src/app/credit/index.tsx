@@ -1,11 +1,10 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { InlineBadge, PageHeader, ScreenFrame, SectionTitle, SharpChip, FilterStrip } from '@/components/ProductChrome';
-import { BodyText, ChipGroup, EmptyState, ListRow, Panel, PrimaryButton, SecondaryButton, StatusLine, TextButton } from '@/components/ui-kit';
+import { BodyText, EmptyState, ListRow, Panel, PrimaryButton, SecondaryButton, StatusLine } from '@/components/ui-kit';
 import { FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { CREDIT_EDUCATION } from '@/core/credit/credit-education';
-import { CREDIT_PRACTICAL_HELP } from '@/core/credit/credit-practical-help';
 import {
   BUREAU_LABEL, EXTRACTION_LABEL, ISSUE_LABEL, PAYMENT_STATUS_LABEL, STAGE_INFO, bureauName, dateLabel, dueLabel, formatCents, sortAccountsForReview, DISPUTE_STATUS_LABEL,
 } from '@/core/credit/credit-format';
@@ -17,14 +16,16 @@ import { explainCreditReport } from '@/core/ai/signal';
 import { useFairPathTheme, useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
 import { notify } from '@/core/ui/notify';
+import { CreditStudioHome } from '@/components/credit/CreditStudioHome';
 
-type Tab = 'overview' | 'accounts' | 'review' | 'disputes' | 'learn';
-const TABS: { tab: Tab; label: string }[] = [{ tab: 'overview', label: 'Overview' }, { tab: 'accounts', label: 'Accounts' }, { tab: 'review', label: 'Review' }, { tab: 'disputes', label: 'Disputes' }, { tab: 'learn', label: 'Learn' }];
+type Tab = 'studio' | 'accounts' | 'review' | 'disputes' | 'learn';
+const TABS: { tab: Tab; label: string }[] = [{ tab: 'studio', label: 'Studio' }, { tab: 'accounts', label: 'Accounts' }, { tab: 'review', label: 'Review' }, { tab: 'disputes', label: 'Disputes' }, { tab: 'learn', label: 'Learn' }];
 
 export default function CreditWorkspace() {
   const s = useThemedStyles(styles);
   const { tokens } = useFairPathTheme();
-  const [tab, setTab] = useState<Tab>('overview');
+  const { width } = useWindowDimensions();
+  const [tab, setTab] = useState<Tab>('studio');
   const [reports, setReports] = useState<CreditReport[]>([]);
   const [accounts, setAccounts] = useState<CreditAccount[]>([]);
   const [items, setItems] = useState<ReviewItem[]>([]);
@@ -60,13 +61,6 @@ export default function CreditWorkspace() {
   const activeDisputes = disputes.filter((d) => ['draft', 'sent', 'response_received'].includes(d.status));
   const dueSoon = disputes.filter((d) => d.status === 'sent' && ['soon', 'overdue'].includes(dueLabel(d.response_due_on, d.status).tone));
   const accountName = (id: string | null) => accounts.find((a) => a.id === id)?.furnisher_name ?? '';
-
-  const next = !reports.length && !uploads.length ? { title: 'Add a credit report', body: 'Upload a report you downloaded, or enter your accounts yourself.' }
-    : toConfirm.length ? { title: `Review ${toConfirm.length} account${toConfirm.length === 1 ? '' : 's'}`, body: 'Confirm or correct what was read so nothing is built on a mistake.', go: () => setTab('accounts') }
-    : open.length ? { title: `Look at ${open.length} possible issue${open.length === 1 ? '' : 's'}`, body: 'These are questions for you, not findings.', go: () => setTab('review') }
-    : confirmed.length && !disputes.length ? { title: 'Start a dispute', body: 'You confirmed an issue. You can prepare a letter from it.', go: () => router.push('/credit/new-dispute' as never) }
-    : dueSoon.length ? { title: 'A dispute response needs attention', body: dueLabel(dueSoon[0].response_due_on, dueSoon[0].status).text, go: () => router.push(('/credit/dispute/' + dueSoon[0].id) as never) }
-    : null;
 
   async function pickAndUpload() {
     setBusy(true); setNote('');
@@ -117,97 +111,56 @@ export default function CreditWorkspace() {
 
   return (
     <ScreenFrame>
-      <PageHeader eyebrow="FAIRPATH · CREDIT STUDIO" title="Your credit workspace" backTo="/home" />
+      <PageHeader eyebrow="FAIRPATH · FINANCIAL WELLNESS" title="Credit Studio" backTo="/home" />
       <FilterStrip>
         {TABS.map((t) => <SharpChip key={t.tab} label={t.label} active={tab === t.tab} onPress={() => setTab(t.tab)} />)}
       </FilterStrip>
-      <ScrollView contentContainerStyle={s.content}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={[s.content, width >= 768 && s.contentWide, { maxWidth: width >= 1024 ? 800 : undefined, alignSelf: 'center' as const, width: '100%' as const }]}>
         {!loaded && !error ? <ActivityIndicator color={tokens.accentText} style={s.spinner} /> : null}
         {error ? <View><StatusLine tone="error">{error}</StatusLine><SecondaryButton label="TRY AGAIN" onPress={() => void load()} /></View> : null}
 
-        {loaded && tab === 'overview' ? (
-          <>
-            <Panel tone="accent">
-              <BodyText strong>Free tools for everyone</BodyText>
-              <BodyText muted>Upload or enter your report, review flagged items, and track disputes you choose to send. No score predictions and no guarantees — especially important when money is tight and scams are common.</BodyText>
-            </Panel>
-            {next ? (
-              <Panel tone="accent">
-                <Text style={s.eyebrow}>NEXT</Text>
-                <Text style={s.nextTitle}>{next.title}</Text>
-                <BodyText>{next.body}</BodyText>
-                {'go' in next && next.go ? <PrimaryButton label="OPEN" onPress={next.go} /> : null}
-              </Panel>
-            ) : null}
-            <View style={s.grid}>
-              {[['REPORTS', reports.length], ['TO CONFIRM', toConfirm.length], ['POSSIBLE ISSUES', open.length], ['CONFIRMED', confirmed.length], ['ACTIVE DISPUTES', activeDisputes.length], ['DUE SOON', dueSoon.length]].map(([l, v]) => (
-                <View key={String(l)} style={s.tile}><Text style={s.tileValue}>{String(v)}</Text><Text style={s.tileLabel}>{String(l)}</Text></View>
-              ))}
-            </View>
-
-            <View style={s.block}><SectionTitle>SIGNAL · AI HELP</SectionTitle></View>
-            <Panel tone="accent">
-              <BodyText strong>Ask Signal to explain your report</BodyText>
-              <BodyText muted>Plain-English look at your accounts and flagged items. Signal only describes what's actually in your data — no score, no prediction, no guarantee.</BodyText>
-              {signalRequested ? <BodyText muted>{signalLoading ? 'Signal is thinking…' : signalText}</BodyText> : null}
-              <SecondaryButton label={signalLoading ? 'ASKING SIGNAL…' : 'EXPLAIN MY REPORT'} onPress={() => void askSignalAboutReport()} disabled={signalLoading} />
-              <SecondaryButton label="HELP WITH A DISPUTE LETTER" onPress={() => router.push('/fairpath-ai?q=' + encodeURIComponent('Build my dispute letter') as never)} />
-              <SecondaryButton label="FIND HELP WITH BILLS & HOUSING" onPress={() => router.push('/fairpath-ai?q=' + encodeURIComponent('I need help with rent, utilities, or food while I fix my credit') as never)} />
-            </Panel>
-
-            <View style={s.block}><SectionTitle>PRACTICAL HELP</SectionTitle></View>
-            {CREDIT_PRACTICAL_HELP.map((card) => (
-              <Panel key={card.id}>
-                <Text style={s.title}>{card.title}</Text>
-                <BodyText>{card.body}</BodyText>
-                {card.route?.startsWith('http') ? (
-                  <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(card.route!)}><Text style={s.link}>OPEN OFFICIAL LINK →</Text></Pressable>
-                ) : null}
-                {card.route && !card.route.startsWith('http') ? (
-                  <SecondaryButton label="OPEN IN FAIRPATH" onPress={() => router.push(card.route as never)} />
-                ) : null}
-                {card.signalPrompt ? (
-                  <SecondaryButton label="ASK SIGNAL" onPress={() => router.push('/fairpath-ai?q=' + encodeURIComponent(card.signalPrompt!) as never)} />
-                ) : null}
-              </Panel>
-            ))}
-
-            <View style={s.block}><SectionTitle>ADD A REPORT</SectionTitle></View>
-            <ChipGroup single label="WHICH BUREAU?" options={[{ value: 'equifax', label: 'Equifax' }, { value: 'experian', label: 'Experian' }, { value: 'transunion', label: 'TransUnion' }, { value: 'unknown', label: 'Not sure' }]} selected={bureau} onChange={(n) => setBureau(n.length ? n : ['unknown'])} />
-            <PrimaryButton label="UPLOAD A PDF OR PHOTO" onPress={() => void pickAndUpload()} busy={busy} />
-            <SecondaryButton label="ENTER ACCOUNTS MYSELF" onPress={() => router.push('/credit/add' as never)} />
-            {__DEV__ ? <SecondaryButton label="LOAD SAMPLE REPORTS (DEV TEST DATA)" onPress={() => void sample()} disabled={busy} /> : null}
-            {note ? <StatusLine tone="muted">{note}</StatusLine> : null}
-            <BodyText muted>Files are stored privately in your account, only you can open them, and they are removed after 30 days unless you extend it. FairPath never sends a report to anyone.</BodyText>
-
-            {uploads.length ? (
-              <>
-                <View style={s.block}><SectionTitle>YOUR UPLOADS</SectionTitle></View>
-                {uploads.map((u) => (
-                  <Panel key={u.id}>
-                    <Text style={s.title}>{bureauName(u.bureau)} · {u.file_kind.toUpperCase()}{u.page_count ? ` · ${u.page_count} page${u.page_count === 1 ? '' : 's'}` : ''}</Text>
-                    <BodyText muted>{uploadStatus(u)}</BodyText>
-                    <BodyText muted>Removed on {dateLabel(u.expires_at)}</BodyText>
-                    <View style={s.row}>
-                      {u.status === 'uploaded' ? <TextButton label="READ AUTOMATICALLY" onPress={() => confirmAndRead(u)} /> : null}
-                      <TextButton label="KEEP 90 DAYS" onPress={() => void extendUploadRetention(u.id, 90).then(load).catch((e) => notify('Could not extend', creditErrorMessage(e)))} />
-                      <TextButton tone="danger" label="DELETE FILE" onPress={() => notify('Delete this file?', 'The file is removed. Accounts you already reviewed stay until you delete the report.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Delete', style: 'destructive', onPress: () => void deleteUpload(u.id).then(load).catch((e) => notify('Could not delete', creditErrorMessage(e))) }])} />
-                    </View>
-                  </Panel>
-                ))}
-              </>
-            ) : null}
-            <View style={s.block}><SectionTitle>DOCUMENTS</SectionTitle></View>
-            <ListRow title="Dispute history" body="Export your disputes, dates and outcomes" onPress={() => router.push('/documents/create-credit' as never)} />
-            <ListRow title="Correct my personal information" body="Name, address or other details a bureau has wrong (not an account issue)" onPress={() => router.push('/credit/correct-identity' as never)} />
-            <ListRow title="Utilization calculator" body="See how your balances compare to your limits, from numbers you enter" onPress={() => router.push('/credit-studio' as never)} />
-          </>
+        {loaded && tab === 'studio' ? (
+          <CreditStudioHome
+            reports={reports}
+            accounts={accounts}
+            items={items}
+            disputes={disputes}
+            uploads={uploads}
+            toConfirm={toConfirm}
+            open={open}
+            confirmed={confirmed}
+            activeDisputes={activeDisputes}
+            dueSoon={dueSoon}
+            bureau={bureau}
+            onBureauChange={setBureau}
+            busy={busy}
+            note={note}
+            signalRequested={signalRequested}
+            signalLoading={signalLoading}
+            signalText={signalText}
+            onUpload={() => void pickAndUpload()}
+            onSample={() => void sample()}
+            onAskSignal={() => void askSignalAboutReport()}
+            onGoAccounts={() => setTab('accounts')}
+            onGoReview={() => setTab('review')}
+            onGoDisputes={() => setTab('disputes')}
+            onGoLearn={() => setTab('learn')}
+            uploadStatus={uploadStatus}
+            onReadUpload={confirmAndRead}
+            onExtendUpload={(id) => void extendUploadRetention(id, 90).then(load).catch((e) => notify('Could not extend', creditErrorMessage(e)))}
+            onDeleteUpload={(u) =>
+              notify('Delete this file?', 'The file is removed. Accounts you already reviewed stay until you delete the report.', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Delete', style: 'destructive', onPress: () => void deleteUpload(u.id).then(load).catch((e) => notify('Could not delete', creditErrorMessage(e))) },
+              ])
+            }
+          />
         ) : null}
 
         {loaded && tab === 'accounts' ? (
           <>
             {toConfirm.length ? <Panel tone="warning"><BodyText strong>{toConfirm.length} account{toConfirm.length === 1 ? '' : 's'} need your review</BodyText><BodyText muted>Reading a report is never perfectly reliable. Confirm or correct each one.</BodyText></Panel> : null}
-            {accounts.length === 0 ? <EmptyState title="No accounts yet" body="Upload a report or enter accounts yourself on the Overview tab." /> : null}
+            {accounts.length === 0 ? <EmptyState title="No accounts yet" body="Upload a report or enter accounts yourself from the Studio tab." /> : null}
             {reports.map((r) => {
               const list = sortAccountsForReview(accounts.filter((a) => a.report_id === r.id));
               if (!list.length) return null;
@@ -272,7 +225,8 @@ export default function CreditWorkspace() {
 }
 
 const styles = (t: ThemeTokens) => ({
-  content: { paddingHorizontal: L.mobileGutter, paddingBottom: 40 },
+  content: { paddingHorizontal: L.mobileGutter, paddingBottom: 40, gap: 4 },
+  contentWide: { paddingHorizontal: 28 },
   spinner: { marginTop: 28 },
   block: { marginTop: 22 },
   eyebrow: { color: t.accentText, fontFamily: F.extraBold, fontSize: 9, letterSpacing: 1.4 },

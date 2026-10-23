@@ -37,7 +37,7 @@ export default function RecordReliefHome() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="FREE FAIRPATH TOOL" title="Record Relief" backTo="/home" />
-      <ScrollView contentContainerStyle={s.content}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
         <Panel tone="warning"><BodyText>{DISCLAIMER}</BodyText></Panel>
         {!cases && !error ? <ActivityIndicator color={tokens.accentText} style={s.spinner} /> : null}
         {error ? <View><StatusLine tone="error">{error}</StatusLine><SecondaryButton label="TRY AGAIN" onPress={() => void load()} /></View> : null}

@@ -36,6 +36,7 @@ import {
 import { useFairPathTheme, useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
 import { notify } from '@/core/ui/notify';
+import { memberReferralBackendReady, submitResourceReferralRequest } from '@/core/opportunity/referral-service';
 
 const AUTHORITY: Record<string, string> = {
   government: 'Government source',
@@ -72,6 +73,11 @@ export default function ResourceDetailScreen() {
   const [reportReason, setReportReason] = useState<ReportReason | null>(null);
   const [reportNote, setReportNote] = useState('');
   const [reportDone, setReportDone] = useState(false);
+  const [referralReady, setReferralReady] = useState(false);
+
+  useEffect(() => {
+    memberReferralBackendReady().then(setReferralReady).catch(() => setReferralReady(false));
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -159,7 +165,7 @@ export default function ResourceDetailScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="RESOURCE" title="Details" backTo="/resources" />
-      <FormScrollView contentContainerStyle={s.content}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
         {loading ? <ActivityIndicator color={tokens.accentText} style={s.spinner} /> : null}
         {error ? <Text style={s.error}>{error}</Text> : null}
 
@@ -227,6 +233,29 @@ export default function ResourceDetailScreen() {
             <Text style={s.memberNote}>
               Saved items and progress are private to you. “Started” and “finished” are marked by you and are not checked by FairPath.
             </Text>
+
+            {resource.source_authority === 'partner_submitted' ? (
+              <View style={s.referralBox}>
+                <Text style={s.body}>Participating organizations may accept referral requests. FairPath shares only what you submit — not your Opportunity Profile or Justice Records.</Text>
+                {referralReady ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={busy}
+                    style={s.secondary}
+                    onPress={() =>
+                      memberAction(async () => {
+                        await submitResourceReferralRequest(id as string, 'Member requested assistance through FairPath.');
+                        notify('Referral request sent', 'This is not confirmed service yet. The organization will review your request.');
+                      })
+                    }
+                  >
+                    <Text style={s.secondaryText}>REQUEST ORGANIZATION REFERRAL</Text>
+                  </Pressable>
+                ) : (
+                  <Text style={s.meta}>Referral requests activate after the member-referral database migration is approved for this environment. You can still call or visit using the contacts above.</Text>
+                )}
+              </View>
+            ) : null}
 
             <Sec>HOW TO GET HELP</Sec>
             <Text style={s.body}>{resource.how_to_access ?? 'Contact the organization for the next step.'}</Text>
@@ -390,6 +419,7 @@ const styles = (t: ThemeTokens) => ({
   memberBtnText: { color: t.textSecondary, fontFamily: F.extraBold, fontSize: 9, letterSpacing: 0.6, textAlign: 'center' as const },
   memberBtnTextOn: { color: t.accentText },
   memberNote: { color: t.textMuted, fontSize: 11, lineHeight: 16, marginTop: 8 },
+  referralBox: { marginTop: 12, padding: 12, borderWidth: 1, borderColor: t.border, gap: 8 },
   reasonRow: { minHeight: 44, borderWidth: 1, borderColor: t.border, justifyContent: 'center' as const, paddingHorizontal: 12, marginTop: 6 },
   reasonRowOn: { borderColor: t.accentBorder, backgroundColor: t.accentSubtle },
   reasonText: { color: t.text, fontSize: 13 },

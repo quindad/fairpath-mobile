@@ -53,7 +53,7 @@ export default function VeteranProfileScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="VETERANS" title="Service profile" backTo="/veterans" />
-      <FormScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
         <View style={s.banner}>
           <Text style={s.bannerTitle}>Everything here is optional</Text>
           <Text style={s.body}>

@@ -215,7 +215,7 @@ export default function HousingApply(){
    {STEPS.map((label,i)=><View key={label} style={s.piece}><View style={[s.bar,i<step&&s.barOn]}/><Text style={[s.stepLabel,i===step-1&&s.stepOn]}>{label}</Text></View>)}
   </View>
 
-  <FormScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+  <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
    <View style={s.modeCard}>
     <View style={s.modeTop}><InlineBadge>{HOUSING_FASTTRACK_MEMBER_ENABLED&&fast?'FASTTRACK':'APPLICATION'}</InlineBadge><Text style={s.completion}>{completion}% COMPLETE</Text></View>
     <Text style={s.modeTitle}>{HOUSING_FASTTRACK_MEMBER_ENABLED&&fast?'Prefilled where FairPath already knows the answer.':'One section at a time.'}</Text>

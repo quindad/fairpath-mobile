@@ -1,16 +1,23 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { FormScrollView } from '@/components/FormScrollView';
+import { DevClientTestingHint } from '@/components/DevClientTestingHint';
 import { FairBackButton } from '@/components/ProductChrome';
+import { RegistrationLegalConsent } from '@/components/RegistrationLegalConsent';
 import { SocialAuthButtons } from '@/components/SocialAuthButtons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { supabase } from '../lib/supabase';
 import { resolvePostAuthRoute } from '@/core/auth/post-auth-route';
+import {
+  clearRegistrationDraft,
+  getRegistrationDraft,
+  registrationDraftLegalReady,
+  syncRegistrationDraftFromLegalSession,
+} from '@/core/auth/registration-draft';
+import { useRegistrationDraft } from '@/core/auth/use-registration-draft';
 import { recordSignUpConsent } from '@/core/profile/consent-service';
-
 const LIME = '#A8F32C';
 const BLACK = '#090A09';
 const CARD = '#151715';
@@ -19,30 +26,49 @@ const MUTED = '#909690';
 const ERROR = '#FF8A8A';
 
 export default function SignUpScreen() {
-  const params=useLocalSearchParams<{returnTo?:string}>();
-  const returnTo=typeof params.returnTo==='string'&&params.returnTo.startsWith('/')?params.returnTo:null;
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const params = useLocalSearchParams<{ returnTo?: string }>();
+  const returnTo = typeof params.returnTo === 'string' && params.returnTo.startsWith('/') ? params.returnTo : null;
+  const signUpPath = useMemo(
+    () => (returnTo ? `/sign-up?returnTo=${encodeURIComponent(returnTo)}` : '/sign-up'),
+    [returnTo],
+  );
+  const { draft, patch } = useRegistrationDraft();
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
+
+  const flushDraft = useCallback(() => patch({ ...draft }), [draft, patch]);
+
+  const legalReady = registrationDraftLegalReady(draft);
+
+  function requireLegal() {
+    syncRegistrationDraftFromLegalSession();
+    if (!registrationDraftLegalReady(getRegistrationDraft())) {
+      setErrorMessage('Read the Terms and Privacy Policy and agree to each before continuing.');
+      return false;
+    }
+    setErrorMessage('');
+    return true;
+  }
+
+  async function persistConsentAfterAccountCreated() {
+    await recordSignUpConsent();
+  }
 
   async function createAccount() {
     if (loading) return;
-
-    const cleanFirstName = firstName.trim();
-    const cleanLastName = lastName.trim();
-    const cleanEmail = email.trim().toLowerCase();
-
-    if (!cleanFirstName || !cleanLastName || !cleanEmail || !password) {
-      setErrorMessage('Complete every field to create your FairPath account.');
+    syncRegistrationDraftFromLegalSession();
+    const live = getRegistrationDraft();
+    if (!registrationDraftLegalReady(live)) {
+      setErrorMessage('Read the Terms and Privacy Policy and agree to each before creating your account.');
       return;
     }
 
-    if (!agreedToTerms) {
-      setErrorMessage("Agree to FairPath's Terms and Privacy Policy to continue.");
+    const cleanFirstName = live.firstName.trim();
+    const cleanLastName = live.lastName.trim();
+    const cleanEmail = live.email.trim().toLowerCase();
+
+    if (!cleanFirstName || !cleanLastName || !cleanEmail || !live.password) {
+      setErrorMessage('Complete every field to create your FairPath account.');
       return;
     }
 
@@ -51,7 +77,7 @@ export default function SignUpScreen() {
       return;
     }
 
-    if (password.length < 8) {
+    if (live.password.length < 8) {
       setErrorMessage('Create a password with at least 8 characters.');
       return;
     }
@@ -61,13 +87,11 @@ export default function SignUpScreen() {
 
     try {
       const emailRedirectTo =
-        Platform.OS === 'web'
-          ? window.location.origin + '/auth/callback'
-          : 'fairpathmobile://auth/callback';
+        Platform.OS === 'web' ? window.location.origin + '/auth/callback' : 'fairpathmobile://auth/callback';
 
       const { data, error } = await supabase.auth.signUp({
         email: cleanEmail,
-        password,
+        password: live.password,
         options: {
           emailRedirectTo,
           data: {
@@ -89,12 +113,11 @@ export default function SignUpScreen() {
       }
 
       if (data.session) {
-        // Session exists immediately (email confirmation disabled) — the
-        // user is authenticated now, so consent can be recorded right
-        // away. Fail-soft: the consent_events table may not exist yet
-        // on the live project until the Step 1 migrations are applied.
-        try { await recordSignUpConsent(); } catch {
-          setErrorMessage('Account created, but consent could not be saved. Please retry from the Terms screen.');
+        try {
+          await persistConsentAfterAccountCreated();
+          clearRegistrationDraft();
+        } catch {
+          setErrorMessage('Account created, but we could not save your agreement. Finish registration on the next screen.');
           router.replace('/accept-terms' as never);
           return;
         }
@@ -103,6 +126,7 @@ export default function SignUpScreen() {
         return;
       }
 
+      clearRegistrationDraft();
       router.replace(('/check-email?email=' + encodeURIComponent(cleanEmail)) as never);
     } catch {
       setErrorMessage('We could not create your account right now. Check your connection and try again.');
@@ -115,119 +139,123 @@ export default function SignUpScreen() {
     <View style={styles.screen}>
       <StatusBar style="light" />
       <SafeAreaView style={styles.safeArea}>
-        <FormScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <FairBackButton onPress={() => router.replace((returnTo||'/find-jobs') as never)} />
-
-          <View style={styles.heading}>
-            <Text style={styles.kicker}>YOUR FAIRPATH STARTS HERE</Text>
-            <Text style={styles.title}>Create your{`\n`}FairPath.</Text>
-            <Text style={styles.subtitle}>
-              One account for opportunities, resources and support built around where you're headed next.
-            </Text>
-          </View>
-
-          <View style={styles.form}>
-            <View style={styles.nameRow}>
-              <View style={styles.halfField}>
-                <Text style={styles.label}>First name</Text>
-                <TextInput
-                  value={firstName}
-                  onChangeText={setFirstName}
-                  placeholder="First name"
-                  placeholderTextColor="#666C66"
-                  autoCapitalize="words"
-                  autoComplete="given-name"
-                  style={styles.input}
-                />
-              </View>
-              <View style={styles.halfField}>
-                <Text style={styles.label}>Last name</Text>
-                <TextInput
-                  value={lastName}
-                  onChangeText={setLastName}
-                  placeholder="Last name"
-                  placeholderTextColor="#666C66"
-                  autoCapitalize="words"
-                  autoComplete="family-name"
-                  style={styles.input}
-                />
-              </View>
-            </View>
-
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              value={email}
-              onChangeText={setEmail}
-              placeholder="you@email.com"
-              placeholderTextColor="#666C66"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoComplete="email"
-              style={styles.input}
-            />
-
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              value={password}
-              onChangeText={setPassword}
-              placeholder="At least 8 characters"
-              placeholderTextColor="#666C66"
-              secureTextEntry
-              autoCapitalize="none"
-              autoComplete="new-password"
-              style={styles.input}
-              onSubmitEditing={createAccount}
-            />
-
-            {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
-
-            <Pressable
-              style={styles.consentRow}
-              onPress={() => setAgreedToTerms((v) => !v)}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: agreedToTerms }}
-              accessibilityLabel="Agree to FairPath's Terms and Privacy Policy"
-            >
-              <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>
-                {agreedToTerms ? <Text style={styles.checkboxMark}>✓</Text> : null}
-              </View>
-              <Text style={styles.terms}>
-                I agree to FairPath's Terms and Privacy Policy.
-              </Text>
-            </Pressable>
-
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={loading ? 'Creating account' : 'Create account'}
-              style={[styles.primaryButton, loading && styles.primaryButtonDisabled]}
-              onPress={createAccount}
-              disabled={loading}
-            >
-              <Text style={styles.primaryButtonText}>{loading ? 'Creating account…' : 'Create account'}</Text>
-              <Text style={styles.arrow}>{loading ? '•' : '→'}</Text>
-            </Pressable>
-          </View>
-
-          <SocialAuthButtons
-            returnTo={returnTo}
-            beforeStart={() => {
-              if (!agreedToTerms) { setErrorMessage('Please agree to the Terms and Privacy Policy first.'); return false; }
-              setErrorMessage('');
-              return true;
-            }}
-            onSignedIn={async (r) => {
-              if (!r.needsConsent) return;
-              try { await recordSignUpConsent(); return { needsConsent: false }; } catch {
-                setErrorMessage('Consent could not be saved. Please accept the Terms and Privacy Policy to continue.');
-                return { needsConsent: true };
-              }
-            }}
+        <DevClientTestingHint />
+        <FormScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <FairBackButton
+            onPress={() => router.replace((returnTo ? `/join?returnTo=${encodeURIComponent(returnTo)}` : '/join') as never)}
           />
+
+          <Text style={styles.kicker}>CREATE ACCOUNT</Text>
+          <Text style={styles.title}>Join with email</Text>
+          <Text style={styles.subtitle}>Or use Apple or Google below. Legal agreement is required before we create your account.</Text>
+
+          <View style={styles.socialBlock}>
+            <SocialAuthButtons
+              returnTo={returnTo}
+              beforeStart={requireLegal}
+              onSignedIn={async (r) => {
+                if (!r.needsConsent) return;
+                try {
+                  await persistConsentAfterAccountCreated();
+                  clearRegistrationDraft();
+                  return { needsConsent: false };
+                } catch {
+                  setErrorMessage('Account connected, but we could not save your agreement. Use Complete registration on the next screen.');
+                  return { needsConsent: true };
+                }
+              }}
+            />
+          </View>
+
+          <Text style={styles.dividerLabel}>EMAIL SIGN UP</Text>
+
+          <View style={styles.nameRow}>
+            <View style={styles.halfField}>
+              <Text style={styles.label}>First name</Text>
+              <TextInput
+                value={draft.firstName}
+                onChangeText={(v) => patch({ firstName: v })}
+                placeholder="First name"
+                placeholderTextColor="#666C66"
+                autoCapitalize="words"
+                autoComplete="given-name"
+                style={styles.input}
+              />
+            </View>
+            <View style={styles.halfField}>
+              <Text style={styles.label}>Last name</Text>
+              <TextInput
+                value={draft.lastName}
+                onChangeText={(v) => patch({ lastName: v })}
+                placeholder="Last name"
+                placeholderTextColor="#666C66"
+                autoCapitalize="words"
+                autoComplete="family-name"
+                style={styles.input}
+              />
+            </View>
+          </View>
+
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            value={draft.email}
+            onChangeText={(v) => patch({ email: v })}
+            placeholder="you@email.com"
+            placeholderTextColor="#666C66"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="email"
+            style={styles.input}
+          />
+
+          <Text style={styles.label}>Password</Text>
+          <TextInput
+            value={draft.password}
+            onChangeText={(v) => patch({ password: v })}
+            placeholder="At least 8 characters"
+            placeholderTextColor="#666C66"
+            secureTextEntry
+            autoCapitalize="none"
+            autoComplete="new-password"
+            style={styles.input}
+            onSubmitEditing={createAccount}
+          />
+
+          <Text style={styles.dividerLabel}>LEGAL AGREEMENT</Text>
+
+          <RegistrationLegalConsent
+            compact
+            legalBackTo={signUpPath}
+            agreedTerms={draft.agreedTerms}
+            agreedPrivacy={draft.agreedPrivacy}
+            onChangeAgreedTerms={(v) => patch({ agreedTerms: v })}
+            onChangeAgreedPrivacy={(v) => patch({ agreedPrivacy: v })}
+            onBeforeOpenDocument={flushDraft}
+          />
+
+          {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={loading ? 'Creating account' : 'Create account'}
+            style={[styles.primaryButton, (loading || !legalReady) && styles.primaryButtonDisabled]}
+            onPress={createAccount}
+            disabled={loading}
+          >
+            <Text style={styles.primaryButtonText}>{loading ? 'Creating account…' : 'Create account'}</Text>
+            <Text style={styles.arrow}>{loading ? '•' : '→'}</Text>
+          </Pressable>
 
           <View style={styles.loginRow}>
             <Text style={styles.loginMuted}>Already have an account?</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel="Sign in" onPress={() => router.replace(returnTo?('/sign-in?returnTo='+encodeURIComponent(returnTo)) as never:'/sign-in')}><Text style={styles.loginLink}> Sign in</Text></Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Sign in"
+              onPress={() => router.replace(returnTo ? ('/sign-in?returnTo=' + encodeURIComponent(returnTo)) as never : '/sign-in')}
+            >
+              <Text style={styles.loginLink}> Sign in</Text>
+            </Pressable>
           </View>
         </FormScrollView>
       </SafeAreaView>
@@ -238,56 +266,40 @@ export default function SignUpScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: BLACK },
   safeArea: { flex: 1, width: '100%', maxWidth: 620, alignSelf: 'center' },
-  content: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 30 },
-  backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: CARD,
-    borderWidth: 1,
-    borderColor: BORDER,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backArrow: { color: '#F6F7F5', fontSize: 23, lineHeight: 25 },
-  heading: { marginTop: 46, marginBottom: 36 },
-  kicker: { color: LIME, fontSize: 11, fontWeight: '800', letterSpacing: 1.6, marginBottom: 15 },
-  title: { color: '#F7F8F6', fontSize: 46, lineHeight: 49, fontWeight: '800', letterSpacing: -2.1 },
-  subtitle: { color: MUTED, fontSize: 16, lineHeight: 24, marginTop: 18, maxWidth: 500 },
-  form: { gap: 10 },
-  nameRow: { flexDirection: 'row', gap: 12 },
-  halfField: { flex: 1, gap: 10 },
-  label: { color: '#D7DAD6', fontSize: 13, fontWeight: '700', marginTop: 4 },
+  content: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: __DEV__ ? 88 : 36 },
+  kicker: { color: LIME, fontSize: 10, fontWeight: '800', letterSpacing: 1.4, marginTop: 16 },
+  title: { color: '#F7F8F6', fontSize: 28, lineHeight: 32, fontWeight: '800', marginTop: 8 },
+  subtitle: { color: MUTED, fontSize: 13, lineHeight: 19, marginTop: 8, marginBottom: 4 },
+  socialBlock: { marginTop: 4, marginBottom: 4 },
+  dividerLabel: { color: LIME, fontSize: 8, fontWeight: '800', letterSpacing: 1.2, marginTop: 12, marginBottom: 8 },
+  nameRow: { flexDirection: 'row', gap: 10 },
+  halfField: { flex: 1 },
+  label: { color: '#D7DAD6', fontSize: 12, fontWeight: '700', marginTop: 8, marginBottom: 4 },
   input: {
-    minHeight: 56,
-    borderRadius: 16,
+    minHeight: 48,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: BORDER,
     backgroundColor: CARD,
     color: '#F7F8F6',
-    fontSize: 16,
-    paddingHorizontal: 17,
+    fontSize: 15,
+    paddingHorizontal: 14,
   },
-  errorText: { color: ERROR, fontSize: 13, lineHeight: 19, marginTop: 4 },
+  errorText: { color: ERROR, fontSize: 12, lineHeight: 17, marginTop: 8 },
   primaryButton: {
-    minHeight: 60,
-    borderRadius: 18,
+    minHeight: 52,
+    borderRadius: 14,
     backgroundColor: LIME,
-    paddingHorizontal: 20,
-    marginTop: 12,
+    paddingHorizontal: 18,
+    marginTop: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   primaryButtonDisabled: { opacity: 0.65 },
-  primaryButtonText: { color: BLACK, fontSize: 17, fontWeight: '800' },
-  arrow: { color: BLACK, fontSize: 25 },
-  consentRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 6, paddingVertical: 4 },
-  checkbox: { width: 20, height: 20, borderRadius: 6, borderWidth: 1, borderColor: BORDER, alignItems: 'center', justifyContent: 'center' },
-  checkboxChecked: { backgroundColor: LIME, borderColor: LIME },
-  checkboxMark: { color: BLACK, fontSize: 12, fontWeight: '900' },
-  terms: { color: '#6F756F', fontSize: 11, lineHeight: 16, flex: 1 },
-  loginRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 'auto', paddingTop: 38 },
+  primaryButtonText: { color: BLACK, fontSize: 16, fontWeight: '800' },
+  arrow: { color: BLACK, fontSize: 22 },
+  loginRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 20, paddingBottom: 8 },
   loginMuted: { color: '#777D77', fontSize: 13 },
   loginLink: { color: LIME, fontSize: 13, fontWeight: '800' },
 });

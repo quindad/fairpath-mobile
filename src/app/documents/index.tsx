@@ -85,7 +85,7 @@ export default function DocumentsScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="YOUR ACCOUNT" title="My Documents" backTo="/me" />
-      <ScrollView contentContainerStyle={s.content}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
         <BodyText muted>Everything FairPath helped you prepare, in one place. Files stay private to you until you choose to download or share them.</BodyText>
         <ListRow
           title="Upload a document for review"

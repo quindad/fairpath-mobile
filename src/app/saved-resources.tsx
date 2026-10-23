@@ -94,7 +94,7 @@ export default function SavedResourcesScreen() {
           ))}
         </FilterStrip>
       </View>
-      <ScrollView contentContainerStyle={s.content}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
         {tab !== 'saved' ? <Text style={s.note}>Marked by you. FairPath does not verify started or finished.</Text> : null}
         {tab === 'saved' && rows.some((r) => r.available) ? (
           <View style={s.exportRow}>

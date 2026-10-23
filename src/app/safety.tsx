@@ -18,7 +18,7 @@ export default function SafetyScreen() {
   return (
     <ScreenFrame showNav={false}>
       <PageHeader eyebrow="SAFETY & RECOVERY" title="You're not alone" onBack={false} />
-      <ScrollView contentContainerStyle={s.content}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
         <Pressable style={s.exit} accessibilityRole="button" accessibilityLabel="Quick exit this screen" onPress={quickExit}>
           <Text style={s.exitText}>Quick exit →</Text>
         </Pressable>

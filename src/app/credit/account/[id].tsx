@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { FairPathDatePicker } from '@/components/FairPathDatePicker';
 import { FormScrollView } from '@/components/FormScrollView';
-import { InlineBadge, PageHeader, ScreenFrame, SectionTitle } from '@/components/ProductChrome';
+import {InlineBadge, PageHeader, ScreenFrame, SectionTitle, ScreenScroll, ScreenColumn } from '@/components/ProductChrome';
 import { BodyText, ChipGroup, Field, ListRow, Panel, PrimaryButton, SecondaryButton, StatusLine } from '@/components/ui-kit';
 import { FairPathLayout as L } from '@/constants/fairpath';
 import { EXTRACTION_LABEL, ISSUE_LABEL, PAYMENT_STATUS_LABEL, PAYMENT_STATUS_OPTIONS, dateLabel, dollarsToCents, formatCents } from '@/core/credit/credit-format';
@@ -76,7 +76,7 @@ export default function CreditAccountScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="CREDIT ACCOUNT" title={account.furnisher_name} backTo="/credit" alwaysBackTo />
-      <FormScrollView contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40 }}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40 }}>
         <View style={{ flexDirection: 'row', gap: 6, marginTop: 16, flexWrap: 'wrap' }}>
           <InlineBadge tone={ex.tone === 'ok' ? 'lime' : 'default'}>{ex.label}</InlineBadge>
           {account.source === 'fixture' ? <InlineBadge>DEV TEST DATA</InlineBadge> : null}

@@ -49,7 +49,7 @@ export default function HousingInquiry(){
 
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH HOUSING" title="Ask about this home" backTo={id?'/housing/'+id:'/find-housing'}/>
-  <FormScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+  <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
    <Text style={s.intro}>Ask about availability, screening, move-in requirements, utilities, accessibility, or another property-specific detail. The property team can reply once; this is a single question, not a chat.</Text>
    <Text style={s.label}>SUBJECT</Text>
    <TextInput style={s.input} value={subject} onChangeText={setSubject} maxLength={120} placeholderTextColor={C.muted}/>

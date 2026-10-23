@@ -63,7 +63,7 @@ export default function LocationSetup() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="FAIRPATH" title="Your location" backTo="/me" />
-      <FormScrollView contentContainerStyle={s.content}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
         <Text style={s.intro}>
           Used to find Jobs and Housing near you. Optional — you can browse without it, and change it anytime.
         </Text>

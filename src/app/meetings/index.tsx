@@ -37,7 +37,7 @@ export default function Meetings() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="FAIRPATH" title="Meetings" backTo="/me" />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40, paddingTop: 8 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40, paddingTop: 8 }}>
         <Panel><BodyText muted>Track interviews, appointments and workshops in one place. FairPath does not host video calls — you join through the link the host gave you.</BodyText></Panel>
         {!meetings && !error ? <ActivityIndicator color={tokens.accentText} style={{ marginTop: 28 }} /> : null}
         {error ? <View><StatusLine tone="error">{error}</StatusLine><SecondaryButton label="TRY AGAIN" onPress={() => void load()} /></View> : null}

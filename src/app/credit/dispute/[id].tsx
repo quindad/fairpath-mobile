@@ -4,7 +4,7 @@ import { ActivityIndicator, Platform, View } from 'react-native';
 import { ExportPanel } from '@/components/ExportPanel';
 import { FairPathDatePicker } from '@/components/FairPathDatePicker';
 import { FormScrollView } from '@/components/FormScrollView';
-import { InlineBadge, PageHeader, ScreenFrame, SectionTitle } from '@/components/ProductChrome';
+import {InlineBadge, PageHeader, ScreenFrame, SectionTitle, ScreenScroll, ScreenColumn } from '@/components/ProductChrome';
 import { SpecPreview } from '@/components/SpecPreview';
 import { BodyText, ChipGroup, Field, ListRow, Panel, PrimaryButton, SecondaryButton, StatusLine } from '@/components/ui-kit';
 import { FairPathLayout as L } from '@/constants/fairpath';
@@ -108,7 +108,7 @@ export default function DisputeScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="CREDIT DISPUTE" title={dispute.target_name} backTo="/credit" alwaysBackTo />
-      <FormScrollView contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 48 }}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 48 }}>
         <View style={{ flexDirection: 'row', gap: 6, marginTop: 16, flexWrap: 'wrap' }}>
           <InlineBadge tone="lime">{DISPUTE_STATUS_LABEL[dispute.status].toUpperCase()}</InlineBadge>
           {dispute.outcome ? <InlineBadge>{OUTCOME_LABEL[dispute.outcome].toUpperCase()}</InlineBadge> : null}

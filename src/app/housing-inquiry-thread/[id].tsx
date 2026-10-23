@@ -49,7 +49,7 @@ export default function HousingInquiryThread() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="FAIRPATH HOUSING" title="Conversation" backTo="/housing-activity" />
-      <FormScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
         <Text style={s.note}>You can keep asking follow-up questions here. The property team's replies are not yet real-time — check back or wait for a notification.</Text>
         {loading ? <Text style={s.state}>Loading conversation…</Text> : error ? <Text style={s.state}>{error}</Text> : (
           <View style={s.thread}>

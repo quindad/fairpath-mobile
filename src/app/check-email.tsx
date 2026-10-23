@@ -26,7 +26,7 @@ export default function CheckEmailScreen() {
           <Text style={styles.kicker}>ONE MORE STEP</Text>
           <Text style={styles.title}>Check your email.</Text>
           <Text style={styles.subtitle}>
-            We sent a verification link{destination}. Open it to verify your FairPath account.
+            We sent a verification link{destination}. Open it to verify your email, then review Terms and Privacy to finish registration.
           </Text>
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Didn't see it?</Text>

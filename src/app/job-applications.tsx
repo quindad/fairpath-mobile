@@ -43,7 +43,7 @@ export default function JobApplications(){
 
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH JOBS" title="My applications" backTo="/find-jobs"/>
-  <ScrollView
+  <ScrollView style={{ flex: 1 }}
    contentContainerStyle={s.content}
    showsVerticalScrollIndicator={false}
    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={()=>{setRefreshing(true);void load()}} tintColor={C.lime}/>}

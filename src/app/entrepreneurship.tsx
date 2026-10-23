@@ -62,7 +62,7 @@ export default function EntrepreneurshipScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="ENTREPRENEURSHIP · OPEN TO EVERYONE" title="Startup Academy" backTo="/explore" />
-      <FormScrollView contentContainerStyle={s.content}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
         <View style={s.banner}>
           <Text style={s.bannerTitle}>Build at your own pace</Text>
           <Text style={s.body}>

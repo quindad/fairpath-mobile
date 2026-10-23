@@ -46,7 +46,7 @@ export default function Coverage() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="RECORD RELIEF" title="Coverage" backTo="/record-relief" alwaysBackTo />
-      <ScrollView contentContainerStyle={s.content}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
         <Panel><BodyText muted>FairPath is built to eventually cover every state, DC, the territories and federal relief — but it only shows a result where a real rule has been verified from an official source. Nothing here is guessed.</BodyText></Panel>
         {!jurisdictions && !error ? <ActivityIndicator color={tokens.accentText} style={s.spinner} /> : null}
         {error ? <View><StatusLine tone="error">{error}</StatusLine><SecondaryButton label="TRY AGAIN" onPress={() => void load()} /></View> : null}

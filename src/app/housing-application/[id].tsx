@@ -100,7 +100,7 @@ export default function HousingApplication(){
 
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH HOUSING" title="Application" backTo="/housing-applications"/>
-  <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+  <ScrollView style={{ flex: 1 }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <View style={s.statusRow}>
     <InlineBadge tone={fast?'lime':undefined}>{fast?'FASTTRACK':'STANDARD'}</InlineBadge>
     <Text style={s.status}>{LABEL[item.status]??item.status.toUpperCase()}</Text>

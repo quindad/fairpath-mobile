@@ -40,7 +40,7 @@ export default function ResumeStudio() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="FAIRPATH · RESUME STUDIO" title="Build your resume" backTo="/me" />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40, paddingTop: 8 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40, paddingTop: 8 }}>
         <Panel tone="accent">
           <BodyText strong>Free for everyone</BodyText>
           <BodyText muted>Build a clean, ATS-friendly resume. Import your Opportunity Profile as a starting point — importing never changes your profile, and editing here never changes it either.</BodyText>

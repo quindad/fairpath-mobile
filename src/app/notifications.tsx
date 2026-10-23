@@ -14,7 +14,7 @@ export default function Notifications(){
  async function open(n:UserNotification){setActionError('');if(n.route)router.push(n.route as never);if(!n.read_at){try{await markNotificationRead(n.id);setRows(v=>v.map(x=>x.id===n.id?{...x,read_at:new Date().toISOString()}:x))}catch{setActionError('Could not mark this notification as read. Try again.')}}}
  async function markAll(){if(busy)return;setBusy(true);setActionError('');try{await markAllNotificationsRead();setRows(v=>v.map(x=>({...x,read_at:x.read_at??new Date().toISOString()})))}catch{setActionError('Could not mark notifications as read. Try again.')}finally{setBusy(false)}}
  return <ScreenFrame><PageHeader eyebrow="FAIRPATH" title="Notifications" backTo="/me"/>
-  <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+  <ScrollView style={{ flex: 1 }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <View style={s.head}><View><Text style={s.eyebrow}>IN-APP INBOX</Text><Text style={s.summary}>{unread?unread+' unread':'You’re all caught up.'}</Text></View>{unread?<Pressable accessibilityRole="button" disabled={busy} onPress={()=>void markAll()}><Text style={s.markAll}>MARK ALL READ</Text></Pressable>:null}</View>
    <Text style={s.delivery}>Updates about your applications, housing, and other FairPath activity appear here.</Text>
    <Pressable accessibilityRole="button" onPress={()=>router.push('/notification-settings' as never)}><Text style={s.markAll}>NOTIFICATION SETTINGS →</Text></Pressable>

@@ -33,7 +33,7 @@ export default function OpportunityProfileHub() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="YOUR PROFILE" title="Opportunity Profile" backTo="/me" />
-      <ScrollView contentContainerStyle={s.content}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
         {!sections && !error ? <ActivityIndicator color={tokens.accentText} style={s.spinner} /> : null}
         {error ? <View><StatusLine tone="error">{error}</StatusLine><SecondaryButton label="TRY AGAIN" onPress={load} /></View> : null}
 
@@ -56,7 +56,7 @@ export default function OpportunityProfileHub() {
 
             <Panel>
               <BodyText muted>
-                Employers never see your profile. If you choose, a copy of the parts you pick is attached to a job application when you apply. Your justice-related information is separate and is never part of this profile.
+                Employers never see your live profile. When you apply, you choose which sections to attach. FairPath Readiness (on Profile) is a separate private questionnaire for screening — edit work skills and history here for job applications.
               </BodyText>
             </Panel>
 
@@ -73,7 +73,8 @@ export default function OpportunityProfileHub() {
             <ListRow title="Certifications and licenses" body="Optional" onPress={() => router.push('/opportunity-profile/credentials' as never)} />
 
             <View style={s.block}><SectionTitle>USE YOUR PROFILE</SectionTitle></View>
-            <SecondaryButton label="PREVIEW AND EXPORT (PDF OR WORD)" onPress={() => router.push('/documents/create?type=opportunity_profile' as never)} />
+            <SecondaryButton label="PREVIEW PROFESSIONAL CARD" onPress={() => router.push('/opportunity-profile/preview' as never)} />
+            <SecondaryButton label="EXPORT PDF OR WORD" onPress={() => router.push('/documents/create?type=opportunity_profile' as never)} />
           </>
         ) : null}
       </ScrollView>

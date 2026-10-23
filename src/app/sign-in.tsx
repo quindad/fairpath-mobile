@@ -78,13 +78,13 @@ export default function SignInScreen() {
     <View style={styles.screen}>
       <StatusBar style="light" />
       <SafeAreaView style={styles.safeArea}>
-        <FormScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <FormScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <FairBackButton onPress={() => router.replace((returnTo||'/find-jobs') as never)} />
 
           <View style={styles.heading}>
             <Text style={styles.kicker}>WELCOME BACK</Text>
             <Text style={styles.title}>Keep moving{String.fromCharCode(10)}forward.</Text>
-            <Text style={styles.subtitle}>Sign in to your FairPath account and pick up where you left off.</Text>
+            <Text style={styles.subtitle}>Sign in to your FairPath account and pick up where you left off. New here? Use Create account to review Terms and Privacy as part of registration.</Text>
           </View>
 
           {returnTo?.startsWith('/record-relief') ? (

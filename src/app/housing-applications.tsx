@@ -19,7 +19,7 @@ export default function HousingApplications(){
 
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH HOUSING" title="Applications" backTo="/me"/>
-  <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+  <ScrollView style={{ flex: 1 }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <View style={s.head}><Text style={s.intro}>Draft, submit, and track every FairPath housing application in one place.</Text><Pressable accessibilityRole="button" style={s.find} onPress={()=>router.push('/find-housing' as never)}><Text style={s.findText}>FIND HOUSING</Text><Lucide name="arrow-right" color={C.lime} size={13}/></Pressable></View>
    {loading?<State text="Loading applications…"/>:error?<State text={error}/>:rows.length===0?<Empty/>:<>
     <Text style={s.section}>ACTIVE</Text>

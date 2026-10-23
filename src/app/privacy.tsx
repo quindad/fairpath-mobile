@@ -75,7 +75,7 @@ export default function PrivacyScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="YOUR ACCOUNT" title="Privacy and account" backTo="/me" alwaysBackTo />
-      <FormScrollView contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40 }}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40 }}>
         {!consent && !error ? <ActivityIndicator color={tokens.accentText} style={{ marginTop: 28 }} /> : null}
         {error ? <View><StatusLine tone="error">{error}</StatusLine><SecondaryButton label="TRY AGAIN" onPress={() => void load()} /></View> : null}
 

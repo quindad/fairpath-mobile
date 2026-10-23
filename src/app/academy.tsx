@@ -44,7 +44,7 @@ export default function AcademyScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="FAIRPATH ACADEMY" title="Learn" backTo="/home" />
-      <FormScrollView contentContainerStyle={s.content}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
         <View style={s.banner} accessibilityRole="summary">
           <Text style={s.bannerTitle}>Real, free national programs moved to Resources</Text>
           <Text style={s.bannerBody}>

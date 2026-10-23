@@ -45,7 +45,7 @@ export default function ResetPasswordScreen(){
     finally{setLoading(false);}
   }
 
-  return <View style={styles.screen}><StatusBar style="light"/><SafeAreaView style={styles.safeArea}><FormScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+  return <View style={styles.screen}><StatusBar style="light"/><SafeAreaView style={styles.safeArea}><FormScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
     <View style={styles.heading}><Text style={styles.kicker}>SECURE YOUR ACCOUNT</Text><Text style={styles.title}>Choose a new password.</Text><Text style={styles.subtitle}>Use at least 8 characters. After the update, FairPath will return you to sign in.</Text></View>
     {ready?<View style={styles.form}>
       <Text style={styles.label}>New password</Text><TextInput value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" autoComplete="new-password" placeholder="At least 8 characters" placeholderTextColor="#666C66" style={styles.input}/>

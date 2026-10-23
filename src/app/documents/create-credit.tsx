@@ -37,7 +37,7 @@ export default function CreateCreditDocument() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="DOCUMENTS" title={info.label} backTo="/credit" alwaysBackTo />
-      <FormScrollView contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40 }}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40 }}>
         <BodyText muted>{info.description} This document contains sensitive information. FairPath does not keep the file unless you ask.</BodyText>
         {!spec && !error ? <ActivityIndicator style={{ marginTop: 28 }} /> : null}
         {error ? <StatusLine tone="error">{error}</StatusLine> : null}

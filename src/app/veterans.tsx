@@ -53,7 +53,7 @@ export default function VeteransScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="VETERANS" title="Veteran-specific tools" backTo="/home" />
-      <FormScrollView contentContainerStyle={s.content}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
         <View style={s.banner} accessibilityRole="summary">
           <Text style={s.bannerTitle}>Jobs and housing for everyone, with your filters built in</Text>
           <Text style={s.bannerBody}>

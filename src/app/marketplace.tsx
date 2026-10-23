@@ -65,7 +65,7 @@ export default function Marketplace(){
 
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH MARKETPLACE" title="Free Marketplace"/>
-  <FormScrollView contentContainerStyle={s.page} showsVerticalScrollIndicator={false}>
+  <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.page} showsVerticalScrollIndicator={false}>
    <View style={s.hero}>
     <Text style={s.heroTitle}>Good stuff. Free. Local.</Text>
     <Text style={s.heroBody}>Claim useful items from people and organizations in your community. FairPath keeps claimant selection anonymous, protects private pickup details, and verifies pickup.</Text>

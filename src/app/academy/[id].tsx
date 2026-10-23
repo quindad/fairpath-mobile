@@ -1,4 +1,4 @@
-import { PageHeader, ScreenFrame } from '@/components/ProductChrome';
+import {PageHeader, ScreenFrame, ScreenScroll, ScreenColumn } from '@/components/ProductChrome';
 import { useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
 import { Text, View } from 'react-native';
@@ -12,11 +12,11 @@ export default function AcademyCourseScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="ACADEMY" title="Course" backTo="/academy" />
-      <View style={s.content}>
+      <ScreenScroll contentContainerStyle={s.content}>
         <Text style={s.body}>
           FairPath links directly to real courses and programs run by other organizations, rather than issuing its own certificate. Go back to Academy to find one.
         </Text>
-      </View>
+      </ScreenScroll>
     </ScreenFrame>
   );
 }

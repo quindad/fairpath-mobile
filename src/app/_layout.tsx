@@ -12,6 +12,7 @@ import { PaymentsProvider } from '@/components/PaymentsProvider';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { isPublicRoute } from '@/core/auth/public-routes';
 import { resolveNextRouteForSignedInUser } from '@/core/auth/post-auth-route';
+import { isOnboardingFlowRoute } from '@/core/legal/onboarding-route-exemptions';
 import { ThemeProvider, useFairPathTheme } from '@/core/theme/ThemeProvider';
 import { captureException } from '@/core/observability/error-monitor';
 
@@ -72,7 +73,7 @@ export default function RootLayout() {
 
   useEffect(()=>{
     if(!authReady||signedIn||PUBLIC_BROWSE(pathname))return;
-    router.replace(('/sign-in?returnTo='+encodeURIComponent(pathname)) as never);
+    router.replace(('/join?returnTo='+encodeURIComponent(pathname)) as never);
   },[authReady,signedIn,pathname]);
 
   // A signed-in user who closed the app mid-onboarding (verified email but never accepted terms, or never
@@ -80,7 +81,7 @@ export default function RootLayout() {
   // straight into it. Public routes are exempt: browsing without finishing onboarding is allowed by design.
   useEffect(()=>{
     if(!authReady||!signedIn||PUBLIC_BROWSE(pathname))return;
-    if(pathname==='/accept-terms'||pathname==='/onboarding')return;
+    if(isOnboardingFlowRoute(pathname))return;
     let active=true;
     resolveNextRouteForSignedInUser().then(next=>{
       if(active&&next&&next!=='/home'&&next!==pathname)router.replace(next as never);

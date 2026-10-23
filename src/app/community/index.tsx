@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import { Lucide } from '@react-native-vector-icons/lucide';
-import { PageHeader, ScreenFrame } from '@/components/ProductChrome';
+import {PageHeader, ScreenFrame, ScreenScroll } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 
 const ACTIONS = [
@@ -16,7 +16,7 @@ export default function CommunityHubScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="Community" title="Get help or lend a hand" backTo="/explore" />
-      <View style={s.content}>
+      <ScreenScroll contentContainerStyle={s.content}>
         {ACTIONS.map((a) => (
           <Pressable
             key={a.id}
@@ -37,7 +37,7 @@ export default function CommunityHubScreen() {
         <Text style={s.note}>
           You do not need to share a criminal record or proof of hardship to use resources or ask for help.
         </Text>
-      </View>
+      </ScreenScroll>
     </ScreenFrame>
   );
 }

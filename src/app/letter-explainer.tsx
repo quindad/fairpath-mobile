@@ -68,7 +68,7 @@ export default function LetterExplainerScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="SIGNAL" title="Explain a letter" backTo="/credit" />
-      <FormScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
         <Text style={s.lead}>
           Take a clear photo of mail or a notice (bureau, court, landlord, etc.). Signal summarizes what it says in plain English. This is not legal advice.
         </Text>

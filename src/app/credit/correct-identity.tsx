@@ -52,7 +52,7 @@ export default function CorrectIdentity() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="CREDIT" title="Correct my personal information" backTo="/credit" alwaysBackTo />
-      <FormScrollView contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40 }}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40 }}>
         <Panel><BodyText muted>Use this when a bureau has your name, address, date of birth or other personal information wrong — not for a specific account. FairPath never sends anything for you.</BodyText></Panel>
         <ChipGroup single label="WHO WILL YOU SEND IT TO?" options={BUREAUS} selected={bureau} onChange={(n) => setBureau(n.length ? n : bureau)} />
         <View style={{ marginTop: 14 }}><SectionTitle>WHAT IS WRONG</SectionTitle></View>

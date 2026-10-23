@@ -28,7 +28,7 @@ export default function OpportunitiesScreen(){
 
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH" title="Your opportunities" backTo="/home"/>
-  <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+  <ScrollView style={{ flex: 1 }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    {loading?<State text="Finding opportunities…"/>:error?<State text={error}/>:<>
     <Text style={s.count}>{opportunities.length} {opportunities.length===1?'OPPORTUNITY':'OPPORTUNITIES'} FOUND</Text>
     {!homeState?<View style={s.noticeCard}><Lucide name="map-pin" color={C.lime} size={15}/><Text style={s.noticeText}>Add your current address to see opportunities specific to your state. You're only seeing federal programs right now.</Text></View>:null}

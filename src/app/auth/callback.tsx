@@ -43,7 +43,7 @@ export default function AuthCallbackScreen() {
       if (!(await hasCurrentDocumentConsent(identity.user.id, data))) {
         if (active) {
           setState('success');
-          setMessage('Account verified. Please review and accept the current Terms and Privacy Policy.');
+          setMessage('Email verified. Review Terms and Privacy to finish registration.');
         }
         return false;
       }

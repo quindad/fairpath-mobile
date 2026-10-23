@@ -17,7 +17,7 @@ export default function Screen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="YOUR ACCOUNT" title="Appearance" backTo="/me" />
-      <ScrollView contentContainerStyle={s.content}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
         <Text style={s.intro}>Choose how FairPath looks. Some screens are still being updated and stay dark until they are.</Text>
         <SectionTitle>MODE</SectionTitle>
         <View style={s.list}>

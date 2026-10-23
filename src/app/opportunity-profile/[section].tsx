@@ -26,7 +26,7 @@ export default function OpportunitySectionScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow={meta?.eyebrow ?? 'OPPORTUNITY PROFILE'} title={meta?.title ?? 'Section'} backTo="/opportunity-profile" alwaysBackTo />
-      <FormScrollView contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40 }}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40 }}>
         {!meta ? (
           <Panel><BodyText>That section does not exist.</BodyText></Panel>
         ) : (

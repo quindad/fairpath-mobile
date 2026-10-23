@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
-import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome';
+import {ScreenFrame, PageHeader, InlineBadge, ScreenScroll, ScreenColumn } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { loadJobApplicationEvents, loadMyJobApplicationDetail, withdrawMyJobApplication, type JobApplicationEvent, type JobApplicationStatus, type MyJobApplicationDetail } from '@/core/opportunities/opportunity-service';
 import { prepareForInterview } from '@/core/ai/signal';
@@ -50,7 +50,7 @@ function profileValue(key:string,value:unknown){
  }
  return Array.isArray(value)?value.join(', '):raw;
 }
-const SHARE_SECTION_LABEL:Record<string,string>={experience:'WORK EXPERIENCE',education:'EDUCATION',credentials:'CERTIFICATIONS',skills:'SKILLS',availability:'AVAILABILITY',transportation:'TRANSPORTATION'};
+const SHARE_SECTION_LABEL:Record<string,string>={summary:'PROFESSIONAL SUMMARY',experience:'WORK EXPERIENCE',education:'EDUCATION',credentials:'CERTIFICATIONS',skills:'SKILLS',preferences:'CAREER INTERESTS',availability:'AVAILABILITY',transportation:'TRANSPORTATION'};
 
 export default function JobApplicationDetail(){
  const {id}=useLocalSearchParams<{id:string}>();
@@ -126,7 +126,7 @@ export default function JobApplicationDetail(){
 
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH JOBS" title="Application" backTo="/job-applications"/>
-  <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+  <ScreenScroll contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <View style={s.hero}>
     <View style={s.heroTop}>
      <View style={s.heroCopy}>
@@ -186,7 +186,7 @@ export default function JobApplicationDetail(){
    {canWithdraw?<Pressable accessibilityRole="button" style={s.withdraw} disabled={withdrawing} onPress={confirmWithdraw}>
     <Text style={s.withdrawText}>{withdrawing?'WITHDRAWING…':'WITHDRAW APPLICATION'}</Text>
    </Pressable>:null}
-  </ScrollView>
+  </ScreenScroll>
  </ScreenFrame>;
 }
 

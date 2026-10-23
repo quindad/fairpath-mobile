@@ -322,7 +322,7 @@ export default function Housing(){
     <View><Text style={s.modalEyebrow}>FAIRPATH HOUSING</Text><Text style={s.modalTitle}>Filters</Text></View>
     <Pressable accessibilityRole="button" accessibilityLabel="Close filters" hitSlop={10} style={s.modalClose} onPress={()=>setFiltersOpen(false)}><Lucide name="x" color={C.white} size={16}/></Pressable>
    </View>
-   <FormScrollView contentContainerStyle={s.modalBody} keyboardShouldPersistTaps="handled">
+   <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.modalBody} keyboardShouldPersistTaps="handled">
     <Text style={s.groupLabel}>SORT BY</Text>
     <View style={s.wrapRow}>{SORTS.filter(([k])=>k!=='nearest'||zip).map(([k,label])=><SharpChip key={k} label={label} active={draft.sort===k} onPress={()=>setDraft(d=>({...d,sort:k}))}/>)}</View>
 
@@ -400,6 +400,7 @@ export default function Housing(){
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH HOUSING" title="Find housing" backTo="/" alwaysBackTo/>
   <FlatList
+   style={s.listFlex}
    {...KEYBOARD_LIST_PROPS}
    data={homes}
    keyExtractor={h=>h.id}
@@ -434,6 +435,7 @@ export default function Housing(){
 }
 
 const s=StyleSheet.create({
+ listFlex:{flex:1},
  utilityRow:{height:44,flexDirection:'row',borderBottomWidth:1,borderBottomColor:C.borderStrong,marginHorizontal:-L.mobileGutter},utilityBtn:{flex:1,flexDirection:'row',gap:7,alignItems:'center',justifyContent:'center',borderRightWidth:1,borderRightColor:C.borderStrong},utilityInfo:{flex:1,flexDirection:'row',gap:7,alignItems:'center',justifyContent:'center'},utilityText:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},
  searchBlock:{paddingTop:14,paddingBottom:14,borderBottomWidth:1,borderBottomColor:C.borderStrong},
  searchRow:{minHeight:54,flexDirection:'row',alignItems:'center',borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#0A0C0A',marginBottom:8},fieldIcon:{width:42,alignItems:'center',justifyContent:'center'},fieldCopy:{flex:1,minWidth:0,paddingVertical:8},fieldLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:1.25,marginBottom:2},input:{color:C.white,fontFamily:F.medium,fontSize:14,paddingVertical:2,paddingHorizontal:0},

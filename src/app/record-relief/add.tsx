@@ -8,7 +8,7 @@ import { BodyText, ChipGroup, Field, ListRow, Panel, PrimaryButton, SecondaryBut
 import { FairPathLayout as L } from '@/constants/fairpath';
 import { textFromIso } from '@/core/profile/opportunity-forms';
 import { DISPOSITION_OPTIONS, OFFENSE_CLASS_OPTIONS, caseToPayload, validateCase, type CaseForm } from '@/core/record-relief/relief-format';
-import { loadCase, loadCoveredJurisdictions, loadJurisdictions, reliefErrorMessage, saveCase, type Jurisdiction } from '@/core/record-relief/relief-service';
+import { loadCase, loadCoveredJurisdictions, loadJurisdictions, reliefErrorMessage, saveCaseAndAutoEvaluate, type Jurisdiction } from '@/core/record-relief/relief-service';
 import { notify } from '@/core/ui/notify';
 
 const BLANK: CaseForm = {
@@ -62,7 +62,7 @@ export default function AddReliefCase() {
     if (Object.keys(errs).length) return;
     setBusy(true);
     try {
-      const saved = await saveCase(id ?? null, caseToPayload(form));
+      const saved = await saveCaseAndAutoEvaluate(id ?? null, caseToPayload(form));
       router.replace(('/record-relief/case/' + saved.id) as never);
     } catch (e) { notify('Could not save the case', reliefErrorMessage(e)); } finally { setBusy(false); }
   }
@@ -72,7 +72,7 @@ export default function AddReliefCase() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="RECORD RELIEF" title={id ? 'Edit case' : 'Add a case'} backTo="/record-relief" alwaysBackTo />
-      <FormScrollView contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 48 }}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 48 }}>
         <Panel><BodyText muted>Enter what you know from your paperwork. You can leave things blank: FairPath will tell you what it cannot check without them. Everything here is private to you.</BodyText></Panel>
 
         <View style={{ marginTop: 18 }}><SectionTitle>WHERE WAS THE CASE HEARD?</SectionTitle></View>

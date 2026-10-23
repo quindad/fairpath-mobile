@@ -68,7 +68,7 @@ export default function FairPathAssistant() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="SIGNAL" title="Assistant" backTo="/home" />
-      <FormScrollView contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 36 }}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 36 }}>
         <Panel tone="accent">
           <BodyText strong>Built-in guidance</BodyText>
           <BodyText muted>{SIGNAL_ASSISTANT_NOTE} Each part shows how it was made.</BodyText>

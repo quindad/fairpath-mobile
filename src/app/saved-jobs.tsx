@@ -32,7 +32,7 @@ export default function SavedJobs(){
 
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH JOBS" title="Saved jobs" backTo="/find-jobs"/>
-  <ScrollView
+  <ScrollView style={{ flex: 1 }}
    contentContainerStyle={s.content}
    showsVerticalScrollIndicator={false}
    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={()=>{setRefreshing(true);void load()}} tintColor={C.lime}/>}

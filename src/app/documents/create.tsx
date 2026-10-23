@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, View } from 'react-native';
 import { ExportPanel } from '@/components/ExportPanel';
 import { FormScrollView } from '@/components/FormScrollView';
-import { InlineBadge, PageHeader, ScreenFrame, SectionTitle } from '@/components/ProductChrome';
+import {InlineBadge, PageHeader, ScreenFrame, SectionTitle, ScreenScroll, ScreenColumn } from '@/components/ProductChrome';
 import { SpecPreview } from '@/components/SpecPreview';
 import { BodyText, ChipGroup, EmptyState, Panel, PrimaryButton, SecondaryButton, StatusLine } from '@/components/ui-kit';
 import { FairPathLayout as L } from '@/constants/fairpath';
@@ -102,7 +102,7 @@ export default function CreateDocumentScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="DOCUMENTS" title={info.label} backTo="/documents" alwaysBackTo />
-      <FormScrollView contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40 }}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40 }}>
         <BodyText muted>{info.description}</BodyText>
 
         {!ready ? <ActivityIndicator style={{ marginTop: 28 }} /> : null}

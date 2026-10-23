@@ -79,7 +79,7 @@ export default function NewDispute() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="CREDIT" title="New dispute" backTo="/credit" alwaysBackTo />
-      <FormScrollView contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40 }}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40 }}>
         {items.length === 0 ? <EmptyState title="No confirmed issues yet" body="A dispute starts from an issue you confirmed as inaccurate. Review your accounts first." action={<PrimaryButton label="GO TO REVIEW" onPress={() => router.replace('/credit' as never)} />} /> : (
           <>
             <Panel><BodyText muted>Choose the issues to include. Only issues you confirmed appear here. Nothing is sent by FairPath: you decide when and how to send a letter.</BodyText></Panel>

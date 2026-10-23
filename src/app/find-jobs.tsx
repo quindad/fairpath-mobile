@@ -372,7 +372,7 @@ export default function FindJobs(){
     <View><Text style={s.modalEyebrow}>FAIRPATH JOBS</Text><Text style={s.modalTitle}>Filters</Text></View>
     <Pressable accessibilityRole="button" accessibilityLabel="Close filters" hitSlop={10} style={s.modalClose} onPress={()=>setFiltersOpen(false)}><Lucide name="x" color={C.white} size={16}/></Pressable>
    </View>
-   <FormScrollView contentContainerStyle={s.modalBody}>
+   <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.modalBody}>
     <Text style={s.groupLabel}>DISTANCE</Text>
     {zip?<View style={s.radiusRow}>{RADIUS_CHOICES.map(r=><View key={r} style={s.radiusCell}><SharpChip label={r+' mi'} active={draft.radius===r} onPress={()=>setDraft(d=>({...d,radius:r}))}/></View>)}</View>
      :<Text style={s.groupHint}>Enter a ZIP code in WHERE to search within a distance. Currently: {where.trim()?'searching "'+where.trim()+'"':'all locations'}.</Text>}
@@ -424,6 +424,7 @@ export default function FindJobs(){
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH JOBS" title="Find work" backTo="/" alwaysBackTo/>
   <FlatList
+   style={s.listFlex}
    {...KEYBOARD_LIST_PROPS}
    data={jobs}
    keyExtractor={j=>j.id}
@@ -460,6 +461,7 @@ export default function FindJobs(){
 }
 
 const s=StyleSheet.create({
+ listFlex:{flex:1},
  utilityRow:{height:44,flexDirection:'row',borderBottomWidth:1,borderBottomColor:C.borderStrong,marginHorizontal:-L.mobileGutter},utilityBtn:{flex:1,flexDirection:'row',gap:7,alignItems:'center',justifyContent:'center',borderRightWidth:1,borderRightColor:C.borderStrong},utilityText:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:.8},
  searchBlock:{paddingTop:14,paddingBottom:14,borderBottomWidth:1,borderBottomColor:C.borderStrong},
  searchRow:{minHeight:54,flexDirection:'row',alignItems:'center',borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#0A0C0A',marginBottom:8},

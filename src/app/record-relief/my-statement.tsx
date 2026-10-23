@@ -37,7 +37,7 @@ export default function MyRecordStatement() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="RECORD RELIEF" title="Explain My Record" backTo="/record-relief" alwaysBackTo />
-      <FormScrollView contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40 }}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40 }}>
         <BodyText>
           Write this once, in your own words. It stays completely private — nothing here is ever shown to an employer, landlord, or anyone else
           unless you personally choose to attach it when you apply to a specific job or home. You decide every single time.

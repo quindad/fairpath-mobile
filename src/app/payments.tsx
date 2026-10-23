@@ -18,7 +18,7 @@ export default function Payments(){
  useFocusEffect(useCallback(()=>{load()},[load]));
 
  return <ScreenFrame><PageHeader eyebrow="FAIRPATH" title="Payments" backTo="/me"/>
-  <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+  <ScrollView style={{ flex: 1 }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <Text style={s.intro}>Receipts for FairPath services you paid for. Payment status is separate from your application status. FairPath+ membership billing is handled by the App Store or Google Play.</Text>
    {loading?<Text style={s.state}>Loading payments…</Text>:error?<>
     <Text style={s.error}>{error}</Text><Pressable accessibilityRole="button" style={s.retry} onPress={load}><Text style={s.retryText}>TRY AGAIN</Text></Pressable>

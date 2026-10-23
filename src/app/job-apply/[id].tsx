@@ -4,13 +4,26 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { FormScrollView } from '@/components/FormScrollView';
 import { notify } from '@/core/ui/notify';
 import { Lucide } from '@react-native-vector-icons/lucide';
-import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
+import {ScreenFrame, PageHeader, ScreenScroll, ScreenColumn } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { loadJob, loadJobApplicationAutofill, loadMyJobApplicationForJob, saveJobApplicationProfile, submitJobApplication, type Job, type JobApplicationAutofill } from '@/core/opportunities/opportunity-service';
 import { formatUsPhone } from '@/core/forms/formatters';
 import { loadResumes, type Resume } from '@/core/resume/resume-service';
 import { isResumeContentEmpty } from '@/core/resume/resume-types';
 import { loadMyRecordStatement } from '@/core/record-relief/statement-service';
+import { ApplicationSharePreviewPanel } from '@/components/jobs/ApplicationSharePreviewPanel';
+import type { ShareSectionKey } from '@/core/jobs/application-share-preview.ts';
+
+const SHARE_OPTIONS: [ShareSectionKey, string][] = [
+  ['summary', 'HEADLINE'],
+  ['experience', 'WORK'],
+  ['education', 'EDUCATION'],
+  ['credentials', 'CERTS'],
+  ['skills', 'SKILLS'],
+  ['preferences', 'GOALS'],
+  ['availability', 'AVAILABILITY'],
+  ['transportation', 'TRANSPORT'],
+];
 
 const EMPTY:JobApplicationAutofill={first_name:'',last_name:'',email:'',phone:'',education:'',skills:'',certifications:'',desired_roles:''};
 
@@ -20,7 +33,7 @@ export default function JobApply(){
  const [form,setForm]=useState<JobApplicationAutofill>(EMPTY);
  const [extra,setExtra]=useState<Record<string,string>>({});
  const [shareProfile,setShareProfile]=useState(false);
- const [shareSections,setShareSections]=useState<string[]>(['experience','education','skills']);
+ const [shareSections,setShareSections]=useState<ShareSectionKey[]>(['summary','experience','education','skills']);
  const [resumes,setResumes]=useState<Resume[]>([]);
  const [resumeId,setResumeId]=useState<string|null>(null);
  const [statement,setStatement]=useState('');
@@ -75,7 +88,7 @@ export default function JobApply(){
 
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH EASY APPLY" title="Review application" backTo={id?'/job/'+id:'/find-jobs'} alwaysBackTo/>
-  <FormScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+  <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <View style={s.hero}>
     <Text style={s.company}>{job.company_name.toUpperCase()}</Text>
     <Text style={s.title}>{job.title}</Text>
@@ -130,7 +143,8 @@ export default function JobApply(){
     <Text style={s.questionLabel}>Attach a copy of my Opportunity Profile</Text>
     <Text style={s.muted}>The employer receives a copy of only the parts you choose, as it is right now. They never see your live profile, your date of birth, your home address or any justice information.</Text>
     <View style={s.yesNo}><Choice label="YES" active={shareProfile} onPress={()=>setShareProfile(true)}/><Choice label="NO" active={!shareProfile} onPress={()=>setShareProfile(false)}/></View>
-    {shareProfile?<View style={s.yesNo}>{[['experience','WORK'],['education','EDUCATION'],['credentials','CERTS'],['skills','SKILLS'],['availability','AVAILABILITY'],['transportation','TRANSPORT']].map(([k,l])=><Choice key={k} label={l} active={shareSections.includes(k)} onPress={()=>setShareSections(cur=>cur.includes(k)?cur.filter(x=>x!==k):[...cur,k])}/>)}</View>:null}
+    {shareProfile?<View style={s.yesNo}>{SHARE_OPTIONS.map(([k,l])=><Choice key={k} label={l} active={shareSections.includes(k)} onPress={()=>setShareSections(cur=>cur.includes(k)?cur.filter(x=>x!==k):[...cur,k])}/>)}</View>:null}
+    {shareProfile&&shareSections.length?<ApplicationSharePreviewPanel sections={shareSections}/>:null}
    </View>
 
    <View style={s.review}>

@@ -1,13 +1,16 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FormScrollView } from '@/components/FormScrollView';
 import { notify } from '@/core/ui/notify';
-import { ScreenFrame, PageHeader, InlineBadge } from '@/components/ProductChrome';
+import { ScreenFrame, PageHeader, InlineBadge, ScreenColumn } from '@/components/ProductChrome';
 import { JobMap } from '@/components/JobMap';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { isJobSaved, loadJob, loadMyJobApplicationForJob, saveJob, unsaveJob, type Job, type JobApplicationStatus } from '@/core/opportunities/opportunity-service';
 import { draftCoverLetter, explainJobFit } from '@/core/ai/signal';
-import { supabase } from '@/lib/supabase';
+import { requireMemberAccess } from '@/core/auth/member-access';
+import { JobJusticeCompatibilityPanel } from '@/components/jobs/JobJusticeCompatibilityPanel';
+import { JobProfileFitPanel } from '@/components/jobs/JobProfileFitPanel';
 
 export default function JobDetail(){
  const {id}=useLocalSearchParams<{id:string}>();
@@ -40,26 +43,26 @@ export default function JobDetail(){
 
  async function save(){
   if(!job)return;
+  if(!(await requireMemberAccess('/job/'+job.id,'save')))return;
   try{
    if(saved){await unsaveJob(job.id);setSaved(false)}
    else{await saveJob(job.id);setSaved(true)}
   }catch(e){
-   if(e instanceof Error&&e.message==='SIGNED_OUT'){router.push(('/sign-up?returnTo='+encodeURIComponent('/job/'+job.id)) as never);return}
+   if(e instanceof Error&&e.message==='SIGNED_OUT'){await requireMemberAccess('/job/'+job.id,'save');return}
    notify('Could not update saved job','Please try again.');
   }
  }
 
  async function askSignal(){
   if(!job||fitLoading)return;
-  const {data:{user}}=await supabase.auth.getUser();
-  if(!user){router.push(('/sign-up?returnTo='+encodeURIComponent('/job/'+job.id)) as never);return}
+  if(!(await requireMemberAccess('/job/'+job.id,'member_feature')))return;
   setFitLoading(true);setFitRequested(true);
   try{
    const r=await explainJobFit(job.id);
    if(r.status==='ok')setFitText(r.text);
    else if(r.status==='out_of_credits')setFitText('You are out of Signal credits for now. They refresh with your plan.');
    else if(r.status==='rate_limited')setFitText('Signal is busy across FairPath right now. Try again shortly.');
-   else if(r.status==='signed_out'){router.push(('/sign-up?returnTo='+encodeURIComponent('/job/'+job.id)) as never);return}
+   else if(r.status==='signed_out'){await requireMemberAccess('/job/'+job.id,'member_feature');return}
    else setFitText(r.message);
   }catch{
    setFitText('Signal could not explain this job right now. Please try again.');
@@ -70,15 +73,14 @@ export default function JobDetail(){
 
  async function askCoverLetter(){
   if(!job||coverLoading)return;
-  const {data:{user}}=await supabase.auth.getUser();
-  if(!user){router.push(('/sign-up?returnTo='+encodeURIComponent('/job/'+job.id)) as never);return}
+  if(!(await requireMemberAccess('/job/'+job.id,'member_feature')))return;
   setCoverLoading(true);setCoverRequested(true);
   try{
    const r=await draftCoverLetter(job.id);
    if(r.status==='ok')setCoverText(r.text);
    else if(r.status==='out_of_credits')setCoverText('You are out of Signal credits for now. They refresh with your plan.');
    else if(r.status==='rate_limited')setCoverText('Signal is busy across FairPath right now. Try again shortly.');
-   else if(r.status==='signed_out'){router.push(('/sign-up?returnTo='+encodeURIComponent('/job/'+job.id)) as never);return}
+   else if(r.status==='signed_out'){await requireMemberAccess('/job/'+job.id,'member_feature');return}
    else setCoverText(r.message);
   }catch{
    setCoverText('Signal could not draft a cover letter right now. Please try again.');
@@ -96,11 +98,7 @@ export default function JobDetail(){
 
  async function apply(){
   if(!job)return;
-  const {data:{user}}=await supabase.auth.getUser();
-  if(!user){
-   router.push(('/sign-up?returnTo='+encodeURIComponent('/job/'+job.id)) as never);
-   return;
-  }
+  if(!(await requireMemberAccess('/job/'+job.id,'apply')))return;
   if(applicationStatus){router.push((applicationId?'/job-application/'+applicationId:'/job-applications') as never);return;}
   const expiredByTime=Boolean(job.expires_at&&new Date(job.expires_at).getTime()<=Date.now());
   if(expiredByTime||job.status==='expired'||job.status==='closed'||job.status==='filled'){
@@ -127,7 +125,8 @@ export default function JobDetail(){
 
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH JOBS" title="Job details" backTo="/find-jobs" trailing={<Pressable accessibilityRole="button" style={[s.save,saved&&s.saveActive]} onPress={()=>void save()}><Text style={[s.saveText,saved&&s.saveTextActive]}>{saved?'SAVED':'SAVE'}</Text></Pressable>}/>
-  <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+  <ScreenColumn>
+  <FormScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
    <Text style={s.company}>{job.company_name.toUpperCase()}</Text>
    <Text style={s.title}>{job.title}</Text>
 
@@ -159,6 +158,11 @@ export default function JobDetail(){
     <JobMap jobs={[job]} compact/>
    </View>:null}
 
+   <View style={s.section}>
+    <Text style={s.sectionLabel}>YOUR OPPORTUNITY PROFILE · FIT HINTS</Text>
+    <JobProfileFitPanel job={job} />
+   </View>
+
    <View style={s.signalSection}>
     <Text style={s.sectionLabel}>SIGNAL · WHY THIS MIGHT FIT YOU</Text>
     {fitRequested?(
@@ -184,12 +188,16 @@ export default function JobDetail(){
 
    <View style={s.section}><Text style={s.sectionLabel}>ABOUT THE ROLE</Text><Text style={s.body}>{job.description}</Text></View>
    {job.background_policy_summary?<View style={s.section}><Text style={s.sectionLabel}>BACKGROUND POLICY</Text><Text style={s.body}>{job.background_policy_summary}</Text></View>:null}
+   <View style={s.section}>
+    <Text style={s.sectionLabel}>YOUR RECORD · THIS JOB&apos;S POLICY</Text>
+    <JobJusticeCompatibilityPanel job={job} />
+   </View>
    {job.requirements?.length?<View style={s.section}><Text style={s.sectionLabel}>REQUIREMENTS</Text>{job.requirements.map(x=><Text key={x} style={s.line}>— {x}</Text>)}</View>:null}
    {job.skills?.length?<View style={s.section}><Text style={s.sectionLabel}>SKILLS</Text><Text style={s.body}>{job.skills.join(' · ')}</Text></View>:null}
    {job.benefits?.length?<View style={s.section}><Text style={s.sectionLabel}>BENEFITS</Text><Text style={s.body}>{job.benefits.join(' · ')}</Text></View>:null}
 
    <View style={s.source}><Text style={s.sourceLabel}>SOURCE</Text><Text style={s.sourceText}>{job.source_label||'FairPath'}</Text></View>
-  </ScrollView>
+  </FormScrollView>
 
   <View style={s.bottom}>
    <Pressable accessibilityRole="button" style={[s.apply,(inactive||applied)&&s.applyDisabled]} onPress={apply}>
@@ -197,10 +205,12 @@ export default function JobDetail(){
     <Text style={[s.applyText,(inactive||applied)&&s.applyTextDisabled]}>{applied?'→':inactive?'—':'→'}</Text>
    </Pressable>
   </View>
+  </ScreenColumn>
  </ScreenFrame>;
 }
 
 const s=StyleSheet.create({
+ scroll:{flex:1},
  content:{paddingHorizontal:L.mobileGutter,paddingTop:20,paddingBottom:28},
  state:{padding:L.mobileGutter},stateText:{color:C.muted},error:{color:C.danger},
  save:{height:32,borderWidth:1,borderColor:C.borderStrong,paddingHorizontal:10,justifyContent:'center'},saveActive:{backgroundColor:C.lime,borderColor:C.lime},saveText:{color:C.white,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8},saveTextActive:{color:C.black},

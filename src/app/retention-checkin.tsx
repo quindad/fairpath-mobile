@@ -79,7 +79,7 @@ export default function RetentionCheckinScreen() {
 
  return <ScreenFrame>
   <PageHeader eyebrow="FAIRPATH" title="Job check-in" backTo="/home" />
-  <FormScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+  <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
    {loading ? <Text style={s.state}>Loading…</Text> : error ? <Text style={s.state}>{error}</Text> : !active ? (
     <View style={s.empty}><Lucide name="check-circle" color={C.lime} size={22} /><Text style={s.emptyTitle}>NOTHING DUE RIGHT NOW</Text><Text style={s.emptyBody}>We'll check back in with you when your next job check-in is due.</Text></View>
    ) : step === 'done' ? (

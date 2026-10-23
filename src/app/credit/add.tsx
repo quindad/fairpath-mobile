@@ -50,7 +50,7 @@ export default function AddCreditAccount() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="CREDIT BUILDER" title="Enter an account" backTo="/credit" alwaysBackTo />
-      <FormScrollView contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40 }}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 40 }}>
         <Panel><BodyText muted>Copy each account from your credit report. Only the last 4 digits of an account number are kept. Because you type it yourself, it counts as confirmed by you.</BodyText></Panel>
         {!reportId ? <ChipGroup single label="WHICH BUREAU'S REPORT?" options={[{ value: 'equifax', label: 'Equifax' }, { value: 'experian', label: 'Experian' }, { value: 'transunion', label: 'TransUnion' }, { value: 'unknown', label: 'Not sure' }]} selected={bureau} onChange={(n) => setBureau(n.length ? n : ['unknown'])} /> : null}
         <Field label="CREDITOR OR COMPANY" value={name} onChangeText={setName} error={errors.name} autoCapitalize="words" />

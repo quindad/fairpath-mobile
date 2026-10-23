@@ -197,7 +197,7 @@ export default function ResourcesScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="RESOURCES" title="Find help" backTo="/home" onBack={searched ? reset : true} />
-      <FormScrollView contentContainerStyle={s.content}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
         {!searched ? (
           <View style={s.signalBox}>
             <Text style={s.label}>SIGNAL · NOT SURE WHERE TO START?</Text>

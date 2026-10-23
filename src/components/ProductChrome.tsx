@@ -1,7 +1,8 @@
 import { router, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { createContext, useContext } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View, type ScrollViewProps } from 'react-native';
+import { FormScrollView } from '@/components/FormScrollView';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { FairPathFonts as F, FairPathLayout as L, FairPathRadius as R } from '@/constants/fairpath';
@@ -31,7 +32,17 @@ export function ScreenFrame({children,showNav=true}:{children:React.ReactNode;sh
 function Frame({children,showNav}:{children:React.ReactNode;showNav:boolean}){
   const s=useThemedStyles(styles);
   const {tokens}=useFairPathTheme();
-  return <View style={s.screen}><StatusBar style={tokens.scheme==='dark'?'light':'dark'}/><SafeAreaView style={s.safe}><NavProvided.Provider value={showNav}>{children}</NavProvided.Provider>{showNav?<BottomNavBar/>:null}</SafeAreaView></View>;
+  return <View style={s.screen}><StatusBar style={tokens.scheme==='dark'?'light':'dark'}/><SafeAreaView style={s.safe} edges={['top','left','right']}><NavProvided.Provider value={showNav}><View style={s.bodySlot}>{children}</View></NavProvided.Provider>{showNav?<BottomNavBar/>:null}</SafeAreaView></View>;
+}
+/** Primary scroll region below PageHeader — flex:1 so iOS can scroll above tab bar. */
+export function ScreenScroll({children,contentContainerStyle,style,...rest}:ScrollViewProps){
+  const s=useThemedStyles(styles);
+  return <FormScrollView style={[s.scroll,style]} contentContainerStyle={[s.scrollContent,contentContainerStyle as object]} {...rest}>{children}</FormScrollView>;
+}
+/** flex:1 column for header + scroll + optional footer inside ScreenFrame body slot. */
+export function ScreenColumn({children}:{children:React.ReactNode}){
+  const s=useThemedStyles(styles);
+  return <View style={s.column}>{children}</View>;
 }
 export function safeBack(fallback='/home'){
   if(router.canGoBack())router.back();
@@ -76,7 +87,7 @@ export function InlineBadge({children,tone='default'}:{children:React.ReactNode;
  return <View style={[s.badge,tone==='lime'&&s.badgeLime]}><Text style={[s.badgeText,tone==='lime'&&s.badgeTextLime]}>{children}</Text></View>
 }
 const styles=(t:ThemeTokens)=>({
- screen:{flex:1,backgroundColor:t.background},safe:{flex:1,width:'100%' as const,maxWidth:L.consumerMaxWidth,alignSelf:'center' as const},
+ screen:{flex:1,backgroundColor:t.background},safe:{flex:1,width:'100%' as const,maxWidth:L.consumerMaxWidth,alignSelf:'center' as const},bodySlot:{flex:1,minHeight:0,width:'100%' as const},scroll:{flex:1},scrollContent:{paddingBottom:20},column:{flex:1,minHeight:0,width:'100%' as const},
  header:{minHeight:86,paddingHorizontal:L.mobileGutter,paddingTop:14,paddingBottom:14,flexDirection:'row' as const,alignItems:'center' as const,borderBottomWidth:1,borderBottomColor:t.border},
  back:{width:40,height:40,borderRadius:2,borderWidth:1,borderColor:t.borderStrong,backgroundColor:t.input,alignItems:'center' as const,justifyContent:'center' as const,marginRight:12},backPressed:{borderColor:t.accentBorder,backgroundColor:t.accentSubtle},
  headerCopy:{flex:1,minWidth:0},eyebrow:{color:t.accentText,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.5},title:{color:t.text,fontFamily:F.black,fontSize:24,lineHeight:26,letterSpacing:-.6,marginTop:3,flexShrink:1},trailing:{marginLeft:10},

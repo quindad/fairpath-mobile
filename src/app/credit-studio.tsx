@@ -48,7 +48,7 @@ export default function CreditStudioScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="CREDIT STUDIO · TOOL" title="Utilization Calculator" backTo="/credit" />
-      <FormScrollView contentContainerStyle={s.content}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
         <View style={s.banner} accessibilityRole="summary">
           <Text style={s.bannerTitle}>Enter your numbers</Text>
           <Text style={s.body}>

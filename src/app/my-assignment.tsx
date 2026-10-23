@@ -30,7 +30,7 @@ export default function MyAssignmentScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="MY ASSIGNMENT · DEV DEMO" title="My Assignment" backTo="/my-path" />
-      <ScrollView contentContainerStyle={s.content}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
         <View style={s.banner}>
           <Text style={s.bannerTitle}>{DEMO_LABEL}</Text>
           <Text style={s.body}>This screen is not connected to a backend yet. Use the buttons below to preview every honest state.</Text>
