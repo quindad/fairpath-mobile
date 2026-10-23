@@ -17,23 +17,25 @@ export default function CommunityHubScreen() {
     <ScreenFrame>
       <PageHeader eyebrow="Community" title="Get help or lend a hand" backTo="/explore" />
       <ScreenScroll contentContainerStyle={s.content}>
-        {ACTIONS.map((a) => (
+        <View style={s.group}>
+        {ACTIONS.map((a, index) => (
           <Pressable
             key={a.id}
             accessibilityRole="link"
-            style={s.card}
+            style={[s.row, index === ACTIONS.length - 1 && s.rowLast]}
             onPress={() => router.push(a.route as never)}
           >
             <View style={s.iconWrap}>
-              <Lucide name={a.icon as never} color={C.lime} size={20} />
+              <Lucide name={a.icon as never} color={C.lime} size={18} />
             </View>
             <View style={s.copy}>
               <Text style={s.title}>{a.title}</Text>
-              <Text style={s.body}>{a.body}</Text>
+              <Text style={s.body} numberOfLines={2}>{a.body}</Text>
             </View>
             <Lucide name="chevron-right" color={C.mutedStrong} size={18} />
           </Pressable>
         ))}
+        </View>
         <Text style={s.note}>
           You do not need to share a criminal record or proof of hardship to use resources or ask for help.
         </Text>
@@ -43,25 +45,26 @@ export default function CommunityHubScreen() {
 }
 
 const s = {
-  content: { padding: L.mobileGutter, paddingBottom: 48, gap: 10 },
-  card: {
-    minHeight: 72,
-    borderWidth: 1,
-    borderColor: C.borderStrong,
-    backgroundColor: '#0A0C0A',
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+  content: { padding: L.mobileGutter, paddingBottom: 48, gap: 12 },
+  group: { borderWidth: 1, borderColor: C.borderStrong, backgroundColor: '#0A0C0A' },
+  row: {
+    minHeight: 64,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
+    borderBottomWidth: 1,
+    borderBottomColor: C.borderStrong,
   },
+  rowLast: { borderBottomWidth: 0 },
   iconWrap: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     borderWidth: 1,
     borderColor: C.borderStrong,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    marginRight: 12,
+    marginRight: 10,
   },
   copy: { flex: 1, minWidth: 0, paddingRight: 8 },
   title: { color: C.white, fontFamily: F.extraBold, fontSize: 16 },

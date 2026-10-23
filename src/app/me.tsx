@@ -81,17 +81,6 @@ export default function MeScreen() {
   const more = steps.slice(1, 3);
   const plus = summary?.plus;
 
-  const tiles: { label: string; value: number; route: string }[] = summary ? [
-    { label: 'JOBS APPLIED', value: summary.jobs?.applied ?? 0, route: '/job-applications' },
-    { label: 'SAVED JOBS', value: summary.jobs?.saved ?? 0, route: '/saved-jobs' },
-    { label: 'HOUSING APPLICATIONS', value: summary.housing?.applications ?? 0, route: '/housing-applications' },
-    { label: 'SAVED HOMES', value: summary.housing?.saved_homes ?? 0, route: '/saved-homes' },
-    { label: 'RESOURCES SAVED', value: summary.resources?.saved ?? 0, route: '/saved-resources' },
-    { label: 'DOCUMENTS', value: summary.documents?.generated ?? 0, route: '/documents' },
-    { label: 'MARKETPLACE CLAIMS', value: summary.marketplace?.active_claims ?? 0, route: '/marketplace-claims' },
-    { label: 'UPCOMING MEETINGS', value: summary.meetings?.upcoming ?? 0, route: '/meetings' },
-  ] : [];
-
   return (
     <ScreenFrame>
       <PageHeader eyebrow="YOUR ACCOUNT" title="Me" onBack={false} />
@@ -130,19 +119,6 @@ export default function MeScreen() {
             )}
             {more.map((m) => <ListRow key={m.key} title={m.title} body={m.body} onPress={() => router.push(m.route as never)} />)}
 
-            <View style={s.block}><SectionTitle>YOUR ACTIVITY</SectionTitle></View>
-            <View style={s.grid}>
-              {tiles.map((t) => (
-                <Pressable key={t.label} accessibilityRole="button" accessibilityLabel={`${t.label}: ${t.value}`} style={s.tile} onPress={() => router.push(t.route as never)}>
-                  <Text style={s.tileValue}>{t.value}</Text>
-                  <Text style={s.tileLabel}>{t.label}</Text>
-                </Pressable>
-              ))}
-            </View>
-            {(summary.resources?.started ?? 0) + (summary.resources?.completed ?? 0) > 0 ? (
-              <BodyText muted>Resources: {summary.resources?.started ?? 0} started, {summary.resources?.completed ?? 0} finished (marked by you).</BodyText>
-            ) : null}
-
             <View style={s.block}><SectionTitle>YOUR PATH</SectionTitle></View>
             {PATH_LINKS.map((l) => <ListRow key={l.route} title={l.title} body={l.body(summary)} onPress={() => router.push(l.route as never)} />)}
 
@@ -176,8 +152,4 @@ const styles = (t: ThemeTokens) => ({
   eyebrow: { color: t.accentText, fontFamily: F.extraBold, fontSize: 11, letterSpacing: 0.8 },
   stepTitle: { color: t.text, fontFamily: F.black, fontSize: 20, lineHeight: 24, marginVertical: 6 },
   alertTitle: { color: t.warning, fontFamily: F.extraBold, fontSize: 14, marginBottom: 4 },
-  grid: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, marginHorizontal: -4 },
-  tile: { width: '33.333%' as const, padding: 4 },
-  tileValue: { color: t.text, fontFamily: F.black, fontSize: 26, borderWidth: 1, borderColor: t.border, borderBottomWidth: 0, backgroundColor: t.surface, paddingHorizontal: 10, paddingTop: 10 },
-  tileLabel: { color: t.textMuted, fontFamily: F.extraBold, fontSize: 11, borderWidth: 1, borderColor: t.border, borderTopWidth: 0, backgroundColor: t.surface, paddingHorizontal: 10, paddingBottom: 10, paddingTop: 4, minHeight: 38 },
 });

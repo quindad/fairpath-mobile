@@ -71,24 +71,24 @@ export default function FairPathAssistant() {
       <FormScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 36 }}>
         <Panel tone="accent">
           <BodyText strong>Built-in guidance</BodyText>
-          <BodyText muted>{SIGNAL_ASSISTANT_NOTE} Each part shows how it was made.</BodyText>
+          <BodyText muted>{SIGNAL_ASSISTANT_NOTE}</BodyText>
           {credits === undefined ? null : credits === null ? (
-            <BodyText muted>Sign in to use Signal credits on personalized help.</BodyText>
+            <BodyText muted>Sign in to use Signal credits.</BodyText>
           ) : (
-            <BodyText muted>Signal credits available: {credits}. Each tool below typically uses 1–2 credits when the server AI runs.</BodyText>
+            <BodyText muted>{credits} Signal credit{credits === 1 ? '' : 's'} available.</BodyText>
           )}
         </Panel>
 
         {turns.length === 0 ? (
           <>
-            <Text style={s.label}>TRY ASKING</Text>
+            <Text style={s.label}>Try asking</Text>
             <View style={s.chips}>{SUGGESTIONS.map((sug) => <SharpChip key={sug} label={sug} onPress={() => void ask(sug)} />)}</View>
 
-            <Text style={s.label}>SIGNAL TOOLS (WHERE TO TAP)</Text>
-            <BodyText muted>These use server AI on the screen listed — open the route, then use the Signal button there.</BodyText>
+            <Text style={s.label}>Tools by area</Text>
+            <BodyText muted>Open the screen, then use Signal there when you need AI help.</BodyText>
             {catalogByCategory().map((group) => (
               <View key={group.category} style={{ marginTop: 14 }}>
-                <Text style={s.groupTitle}>{group.label.toUpperCase()}</Text>
+                <Text style={s.groupTitle}>{group.label}</Text>
                 {group.items.map((item) => (
                   <Pressable
                     key={item.id}
@@ -101,8 +101,7 @@ export default function FairPathAssistant() {
                   >
                     <View style={{ flex: 1 }}>
                       <Text style={s.catalogTitle}>{item.title}</Text>
-                      <Text style={s.catalogBody}>{item.description}</Text>
-                      {item.route ? <Text style={s.catalogMeta}>Open {item.route} · ~{item.creditCost} credit{item.creditCost === 1 ? '' : 's'}</Text> : null}
+                      <Text style={s.catalogBody} numberOfLines={2}>{item.description}</Text>
                     </View>
                     <Text style={s.catalogGo}>→</Text>
                   </Pressable>
@@ -142,7 +141,7 @@ export default function FairPathAssistant() {
           </View>
         ))}
 
-        <Field label="ASK ABOUT FINDING HELP, YOUR PROFILE, CREDIT, RECORD RELIEF OR DOCUMENTS" value={text} onChangeText={setText} placeholder="I need somewhere to stay tonight" maxLength={300} />
+        <Field label="Your question" value={text} onChangeText={setText} placeholder="I need somewhere to stay tonight" maxLength={300} />
         <PrimaryButton label="ASK" onPress={() => void ask(text)} busy={busy} disabled={text.trim().length < 2} />
         {turns.length ? <SecondaryButton label="START OVER" onPress={() => setTurns([])} /> : null}
         <View style={{ marginTop: 18 }}>

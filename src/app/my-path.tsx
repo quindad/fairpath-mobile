@@ -73,16 +73,16 @@ export default function MyPathScreen() {
       <PageHeader eyebrow="MY PATH" title="My Path" onBack={false} />
       <ScreenScroll contentContainerStyle={s.content}>
         <View style={s.banner}>
-          <Text style={s.bannerTitle}>Your plan, on this device</Text>
+          <Text style={s.bannerTitle}>Your plan on this device</Text>
           <Text style={s.body}>
-            Your progress is saved on this device for now. Syncing across devices and case-manager tasks come later. You own your plan, and AI suggestions never change your records without your confirmation.
+            Progress is saved on this device for now. Sync and case-manager tools come later. Signal suggestions never change your records without your OK.
           </Text>
         </View>
 
         {personalization?.goals.length ? (
           <>
             <SectionTitle>Your focus areas</SectionTitle>
-            <Text style={s.body}>From what you picked when you joined: {personalization.goals.join(' · ')}</Text>
+            <Text style={s.body}>{personalization.goals.join(' · ')}</Text>
             <View style={s.row}>
               {homeQuickLinks(personalization).map((l) => (
                 <Pressable key={l.route} style={s.chip} accessibilityRole="link" onPress={() => router.push(l.route as never)}>
@@ -110,11 +110,11 @@ export default function MyPathScreen() {
             <SectionTitle>Professional credibility</SectionTitle>
             <Pressable style={s.card} accessibilityRole="link" onPress={() => router.push('/opportunity-profile' as never)}>
               <Text style={s.cardTitle}>Opportunity Profile</Text>
-              <Text style={s.body}>Skills, experience, and credentials employers see only when you choose to share them on an application.</Text>
+              <Text style={s.body}>Skills and credentials you choose to share on applications.</Text>
             </Pressable>
             <Pressable style={s.card} accessibilityRole="link" onPress={() => router.push('/opportunity-profile/preview' as never)}>
               <Text style={s.cardTitle}>Preview your professional card</Text>
-              <Text style={s.body}>See how your qualifications look before you apply. Justice Records stay private.</Text>
+              <Text style={s.body}>Preview before you apply. Justice records stay private.</Text>
             </Pressable>
             <Pressable style={s.card} accessibilityRole="link" onPress={() => router.push('/job-applications' as never)}>
               <Text style={s.cardTitle}>Job applications</Text>
@@ -128,7 +128,7 @@ export default function MyPathScreen() {
             <SectionTitle>My opportunity plan</SectionTitle>
             <Pressable style={s.card} accessibilityRole="link" onPress={() => router.push('/community/help-now' as never)}>
               <Text style={s.cardTitle}>Help now</Text>
-              <Text style={s.body}>Search resources, Marketplace, and Food Rescue from one everyday-language entry.</Text>
+              <Text style={s.body}>Resources, Marketplace, and Food Rescue in one search.</Text>
             </Pressable>
             {opportunityPlan?.items.length ? (
               <View style={s.card}>
@@ -145,7 +145,7 @@ export default function MyPathScreen() {
                     </Text>
                   </Pressable>
                 ))}
-                <Text style={s.body}>Saved resources, referrals, and pickups stay separate until you mark them complete.</Text>
+                <Text style={s.bodyMuted}>Mark items complete when you are done.</Text>
               </View>
             ) : (
               <Text style={s.body}>When you use Help now, FairPath remembers what you explored on this device.</Text>
@@ -171,13 +171,13 @@ export default function MyPathScreen() {
             </Pressable>
             <Pressable style={s.card} accessibilityRole="link" onPress={() => router.push('/community/need-help' as never)}>
               <Text style={s.cardTitle}>I need help</Text>
-              <Text style={s.body}>Post or manage community requests for essentials — no Opportunity Profile required.</Text>
+              <Text style={s.body}>Post or manage essentials requests.</Text>
             </Pressable>
 
             <SectionTitle>Learning</SectionTitle>
             <View style={s.card}>
               <Text style={s.cardTitle}>Find a real course or program</Text>
-              <Text style={s.body}>FairPath links directly to real organizations and their real certificates, rather than issuing its own.</Text>
+              <Text style={s.body}>Real courses from partner organizations — not FairPath certificates.</Text>
               <Pressable style={s.button} accessibilityRole="link" onPress={() => router.push('/academy' as never)}>
                 <Text style={s.buttonText}>Browse Academy</Text>
               </Pressable>
@@ -203,9 +203,7 @@ export default function MyPathScreen() {
         ) : null}
 
         <SectionTitle>Coming to My Path</SectionTitle>
-        {PLANNED.map((item) => (
-          <Text key={item} style={s.item}>• {item}</Text>
-        ))}
+        <Text style={s.bodyMuted}>{PLANNED.join(' · ')}</Text>
       </ScreenScroll>
     </ScreenFrame>
   );
@@ -216,6 +214,7 @@ const styles = (t: ThemeTokens) => ({
   banner: { borderLeftWidth: 3, borderLeftColor: t.accent, backgroundColor: t.surface, padding: 14, gap: 6 },
   bannerTitle: { color: t.text, fontWeight: '700' as const, fontSize: 16 },
   body: { color: t.textSecondary, fontSize: 14, lineHeight: 20 },
+  bodyMuted: { color: t.textMuted, fontSize: 13, lineHeight: 19 },
   error: { color: t.text, fontSize: 15, fontWeight: '700' as const, borderLeftWidth: 3, borderLeftColor: t.accent, padding: 12 },
   card: { borderWidth: 1, borderColor: t.border, backgroundColor: t.surface, padding: 14, gap: 6 },
   cardTitle: { color: t.text, fontWeight: '700' as const, fontSize: 16 },
