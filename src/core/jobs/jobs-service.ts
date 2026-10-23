@@ -1,6 +1,9 @@
 import { supabase } from '@/lib/supabase';
 import { currentUser } from '@/core/supabase/current-user';
+import { throwIfMissingRpc } from '@/core/supabase/missing-rpc';
 import { isZip } from '@/core/jobs/location-utils';
+
+export { RpcNotDeployedError } from '@/core/supabase/missing-rpc';
 
 export type Job = {
  id:string; title:string; company_name:string; description:string; location_text:string|null; city:string|null; state:string|null; postal_code:string|null;
@@ -43,7 +46,7 @@ export async function searchJobs(p:JobSearchParams={}):Promise<JobSearchResult>{
   p_offset:offset,
   p_veteran_friendly:Boolean(p.veteranFriendly)
  });
- if(error)throw error;
+ throwIfMissingRpc(error,'search_jobs');
  const rows=(data??[]) as {job:Job;distance_miles:number|null;total_count:number|string;second_chance_count:number|string;veteran_friendly_count:number|string}[];
  const total=rows.length?Number(rows[0].total_count):0;
  const secondChanceCount=rows.length?Number(rows[0].second_chance_count):0;

@@ -7,7 +7,7 @@ import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, SharpChip, InlineBadge } from '@/components/ProductChrome';
 import { JobMap } from '@/components/JobMap';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
-import { isZip, JOB_PAGE_SIZE, normalizePlace, loadSavedJobIds, resolveZipCenter, saveJob, saveJobSearch, searchJobs, unsaveJob, type Job } from '@/core/opportunities/opportunity-service';
+import { isZip, JOB_PAGE_SIZE, normalizePlace, loadSavedJobIds, resolveZipCenter, RpcNotDeployedError, saveJob, saveJobSearch, searchJobs, unsaveJob, type Job } from '@/core/opportunities/opportunity-service';
 import { DEFAULT_SEARCH_RADIUS_MILES, loadLocationSettings } from '@/core/profile/location-service';
 import { getMarketCoverage, isLowCoverage, type MarketCoverage } from '@/core/coverage/coverage-service';
 import { THIN_MARKET_ACTIONS } from '@/core/product/thin-market-value';
@@ -78,13 +78,17 @@ export default function FindJobs(){
    const r=await searchJobs(criteria(0));
    if(mine!==requestId.current)return;
    setJobs(r.jobs);setTotal(r.total);setSecondCount(r.secondChanceCount);setVeteranCount(r.veteranFriendlyCount);setHasMore(r.hasMore);
-  }catch{
+  }catch(e){
    if(mine!==requestId.current)return;
    // A failed search must never leave a PRIOR successful search's results on screen next to the error: that
    // reads as "these are today's results" when they are stale. Error state replaces result state, it never
    // stacks on top of it.
    setJobs([]);setTotal(0);setSecondCount(0);setVeteranCount(0);setHasMore(false);
-   setError('Jobs could not load. Check your connection and try again.');
+   setError(
+    e instanceof RpcNotDeployedError
+     ? 'Job search is not available on this server yet. Browse Resources or check back after the next update.'
+     : 'Jobs could not load. Check your connection and try again.',
+   );
   }finally{
    if(mine===requestId.current)setLoading(false);
   }

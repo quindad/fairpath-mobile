@@ -7,7 +7,7 @@ import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader, SharpChip } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import {
- countHousingFilters, EMPTY_HOUSING_FILTERS, housingFiltersFromRecord, HOUSING_PAGE_SIZE, loadSavedHousingIds, saveHousing, saveHousingSearch, searchHousing,
+ countHousingFilters, EMPTY_HOUSING_FILTERS, housingFiltersFromRecord, HOUSING_PAGE_SIZE, loadSavedHousingIds, RpcNotDeployedError, saveHousing, saveHousingSearch, searchHousing,
  trackProductEvent, unsaveHousing, type HousingCard, type HousingFilters, type HousingSort
 } from '@/core/opportunities/opportunity-service';
 import { isZip, normalizePlace, resolveZipCenter } from '@/core/opportunities/opportunity-service';
@@ -71,11 +71,15 @@ export default function Housing(){
    if(mine!==requestId.current)return;
    setHomes(r.homes);setTotal(r.total);setHasMore(r.hasMore);
    void trackProductEvent('housing_search','housing',null,{query:query.trim(),location:where.trim(),radius:zip?radius:null,result_count:r.total}).catch(()=>{});
-  }catch{
+  }catch(e){
    if(mine!==requestId.current)return;
    // Same fix as Jobs: never leave a prior successful search's results on screen next to a new failure.
    setHomes([]);setTotal(0);setHasMore(false);
-   setError('Housing could not load. Check your connection and try again.');
+   setError(
+    e instanceof RpcNotDeployedError
+     ? 'Housing search is not available on this server yet. Browse Resources or check back after the next update.'
+     : 'Housing could not load. Check your connection and try again.',
+   );
   }finally{
    if(mine===requestId.current)setLoading(false);
   }

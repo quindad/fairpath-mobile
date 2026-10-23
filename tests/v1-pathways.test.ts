@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { V1_PATHWAYS, resolveGrowthDiscovery, v1PathwayById } from '../src/core/opportunity/v1-pathways.ts';
 
@@ -77,5 +78,12 @@ describe('V1 opportunity pathways', () => {
     assert.equal(resolveGrowthDiscovery('community_drives').route, '/community');
     assert.equal(resolveGrowthDiscovery('skills_exchange').route, '/academy');
     assert.equal(resolveGrowthDiscovery('microbusiness').route, '/entrepreneurship');
+  });
+
+  it('grow hub navigates via pathway primaryRoute (no help-now dead ends)', () => {
+    const grow = readFileSync('src/app/grow/index.tsx', 'utf8');
+    assert.match(grow, /V1_PATHWAYS/);
+    assert.match(grow, /p\.primaryRoute/);
+    assert.match(grow, /\/community\/help-now/);
   });
 });
