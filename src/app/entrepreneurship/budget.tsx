@@ -10,7 +10,7 @@ export default function AcademyStartupBudgetScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="STARTUP ACADEMY" title="Startup budget" backTo={ACADEMY_ROUTES.home} />
-      <FormScrollView contentContainerStyle={s.content}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
         <View style={s.banner}>
           <Text style={s.bannerTitle}>Member-entered numbers only</Text>
           <Text style={s.body}>{ACADEMY_HONESTY_BANNER}</Text>

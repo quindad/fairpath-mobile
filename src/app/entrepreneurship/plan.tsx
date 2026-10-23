@@ -11,7 +11,7 @@ export default function AcademyBusinessPlanScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="STARTUP ACADEMY" title="Business plan" backTo={ACADEMY_ROUTES.home} />
-      <FormScrollView contentContainerStyle={s.content}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
         <View style={s.banner}>
           <Text style={s.bannerTitle}>Your words, your business</Text>
           <Text style={s.body}>{ACADEMY_HONESTY_BANNER}</Text>

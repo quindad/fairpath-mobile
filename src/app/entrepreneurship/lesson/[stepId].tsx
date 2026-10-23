@@ -62,7 +62,7 @@ export default function AcademyLessonScreen() {
     return (
       <ScreenFrame>
         <PageHeader eyebrow="STARTUP ACADEMY" title="Lesson not found" backTo={ACADEMY_ROUTES.home} />
-        <FormScrollView contentContainerStyle={s.content}>
+        <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
           <Text style={s.body}>That lesson is not part of the Startup Academy track.</Text>
           <Pressable style={s.primary} accessibilityRole="button" onPress={() => router.replace(ACADEMY_ROUTES.home as never)}>
             <Text style={s.primaryText}>Back to academy home</Text>
@@ -79,7 +79,7 @@ export default function AcademyLessonScreen() {
         title={lesson.title}
         backTo={ACADEMY_ROUTES.home}
       />
-      <FormScrollView contentContainerStyle={s.content}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
         <View style={s.banner}>
           <Text style={s.bannerTitle}>On this device only</Text>
           <Text style={s.body}>{ACADEMY_HONESTY_BANNER}</Text>
