@@ -11,7 +11,7 @@
 | Batch | Scope | Commit | Audits / tests | Expo web `:8083` | Expo Go iPhone |
 |-------|--------|--------|----------------|------------------|----------------|
 | A | Jobs + Housing lists & detail | `e4fac5a` | `audit-jobs`, `audit-housing`, `audit-scroll`, `tsc` **PASS** | **NOT TESTED** (agent HTTP timeout / blank shell) | **NOT TESTED** |
-| B | Record Relief + Marketplace | — | — | — | **NOT TESTED** |
+| B | Record Relief hub + Marketplace browse (partial) | `6678c15` | `audit-marketplace`, `audit-scroll` **PASS** | **NOT TESTED** | **NOT TESTED** |
 | C | Ten pathways | — | — | — | **NOT TESTED** |
 | D | Account / onboarding | — | — | — | **NOT TESTED** |
 | E | Cross-tab QA | — | — | — | **NOT TESTED** |
