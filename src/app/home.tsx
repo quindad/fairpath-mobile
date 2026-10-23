@@ -1,6 +1,6 @@
 import { router, usePathname } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { FormScrollView } from '@/components/FormScrollView';
 import { notify } from '@/core/ui/notify';
 import { FairPathLogo } from '@/components/FairPathLogo';
@@ -9,83 +9,343 @@ import { ScreenFrame } from '@/components/ProductChrome';
 import { HomeStatus } from '@/components/HomeStatus';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { loadFairPathReadiness } from '@/core/profile/profile-service';
-import { homeFocusLine, homeQuickLinks, loadHomePersonalization, type HomePersonalization } from '@/core/profile/home-personalization';
+import { homeFocusLine, loadHomePersonalization, type HomePersonalization } from '@/core/profile/home-personalization';
 import { loadJobs, loadSavedJobIds, loadUnreadNotificationCount, saveJob, unsaveJob, type Job } from '@/core/opportunities/opportunity-service';
-import { FAIRPATH_PLUS_TAGLINE, SIGNAL_TAGLINE } from '@/core/product/member-facing-copy';
 import { loadMemberSummary } from '@/core/profile/member-summary';
-import type { MemberSummary } from '@/core/profile/next-step';
 
-export default function Home(){
- const pathname=usePathname(); const [readiness,setReadiness]=useState<number|null>(null); const [personalization,setPersonalization]=useState<HomePersonalization|null>(null); const [summary,setSummary]=useState<MemberSummary|null>(null); const [search,setSearch]=useState('');
- const greetingName=personalization?.firstName?.trim()||null;
- const jobAppCount=summary?.jobs?.applied??0;
- const savedJobCount=summary?.jobs?.saved??0; const [featured,setFeatured]=useState<Job[]>([]); const [jobsState,setJobsState]=useState<'loading'|'ready'|'error'>('loading'); const [reloadKey,setReloadKey]=useState(0); const [unread,setUnread]=useState(0);
- const quickLinks=homeQuickLinks(personalization); const focusLine=homeFocusLine(personalization);
- useEffect(()=>{let a=true;loadUnreadNotificationCount().then(n=>{if(a)setUnread(n)});return()=>{a=false}},[pathname,reloadKey]); const [savedJobs,setSavedJobs]=useState<Record<string,boolean>>({});
- useEffect(()=>{let active=true;
-  setJobsState(prev=>prev==='ready'?prev:'loading');
-  loadFairPathReadiness().then(x=>{if(active)setReadiness(x.readiness.overallPercentage)}).catch(()=>{if(active)setReadiness(null)});
-  loadHomePersonalization().then(x=>{if(active)setPersonalization(x)}).catch(()=>{if(active)setPersonalization(null)});
-  loadMemberSummary().then(x=>{if(active)setSummary(x)}).catch(()=>{if(active)setSummary(null)});
-  loadJobs('','',{},2).then(x=>{if(active){setFeatured(x.slice(0,2));setJobsState('ready')}}).catch(()=>{if(active){setFeatured([]);setJobsState('error')}});
-  loadSavedJobIds().then(ids=>{if(active)setSavedJobs(Object.fromEntries(ids.map(id=>[id,true])))}).catch(()=>{});
-  return()=>{active=false}
- },[pathname,reloadKey]);
- return <ScreenFrame>
-  <FormScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-   <View style={s.top}><View style={s.brand}><FairPathLogo width={112}/></View><Pressable accessibilityRole="button" accessibilityLabel={unread?'Notifications, '+unread+' unread':'Notifications'} style={s.bell} onPress={()=>router.push('/notifications' as never)}><Lucide name="bell" color={C.white} size={17}/>{unread>0?<View style={s.bellBadge}><Text style={s.bellBadgeText}>{unread>9?'9+':unread}</Text></View>:null}</Pressable></View>
+export default function Home() {
+  const pathname = usePathname();
+  const [personalization, setPersonalization] = useState<HomePersonalization | null>(null);
+  const [readiness, setReadiness] = useState<number | null>(null);
+  const [jobAppCount, setJobAppCount] = useState(0);
+  const [savedJobCount, setSavedJobCount] = useState(0);
+  const [search, setSearch] = useState('');
+  const [featured, setFeatured] = useState<Job[]>([]);
+  const [jobsState, setJobsState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [reloadKey, setReloadKey] = useState(0);
+  const [unread, setUnread] = useState(0);
+  const [savedJobs, setSavedJobs] = useState<Record<string, boolean>>({});
 
-   <HomeStatus/>
-   <View style={s.hero}><Text style={s.eyebrow}>{greetingName?`HELLO, ${greetingName.toUpperCase()}`:personalization?.goals.length?'YOUR PATH':'YOUR FAIRPATH FORWARD'}</Text><Text style={s.title}>Opportunity has a <Text style={s.titleAccent}>path.</Text></Text>{focusLine?<Text style={s.focusLine}>{focusLine}</Text>:<Text style={s.sub}>Jobs, housing, and resources—free to search and apply. FairPath+ and Signal add extras when you want them.</Text>}<View style={s.search}><Lucide name="search" color={C.lime} size={17}/><TextInput value={search} onChangeText={setSearch} returnKeyType="search" onSubmitEditing={()=>{const q=search.trim();router.push((q?'/find-jobs?search='+encodeURIComponent(q):'/find') as never)}} style={s.searchInput} placeholder="Search jobs..." placeholderTextColor={C.muted}/>{search.length>0?<Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={()=>setSearch('')}><Text style={s.clearSearch}>×</Text></Pressable>:null}</View><View style={s.quickPills}>{quickLinks.map((link,i)=><Pressable key={link.route} accessibilityRole="button" accessibilityLabel={link.label} style={[s.pill,i===0&&s.pillActive]} onPress={()=>router.push(link.route as never)}><Text style={i===0?s.pillActiveText:s.pillText}>{link.label}</Text></Pressable>)}</View></View>
+  const greetingName = personalization?.firstName?.trim() || null;
+  const contextLine = homeFocusLine(personalization);
 
-   <View style={s.sectionHead}><View><Text style={s.featuredTitle}>Featured Opportunities</Text><Text style={s.featuredSub}>Featured across FairPath</Text></View><Pressable accessibilityRole="button" accessibilityLabel="See all jobs" style={s.seeAllButton} onPress={()=>router.push('/find-jobs')}><Text style={s.seeAll}>See all</Text><Text style={s.seeAllArrow}>→</Text></Pressable></View>
-   {jobsState==='loading'&&featured.length===0?<View style={s.statePanel}><Text style={s.stateBody}>Loading opportunities…</Text></View>:null}
-   {jobsState==='error'&&featured.length===0?<View style={s.statePanel}><View style={s.stateIcon}><Lucide name="triangle-alert" color={C.lime} size={18}/></View><Text style={s.stateTitle}>COULDN'T LOAD JOBS</Text><Text style={s.stateBody}>Something went wrong reaching FairPath. Check your connection and try again.</Text><View style={s.stateActions}><Pressable accessibilityRole="button" accessibilityLabel="Try again" style={s.stateBtn} onPress={()=>setReloadKey(k=>k+1)}><Text style={s.stateBtnText}>TRY AGAIN</Text></Pressable></View></View>:null}
-   {jobsState==='ready'&&featured.length===0?<View style={s.statePanel}><View style={s.stateIcon}><Lucide name="briefcase" color={C.lime} size={18}/></View><Text style={s.stateTitle}>NO OPEN JOBS RIGHT NOW</Text><Text style={s.stateBody}>Listings may be thin in your area while FairPath grows. You can still use Signal, resources, credit tools, record relief, and your resume — so you are ready when jobs appear.</Text><View style={s.stateActions}><Pressable accessibilityRole="button" accessibilityLabel="Open Signal" style={s.stateBtn} onPress={()=>router.push('/fairpath-ai' as never)}><Text style={s.stateBtnText}>OPEN SIGNAL</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Find resources" style={s.stateLink} onPress={()=>router.push('/resources' as never)}><Text style={s.stateLinkText}>RESOURCES →</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Browse housing" style={s.stateLink} onPress={()=>router.push('/find-housing' as never)}><Text style={s.stateLinkText}>HOUSING →</Text></Pressable></View></View>:null}
-   {personalization?<View style={s.memberStrip}><Pressable accessibilityRole="button" style={s.memberLink} onPress={()=>router.push('/job-applications' as never)}><Text style={s.memberLinkText}>APPLICATIONS{jobAppCount>0?` · ${jobAppCount}`:''}</Text></Pressable><Pressable accessibilityRole="button" style={s.memberLink} onPress={()=>router.push('/saved-jobs' as never)}><Text style={s.memberLinkText}>SAVED{savedJobCount>0?` · ${savedJobCount}`:''}</Text></Pressable><Pressable accessibilityRole="button" style={s.memberLink} onPress={()=>router.push('/my-path' as never)}><Text style={s.memberLinkText}>MY PATH</Text></Pressable></View>:null}
-   <View style={s.featuredList}>{featured.map((j)=>{const saved=!!savedJobs[j.id];return <View key={j.id} style={s.jobCard}>
-    <Pressable accessibilityRole="button" accessibilityLabel={j.title+' at '+j.company_name} style={s.jobCardMain} onPress={()=>router.push(('/job/'+j.id) as never)}>
-    <View style={s.jobThumb}><Text style={s.jobInitial}>{(j.company_name||'?').trim().charAt(0).toUpperCase()}</Text>{j.featured?<View style={s.featuredFlag}><Text style={s.featuredFlagText}>FEATURED</Text></View>:null}</View>
-    <View style={s.jobCopy}><View style={s.jobTopRow}><Text style={s.jobTitle} numberOfLines={1}>{j.title}</Text></View>
-    <Text style={s.jobCompany}>{j.company_name}</Text><Text style={s.jobMeta}>{j.location_text||[j.city,j.state].filter(Boolean).join(', ')}</Text>
-    {j.pay_min!=null?<Text style={s.jobPay}>{'$'+Number(j.pay_min).toLocaleString()+(j.pay_max?' – $'+Number(j.pay_max).toLocaleString():'')+' / '+(j.pay_period||'period')}</Text>:null}
-    <View style={s.jobBadges}><Text style={s.jobBadge}>{j.employment_type.replace('_',' ')}</Text>{j.workplace_type?<Text style={s.jobBadge}>{j.workplace_type}</Text>:null}{j.eligibility_rules?.second_chance_evidence==='explicit'?<Text style={[s.jobBadge,s.secondChanceBadge]}>Second Chance</Text>:null}</View></View>
-   </Pressable>
-    <Pressable accessibilityRole="button" accessibilityLabel={saved?'Remove saved job':'Save job'} hitSlop={10} style={[s.saveButton,saved&&s.saveButtonActive,s.saveButtonOverlay]} onPress={()=>{const action=saved?unsaveJob(j.id):saveJob(j.id);action.then(()=>setSavedJobs(prev=>({...prev,[j.id]:!saved}))).catch((err)=>{if(err instanceof Error&&err.message==='SIGNED_OUT'){router.push('/sign-in?returnTo=/home' as never);return}notify('Could not update saved job','Please try again.');});}}><Lucide name={saved?'bookmark-check':'bookmark'} color={saved?C.black:C.white} size={15}/></Pressable>
-   </View>})}</View>
+  useEffect(() => {
+    let a = true;
+    loadUnreadNotificationCount().then((n) => { if (a) setUnread(n); });
+    return () => { a = false; };
+  }, [pathname, reloadKey]);
 
-   <View style={s.showcase}><View style={s.showcaseHeader}><View><Text style={s.label}>EXPLORE FAIRPATH</Text><Text style={s.showcaseIntro}>Tools built around your next move.</Text></View><View style={s.showcaseRule}/></View><View style={s.showcaseGrid}>
-    <Pressable style={[s.showcaseCard,s.showcasePlus]} accessibilityRole="link" accessibilityLabel="Your FairPath pathways" onPress={()=>router.push('/pathways' as never)}><View style={s.showcaseIconWrap}><Lucide name="route" color={C.lime} size={18}/></View><View style={s.showcaseCopy}><Text style={s.showcaseTitle}>Your Pathways</Text><Text style={s.showcaseBody}>Reentry, Veterans, Housing Stability, Food & Essentials, Giving, and Safety & Recovery.</Text></View><Lucide name="arrow-up-right" color={C.mutedStrong} size={15}/></Pressable>
-    <Pressable accessibilityRole="button" accessibilityLabel="Opportunities, programs matched to you" style={s.showcaseCard} onPress={()=>router.push('/opportunities' as never)}><View style={s.showcaseIconWrap}><Lucide name="sparkles" color={C.lime} size={18}/></View><View style={s.showcaseCopy}><Text style={s.showcaseTitle}>Opportunities</Text><Text style={s.showcaseBody}>Programs that may be able to help, matched to you.</Text></View><Lucide name="arrow-up-right" color={C.mutedStrong} size={15}/></Pressable>
-    <Pressable style={s.showcaseCard} accessibilityRole="link" accessibilityLabel="Academy, learn skills and courses" onPress={()=>router.push('/academy' as never)}><View style={s.showcaseIconWrap}><Lucide name="graduation-cap" color={C.lime} size={18}/></View><View style={s.showcaseCopy}><Text style={s.showcaseTitle}>Academy</Text><Text style={s.showcaseBody}>Free and affordable courses, matched to your goals.</Text></View><Lucide name="arrow-up-right" color={C.mutedStrong} size={15}/></Pressable>
-    <Pressable accessibilityRole="button" accessibilityLabel="Record Relief, check relief paths and filing steps" style={s.showcaseCard} onPress={()=>router.push('/record-relief' as never)}><View style={s.showcaseIconWrap}><Lucide name="scale" color={C.lime} size={18}/></View><View style={s.showcaseCopy}><Text style={s.showcaseTitle}>Record Relief</Text><Text style={s.showcaseBody}>Free expungement and sealing checker, built state by state, with real filing steps.</Text></View><Lucide name="arrow-up-right" color={C.mutedStrong} size={15}/></Pressable>
-    <Pressable accessibilityRole="button" accessibilityLabel="Forms and Filing, prepare and organize paperwork" style={s.showcaseCard} onPress={()=>router.push('/fairpath-filing' as never)}><View style={s.showcaseIconWrap}><Lucide name="file-text" color={C.lime} size={18}/></View><View style={s.showcaseCopy}><Text style={s.showcaseTitle}>Forms + Filing</Text><Text style={s.showcaseBody}>Prepare, review and organize official paperwork.</Text></View><Lucide name="arrow-up-right" color={C.mutedStrong} size={15}/></Pressable>
-    <Pressable accessibilityRole="button" accessibilityLabel="Credit Studio, build a credit plan" style={s.showcaseCard} onPress={()=>router.push('/credit-tools' as never)}><View style={s.showcaseIconWrap}><Lucide name="trending-up" color={C.lime} size={18}/></View><View style={s.showcaseCopy}><Text style={s.showcaseTitle}>Credit Studio</Text><Text style={s.showcaseBody}>Build a focused plan and track progress.</Text></View><Lucide name="arrow-up-right" color={C.mutedStrong} size={15}/></Pressable>
-    <Pressable accessibilityRole="button" accessibilityLabel={'FairPath+, '+FAIRPATH_PLUS_TAGLINE} style={[s.showcaseCard,s.showcasePlus]} onPress={()=>router.push('/plus' as never)}><View style={s.showcaseIconWrap}><Lucide name="crown" color={C.lime} size={18}/></View><View style={s.showcaseCopy}><Text style={s.showcaseTitle}>FairPath+</Text><Text style={s.showcaseBody}>{FAIRPATH_PLUS_TAGLINE}</Text></View><Lucide name="arrow-up-right" color={C.mutedStrong} size={15}/></Pressable>
-   </View></View>
+  useEffect(() => {
+    let active = true;
+    setJobsState((prev) => (prev === 'ready' ? prev : 'loading'));
+    if (reloadKey > 0) setFeatured([]);
+    loadFairPathReadiness()
+      .then((x) => { if (active) setReadiness(x.readiness.overallPercentage); })
+      .catch(() => { if (active) setReadiness(null); });
+    loadHomePersonalization()
+      .then((x) => { if (active) setPersonalization(x); })
+      .catch(() => { if (active) setPersonalization(null); });
+    loadMemberSummary()
+      .then((x) => {
+        if (!active) return;
+        setJobAppCount(x?.jobs?.applied ?? 0);
+        setSavedJobCount(x?.jobs?.saved ?? 0);
+      })
+      .catch(() => {
+        if (active) {
+          setJobAppCount(0);
+          setSavedJobCount(0);
+        }
+      });
+    loadJobs('', '', {}, 2)
+      .then((x) => { if (active) { setFeatured(x.slice(0, 2)); setJobsState('ready'); } })
+      .catch(()=>{if(active){setFeatured([]);setJobsState('error')}});
+    loadSavedJobIds()
+      .then((ids) => { if (active) setSavedJobs(Object.fromEntries(ids.map((id) => [id, true]))); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [pathname, reloadKey]);
 
-   <Pressable accessibilityRole="button" accessibilityLabel="FairPath readiness, complete your profile" style={s.readinessPanel} onPress={()=>router.push('/complete-profile' as never)}>
-    <View style={s.readinessHead}><Text style={s.label}>FAIRPATH READINESS</Text><Text style={s.readinessPct}>{readiness==null?'—':readiness+'%'}</Text></View>
-    <View style={s.readinessMain}><View style={s.readinessCopy}><Text style={s.readinessPanelTitle}>{readiness!=null&&readiness>=100?'Profile ready':'Complete your profile'}</Text><Text style={s.readinessPanelBody}>{readiness!=null&&readiness>=100?'Your FairPath profile is up to date.':'Finish your profile to improve matching, autofill and opportunity screening.'}</Text></View><Lucide name="arrow-right" color={C.lime} size={18}/></View>
-    <View style={s.readinessTrack}><View style={[s.readinessFill,{width:((readiness??0)+'%') as any}]}/></View>
-   </Pressable>
+  function openSearch() {
+    const q = search.trim();
+    router.push((q ? `/find-jobs?search=${encodeURIComponent(q)}` : '/explore') as never);
+  }
 
-   <Pressable accessibilityRole="button" accessibilityLabel="Open Signal, FairPath's AI assistant" style={s.aiPanel} onPress={()=>router.push((personalization&&!personalization.experienceSummary?.trim()?'/opportunity-profile/contact':'/fairpath-ai') as never)}>
-    <View style={s.aiTop}><View><Text style={s.label}>SIGNAL</Text><Text style={s.aiTitle}>Need help with the next move?</Text></View><View style={s.aiIconWrap}><Lucide name="bot" color={C.lime} size={18}/></View></View>
-    <Text style={s.aiBody}>{personalization&&!personalization.experienceSummary?.trim()?`${SIGNAL_TAGLINE} Add a one-line work background in Opportunity Profile so cover letters and job fit answers sound like you.` : SIGNAL_TAGLINE}</Text>
-    <View style={s.aiFooter}><View style={s.aiRule}/><View style={s.aiAction}><Text style={s.aiActionText}>OPEN SIGNAL</Text><Lucide name="arrow-right" color={C.lime} size={15}/></View></View>
-   </Pressable>
-  </FormScrollView>
- </ScreenFrame>
+  return (
+    <ScreenFrame>
+      <FormScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+        <View style={s.top}>
+          <FairPathLogo width={108} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={unread ? `Notifications, ${unread} unread` : 'Notifications'}
+            style={s.bell}
+            onPress={() => router.push('/notifications' as never)}
+          >
+            <Lucide name="bell" color={C.white} size={18} />
+            {unread > 0 ? (
+              <View style={s.bellBadge}>
+                <Text style={s.bellBadgeText}>{unread > 9 ? '9+' : unread}</Text>
+              </View>
+            ) : null}
+          </Pressable>
+        </View>
+
+        <Text style={s.greeting}>
+          {greetingName ? `Hello, ${greetingName}` : 'Welcome to FairPath'}
+        </Text>
+        {contextLine ? <Text style={s.context}>{contextLine}</Text> : null}
+
+        <HomeStatus />
+
+        <View style={s.search}>
+          <Lucide name="search" color={C.lime} size={18} />
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            returnKeyType="search"
+            onSubmitEditing={openSearch}
+            style={s.searchInput}
+            placeholder="Search jobs and opportunities"
+            placeholderTextColor={C.muted}
+          />
+          {search.length > 0 ? (
+            <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setSearch('')}>
+              <Text style={s.clearSearch}>×</Text>
+            </Pressable>
+          ) : null}
+        </View>
+
+        {readiness != null && readiness < 100 ? (
+          <Pressable
+            accessibilityRole="button"
+            style={s.readinessRow}
+            onPress={() => router.push('/complete-profile' as never)}
+          >
+            <Text style={s.readinessText}>Profile {readiness}% complete</Text>
+            <Text style={s.readinessLink}>Finish →</Text>
+          </Pressable>
+        ) : null}
+
+        <View style={s.sectionHead}>
+          <Text style={s.sectionTitle}>Jobs for you</Text>
+          <Pressable accessibilityRole="button" onPress={() => router.push('/find-jobs' as never)}>
+            <Text style={s.sectionLink}>See all</Text>
+          </Pressable>
+        </View>
+
+        {jobsState==='loading' && featured.length === 0 ? (
+          <Text style={s.muted}>Loading jobs…</Text>
+        ) : null}
+        {jobsState==='error' && featured.length === 0 ? (
+          <View style={s.emptyBox}>
+            <Text style={s.emptyTitle}>Couldn&apos;t load jobs</Text>
+            <Text style={s.muted}>Check your connection and try again.</Text>
+            <Pressable accessibilityRole="button" style={s.retryBtn} onPress={() => setReloadKey((k) => k + 1)}>
+              <Text style={s.retryText}>TRY AGAIN</Text>
+            </Pressable>
+          </View>
+        ) : null}
+        {jobsState==='ready' && featured.length === 0 ? (
+          <View style={s.emptyBox}>
+            <Text style={s.emptyTitle}>NO OPEN JOBS RIGHT NOW</Text>
+            <Text style={s.muted}>Browse resources and Record Relief while listings grow in your area.</Text>
+            <Pressable accessibilityRole="button" style={s.retryBtn} onPress={() => router.push('/explore' as never)}>
+              <Text style={s.retryText}>Open Explore</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        <View style={s.jobList}>
+          {featured.map((j) => {
+            const saved = !!savedJobs[j.id];
+            return (
+              <Pressable
+                key={j.id}
+                accessibilityRole="button"
+                style={s.jobRow}
+                onPress={() => router.push(`/job/${j.id}` as never)}
+              >
+                <View style={s.jobMain}>
+                  <Text style={s.jobTitle} numberOfLines={2}>{j.title}</Text>
+                  <Text style={s.jobSub} numberOfLines={1}>
+                    {j.company_name}
+                    {j.location_text || [j.city, j.state].filter(Boolean).join(', ')
+                      ? ` · ${j.location_text || [j.city, j.state].filter(Boolean).join(', ')}`
+                      : ''}
+                  </Text>
+                  {j.pay_min != null ? (
+                    <Text style={s.jobPay}>
+                      ${Number(j.pay_min).toLocaleString()}
+                      {j.pay_max ? `–$${Number(j.pay_max).toLocaleString()}` : ''}
+                      {` / ${j.pay_period || 'period'}`}
+                    </Text>
+                  ) : null}
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={saved ? 'Remove saved job' : 'Save job'}
+                  hitSlop={12}
+                  style={[s.saveBtn, saved && s.saveBtnOn]}
+                  onPress={() => {
+                    const action = saved ? unsaveJob(j.id) : saveJob(j.id);
+                    action
+                      .then(() => setSavedJobs((prev) => ({ ...prev, [j.id]: !saved })))
+                      .catch((err) => {
+                        if (err instanceof Error && err.message === 'SIGNED_OUT') {
+                          router.push('/sign-in?returnTo=/home' as never);
+                          return;
+                        }
+                        notify('Could not update saved job', 'Please try again.');
+                      });
+                  }}
+                >
+                  <Lucide name={saved ? 'bookmark-check' : 'bookmark'} color={saved ? C.black : C.white} size={16} />
+                </Pressable>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <View style={s.quickRow}>
+          <Pressable accessibilityRole="button" onPress={() => router.push('/my-path' as never)}>
+            <Text style={s.quickLink}>My Path</Text>
+          </Pressable>
+          <Text style={s.quickDot}>·</Text>
+          <Pressable accessibilityRole="button" onPress={() => router.push('/job-applications' as never)}>
+            <Text style={s.quickLink}>
+              Applications{jobAppCount > 0 ? ` (${jobAppCount})` : ''}
+            </Text>
+          </Pressable>
+          <Text style={s.quickDot}>·</Text>
+          <Pressable accessibilityRole="button" onPress={() => router.push('/saved-jobs' as never)}>
+            <Text style={s.quickLink}>
+              Saved{savedJobCount > 0 ? ` (${savedJobCount})` : ''}
+            </Text>
+          </Pressable>
+          <Text style={s.quickDot}>·</Text>
+          <Pressable accessibilityRole="button" onPress={() => router.push('/fairpath-ai' as never)}>
+            <Text style={s.quickLink}>Signal</Text>
+          </Pressable>
+        </View>
+
+        <Pressable accessibilityRole="button" style={s.exploreCta} onPress={() => router.push('/explore' as never)}>
+          <Text style={s.exploreText}>Explore jobs, housing, community, and more</Text>
+          <Lucide name="arrow-right" color={C.lime} size={18} />
+        </Pressable>
+      </FormScrollView>
+    </ScreenFrame>
+  );
 }
-const s=StyleSheet.create({
- screen:{flex:1,backgroundColor:C.black},safe:{flex:1,width:'100%',maxWidth:L.consumerMaxWidth,alignSelf:'center'},content:{paddingHorizontal:L.mobileGutter,paddingTop:8,paddingBottom:24},
- top:{height:62,flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginBottom:18},brand:{flexDirection:'row',alignItems:'center'},bellBadge:{position:'absolute',top:-4,right:-4,minWidth:16,height:16,paddingHorizontal:3,backgroundColor:C.lime,alignItems:'center',justifyContent:'center'},bellBadgeText:{color:C.black,fontFamily:F.extraBold,fontSize:8},bell:{width:40,height:40,borderRadius:20,borderWidth:1,borderColor:C.borderStrong,backgroundColor:C.card,alignItems:'center',justifyContent:'center'},
- hero:{paddingBottom:14},eyebrow:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.5,marginBottom:8},title:{color:C.white,fontFamily:F.extraBold,fontSize:36,lineHeight:38,letterSpacing:-1.3,maxWidth:520},titleAccent:{color:C.lime},sub:{color:C.mutedStrong,fontFamily:F.medium,fontSize:12,lineHeight:18,marginTop:9,maxWidth:500},focusLine:{color:C.mutedStrong,fontFamily:F.semiBold,fontSize:12,lineHeight:18,marginTop:9,maxWidth:500},search:{height:50,marginTop:20,borderRadius:25,borderWidth:1,borderColor:C.borderStrong,backgroundColor:C.card,flexDirection:'row',alignItems:'center',gap:9,paddingHorizontal:15},searchInput:{flex:1,color:C.white,fontFamily:F.medium,fontSize:12,paddingVertical:0},clearSearch:{color:C.mutedStrong,fontSize:20,paddingLeft:10},quickPills:{flexDirection:'row',gap:7,marginTop:11,flexWrap:'wrap'},pill:{height:36,borderRadius:18,borderWidth:1,borderColor:C.borderStrong,backgroundColor:C.black,paddingHorizontal:15,alignItems:'center',justifyContent:'center'},pillActive:{backgroundColor:C.lime,borderColor:C.lime},pillText:{color:C.white,fontFamily:F.bold,fontSize:9},pillActiveText:{color:C.black,fontFamily:F.extraBold,fontSize:9},
- readiness:{paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.border},readinessTop:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start'},label:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.2},readinessTitle:{color:C.white,fontFamily:F.extraBold,fontSize:18,marginTop:5},percent:{color:C.white,fontFamily:F.black,fontSize:21},
- track:{height:4,backgroundColor:C.border,marginTop:14},fill:{height:'100%',backgroundColor:C.lime},rowBetween:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginTop:11},small:{color:C.muted,fontSize:10},action:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:.8},
- memberStrip:{flexDirection:'row',gap:8,marginTop:14,flexWrap:'wrap'},memberLink:{height:34,paddingHorizontal:12,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center'},memberLinkText:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8,letterSpacing:.7},
- sectionHead:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-end',marginTop:20,marginBottom:11},featuredTitle:{color:C.white,fontFamily:F.extraBold,fontSize:17,letterSpacing:-.3},featuredSub:{color:C.muted,fontFamily:F.medium,fontSize:9,marginTop:2},seeAllButton:{height:28,paddingHorizontal:0,flexDirection:'row',alignItems:'center',gap:5,borderBottomWidth:1,borderBottomColor:C.lime},seeAll:{color:C.lime,fontFamily:F.extraBold,fontSize:9},seeAllArrow:{color:C.lime,fontFamily:F.extraBold,fontSize:11},featuredList:{gap:10},jobCard:{minHeight:116,borderRadius:4,borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#0B0D0B',position:'relative'},jobCardMain:{flexDirection:'row',padding:10,alignItems:'center',paddingRight:44},jobThumb:{width:82,height:94,borderRadius:3,backgroundColor:C.surfaceRaised,borderWidth:1,borderColor:C.borderStrong,overflow:'hidden',position:'relative',alignItems:'center',justifyContent:'center'},jobInitial:{color:C.lime,fontFamily:F.black,fontSize:34,letterSpacing:-1},featuredFlag:{position:'absolute',left:0,bottom:0,backgroundColor:C.lime,borderRadius:0,paddingHorizontal:7,paddingVertical:4},featuredFlagText:{color:C.black,fontFamily:F.extraBold,fontSize:6,letterSpacing:.7},jobCopy:{flex:1,minWidth:0,paddingLeft:11},jobTopRow:{flexDirection:'row',alignItems:'center',gap:8},jobTitle:{flex:1,color:C.white,fontFamily:F.extraBold,fontSize:13,letterSpacing:-.2},saveButton:{width:30,height:30,borderRadius:3,borderWidth:1,borderColor:C.borderStrong,alignItems:'center',justifyContent:'center',backgroundColor:C.black},saveButtonOverlay:{position:'absolute',top:10,right:10,zIndex:2},saveButtonActive:{backgroundColor:C.lime,borderColor:C.lime},jobCompany:{color:C.mutedStrong,fontFamily:F.semiBold,fontSize:10,marginTop:3},jobMeta:{color:C.muted,fontFamily:F.regular,fontSize:9,marginTop:3},jobPay:{color:C.white,fontFamily:F.extraBold,fontSize:11,marginTop:4},jobBadges:{flexDirection:'row',gap:5,marginTop:8,flexWrap:'wrap'},jobBadge:{color:C.mutedStrong,fontFamily:F.semiBold,fontSize:7,backgroundColor:'transparent',borderRadius:2,borderWidth:1,borderColor:C.borderStrong,paddingHorizontal:7,paddingVertical:4,textTransform:'capitalize'},secondChanceBadge:{color:C.lime,backgroundColor:'transparent',borderWidth:1,borderColor:'#526F2B'},readinessPanel:{marginTop:14,borderRadius:0,borderTopWidth:1,borderBottomWidth:1,borderColor:C.borderStrong,backgroundColor:'#0A0C0A',paddingVertical:14,paddingHorizontal:2},readinessHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},readinessPct:{color:C.lime,fontFamily:F.extraBold,fontSize:18,letterSpacing:-.4},readinessMain:{flexDirection:'row',alignItems:'center',marginTop:9},readinessCopy:{flex:1,minWidth:0,paddingRight:14},readinessPanelTitle:{color:C.white,fontFamily:F.extraBold,fontSize:15,letterSpacing:-.2},readinessPanelBody:{color:C.muted,fontFamily:F.regular,fontSize:9,lineHeight:14,marginTop:4,maxWidth:290},readinessTrack:{height:2,backgroundColor:C.border,marginTop:13},readinessFill:{height:'100%',backgroundColor:C.lime},
- showcase:{marginTop:22},showcaseHeader:{flexDirection:'row',alignItems:'flex-end',gap:12},showcaseIntro:{color:C.muted,fontFamily:F.medium,fontSize:9,marginTop:3},showcaseRule:{flex:1,height:1,backgroundColor:C.borderStrong,marginBottom:2},showcaseGrid:{marginTop:10,borderTopWidth:1,borderTopColor:C.borderStrong},showcaseCard:{minHeight:78,borderRadius:0,borderBottomWidth:1,borderBottomColor:C.borderStrong,backgroundColor:'#0A0C0A',paddingHorizontal:10,paddingVertical:11,flexDirection:'row',alignItems:'center'},showcasePlus:{borderLeftWidth:2,borderLeftColor:C.lime},showcaseIconWrap:{width:36,height:36,borderRadius:2,borderWidth:1,borderColor:C.borderStrong,backgroundColor:C.black,alignItems:'center',justifyContent:'center',marginRight:11},showcaseCopy:{flex:1,minWidth:0,paddingRight:10},showcaseTitle:{color:C.white,fontFamily:F.extraBold,fontSize:12,letterSpacing:-.1},showcaseBody:{color:C.muted,fontSize:9,lineHeight:14,marginTop:3},aiPanel:{marginTop:12,paddingTop:16,paddingBottom:18,paddingHorizontal:12,borderTopWidth:1,borderBottomWidth:1,borderLeftWidth:3,borderTopColor:'#31401F',borderBottomColor:C.borderStrong,borderLeftColor:C.lime,backgroundColor:'#10150C'},aiTop:{flexDirection:'row',alignItems:'flex-start',justifyContent:'space-between'},aiTitle:{color:C.white,fontFamily:F.extraBold,fontSize:22,lineHeight:25,letterSpacing:-.5,marginTop:6,maxWidth:285},aiIconWrap:{width:38,height:38,borderRadius:2,borderWidth:1,borderColor:'#526F2B',backgroundColor:'#16200F',alignItems:'center',justifyContent:'center',marginTop:2},aiBody:{color:C.muted,fontFamily:F.regular,fontSize:10,lineHeight:16,marginTop:8,maxWidth:310},aiFooter:{marginTop:15},aiRule:{height:1,backgroundColor:'#31401F'},aiAction:{height:36,flexDirection:'row',alignItems:'center',justifyContent:'space-between',backgroundColor:'#131B0E',paddingHorizontal:10,borderLeftWidth:2,borderLeftColor:C.lime},aiActionText:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.1},
- statePanel:{borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#0A0C0A',padding:16},stateIcon:{width:38,height:38,borderRadius:2,borderWidth:1,borderColor:'#526F2B',backgroundColor:'#16200F',alignItems:'center',justifyContent:'center',marginBottom:12},stateTitle:{color:C.white,fontFamily:F.extraBold,fontSize:11,letterSpacing:1},stateBody:{color:C.mutedStrong,fontFamily:F.regular,fontSize:11,lineHeight:17,marginTop:6},stateActions:{marginTop:14,flexDirection:'row',alignItems:'center',gap:16,flexWrap:'wrap'},stateBtn:{height:40,paddingHorizontal:16,backgroundColor:C.lime,alignItems:'center',justifyContent:'center'},stateBtnText:{color:C.black,fontFamily:F.extraBold,fontSize:9,letterSpacing:.9},stateLink:{height:40,justifyContent:'center'},stateLinkText:{color:C.lime,fontFamily:F.extraBold,fontSize:9,letterSpacing:.9}
+
+const s = StyleSheet.create({
+  content: { paddingHorizontal: L.mobileGutter, paddingTop: 8, paddingBottom: 108 },
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
+  bell: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: C.borderStrong,
+    backgroundColor: C.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bellBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    backgroundColor: C.lime,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9,
+  },
+  bellBadgeText: { color: C.black, fontFamily: F.extraBold, fontSize: 10 },
+  greeting: { color: C.white, fontFamily: F.extraBold, fontSize: 26, lineHeight: 30, letterSpacing: -0.5 },
+  context: { color: C.mutedStrong, fontFamily: F.medium, fontSize: 13, lineHeight: 18, marginTop: 6 },
+  search: {
+    minHeight: 48,
+    marginTop: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: C.borderStrong,
+    backgroundColor: C.card,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 14,
+  },
+  searchInput: { flex: 1, color: C.white, fontFamily: F.medium, fontSize: 15, paddingVertical: 0 },
+  clearSearch: { color: C.mutedStrong, fontSize: 22, paddingLeft: 8 },
+  readinessRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#0A0C0A',
+    borderWidth: 1,
+    borderColor: C.borderStrong,
+  },
+  readinessText: { color: C.mutedStrong, fontFamily: F.semiBold, fontSize: 13 },
+  readinessLink: { color: C.lime, fontFamily: F.extraBold, fontSize: 13 },
+  sectionHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 28, marginBottom: 12 },
+  sectionTitle: { color: C.white, fontFamily: F.extraBold, fontSize: 17 },
+  sectionLink: { color: C.lime, fontFamily: F.semiBold, fontSize: 14 },
+  muted: { color: C.mutedStrong, fontSize: 13, lineHeight: 19 },
+  emptyBox: { gap: 8, paddingVertical: 8 },
+  emptyTitle: { color: C.white, fontFamily: F.extraBold, fontSize: 15 },
+  retryBtn: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
+    minHeight: 44,
+    paddingHorizontal: 16,
+    backgroundColor: C.lime,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  retryText: { color: C.black, fontFamily: F.extraBold, fontSize: 13 },
+  jobList: { gap: 10 },
+  jobRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: C.borderStrong,
+    backgroundColor: '#0B0D0B',
+  },
+  jobMain: { flex: 1, minWidth: 0 },
+  jobTitle: { color: C.white, fontFamily: F.extraBold, fontSize: 15, lineHeight: 20 },
+  jobSub: { color: C.mutedStrong, fontFamily: F.medium, fontSize: 13, marginTop: 4 },
+  jobPay: { color: C.white, fontFamily: F.semiBold, fontSize: 13, marginTop: 6 },
+  saveBtn: {
+    width: 40,
+    height: 40,
+    borderWidth: 1,
+    borderColor: C.borderStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: C.black,
+  },
+  saveBtnOn: { backgroundColor: C.lime, borderColor: C.lime },
+  quickRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6, marginTop: 24 },
+  quickLink: { color: C.mutedStrong, fontFamily: F.semiBold, fontSize: 13 },
+  quickDot: { color: C.muted, fontSize: 13 },
+  exploreCta: {
+    marginTop: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: C.borderStrong,
+    backgroundColor: '#0A0C0A',
+  },
+  exploreText: { color: C.white, fontFamily: F.semiBold, fontSize: 14, flex: 1, paddingRight: 12 },
 });
