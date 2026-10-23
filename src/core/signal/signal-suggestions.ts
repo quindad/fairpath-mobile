@@ -1,5 +1,12 @@
 import { SUGGESTIONS } from '@/core/ai/intents';
-import { filterNextStepsForCapabilities, justiceToolsEnabled, loadMemberCapabilities, veteranToolsEnabled } from '@/core/profile/member-capabilities';
+import {
+  filterGoalLabels,
+  filterNextStepsForCapabilities,
+  justiceToolsEnabled,
+  loadMemberCapabilities,
+  veteranToolsEnabled,
+} from '@/core/profile/member-capabilities';
+import { filterSignalSuggestionStrings } from './signal-member-context.ts';
 import { loadHomePersonalization } from '@/core/profile/home-personalization';
 import { loadMemberSummary } from '@/core/profile/member-summary';
 import { nextSteps } from '@/core/profile/next-step';
@@ -41,9 +48,7 @@ export async function loadSignalSuggestions(): Promise<string[]> {
     const out: string[] = [];
     const step = summary ? filterNextStepsForCapabilities(nextSteps(summary), caps)[0] ?? null : null;
     if (step?.title) out.push(`Help me with: ${step.title}`);
-    for (const goal of personalization?.goals ?? []) {
-      if (goal === 'Reentry' && !justice) continue;
-      if (goal === 'Veteran transition' && !veteran) continue;
+    for (const goal of filterGoalLabels(personalization?.goals ?? [], caps)) {
       const p = GOAL_PROMPTS[goal];
       if (p && !out.includes(p)) out.push(p);
       if (out.length >= 6) break;
@@ -54,9 +59,13 @@ export async function loadSignalSuggestions(): Promise<string[]> {
         if (out.length >= 6) break;
       }
     }
-    if (out.length) return out.slice(0, 6);
+    const filtered = filterSignalSuggestionStrings(out, caps);
+    if (filtered.length) return filtered.slice(0, 6);
   } catch {
     /* fall through */
   }
-  return [...new Set([...defaultStarters(false, false), ...SUGGESTIONS.slice(0, 4)])].slice(0, 6);
+  return filterSignalSuggestionStrings(
+    [...new Set([...defaultStarters(false, false), ...SUGGESTIONS])],
+    null,
+  ).slice(0, 6);
 }
