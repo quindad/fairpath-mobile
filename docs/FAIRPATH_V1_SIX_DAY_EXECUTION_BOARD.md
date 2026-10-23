@@ -36,12 +36,12 @@ Statuses: `TODO` · `IN PROGRESS` · `TESTING` · `VERIFIED` · `COMMITTED` · `
 | SIG-002 | P0 | Contextual suggestion chips (goals + next step) | COMMITTED | `loadSignalSuggestions` | `d08d1d2` |
 | SIG-003 | P0 | Typed read/write tool registry | COMMITTED | `signal-ui-contract` | `d08d1d2` |
 | SIG-004 | P1 | Move specialized catalog to modal (not main scroll) | COMMITTED | `signal-ui-contract` | `d08d1d2` |
-| SIG-005 | P1 | Server gateway timeouts, failover health, token caps | COMMITTED | static gateway tests | pending |
-| SIG-006 | P1 | Typed read-tool orchestration (writes confirm-only) | COMMITTED | `signal-orchestrator`, eval | pending |
-| SIG-007 | P1 | Conversation history + titles (member-owned) | PARTIAL | AsyncStorage + SQL DRAFT | pending |
-| SIG-008 | P1 | Cancel + phased loading (streaming N/A on Edge JSON) | COMMITTED | UI contract | pending |
-| SIG-009 | P2 | Jobs/Housing/My Path/Resources/Pathways data tools | COMMITTED | RPC search + summary | pending |
-| SIG-010 | P2 | Signal eval suite (grounding, injection, gateway) | COMMITTED | `signal-eval.test.ts` | pending |
+| SIG-005 | P1 | Server gateway timeouts, failover health, token caps | COMMITTED | static gateway tests | `c7a0b54` |
+| SIG-006 | P1 | Typed read-tool orchestration (writes confirm-only) | COMMITTED | `signal-orchestrator`, eval | `c7a0b54` |
+| SIG-007 | P1 | Conversation history + titles (member-owned) | PARTIAL | AsyncStorage + SQL DRAFT | `c7a0b54` |
+| SIG-008 | P1 | Cancel + phased loading (streaming N/A on Edge JSON) | COMMITTED | UI contract | `c7a0b54` |
+| SIG-009 | P2 | Jobs/Housing/My Path/Resources/Pathways data tools | COMMITTED | RPC search + summary | `c7a0b54` |
+| SIG-010 | P2 | Signal eval suite (grounding, injection, gateway) | COMMITTED | `signal-eval.test.ts` | `c7a0b54` |
 
 ### Workstream A — Jobs & Housing
 
