@@ -45,4 +45,30 @@ test('jobs and housing screens surface missing search RPC clearly', () => {
   const findHousing = readFileSync('src/app/find-housing.tsx', 'utf8');
   assert.match(findJobs, /RpcNotDeployedError/);
   assert.match(findHousing, /RpcNotDeployedError/);
+  assert.match(findJobs, /searchRpcMissing/);
+  assert.match(findHousing, /searchRpcMissing/);
+  assert.match(findJobs, /loadSavedJobIds/);
+  assert.match(findHousing, /loadSavedHousingIds/);
+});
+
+test('jobs and housing browse wire My Path plan sync', () => {
+  const findJobs = readFileSync('src/app/find-jobs.tsx', 'utf8');
+  const findHousing = readFileSync('src/app/find-housing.tsx', 'utf8');
+  const jobPlan = readFileSync('src/core/jobs/plan-sync.ts', 'utf8');
+  const housingPlan = readFileSync('src/core/housing/plan-sync.ts', 'utf8');
+  assert.match(findJobs, /syncJobBrowsePlan/);
+  assert.match(findJobs, /syncJobSavedPlan/);
+  assert.match(findHousing, /syncHousingBrowsePlan/);
+  assert.match(findHousing, /syncHousingSavedPlan/);
+  assert.match(jobPlan, /upsertPlanItem[\s\S]*needLabels: \['Jobs'\]/);
+  assert.match(housingPlan, /upsertPlanItem[\s\S]*needLabels: \['Housing'\]/);
+});
+
+test('find screens show saved-id counts and save-search sign-in handling', () => {
+  const findJobs = readFileSync('src/app/find-jobs.tsx', 'utf8');
+  const findHousing = readFileSync('src/app/find-housing.tsx', 'utf8');
+  assert.match(findJobs, /savedCount/);
+  assert.match(findHousing, /savedCount/);
+  assert.match(findJobs, /saveJobSearch[\s\S]*SIGNED_OUT/);
+  assert.match(findHousing, /saveHousingSearch[\s\S]*SIGNED_OUT/);
 });

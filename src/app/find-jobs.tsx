@@ -11,6 +11,7 @@ import { isZip, JOB_PAGE_SIZE, normalizePlace, loadSavedJobIds, resolveZipCenter
 import { DEFAULT_SEARCH_RADIUS_MILES, loadLocationSettings } from '@/core/profile/location-service';
 import { getMarketCoverage, isLowCoverage, type MarketCoverage } from '@/core/coverage/coverage-service';
 import { THIN_MARKET_ACTIONS } from '@/core/product/thin-market-value';
+import { syncJobBrowsePlan, syncJobSavedPlan } from '@/core/jobs/plan-sync';
 import { supabase } from '@/lib/supabase';
 
 type Lane='all'|'second'|'veteran';
@@ -39,6 +40,8 @@ export default function FindJobs(){
  const [loading,setLoading]=useState(true);
  const [loadingMore,setLoadingMore]=useState(false);
  const [error,setError]=useState('');
+ const [searchRpcMissing,setSearchRpcMissing]=useState(false);
+ const [savedIdsError,setSavedIdsError]=useState('');
  const [zipUnplaced,setZipUnplaced]=useState(false);
  const [coverage,setCoverage]=useState<MarketCoverage|null>(null);
  // ui
@@ -74,21 +77,24 @@ export default function FindJobs(){
   const mine=++requestId.current;
   setLoading(true);
   setError('');
+  setSearchRpcMissing(false);
   try{
    const r=await searchJobs(criteria(0));
    if(mine!==requestId.current)return;
    setJobs(r.jobs);setTotal(r.total);setSecondCount(r.secondChanceCount);setVeteranCount(r.veteranFriendlyCount);setHasMore(r.hasMore);
+   void syncJobBrowsePlan({query,location:where,resultCount:r.total}).catch(()=>{});
   }catch(e){
    if(mine!==requestId.current)return;
    // A failed search must never leave a PRIOR successful search's results on screen next to the error: that
    // reads as "these are today's results" when they are stale. Error state replaces result state, it never
    // stacks on top of it.
    setJobs([]);setTotal(0);setSecondCount(0);setVeteranCount(0);setHasMore(false);
-   setError(
-    e instanceof RpcNotDeployedError
-     ? 'Job search is not available on this server yet. Browse Resources or check back after the next update.'
-     : 'Jobs could not load. Check your connection and try again.',
-   );
+   if(e instanceof RpcNotDeployedError){
+    setSearchRpcMissing(true);
+    setError('Job search is not available on this server yet. Browse Resources or check back after the next update.');
+   }else{
+    setError('Jobs could not load. Check your connection and try again.');
+   }
   }finally{
    if(mine===requestId.current)setLoading(false);
   }
@@ -126,9 +132,15 @@ export default function FindJobs(){
    })
    .catch(()=>{})
    .finally(()=>{if(active)setLocationReady(true)});
+  setSavedIdsError('');
   loadSavedJobIds()
-   .then(ids=>{if(active)setSavedJobs(Object.fromEntries(ids.map(id=>[id,true])))})
-   .catch(()=>{});
+   .then(ids=>{if(active){setSavedJobs(Object.fromEntries(ids.map(id=>[id,true])));setSavedIdsError('')}})
+   .catch(e=>{
+    if(!active)return;
+    setSavedJobs({});
+    if(e instanceof Error&&e.message==='SIGNED_OUT')setSavedIdsError('');
+    else setSavedIdsError('Saved jobs could not load. Sign in again or try later.');
+   });
   return()=>{active=false};
  },[]));
 
@@ -159,6 +171,7 @@ export default function FindJobs(){
  },[loading,zip,total]);
 
  const shownCount=lane==='second'?secondCount:lane==='veteran'?veteranCount:total;
+ const savedCount=Object.keys(savedJobs).filter(id=>savedJobs[id]).length;
  const activeFilterCount=(remote?1:0)+(employment!=='any'?1:0)+(lane!=='all'?1:0)+(zip&&radius!==DEFAULT_SEARCH_RADIUS_MILES?1:0);
 
  function search(){setNonce(n=>n+1)}
@@ -196,7 +209,13 @@ export default function FindJobs(){
   try{
    await saveJobSearch({name:[query.trim()||'Jobs',where.trim()].filter(Boolean).join(' · ')||'Job search',query,location:where,filters:record});
    notify('Search saved','You can reopen this search from Saved searches.');
-  }catch{notify('Could not save search','Please try again.')}
+  }catch(e){
+   if(e instanceof Error&&e.message==='SIGNED_OUT'){
+    router.push('/sign-in?returnTo=/find-jobs' as never);
+    return;
+   }
+   notify('Could not save search','Please try again.');
+  }
  }
 
  function matchLabel(j:Job){
@@ -205,11 +224,14 @@ export default function FindJobs(){
    :'POLICY REVIEW NEEDED';
  }
 
- async function handleSave(id:string){
+ async function handleSave(id:string,title:string){
   const currentlySaved=Boolean(savedJobs[id]);
   try{
    if(currentlySaved)await unsaveJob(id);
-   else await saveJob(id);
+   else{
+    await saveJob(id);
+    void syncJobSavedPlan({jobId:id,title}).catch(()=>{});
+   }
    setSavedJobs(prev=>({...prev,[id]:!currentlySaved}));
   }catch(e){
    if(e instanceof Error&&e.message==='SIGNED_OUT'){
@@ -302,7 +324,7 @@ export default function FindJobs(){
   </Pressable>
  </View>;
 
- const resultsLabel=loading?'SEARCHING':String(shownCount)+(shownCount===1?' RESULT':' RESULTS')+(zip?' · WITHIN '+radius+' MI':'');
+ const resultsLabel=searchRpcMissing?'SEARCH UNAVAILABLE':loading?'SEARCHING':String(shownCount)+(shownCount===1?' RESULT':' RESULTS')+(zip?' · WITHIN '+radius+' MI':'');
 
  function renderJob(j:JobRow){
   const saved=Boolean(savedJobs[j.id]);
@@ -313,7 +335,7 @@ export default function FindJobs(){
      <Text style={s.jobTitle}>{j.title}</Text>
      <Text style={s.company}>{j.company_name}</Text>
     </View>
-    <Pressable accessibilityRole="button" accessibilityLabel={saved?'Remove saved job':'Save job'} style={[s.saveBtn,saved&&s.saveBtnActive]} onPress={(e)=>{e.stopPropagation?.();void handleSave(j.id)}}>
+    <Pressable accessibilityRole="button" accessibilityLabel={saved?'Remove saved job':'Save job'} style={[s.saveBtn,saved&&s.saveBtnActive]} onPress={(e)=>{e.stopPropagation?.();void handleSave(j.id,j.title)}}>
      <Lucide name={saved?'bookmark-check':'bookmark'} color={saved?C.black:C.mutedStrong} size={15}/>
     </Pressable>
    </View>
@@ -344,8 +366,17 @@ export default function FindJobs(){
 
  const lowCoverage=zip&&coverage&&isLowCoverage(coverage.status);
  const statusBlock=<>
-  {error?<Text style={s.error}>{error}</Text>:null}
-  {!loading&&jobs.length===0&&!error&&lowCoverage?<View style={s.empty}>
+  {error&&!searchRpcMissing?<Text style={s.error}>{error}</Text>:null}
+  {savedIdsError?<Text style={s.savedIdsError}>{savedIdsError}</Text>:null}
+  {!loading&&searchRpcMissing?<View style={s.empty}>
+   <Text style={s.emptyTitle}>Job search is not set up on this server yet.</Text>
+   <Text style={s.emptyBody}>{error}</Text>
+   <Pressable accessibilityRole="button" accessibilityLabel="Browse resources" style={s.earlyAccessBtn} onPress={()=>router.push('/explore' as never)}>
+    <Text style={s.earlyAccessBtnText}>BROWSE RESOURCES</Text>
+    <Lucide name="arrow-right" color={C.black} size={14}/>
+   </Pressable>
+  </View>:null}
+  {!loading&&jobs.length===0&&!error&&!searchRpcMissing&&lowCoverage?<View style={s.empty}>
    <Text style={s.emptyTitle}>FairPath does not have enough verified opportunities near {zip} yet.</Text>
    <Text style={s.emptyBody}>That's different from these filters finding nothing — the market itself is still building. FairPath can notify you when it's ready.</Text>
    <Pressable accessibilityRole="button" accessibilityLabel="Join early access" style={s.earlyAccessBtn} onPress={()=>router.push(('/early-access?zip='+zip) as never)}>
@@ -355,7 +386,7 @@ export default function FindJobs(){
    <Text style={[s.emptyBody,{marginTop:14}]}>While your market builds, FairPath still helps with:</Text>
    {THIN_MARKET_ACTIONS.slice(0,4).map((a)=><Pressable key={a.id} accessibilityRole="link" accessibilityLabel={a.label} onPress={()=>router.push(a.route as never)}><Text style={s.thinLink}>{a.label} →</Text></Pressable>)}
   </View>:null}
-  {!loading&&jobs.length===0&&!error&&!lowCoverage?<View style={s.empty}>
+  {!loading&&jobs.length===0&&!error&&!searchRpcMissing&&!lowCoverage?<View style={s.empty}>
    <Text style={s.emptyTitle}>No jobs match these filters.</Text>
    <Text style={s.emptyBody}>{zip?'Try a larger radius, remove a filter, or switch back to All Jobs.':'Try a wider location, remove a filter, or switch back to All Jobs.'}</Text>
   </View>:null}
@@ -432,7 +463,7 @@ export default function FindJobs(){
    ListHeaderComponent={<View>
     <View style={s.utilityRow}>
      <Pressable accessibilityRole="button" accessibilityLabel="Housing" style={s.utilityBtn} onPress={()=>router.push('/find-housing' as never)}><Lucide name="house" color={C.lime} size={13}/><Text style={s.utilityText}>HOUSING</Text></Pressable>
-     <Pressable accessibilityRole="button" accessibilityLabel="Saved jobs" style={s.utilityBtn} onPress={()=>void openAccountArea('/saved-jobs')}><Lucide name="bookmark" color={C.lime} size={13}/><Text style={s.utilityText}>SAVED JOBS</Text></Pressable>
+     <Pressable accessibilityRole="button" accessibilityLabel={savedCount?`Saved jobs, ${savedCount} saved`:'Saved jobs'} style={s.utilityBtn} onPress={()=>void openAccountArea('/saved-jobs')}><Lucide name="bookmark" color={C.lime} size={13}/><Text style={s.utilityText}>SAVED{savedCount>0?` · ${savedCount}`:''}</Text></Pressable>
      <Pressable accessibilityRole="button" accessibilityLabel="My applications" style={s.utilityBtn} onPress={()=>void openAccountArea('/job-applications')}><Lucide name="file-check-2" color={C.lime} size={13}/><Text style={s.utilityText}>MY APPLICATIONS</Text></Pressable>
      <Pressable accessibilityRole="button" accessibilityLabel="Saved searches" style={s.utilityBtn} onPress={()=>void openAccountArea('/saved-job-searches')}><Lucide name="history" color={C.lime} size={13}/><Text style={s.utilityText}>SAVED SEARCHES</Text></Pressable>
     </View>
@@ -511,6 +542,7 @@ const s=StyleSheet.create({
  earlyAccessBtnText:{color:C.black,fontFamily:F.extraBold,fontSize:9,letterSpacing:.8},
  thinLink:{color:C.lime,fontFamily:F.extraBold,fontSize:9,letterSpacing:.7,marginTop:8},
  error:{color:C.danger,fontSize:12,paddingVertical:12},
+ savedIdsError:{color:C.mutedStrong,fontSize:11,paddingBottom:8},
  radiusRow:{flexDirection:'row',alignItems:'center',gap:7,marginBottom:10},radiusLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:7,letterSpacing:1.2,width:46},radiusCell:{flex:1},
  zipNote:{color:C.muted,fontSize:10,lineHeight:15,marginBottom:10},
  footer:{paddingTop:18,alignItems:'stretch'},footerText:{color:C.muted,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.1,textAlign:'center',paddingVertical:10},

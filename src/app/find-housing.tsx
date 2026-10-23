@@ -17,6 +17,7 @@ import { supabase } from '@/lib/supabase';
 import { HousingMap } from '@/components/HousingMap';
 import { getMarketCoverage, isLowCoverage, type MarketCoverage } from '@/core/coverage/coverage-service';
 import { THIN_MARKET_ACTIONS } from '@/core/product/thin-market-value';
+import { syncHousingBrowsePlan, syncHousingSavedPlan } from '@/core/housing/plan-sync';
 
 const RADIUS_CHOICES=[10,25,50,100];
 const TYPES=['apartment','townhome','house','duplex','condo','room'];
@@ -41,6 +42,8 @@ export default function Housing(){
  const [loading,setLoading]=useState(true);
  const [loadingMore,setLoadingMore]=useState(false);
  const [error,setError]=useState('');
+ const [searchRpcMissing,setSearchRpcMissing]=useState(false);
+ const [savedIdsError,setSavedIdsError]=useState('');
  const [zipUnplaced,setZipUnplaced]=useState(false);
  const [coverage,setCoverage]=useState<MarketCoverage|null>(null);
  // ui
@@ -66,20 +69,23 @@ export default function Housing(){
  async function run(){
   const mine=++requestId.current;
   setLoading(true);setError('');
+  setSearchRpcMissing(false);
   try{
    const r=await searchHousing(criteria(0));
    if(mine!==requestId.current)return;
    setHomes(r.homes);setTotal(r.total);setHasMore(r.hasMore);
    void trackProductEvent('housing_search','housing',null,{query:query.trim(),location:where.trim(),radius:zip?radius:null,result_count:r.total}).catch(()=>{});
+   void syncHousingBrowsePlan({query,location:where,resultCount:r.total}).catch(()=>{});
   }catch(e){
    if(mine!==requestId.current)return;
    // Same fix as Jobs: never leave a prior successful search's results on screen next to a new failure.
    setHomes([]);setTotal(0);setHasMore(false);
-   setError(
-    e instanceof RpcNotDeployedError
-     ? 'Housing search is not available on this server yet. Browse Resources or check back after the next update.'
-     : 'Housing could not load. Check your connection and try again.',
-   );
+   if(e instanceof RpcNotDeployedError){
+    setSearchRpcMissing(true);
+    setError('Housing search is not available on this server yet. Browse Resources or check back after the next update.');
+   }else{
+    setError('Housing could not load. Check your connection and try again.');
+   }
   }finally{
    if(mine===requestId.current)setLoading(false);
   }
@@ -118,7 +124,15 @@ export default function Housing(){
    })
    .catch(()=>{})
    .finally(()=>{if(active)setLocationReady(true)});
-  loadSavedHousingIds().then(ids=>{if(active)setSaved(Object.fromEntries(ids.map(id=>[id,true])))}).catch(()=>{});
+  setSavedIdsError('');
+  loadSavedHousingIds()
+   .then(ids=>{if(active){setSaved(Object.fromEntries(ids.map(id=>[id,true])));setSavedIdsError('')}})
+   .catch(e=>{
+    if(!active)return;
+    setSaved({});
+    if(e instanceof Error&&e.message==='SIGNED_OUT')setSavedIdsError('');
+    else setSavedIdsError('Saved homes could not load. Sign in again or try later.');
+   });
   return()=>{active=false};
  },[]));
 
@@ -179,10 +193,14 @@ export default function Housing(){
 
  function openHome(h:{id:string}){router.push(('/housing/'+h.id) as never)}
 
- async function toggleSave(id:string){
+ async function toggleSave(id:string,title:string){
   const current=Boolean(saved[id]);
   try{
-   if(current)await unsaveHousing(id);else await saveHousing(id);
+   if(current)await unsaveHousing(id);
+   else{
+    await saveHousing(id);
+    void syncHousingSavedPlan({listingId:id,title}).catch(()=>{});
+   }
    setSaved(v=>({...v,[id]:!current}));void trackProductEvent(current?'housing_unsaved':'housing_saved','housing',id).catch(()=>{});
   }catch(e){
    if(e instanceof Error&&e.message==='SIGNED_OUT'){
@@ -206,11 +224,18 @@ export default function Housing(){
    await saveHousingSearch({name:[query.trim()||'Housing',where.trim()].filter(Boolean).join(' · ')||'Housing search',query,location:where,filters:record});
    void trackProductEvent('housing_search_saved','housing',null,{query:query.trim(),location:where.trim(),filters:record}).catch(()=>{});
    notify('Search saved','You can reopen this search from Saved searches.');
-  }catch{notify('Could not save search','Please try again.')}
+  }catch(e){
+   if(e instanceof Error&&e.message==='SIGNED_OUT'){
+    router.push('/sign-in?returnTo=/find-housing' as never);
+    return;
+   }
+   notify('Could not save search','Please try again.');
+  }
  }
 
  const summary=[query.trim()||'All homes',where.trim()||'Anywhere',zip?radius+' mi':''].filter(Boolean).join(' · ');
- const resultsLabel=loading?'SEARCHING':String(total)+(total===1?' HOME':' HOMES')+(zip?' · WITHIN '+radius+' MI':'');
+ const savedCount=Object.keys(saved).filter(id=>saved[id]).length;
+ const resultsLabel=searchRpcMissing?'SEARCH UNAVAILABLE':loading?'SEARCHING':String(total)+(total===1?' HOME':' HOMES')+(zip?' · WITHIN '+radius+' MI':'');
 
  const filtersButton=<Pressable accessibilityRole="button" accessibilityLabel="Open filters" style={s.filtersBtn} onPress={openFilters}>
   <Lucide name="sliders-horizontal" color={C.lime} size={14}/>
@@ -285,7 +310,7 @@ export default function Housing(){
   return <Pressable key={h.id} accessibilityRole="button" accessibilityLabel={h.title} style={s.card} onPress={()=>openHome(h)}>
    <View style={s.media}>
     {photo?<Image source={{uri:photo}} style={s.photo}/>:<View style={s.noPhoto}><Text style={s.noPhotoText}>NO PHOTO AVAILABLE</Text></View>}
-    <Pressable accessibilityRole="button" accessibilityLabel={isSaved?'Remove saved home':'Save home'} style={[s.saveBtn,isSaved&&s.saveBtnActive]} onPress={e=>{e.stopPropagation?.();void toggleSave(h.id)}}>
+    <Pressable accessibilityRole="button" accessibilityLabel={isSaved?'Remove saved home':'Save home'} style={[s.saveBtn,isSaved&&s.saveBtnActive]} onPress={e=>{e.stopPropagation?.();void toggleSave(h.id,h.title)}}>
      <Lucide name={isSaved?'bookmark-check':'bookmark'} color={isSaved?C.black:C.white} size={15}/>
     </Pressable>
    </View>
@@ -302,8 +327,17 @@ export default function Housing(){
 
  const lowCoverage=zip&&coverage&&isLowCoverage(coverage.status);
  const statusBlock=<>
-  {error?<Text style={s.error}>{error}</Text>:null}
-  {!loading&&homes.length===0&&!error&&lowCoverage?<View style={s.empty}>
+  {error&&!searchRpcMissing?<Text style={s.error}>{error}</Text>:null}
+  {savedIdsError?<Text style={s.savedIdsError}>{savedIdsError}</Text>:null}
+  {!loading&&searchRpcMissing?<View style={s.empty}>
+   <Text style={s.emptyTitle}>Housing search is not set up on this server yet.</Text>
+   <Text style={s.emptyBody}>{error}</Text>
+   <Pressable accessibilityRole="button" accessibilityLabel="Browse resources" style={s.earlyAccessBtn} onPress={()=>router.push('/explore' as never)}>
+    <Text style={s.earlyAccessBtnText}>BROWSE RESOURCES</Text>
+    <Lucide name="arrow-right" color={C.black} size={14}/>
+   </Pressable>
+  </View>:null}
+  {!loading&&homes.length===0&&!error&&!searchRpcMissing&&lowCoverage?<View style={s.empty}>
    <Text style={s.emptyTitle}>FairPath does not have enough verified housing near {zip} yet.</Text>
    <Text style={s.emptyBody}>That's different from this search finding nothing — the market itself is still building. FairPath can notify you when it's ready.</Text>
    <Pressable accessibilityRole="button" accessibilityLabel="Join early access" style={s.earlyAccessBtn} onPress={()=>router.push(('/early-access?zip='+zip) as never)}>
@@ -313,7 +347,7 @@ export default function Housing(){
    <Text style={[s.emptyBody,{marginTop:14}]}>While your market builds, FairPath still helps with:</Text>
    {THIN_MARKET_ACTIONS.slice(0,4).map((a)=><Pressable key={a.id} accessibilityRole="link" accessibilityLabel={a.label} onPress={()=>router.push(a.route as never)}><Text style={s.thinLink}>{a.label} →</Text></Pressable>)}
   </View>:null}
-  {!loading&&homes.length===0&&!error&&!lowCoverage?<View style={s.empty}>
+  {!loading&&homes.length===0&&!error&&!searchRpcMissing&&!lowCoverage?<View style={s.empty}>
    <Text style={s.emptyTitle}>No homes match this search.</Text>
    <Text style={s.emptyBody}>{zip?'Try a larger radius, a different keyword, or remove a filter.':'Try a wider location, a different keyword, or remove a filter.'}</Text>
   </View>:null}
@@ -416,7 +450,7 @@ export default function Housing(){
    ListHeaderComponent={<View>
     <View style={s.utilityRow}>
      <Pressable accessibilityRole="button" accessibilityLabel="Jobs" style={s.utilityBtn} onPress={()=>router.replace('/find-jobs' as never)}><Lucide name="briefcase-business" color={C.lime} size={13}/><Text style={s.utilityText}>JOBS</Text></Pressable>
-     {signedIn?<><Pressable accessibilityRole="button" accessibilityLabel="Saved homes" style={s.utilityBtn} onPress={()=>router.push('/saved-homes' as never)}><Lucide name="bookmark" color={C.lime} size={13}/><Text style={s.utilityText}>SAVED HOMES</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Applications" style={s.utilityBtn} onPress={()=>router.push('/housing-applications' as never)}><Lucide name="file-check-2" color={C.lime} size={13}/><Text style={s.utilityText}>APPLICATIONS</Text></Pressable></>:<View style={s.utilityInfo}><Lucide name="house" color={C.lime} size={13}/><Text style={s.utilityText}>BROWSE WITHOUT AN ACCOUNT</Text></View>}
+     {signedIn?<><Pressable accessibilityRole="button" accessibilityLabel={savedCount?`Saved homes, ${savedCount} saved`:'Saved homes'} style={s.utilityBtn} onPress={()=>router.push('/saved-homes' as never)}><Lucide name="bookmark" color={C.lime} size={13}/><Text style={s.utilityText}>SAVED{savedCount>0?` · ${savedCount}`:''}</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Applications" style={s.utilityBtn} onPress={()=>router.push('/housing-applications' as never)}><Lucide name="file-check-2" color={C.lime} size={13}/><Text style={s.utilityText}>APPLICATIONS</Text></Pressable></>:<View style={s.utilityInfo}><Lucide name="house" color={C.lime} size={13}/><Text style={s.utilityText}>BROWSE WITHOUT AN ACCOUNT</Text></View>}
     </View>
     {searchControls}
     {quickChips}
@@ -458,6 +492,7 @@ const s=StyleSheet.create({
  saveBtn:{position:'absolute',right:4,top:4,width:44,height:44,borderWidth:1,borderColor:C.borderStrong,backgroundColor:'#090A09DD',alignItems:'center',justifyContent:'center'},saveBtnActive:{backgroundColor:C.lime,borderColor:C.lime},
  body:{paddingTop:13},priceRow:{flexDirection:'row',alignItems:'baseline'},price:{color:C.white,fontFamily:F.black,fontSize:25},per:{color:C.muted,fontSize:11},homeTitle:{color:C.white,fontFamily:F.extraBold,fontSize:19,lineHeight:22,marginTop:4},meta:{color:C.mutedStrong,fontSize:12,marginTop:7}, locationRow:{flexDirection:'row',alignItems:'center',gap:6,marginTop:7},location:{color:C.muted,fontSize:11},typeLine:{color:C.muted,fontSize:11,marginTop:8,textTransform:'capitalize' as const},
  empty:{borderTopWidth:1,borderTopColor:C.border,paddingVertical:28},emptyTitle:{color:C.white,fontFamily:F.extraBold,fontSize:18},emptyBody:{color:C.muted,fontSize:13,lineHeight:20,marginTop:7},error:{color:C.danger,fontSize:12,paddingVertical:12},
+ savedIdsError:{color:C.mutedStrong,fontSize:11,paddingBottom:8},
  earlyAccessBtn:{height:46,backgroundColor:C.lime,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:8,marginTop:16,paddingHorizontal:16,alignSelf:'flex-start'},
  earlyAccessBtnText:{color:C.black,fontFamily:F.extraBold,fontSize:9,letterSpacing:.8},
  thinLink:{color:C.lime,fontFamily:F.extraBold,fontSize:9,letterSpacing:.7,marginTop:8},
