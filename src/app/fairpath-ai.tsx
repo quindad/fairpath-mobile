@@ -1,41 +1,60 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Linking, Pressable, Text, View } from 'react-native';
-import { FormScrollView } from '@/components/FormScrollView';
-import { PageHeader, ScreenFrame, SharpChip } from '@/components/ProductChrome';
-import { BodyText, Field, Panel, PrimaryButton, SecondaryButton, StatusLine, TextButton } from '@/components/ui-kit';
+import { Modal, Pressable, Text, TextInput, View } from 'react-native';
+import { FormScrollView, KeyboardFooterLayout } from '@/components/FormScrollView';
+import { FairBackButton, ScreenColumn, ScreenFrame, SharpChip } from '@/components/ProductChrome';
+import { SignalTurn } from '@/components/signal/SignalMessageBubble';
+import { TextButton } from '@/components/ui-kit';
 import { FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { gateway, deleteAiHistory, logInteraction } from '@/core/ai/gateway';
-import { SUGGESTIONS } from '@/core/ai/intents';
-import { NO_MODEL, answer, type AiResponse, type Basis } from '@/core/ai/orchestrator';
+import { NO_MODEL, answer, type AiResponse } from '@/core/ai/orchestrator';
 import { getFocusGuidance, getResourceGuidance } from '@/core/ai/signal';
+import { catalogByCategory } from '@/core/ai/signal-catalog';
 import { mergeSignalText, shouldEnrichWithSignal, signalStatusMessage } from '@/core/ai/signal-enrich';
-import { useThemedStyles } from '@/core/theme/ThemeProvider';
+import { loadAiCreditBalance } from '@/core/ai/ai-credits';
+import { loadSignalSuggestions } from '@/core/signal/signal-suggestions';
+import { useFairPathTheme, useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
 import { notify } from '@/core/ui/notify';
-import { SIGNAL_ASSISTANT_NOTE } from '@/core/product/member-facing-copy';
-import { loadAiCreditBalance } from '@/core/ai/ai-credits';
-import { catalogByCategory } from '@/core/ai/signal-catalog';
+import { Lucide } from '@react-native-vector-icons/lucide';
 
-const BASIS_LABEL: Record<Basis, string> = { rule: 'RULE', member: 'YOU', extracted: 'FROM A FILE', app_state: 'YOUR FAIRPATH DATA', ai: 'AI WORDING' };
 type Turn = { id: number; user: string; response: AiResponse | null };
 
 export default function FairPathAssistant() {
   const s = useThemedStyles(styles);
+  const { tokens } = useFairPathTheme();
   const { q, item } = useLocalSearchParams<{ q?: string; item?: string }>();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [openProv, setOpenProv] = useState<Record<number, boolean>>({});
   const [credits, setCredits] = useState<number | null | undefined>(undefined);
+  const [starters, setStarters] = useState<string[]>([]);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const seq = useRef(0);
   const asked = useRef(false);
+  const scrollRef = useRef<import('react-native').ScrollView>(null);
 
-  useFocusEffect(useCallback(() => {
-    let live = true;
-    loadAiCreditBalance().then((b) => { if (live) setCredits(b); });
-    return () => { live = false; };
-  }, []));
+  useFocusEffect(
+    useCallback(() => {
+      let live = true;
+      loadAiCreditBalance().then((b) => {
+        if (live) setCredits(b);
+      });
+      loadSignalSuggestions().then((x) => {
+        if (live) setStarters(x);
+      });
+      return () => {
+        live = false;
+      };
+    }, []),
+  );
+
+  useEffect(() => {
+    if (turns.length) {
+      requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+    }
+  }, [turns, busy]);
 
   async function ask(question: string) {
     const t = question.trim();
@@ -44,132 +63,275 @@ export default function FairPathAssistant() {
     setBusy(true);
     setText('');
     setTurns((cur) => [...cur, { id, user: t, response: null }]);
-    let response = await answer(t, gateway, { adapter: NO_MODEL, routeHint: item ? { kind: 'credit_item', id: item } : null });
-    if (shouldEnrichWithSignal(response.intent) && (await gateway.signedIn())) {
-      const sig =
-        response.intent === 'next_steps'
-          ? await getFocusGuidance()
-          : await getResourceGuidance(t);
-      if (sig.status === 'ok') response = mergeSignalText(response, sig.text);
-      else {
-        const note = signalStatusMessage(sig.status);
-        if (note) response = { ...response, parts: [...response.parts, { text: note, basis: 'app_state' }] };
+    try {
+      let response = await answer(t, gateway, { adapter: NO_MODEL, routeHint: item ? { kind: 'credit_item', id: item } : null });
+      if (shouldEnrichWithSignal(response.intent) && (await gateway.signedIn())) {
+        const sig =
+          response.intent === 'next_steps' ? await getFocusGuidance() : await getResourceGuidance(t);
+        if (sig.status === 'ok') response = mergeSignalText(response, sig.text);
+        else {
+          const note = signalStatusMessage(sig.status);
+          if (note) response = { ...response, parts: [...response.parts, { text: note, basis: 'app_state' }] };
+        }
       }
+      setTurns((cur) => cur.map((x) => (x.id === id ? { ...x, response } : x)));
+      void logInteraction(response.provenance);
+    } catch {
+      setTurns((cur) =>
+        cur.map((x) =>
+          x.id === id
+            ? {
+                ...x,
+                response: {
+                  intent: 'help',
+                  title: 'Something went wrong',
+                  modelAssisted: false,
+                  parts: [{ text: 'Try again in a moment, or open a workflow from the suggestions.', basis: 'app_state' }],
+                  actions: [{ label: 'Explore FairPath', route: '/explore', primary: true }],
+                  provenance: {
+                    task: 'navigation',
+                    intent: 'help',
+                    engine: 'deterministic_router',
+                    route: '/explore',
+                    sourceRefs: [],
+                    ruleVersions: [],
+                    officialSources: [],
+                    confidence: 'unavailable',
+                  },
+                },
+              }
+            : x,
+        ),
+      );
+    } finally {
+      setBusy(false);
     }
-    setTurns((cur) => cur.map((x) => (x.id === id ? { ...x, response } : x)));
-    setBusy(false);
-    void logInteraction(response.provenance); // provenance only (ids, versions, sources); never the conversation
   }
 
   useEffect(() => {
-    if (q && !asked.current) { asked.current = true; void ask(q); }
+    if (q && !asked.current) {
+      asked.current = true;
+      void ask(q);
+    }
   }, [q]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function confirmDeleteHistory() {
+    notify('Delete assistant history?', 'This removes logged source metadata for past answers. It does not change your FairPath records.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () =>
+          void deleteAiHistory()
+            .then((n) => notify('Deleted', `${n} record(s) removed.`))
+            .catch(() => notify('Could not delete', 'Please try again. You may need to sign in.')),
+      },
+    ]);
+  }
+
+  const showEmpty = turns.length === 0 && !busy;
 
   return (
     <ScreenFrame>
-      <PageHeader eyebrow="SIGNAL" title="Assistant" backTo="/home" />
-      <FormScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 36 }}>
-        <Panel tone="accent">
-          <BodyText strong>Built-in guidance</BodyText>
-          <BodyText muted>{SIGNAL_ASSISTANT_NOTE}</BodyText>
-          {credits === undefined ? null : credits === null ? (
-            <BodyText muted>Sign in to use Signal credits.</BodyText>
-          ) : (
-            <BodyText muted>{credits} Signal credit{credits === 1 ? '' : 's'} available.</BodyText>
-          )}
-        </Panel>
+      <View style={s.header}>
+        <FairBackButton onPress={() => router.replace('/home' as never)} />
+        <View style={s.headerCopy}>
+          <Text style={s.brand}>FairPath Signal</Text>
+          <Text style={s.subtitle}>Conversation</Text>
+        </View>
+        <View style={s.headerActions}>
+          {credits != null ? (
+            <View style={s.creditPill}>
+              <Text style={s.creditText}>{credits} credits</Text>
+            </View>
+          ) : credits === null ? (
+            <Pressable accessibilityRole="button" onPress={() => router.push('/sign-in?returnTo=/fairpath-ai' as never)}>
+              <Text style={s.signInLink}>Sign in</Text>
+            </Pressable>
+          ) : null}
+          <Pressable accessibilityRole="button" accessibilityLabel="Specialized tools" hitSlop={8} onPress={() => setToolsOpen(true)}>
+            <Lucide name="layout-grid" color={tokens.textSecondary} size={20} />
+          </Pressable>
+        </View>
+      </View>
 
-        {turns.length === 0 ? (
-          <>
-            <Text style={s.label}>Try asking</Text>
-            <View style={s.chips}>{SUGGESTIONS.map((sug) => <SharpChip key={sug} label={sug} onPress={() => void ask(sug)} />)}</View>
+      <KeyboardFooterLayout>
+        <ScreenColumn>
+          <FormScrollView
+            ref={scrollRef}
+            style={s.chatScroll}
+            contentContainerStyle={s.chatContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {showEmpty ? (
+              <View style={s.welcome}>
+                <Text style={s.welcomeTitle}>What do you need help with?</Text>
+                <Text style={s.welcomeBody}>
+                  Built-in guidance routes you to real workflows. Tap &quot;How I got this&quot; on any answer for basis and sources. Server AI tools on other screens use credits when configured.
+                </Text>
+                <View style={s.chips}>
+                  {starters.map((sug) => (
+                    <SharpChip key={sug} label={sug} onPress={() => void ask(sug)} />
+                  ))}
+                </View>
+              </View>
+            ) : null}
 
-            <Text style={s.label}>Tools by area</Text>
-            <BodyText muted>Open the screen, then use Signal there when you need AI help.</BodyText>
+            {turns.map((t) => (
+              <SignalTurn
+                key={t.id}
+                user={t.user}
+                response={t.response}
+                loading={!t.response}
+                provOpen={Boolean(openProv[t.id])}
+                onToggleProv={() => setOpenProv((o) => ({ ...o, [t.id]: !o[t.id] }))}
+                onAction={(route) => router.push(route as never)}
+              />
+            ))}
+          </FormScrollView>
+
+          <View style={s.composer}>
+            <TextInput
+              value={text}
+              onChangeText={setText}
+              placeholder="Message Signal…"
+              placeholderTextColor={tokens.textMuted}
+              style={s.input}
+              multiline
+              maxLength={500}
+              editable={!busy}
+              onSubmitEditing={() => void ask(text)}
+              blurOnSubmit={false}
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Send message"
+              style={[s.send, (busy || text.trim().length < 2) && s.sendDisabled]}
+              disabled={busy || text.trim().length < 2}
+              onPress={() => void ask(text)}
+            >
+              <Lucide name="arrow-up" color={busy || text.trim().length < 2 ? tokens.textMuted : tokens.onAccent} size={20} />
+            </Pressable>
+          </View>
+          {turns.length ? (
+            <View style={s.footerRow}>
+              <TextButton label="New conversation" onPress={() => { setTurns([]); setOpenProv({}); }} />
+              <TextButton label="Clear logged history" onPress={confirmDeleteHistory} />
+            </View>
+          ) : null}
+        </ScreenColumn>
+      </KeyboardFooterLayout>
+
+      <Modal visible={toolsOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setToolsOpen(false)}>
+        <View style={s.modal}>
+          <View style={s.modalHead}>
+            <Text style={s.modalTitle}>Specialized tools</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setToolsOpen(false)}>
+              <Lucide name="x" color={tokens.text} size={22} />
+            </Pressable>
+          </View>
+          <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.modalBody}>
+            <Text style={s.modalLead}>Open a screen, then use Signal there for document or AI-heavy tasks.</Text>
             {catalogByCategory().map((group) => (
-              <View key={group.category} style={{ marginTop: 14 }}>
+              <View key={group.category} style={s.modalGroup}>
                 <Text style={s.groupTitle}>{group.label}</Text>
-                {group.items.map((item) => (
+                {group.items.map((row) => (
                   <Pressable
-                    key={item.id}
+                    key={row.id}
                     accessibilityRole="button"
                     style={s.catalogRow}
                     onPress={() => {
-                      if (item.assistantPrompt) void ask(item.assistantPrompt);
-                      else if (item.route) router.push(item.route as never);
+                      setToolsOpen(false);
+                      if (row.assistantPrompt) void ask(row.assistantPrompt);
+                      else if (row.route) router.push(row.route as never);
                     }}
                   >
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.catalogTitle}>{item.title}</Text>
-                      <Text style={s.catalogBody} numberOfLines={2}>{item.description}</Text>
-                    </View>
-                    <Text style={s.catalogGo}>→</Text>
+                    <Text style={s.catalogTitle}>{row.title}</Text>
+                    <Text style={s.catalogBody} numberOfLines={2}>{row.description}</Text>
                   </Pressable>
                 ))}
               </View>
             ))}
-          </>
-        ) : null}
-
-        {turns.map((t) => (
-          <View key={t.id} style={s.turn}>
-            <View style={s.userBubble}><Text style={s.userText}>{t.user}</Text></View>
-            {t.response ? (
-              <View style={s.card}>
-                <Text style={s.title}>{t.response.title}</Text>
-                {t.response.parts.map((p, k) => (
-                  <View key={k} style={s.part}>
-                    <Text style={s.basis}>{BASIS_LABEL[p.basis]}</Text>
-                    <Text style={s.partText}>{p.text}</Text>
-                  </View>
-                ))}
-                <View style={s.actions}>
-                  {t.response.actions.map((a) => (a.primary ? <PrimaryButton key={a.label + a.route} label={a.label.toUpperCase()} onPress={() => router.push(a.route as never)} /> : <SecondaryButton key={a.label + a.route} label={a.label.toUpperCase()} onPress={() => router.push(a.route as never)} />))}
-                </View>
-                <TextButton label={openProv[t.id] ? 'HIDE HOW I GOT THIS' : 'HOW I GOT THIS'} onPress={() => setOpenProv((o) => ({ ...o, [t.id]: !o[t.id] }))} />
-                {openProv[t.id] ? (
-                  <View style={s.prov}>
-                    <BodyText muted>Engine: {t.response.provenance.engine === 'model' ? 'AI model wording plus fixed rules' : 'built-in rules (no AI model)'} · Task: {t.response.provenance.task.replace(/_/g, ' ')} · Confidence: {t.response.provenance.confidence}</BodyText>
-                    {t.response.provenance.sourceRefs.length ? <BodyText muted>Based on your: {[...new Set(t.response.provenance.sourceRefs.map((r) => r.kind.replace(/_/g, ' ')))].join(', ')}</BodyText> : <BodyText muted>No personal records were used.</BodyText>}
-                    {t.response.provenance.ruleVersions.map((r) => <BodyText key={r.rule_key} muted>Rule {r.rule_key} version {r.rule_version}</BodyText>)}
-                    {t.response.provenance.officialSources.map((o) => <Pressable key={o.url} accessibilityRole="link" onPress={() => void Linking.openURL(o.url)}><Text style={s.link}>OFFICIAL SOURCE: {o.label.toUpperCase()} →</Text></Pressable>)}
-                    <BodyText muted>Only ids, rule versions and sources are logged for this answer, never your question or the contents of your records.</BodyText>
-                  </View>
-                ) : null}
-              </View>
-            ) : <StatusLine tone="muted">Looking at your FairPath information…</StatusLine>}
-          </View>
-        ))}
-
-        <Field label="Your question" value={text} onChangeText={setText} placeholder="I need somewhere to stay tonight" maxLength={300} />
-        <PrimaryButton label="ASK" onPress={() => void ask(text)} busy={busy} disabled={text.trim().length < 2} />
-        {turns.length ? <SecondaryButton label="START OVER" onPress={() => setTurns([])} /> : null}
-        <View style={{ marginTop: 18 }}>
-          <TextButton tone="danger" label="DELETE MY ASSISTANT HISTORY" onPress={() => notify('Delete assistant history?', 'This removes the record of which sources past answers used. It does not change any of your FairPath information.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Delete', style: 'destructive', onPress: () => void deleteAiHistory().then((n) => notify('Deleted', `${n} record(s) removed.`)).catch(() => notify('Could not delete', 'Please try again. You may need to sign in.')) }])} />
+          </FormScrollView>
         </View>
-      </FormScrollView>
+      </Modal>
     </ScreenFrame>
   );
 }
 
 const styles = (t: ThemeTokens) => ({
-  label: { color: t.textMuted, fontFamily: F.extraBold, fontSize: 9, letterSpacing: 1.3, marginTop: 20, marginBottom: 8 },
-  chips: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 7 },
-  turn: { marginTop: 18 },
-  userBubble: { alignSelf: 'flex-end' as const, backgroundColor: t.inverse, paddingHorizontal: 12, paddingVertical: 9, maxWidth: '86%' as const },
-  userText: { color: t.onInverse, fontFamily: F.medium, fontSize: 14, lineHeight: 20 },
-  card: { borderWidth: 1, borderColor: t.borderStrong, backgroundColor: t.surface, padding: 14, marginTop: 10 },
-  title: { color: t.text, fontFamily: F.black, fontSize: 18, lineHeight: 22, marginBottom: 8 },
-  part: { marginBottom: 10 },
-  basis: { color: t.accentText, fontFamily: F.extraBold, fontSize: 8, letterSpacing: 1.1, marginBottom: 2 },
-  partText: { color: t.textSecondary, fontSize: 14, lineHeight: 21 },
-  actions: { marginTop: 4 },
-  prov: { borderTopWidth: 1, borderTopColor: t.border, marginTop: 6, paddingTop: 8 },
-  link: { color: t.accentText, fontFamily: F.extraBold, fontSize: 10, letterSpacing: 0.6, marginTop: 6 },
-  groupTitle: { color: t.accentText, fontFamily: F.extraBold, fontSize: 8, letterSpacing: 1.2, marginBottom: 6 },
-  catalogRow: { flexDirection: 'row' as const, alignItems: 'center' as const, borderBottomWidth: 1, borderBottomColor: t.border, paddingVertical: 11, gap: 8 },
-  catalogTitle: { color: t.text, fontFamily: F.bold, fontSize: 13 },
-  catalogBody: { color: t.textSecondary, fontSize: 11, lineHeight: 16, marginTop: 2 },
-  catalogMeta: { color: t.textMuted, fontFamily: F.semiBold, fontSize: 9, marginTop: 4 },
-  catalogGo: { color: t.accentText, fontSize: 18 },
+  header: {
+    minHeight: 56,
+    paddingHorizontal: L.mobileGutter,
+    paddingVertical: 8,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: t.border,
+  },
+  headerCopy: { flex: 1, minWidth: 0 },
+  brand: { color: t.text, fontFamily: F.extraBold, fontSize: 17, letterSpacing: -0.3 },
+  subtitle: { color: t.textMuted, fontFamily: F.medium, fontSize: 12, marginTop: 1 },
+  headerActions: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 10 },
+  creditPill: { borderWidth: 1, borderColor: t.borderStrong, paddingHorizontal: 8, paddingVertical: 4, backgroundColor: t.surface },
+  creditText: { color: t.accentText, fontFamily: F.semiBold, fontSize: 11 },
+  signInLink: { color: t.accentText, fontFamily: F.semiBold, fontSize: 12 },
+  chatScroll: { flex: 1 },
+  chatContent: { paddingHorizontal: L.mobileGutter, paddingTop: 12, paddingBottom: 16, flexGrow: 1 },
+  welcome: { gap: 10, paddingBottom: 8 },
+  welcomeTitle: { color: t.text, fontFamily: F.extraBold, fontSize: 20, lineHeight: 24 },
+  welcomeBody: { color: t.textSecondary, fontFamily: F.medium, fontSize: 14, lineHeight: 20 },
+  chips: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8, marginTop: 4 },
+  composer: {
+    flexDirection: 'row' as const,
+    alignItems: 'flex-end' as const,
+    gap: 8,
+    paddingHorizontal: L.mobileGutter,
+    paddingTop: 8,
+    paddingBottom: 6,
+    borderTopWidth: 1,
+    borderTopColor: t.border,
+    backgroundColor: t.background,
+  },
+  input: {
+    flex: 1,
+    minHeight: 44,
+    maxHeight: 120,
+    borderWidth: 1,
+    borderColor: t.borderStrong,
+    backgroundColor: t.input,
+    color: t.text,
+    fontFamily: F.medium,
+    fontSize: 15,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  send: {
+    width: 44,
+    height: 44,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    backgroundColor: t.accent,
+  },
+  sendDisabled: { backgroundColor: t.surface, borderWidth: 1, borderColor: t.border },
+  footerRow: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, paddingHorizontal: L.mobileGutter, paddingBottom: 8 },
+  modal: { flex: 1, backgroundColor: t.background },
+  modalHead: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    paddingHorizontal: L.mobileGutter,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: t.border,
+  },
+  modalTitle: { color: t.text, fontFamily: F.extraBold, fontSize: 18 },
+  modalBody: { padding: L.mobileGutter, paddingBottom: 32, gap: 16 },
+  modalLead: { color: t.textSecondary, fontSize: 13, lineHeight: 18, marginBottom: 4 },
+  modalGroup: { gap: 8 },
+  groupTitle: { color: t.accentText, fontFamily: F.extraBold, fontSize: 11, letterSpacing: 0.6, marginTop: 8 },
+  catalogRow: { borderBottomWidth: 1, borderBottomColor: t.border, paddingVertical: 12, gap: 4 },
+  catalogTitle: { color: t.text, fontFamily: F.bold, fontSize: 14 },
+  catalogBody: { color: t.textSecondary, fontSize: 12, lineHeight: 17 },
 });

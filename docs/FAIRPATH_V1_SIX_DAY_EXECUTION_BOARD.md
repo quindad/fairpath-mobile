@@ -1,0 +1,111 @@
+# FairPath Mobile V1 — Six-Day Execution Board
+
+**Branch:** `development/mobile-v1-completion`  
+**Metro:** reuse `npx expo start --lan --port 8083` (do not duplicate)  
+**Native iPhone QA:** **NOT TESTED** unless explicitly marked on a task  
+**Last checkpoint:** Day 1 — Signal conversation IA + tool registry foundation
+
+---
+
+## Release blocker matrix (living)
+
+| ID | Area | Classification | Notes |
+|----|------|----------------|-------|
+| RB-001 | Global scroll (122 routes) | IMPLEMENTED BUT UNVERIFIED | Static `audit-scroll` PASS; Expo Go **NOT TESTED** |
+| RB-002 | Signal conversation UX | IN PROGRESS | Conversation-first UI committed; streaming/model routing **partial** |
+| RB-003 | Signal tool orchestration | PARTIALLY IMPLEMENTED | Registry + orchestrator; multi-step agent **not built** |
+| RB-004 | Signal conversation persistence | BLOCKED BY BACKEND | Provenance log only; no full chat history table |
+| RB-005 | Record Relief E2E member | IMPLEMENTED BUT UNVERIFIED | Deterministic engine; device QA **NOT TESTED** |
+| RB-006 | Marketplace claims E2E | IMPLEMENTED BUT UNVERIFIED | RPC-backed; device QA **NOT TESTED** |
+| RB-007 | Ten pathways primary actions | PARTIALLY IMPLEMENTED | Routes exist; per-pathway device QA **NOT TESTED** |
+| RB-008 | Auth / registration (other agents) | IMPLEMENTED BUT UNVERIFIED | Uncommitted deltas in working tree — do not overwrite |
+| RB-009 | Community two-member UI E2E | NOT TESTED | Backend 13/13; mobile UI harness incomplete |
+| RB-010 | Expo web smoke `:8083` | BROKEN/PARTIAL | HTTP 200 reported; agent browser blank/timeout — **NOT TESTED** |
+
+---
+
+## Task queue
+
+Statuses: `TODO` · `IN PROGRESS` · `TESTING` · `VERIFIED` · `COMMITTED` · `BLOCKED` · `NOT TESTED`
+
+### Signal (highest priority)
+
+| ID | P | Task | Status | Verification | SHA |
+|----|---|------|--------|--------------|-----|
+| SIG-001 | P0 | Conversation-first Signal tab (header, chat, fixed composer) | COMMITTED | `audit-ai`, `signal-ui-contract`, `audit-scroll` | *(pending commit)* |
+| SIG-002 | P0 | Contextual suggestion chips (goals + next step) | COMMITTED | unit via suggestions module | *(pending commit)* |
+| SIG-003 | P0 | Typed read/write tool registry | COMMITTED | `signal-ui-contract` | *(pending commit)* |
+| SIG-004 | P1 | Move specialized catalog to modal (not main scroll) | COMMITTED | `signal-ui-contract` | *(pending commit)* |
+| SIG-005 | P1 | Intelligent model routing (server-side) | TODO | `audit-signal-deploy` | — |
+| SIG-006 | P1 | Streaming responses | BLOCKED | No client streaming contract yet | — |
+| SIG-007 | P1 | Conversation history + titles (member-owned) | BLOCKED | No persistence RPC | — |
+| SIG-008 | P1 | Multi-step plan-and-execute with tool limits | TODO | eval suite | — |
+| SIG-009 | P2 | Voice input/output | TODO | device + provider | — |
+| SIG-010 | P2 | Signal eval suite (tool pick, grounding, injection) | TODO | new tests | — |
+
+### Workstream A — Jobs & Housing
+
+| ID | P | Task | Status | Verification | SHA |
+|----|---|------|--------|--------------|-----|
+| JOB-001 | P1 | List/detail UI declutter | COMMITTED | `audit-jobs`, `audit-housing` | `e4fac5a` |
+| JOB-002 | P1 | Application + status E2E on device | NOT TESTED | manual checklist | — |
+
+### Workstream B — Record Relief & Marketplace
+
+| ID | P | Task | Status | Verification | SHA |
+|----|---|------|--------|--------------|-----|
+| RR-001 | P1 | Hub UI simplification | COMMITTED | manual | `6678c15` |
+| RR-002 | P1 | Case detail / scan / add flows QA | NOT TESTED | `audit-relief` | — |
+| MKT-001 | P1 | Browse UI simplification | COMMITTED | `audit-marketplace` | `6678c15` |
+| MKT-002 | P1 | Claim / pickup member loop on device | NOT TESTED | `audit-marketplace` | — |
+
+### Workstream C — Ten pathways
+
+| ID | P | Task | Status | Verification | SHA |
+|----|---|------|--------|--------------|-----|
+| PATH-001 | P1 | Coverage audit all 10 | TODO | `audit-v1-pathway-coverage.mjs` | — |
+| PATH-002 | P1 | Primary action per pathway (no dead ends) | TODO | device | — |
+
+### Workstream D — Auth & membership
+
+| ID | P | Task | Status | Verification | SHA |
+|----|---|------|--------|--------------|-----|
+| AUTH-001 | P1 | Preserve uncommitted auth work | IN PROGRESS | git status only | — |
+| AUTH-002 | P1 | Registration / onboarding device journey | NOT TESTED | `audit-onboarding` | — |
+
+### Workstream E — Community & opportunity
+
+| ID | P | Task | Status | Verification | SHA |
+|----|---|------|--------|--------------|-----|
+| COM-001 | P1 | Two-member Exchange UI E2E | NOT TESTED | RPC 13/13 | — |
+| OPP-001 | P2 | Orchestrator + alerts foundation | PARTIALLY IMPLEMENTED | unit tests | — |
+
+### Cross-app QA (Day 5–6)
+
+| ID | P | Task | Status | Verification | SHA |
+|----|---|------|--------|--------------|-----|
+| QA-001 | P0 | Full `npm run test:all` after Signal commit | TODO | CI-equivalent local | — |
+| QA-002 | P0 | iPhone scroll + keyboard matrix | NOT TESTED | owner device | — |
+
+---
+
+## Checkpoint — resume here if session ends
+
+1. **HEAD after next commit:** run `git log -1 --oneline`
+2. **Active task:** SIG-005 (server model routing inspection) or PATH-001
+3. **Commands:** `node scripts/audit-ai.mjs`; `node --test --experimental-strip-types tests/signal-ui-contract.test.ts`
+4. **Do not touch:** unstaged files in `src/core/auth/*`, `package.json`, proposed migrations (other agents)
+5. **Next implementation:** `supabase/functions/_shared/core/ai-gateway/signal-chains.ts` routing doc + client hook for enriched answers without cluttering UI
+
+---
+
+## Day plan alignment
+
+| Day | Focus | Board IDs |
+|-----|-------|-----------|
+| 1 | Signal foundation + blocker inventory | SIG-001–004, RB matrix, JOB/MKT partial |
+| 2 | Signal capabilities + pathways | SIG-005–008, PATH-* |
+| 3 | Auth + member context | AUTH-*, SIG-007 |
+| 4 | DEV E2E + RLS | QA-001, COM-001 |
+| 5 | Device QA | QA-002, JOB-002, MKT-002 |
+| 6 | Release candidate | QA-001 full, open RB closure |
