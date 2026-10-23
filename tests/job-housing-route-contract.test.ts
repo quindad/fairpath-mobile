@@ -35,3 +35,14 @@ test('explore screen links jobs/housing and applies readiness overrides', () => 
   assert.match(explore, /id: 'housing'[\s\S]*route: '\/find-housing'/);
   assert.match(explore, /effectiveExploreStatus\(item\.id, item\.status\)/);
 });
+
+test('jobs and housing screens surface missing search RPC clearly', () => {
+  const jobsSvc = readFileSync('src/core/jobs/jobs-service.ts', 'utf8');
+  const housingSvc = readFileSync('src/core/housing/housing-service.ts', 'utf8');
+  assert.match(jobsSvc, /throwIfMissingRpc\(error,'search_jobs'\)/);
+  assert.match(housingSvc, /throwIfMissingRpc\(error,'search_housing'\)/);
+  const findJobs = readFileSync('src/app/find-jobs.tsx', 'utf8');
+  const findHousing = readFileSync('src/app/find-housing.tsx', 'utf8');
+  assert.match(findJobs, /RpcNotDeployedError/);
+  assert.match(findHousing, /RpcNotDeployedError/);
+});

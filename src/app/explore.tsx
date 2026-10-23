@@ -29,7 +29,7 @@ const SECTIONS: { title: string; items: Destination[] }[] = [
     items: [
       { id: 'community', title: 'Community hub', body: 'Need help, offer help, and track exchanges.', icon: 'handshake', route: '/community', status: 'live' },
       { id: 'community-need', title: 'I need help', body: 'Request groceries, essentials, or other permitted items.', icon: 'life-buoy', route: '/community/need-help', status: 'live' },
-      { id: 'community-give', title: 'I can help', body: 'Give items or respond to nearby requests.', icon: 'gift', route: '/community/can-help', status: 'live' },
+      { id: 'community-give', title: 'I can help', body: 'Give items or respond to nearby requests.', icon: 'gift', route: '/community/can-help', status: 'in_development' },
     ],
   },
   {
@@ -37,26 +37,26 @@ const SECTIONS: { title: string; items: Destination[] }[] = [
     items: [
       { id: 'jobs', title: 'Jobs', body: 'Fair-chance search and applications.', icon: 'briefcase', route: '/find-jobs', status: 'live' },
       { id: 'housing', title: 'Housing', body: 'Listings, filters, and applications.', icon: 'house', route: '/find-housing', status: 'live' },
-      { id: 'opportunities', title: 'Opportunities', body: 'Grants, scholarships, and assistance matched to you.', icon: 'sparkles', route: '/opportunities', status: 'live' },
+      { id: 'opportunities', title: 'Opportunities', body: 'Grants, scholarships, and assistance matched to you.', icon: 'sparkles', route: '/opportunities', status: 'in_development' },
     ],
   },
   {
     title: 'Learn and grow',
     items: [
-      { id: 'v1-pathways', title: 'Opportunity pathways', body: 'Ten guided paths for skills, work, health, and more.', icon: 'route', route: '/grow', status: 'live' },
-      { id: 'academy', title: 'Academy', body: 'Free and affordable courses for your goals.', icon: 'graduation-cap', route: '/academy', status: 'live' },
-      { id: 'entrepreneurship', title: 'Startup Academy', body: 'Practical steps to start a business.', icon: 'briefcase', route: '/entrepreneurship', status: 'live' },
+      { id: 'v1-pathways', title: 'Opportunity pathways', body: 'Ten guided paths for skills, work, health, and more.', icon: 'route', route: '/grow', status: 'in_development' },
+      { id: 'academy', title: 'Academy', body: 'Free and affordable courses for your goals.', icon: 'graduation-cap', route: '/academy', status: 'in_development' },
+      { id: 'entrepreneurship', title: 'Startup Academy', body: 'Practical steps to start a business.', icon: 'briefcase', route: '/entrepreneurship', status: 'in_development' },
       { id: 'veterans', title: 'Veterans', body: 'Benefits links, translation, and veteran orgs.', icon: 'flag', route: '/veterans', status: 'live' },
-      { id: 'food', title: 'Food Rescue', body: 'Free surplus food sorted by pickup time.', icon: 'gift', route: '/food-rescue', status: 'live' },
+      { id: 'food', title: 'Food Rescue', body: 'Free surplus food sorted by pickup time.', icon: 'gift', route: '/food-rescue', status: 'in_development' },
     ],
   },
   {
     title: 'Support',
     items: [
       { id: 'resources', title: 'Resources', body: 'Emergency help and local services.', icon: 'life-buoy', route: '/resources', status: 'live' },
-      { id: 'record-relief', title: 'Record Relief', body: 'Relief paths and filing steps for your record.', icon: 'scale', route: '/record-relief', status: 'live' },
+      { id: 'record-relief', title: 'Record Relief', body: 'Relief paths and filing steps for your record.', icon: 'scale', route: '/record-relief', status: 'in_development' },
       { id: 'market', title: 'Free Marketplace', body: 'Claim free goods with your monthly allowance.', icon: 'store', route: '/marketplace', status: 'live' },
-      { id: 'signal', title: 'Signal', body: 'Guidance on jobs, housing, credit, and next steps.', icon: 'bot', route: '/fairpath-ai', status: 'live' },
+      { id: 'signal', title: 'Signal', body: 'Guidance on jobs, housing, credit, and next steps.', icon: 'bot', route: '/fairpath-ai', status: 'in_development' },
       { id: 'plus', title: 'FairPath+', body: 'Extra marketplace claims and Signal credits.', icon: 'crown', route: '/plus', status: 'live' },
     ],
   },

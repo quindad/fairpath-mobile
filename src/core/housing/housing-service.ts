@@ -1,4 +1,7 @@
 import { supabase } from '@/lib/supabase';
+import { throwIfMissingRpc } from '@/core/supabase/missing-rpc';
+
+export { RpcNotDeployedError } from '@/core/supabase/missing-rpc';
 import { isValidEmail } from '@/core/forms/formatters';
 import { isValidDateForKind } from '@/core/forms/dates';
 import { currentUser } from '@/core/supabase/current-user';
@@ -45,7 +48,7 @@ export async function searchHousing(p:HousingSearchParams={}):Promise<HousingSea
   p_limit:limit,
   p_offset:offset
  });
- if(error)throw error;
+ throwIfMissingRpc(error,'search_housing');
  const rows=(data??[]) as {listing:HousingCard;distance_miles:number|null;total_count:number|string}[];
  const total=rows.length?Number(rows[0].total_count):0;
  return {homes:rows.map(r=>({...r.listing,distance_miles:r.distance_miles})),total,hasMore:offset+rows.length<total};

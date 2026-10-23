@@ -10,6 +10,8 @@
 export function isPublicRoute(path: string): boolean {
   return (
     path === '/' ||
+    path === '/intro' ||
+    path === '/join' ||
     path === '/find-jobs' ||
     path === '/early-access' ||
     path.startsWith('/job/') ||
@@ -23,9 +25,10 @@ export function isPublicRoute(path: string): boolean {
     path === '/check-email' ||
     path === '/appearance' ||
     path === '/safety' ||
-    path === '/fairpath-ai' ||
     path === '/resources' ||
     path.startsWith('/resource/') ||
+    path === '/legal/terms' ||
+    path === '/legal/privacy' ||
     path === '/auth/callback' ||
     path.startsWith('/auth/')
   );
