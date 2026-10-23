@@ -9,14 +9,15 @@
 - EXP-001: src/app/explore.tsx hardcodes 18 destinations as status 'live' based on route, without per-feature backend or E2E readiness.
 - START-001: src/app/entrepreneurship.tsx only offers a 15-step checked list in AsyncStorage, text idea + Signal response, and generic program reference cards; no durable business workbook or lesson completion evidence.
 - FOOD-001: src/app/food-rescue.tsx calls loadMarketplace({foodRescueOnly:true}), links back to /marketplace, links food cards to /market-item/[id], and references Marketplace safety. src/app/marketplace-list-item.tsx lets a Marketplace donor toggle 'SHOW IN FOOD RESCUE'. Separate user experience/data policy not implemented.
-- GIVE-001: src/app/community/can-help.tsx mixes listing Marketplace items, Food Rescue navigation, open request board and Marketplace claim-limit explanation. 'I can help' is not a coherent action.
+- GIVE-001: **Partial fix `9307f78` + `2167d81`** — can-help hub is four explicit actions; open board at `/community/open-requests`. Fulfillment E2E still NOT TESTED on device.
 - PATH-001: src/core/opportunity/v1-pathways.ts maps many paths into generic /resources or /community/help-now, not a dedicated guided flow; resolveGrowthDiscovery currently maps legal -> transportation, record_relief -> education_scholarships, housing -> family_center. Fix misrouting with regression coverage.
 - PREF-001: **Fixed in `01b6755`** — Neither → explicit No; veteran opt-in in profile_answers.
 - PREF-002: **Mostly fixed in `01b6755` + follow-up** — Me/Explore/Home/Signal gated; justice-records + profile-readiness gated; notifications TBD.
 - PREF-003 (in progress): `member-capabilities-core.ts` + `/member-tool-preferences`. P0-004 DEV matrix **NOT TESTED**.
 - EXP-001 (in progress): `explore-readiness.ts` wired in Explore UI; P0-001 inventory in engineering queue doc.
-- PATH-001 (partial): `resolveGrowthDiscovery` special-cases `record_relief`, `legal`, `housing` routes — see `tests/member-capabilities.test.ts`.
-- RR-001: Record Relief home loads cases/evaluations and links add, scan, finder, detail, coverage. src/core/record-relief/relief-service.ts contains both shared engine/Edge evaluation AND coverage based on DB record_relief_rules; metadata/comments indicate previous divergence for manually entered cases. Actual live DEV rules, scan, saved results and iPhone journey NOT VERIFIED. Treat 57-jurisdiction registry existence separately from verified live rule coverage.
+- PATH-001 (partial): **`324d645` + `6e22f7c`** — employment/financial/record_relief/housing discovery fixes; ten pathway `primaryRoute` values dedicated (`tests/v1-pathways.test.ts` 9/9, `scripts/audit-v1-pathways.mjs`).
+- RR-001: **`671cd68`** — `caseRowToEngineFacts`, engine vs DB coverage honesty in UI; local relief 17/17 + `tests/record-relief-evaluation-parity.test.ts`. Legacy RPC eval before Edge (DEF-RR-001) may remain until approved migration. iPhone/DEV live journey NOT TESTED.
+- START-001 (partial): **`4502213`** — Academy F-1 routes + catalog; plan/budget placeholders. Backlog: `docs/STARTUP_ACADEMY_V1_IMPLEMENTATION_BACKLOG.md`; `tests/academy-routes.test.ts` 6/6.
 - SIG-001: prior Signal UI and gateway commits exist; do not infer native tool execution, backend conversation sync, or streaming completion from test names.
 - WORKTREE: extensive modified/untracked files belong to parallel agents; never use git add -A, git reset, git clean, blanket stash, or rewrite their work.
 
