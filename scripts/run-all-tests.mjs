@@ -7,7 +7,7 @@ const NODE = process.execPath;
 const steps = [
   ['TypeScript', 'npx', ['tsc', '--noEmit']],
   ...['baseline', 'canonical-profile', 'seed', 'navigation', 'housing', 'marketplace', 'jobs', 'home', 'explore', 'my-path', 'keyboard', 'dates', 'notifications', 'auth', 'auth-boundaries', 'onboarding', 'signal-deploy', 'payments', 'entitlements',
-    'theme', 'resources', 'community', 'opportunity', 'education', 'profile', 'profile-a11y', 'member', 'credit', 'relief', 'ai', 'security', 'notification-events', 'observability', 'failure-states'].map((n) => [`audit: ${n}`, NODE, [`scripts/audit-${n}.mjs`]]),
+    'theme', 'resources', 'community', 'opportunity', 'education', 'profile', 'profile-a11y', 'member', 'member-capabilities', 'credit', 'relief', 'ai', 'security', 'notification-events', 'observability', 'failure-states'].map((n) => [`audit: ${n}`, NODE, [`scripts/audit-${n}.mjs`]]),
   ['audit: scroll', NODE, ['scripts/audit-scroll.mjs']],
   ['documents render', NODE, ['scripts/test-documents-render.mjs']],
   ['credit studio workspace', NODE, ['--test', '--experimental-strip-types', 'tests/credit-studio-workspace.test.ts']],
@@ -34,6 +34,7 @@ const steps = [
   ['signal orchestrator', NODE, ['--test', '--experimental-strip-types', 'tests/signal-orchestrator.test.ts']],
   ['signal eval suite', NODE, ['--test', '--experimental-strip-types', 'tests/signal-eval.test.ts']],
   ['member capabilities', NODE, ['--test', '--experimental-strip-types', 'tests/member-capabilities.test.ts']],
+  ['member capabilities matrix', NODE, ['--test', '--experimental-strip-types', 'tests/member-capabilities-matrix.test.ts']],
   ['opportunity intent parser', NODE, ['--test', '--experimental-strip-types', 'tests/opportunity-intent-parser.test.ts']],
   ['opportunity orchestrator helpers', NODE, ['--test', '--experimental-strip-types', 'tests/opportunity-orchestrator.test.ts']],
   ['V1 opportunity pathways', NODE, ['--test', '--experimental-strip-types', 'tests/v1-pathways.test.ts']],
