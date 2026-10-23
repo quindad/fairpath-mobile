@@ -4,7 +4,10 @@ import type { ReliefDetailForDoc, ReliefCaseForDoc } from '@/core/documents/buil
 import { RECORD_RELIEF_ENGINE_VERSION, daysUntil, getRuleFreshness } from '@/core/record-relief/shared-engine';
 import { planRecordReliefEvaluation } from '@/core/record-relief/engine-registry';
 import { executeRecordRelief, type EngineFacts } from '@/core/record-relief/engine-executor';
-import type { CaseBundle, ChargeDegree } from '@/core/record-relief/jurisdiction-engine';
+import { caseRowToEngineFacts } from '@/core/record-relief/case-engine-facts';
+import { caseToCaseBundle } from '@/core/record-relief/case-bundle';
+import { loadEngineSupportedJurisdictionCodes } from '@/core/record-relief/engine-coverage';
+import type { CaseBundle } from '@/core/record-relief/jurisdiction-engine';
 import type { CaseDocumentExtraction } from '@/core/record-relief/ai-intake';
 
 /** Record Relief data access. Cases are owner-only; rules/forms/pathways are verified-only reference data. */
@@ -41,11 +44,15 @@ export const loadJurisdictions = () => one<Jurisdiction[]>(supabase.from('record
 export const loadCases = () => one<ReliefCase[]>(supabase.from('record_relief_cases').select('*').order('updated_at', { ascending: false }));
 export const loadCase = (id: string) => one<ReliefCase>(supabase.from('record_relief_cases').select('*').eq('id', id).single());
 
-/** Jurisdictions that currently have at least one verified rule (so the UI can be honest about coverage). */
+/** Jurisdictions that currently have at least one verified rule (published DB reference rows). */
 export async function loadCoveredJurisdictions(): Promise<Set<string>> {
   const rows = await one<{ jurisdiction_code: string }[]>(supabase.from('record_relief_rules').select('jurisdiction_code'));
   return new Set(rows.map((r) => r.jurisdiction_code));
 }
+
+export { caseRowToEngineFacts } from '@/core/record-relief/case-engine-facts';
+export { caseToCaseBundle } from '@/core/record-relief/case-bundle';
+export { loadEngineSupportedJurisdictionCodes } from '@/core/record-relief/engine-coverage';
 
 async function call<T>(fn: string, args: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.rpc(fn, args);
@@ -55,37 +62,36 @@ async function call<T>(fn: string, args: Record<string, unknown>): Promise<T> {
 export const loadCaseDetail = (id: string) => call<ReliefDetail>('get_record_relief_case_detail', { p_case: id });
 export const saveCase = (id: string | null, payload: Record<string, unknown>) => call<ReliefCase>('save_record_relief_case', { p_id: id, p: payload });
 
-/** The inverse of extractionToCasePayload: turns a saved case row back into engine input. Degree is derived
- * conservatively from offense_class — only mapped where the class unambiguously implies a degree; anything else
- * (including dui_dwi, which can be either) stays 'unknown' rather than guessed. */
-function degreeFromOffenseClass(offenseClass: string): ChargeDegree {
-  if (offenseClass === 'traffic_infraction') return 'infraction';
-  if (offenseClass === 'misdemeanor') return 'misdemeanor';
-  if (offenseClass === 'non_violent_felony' || offenseClass === 'violent_felony' || offenseClass === 'sex_offense') return 'felony';
-  return 'unknown';
-}
-export function caseToCaseBundle(c: ReliefCase): CaseBundle {
-  return {
-    venue: { jurisdictionCode: c.jurisdiction_code, courtName: c.court_name ?? undefined, courtLevel: 'unknown' },
-    charges: [{
-      id: c.id, offenseName: c.offense_description ?? c.label, degree: degreeFromOffenseClass(c.offense_class),
-      disposition: (c.disposition as CaseBundle['charges'][number]['disposition']) ?? 'unknown',
-      convictionDate: c.conviction_date ?? undefined, dispositionDate: c.disposition_date ?? undefined,
-      sentenceCompletionDate: c.sentence_completion_date ?? undefined, supervisionCompletionDate: c.supervision_completion_date ?? undefined,
-      releaseDate: c.release_date ?? undefined, finesPaid: c.fines_paid ?? undefined, restitutionPaid: c.restitution_paid ?? undefined,
-    }],
-  };
-}
 /** Re-runs the same shared evaluation engine the AI-review flow uses (evaluate-record-relief), built from the
  * saved case's own fields. Previously called the legacy evaluate_record_relief_case RPC, which reads from the
  * (mostly empty, for real jurisdictions) record_relief_rules table and returned rule_unavailable for every real
  * case regardless of jurisdiction — including Ohio, which has full engine coverage. This was the only reachable
  * path for "Enter case manually" and every "re-check" button on the case screen, so it silently broke eligibility
  * checking for every entry point except the AI-document-scan flow. */
-export const reevaluateCase = (c: ReliefCase) => {
+export const reevaluateCase = (c: ReliefCase, asOf = new Date()) => {
   if (c.out_of_state_conviction) return Promise.reject(new Error('JURISDICTION_CONFLICT'));
-  return evaluateSharedCaseServer(c.id, caseToCaseBundle(c));
+  return evaluateSharedCaseServer(c.id, caseToCaseBundle(c), caseRowToEngineFacts(c, asOf));
 };
+
+export type SaveCaseEvalOptions = { throwOnEvalFailure?: boolean; asOf?: Date };
+
+/** Persists the case, then runs the shared Edge engine when jurisdiction allows. */
+export async function saveCaseAndAutoEvaluate(id: string | null, payload: Record<string, unknown>, options: SaveCaseEvalOptions = {}): Promise<ReliefCase> {
+  const saved = await saveCase(id, payload);
+  // save_record_relief_case still invokes evaluate_record_relief_case (legacy DB rules). That row can show
+  // rule_unavailable even when the Edge engine would succeed — treat Edge as authoritative; re-check replaces it.
+  if (!saved.out_of_state_conviction) {
+    try {
+      await reevaluateCase(saved, options.asOf);
+    } catch (e) {
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.warn('[record-relief] Edge evaluation failed after save; case detail may still reflect legacy RPC eval until re-check succeeds.', e);
+      }
+      if (options.throwOnEvalFailure) throw e;
+    }
+  }
+  return saved;
+}
 /** Plans a substantive evaluation through the shared 57-authority registry before persistence/RPC reconciliation. */
 export const planSharedEvaluation = (caseBundle: CaseBundle, facts: Record<string, unknown> = {}) => planRecordReliefEvaluation(caseBundle, facts);
 /** Executes the same substantive engine intended for mobile, web API, and Command Center consumers. */

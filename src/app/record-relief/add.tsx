@@ -8,7 +8,7 @@ import { BodyText, ChipGroup, Field, ListRow, Panel, PrimaryButton, SecondaryBut
 import { FairPathLayout as L } from '@/constants/fairpath';
 import { textFromIso } from '@/core/profile/opportunity-forms';
 import { DISPOSITION_OPTIONS, OFFENSE_CLASS_OPTIONS, caseToPayload, validateCase, type CaseForm } from '@/core/record-relief/relief-format';
-import { loadCase, loadCoveredJurisdictions, loadJurisdictions, reliefErrorMessage, saveCaseAndAutoEvaluate, type Jurisdiction } from '@/core/record-relief/relief-service';
+import { loadCase, loadCoveredJurisdictions, loadEngineSupportedJurisdictionCodes, loadJurisdictions, reliefErrorMessage, saveCaseAndAutoEvaluate, type Jurisdiction } from '@/core/record-relief/relief-service';
 import { notify } from '@/core/ui/notify';
 
 const BLANK: CaseForm = {
@@ -22,6 +22,7 @@ export default function AddReliefCase() {
   const [form, setForm] = useState<CaseForm>(BLANK);
   const [jurisdictions, setJurisdictions] = useState<Jurisdiction[]>([]);
   const [covered, setCovered] = useState<Set<string>>(new Set());
+  const [engineSupported, setEngineSupported] = useState<Set<string>>(() => loadEngineSupportedJurisdictionCodes());
   const [filter, setFilter] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -62,9 +63,12 @@ export default function AddReliefCase() {
     if (Object.keys(errs).length) return;
     setBusy(true);
     try {
-      const saved = await saveCaseAndAutoEvaluate(id ?? null, caseToPayload(form));
+      const saved = await saveCaseAndAutoEvaluate(id ?? null, caseToPayload(form), { throwOnEvalFailure: true });
       router.replace(('/record-relief/case/' + saved.id) as never);
-    } catch (e) { notify('Could not save the case', reliefErrorMessage(e)); } finally { setBusy(false); }
+    } catch (e) {
+      const msg = reliefErrorMessage(e);
+      notify(id ? 'Could not save or re-check' : 'Could not save or check this case', msg.includes('Something went wrong') ? `${msg} Your case may still be saved — open it from Record Relief and tap Re-check.` : msg);
+    } finally { setBusy(false); }
   }
 
   if (!ready) return <ScreenFrame><PageHeader eyebrow="RECORD RELIEF" title="Case" backTo="/record-relief" alwaysBackTo /><ActivityIndicator style={{ marginTop: 32 }} /></ScreenFrame>;
@@ -77,11 +81,11 @@ export default function AddReliefCase() {
 
         <View style={{ marginTop: 18 }}><SectionTitle>WHERE WAS THE CASE HEARD?</SectionTitle></View>
         {chosen ? (
-          <Panel tone="accent"><BodyText strong>{chosen.name}</BodyText><BodyText muted>{covered.has(chosen.code) ? 'FairPath has verified rules for this jurisdiction.' : isFed ? 'Federal cases are tracked separately from state record relief.' : 'FairPath does not have verified rules for this jurisdiction yet. You can still track the case.'}</BodyText><SecondaryButton label="CHANGE" onPress={() => set({ jurisdiction_code: '' })} /></Panel>
+          <Panel tone="accent"><BodyText strong>{chosen.name}</BodyText><BodyText muted>{engineSupported.has(chosen.code) ? 'FairPath can run an eligibility check with the in-app engine for this jurisdiction.' : 'FairPath does not yet run automated checks for this jurisdiction — you can still track the case.'}{covered.has(chosen.code) ? ' A verified filing rule is also loaded from our legal database.' : isFed ? ' Federal cases are tracked separately from state record relief.' : ' No verified filing rule is published in the database yet.'}</BodyText><SecondaryButton label="CHANGE" onPress={() => set({ jurisdiction_code: '' })} /></Panel>
         ) : (
           <>
             <Field label="SEARCH STATES AND TERRITORIES" value={filter} onChangeText={setFilter} placeholder="Type a state name" autoCapitalize="words" error={errors.jurisdiction_code} />
-            {shown.map((j) => <ListRow key={j.code} title={j.name} body={covered.has(j.code) ? 'Verified rules available' : j.kind === 'federal' ? 'Handled separately' : 'No verified rules yet'} onPress={() => set({ jurisdiction_code: j.code })} />)}
+            {shown.map((j) => <ListRow key={j.code} title={j.name} body={engineSupported.has(j.code) ? (covered.has(j.code) ? 'Engine check + verified DB rule' : 'Engine check available') : j.kind === 'federal' ? 'Handled separately' : 'Track only — no engine check yet'} onPress={() => set({ jurisdiction_code: j.code })} />)}
           </>
         )}
 

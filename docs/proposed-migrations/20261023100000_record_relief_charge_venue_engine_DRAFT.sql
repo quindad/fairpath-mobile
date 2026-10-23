@@ -1,3 +1,4 @@
+-- SUPERSEDED by 20261021150000_canonical_justice_reconciliation_DRAFT.sql (do not apply this file alone).
 -- DRAFT ONLY — DO NOT APPLY. Record Relief jurisdiction/charge normalization.
 -- Purpose: stop treating one case as one charge, and stop treating a state as enough information for local filing.
 -- Substantive eligibility remains in source-backed/versioned record_relief_rules.
@@ -69,3 +70,8 @@ create policy "rr_charges_owner_delete" on public.record_relief_charges for dele
 -- Multi-state rule: never merge authorities. Each case stays attached to the jurisdiction/court where it was heard.
 -- Pending-charge rule: evaluate only according to the source-backed jurisdiction rule; never hard-code a national answer.
 -- Migration/backfill plan: existing one-off offense fields remain readable until each legacy case is converted to charge rows.
+--
+-- DEF-RR-001 (follow-up RPC, not in this DDL): remove `perform public.evaluate_record_relief_case(result.id)`
+-- from save_record_relief_case so saves do not persist misleading legacy DB evaluations before the
+-- evaluate-record-relief Edge function runs. Mobile already treats Edge as authoritative (reevaluateCase).
+-- Suggested replacement: optional flag p_skip_legacy_eval boolean default false for phased rollout.
