@@ -2,7 +2,7 @@
 
 **Updated:** 2026-10-23 (functional QA + DEV readiness batch)  
 **Branch:** `development/mobile-v1-completion`  
-**HEAD:** _(see latest commit after this edit)_  
+**HEAD:** `3ca9317`  
 **Ahead of origin:** 46+ commits (not pushed unless separately authorized)  
 **Expo:** Reuse Metro on port **8083** — do not start duplicate dev servers.
 
