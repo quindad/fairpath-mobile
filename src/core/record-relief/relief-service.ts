@@ -82,9 +82,6 @@ export async function saveCaseAndAutoEvaluate(id: string | null, payload: Record
       const facts = options.factsOverride ?? caseRowToEngineFacts(saved, options.asOf);
       await evaluateSharedCaseServer(saved.id, bundle, facts);
     } catch (e) {
-      if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        console.warn('[record-relief] Edge evaluation failed after save; case detail may still reflect legacy RPC eval until re-check succeeds.', e);
-      }
       if (options.throwOnEvalFailure) throw e;
     }
   }
