@@ -153,7 +153,7 @@ export default function Home() {
         ) : null}
         {jobsState==='ready' && featured.length === 0 ? (
           <View style={s.emptyBox}>
-            <Text style={s.emptyTitle}>No open jobs right now</Text>
+            <Text style={s.emptyTitle}>NO OPEN JOBS RIGHT NOW</Text>
             <Text style={s.muted}>Try Explore for housing, community, and record relief while listings grow.</Text>
             <Pressable accessibilityRole="button" style={s.retryBtn} onPress={() => router.push('/explore' as never)}>
               <Text style={s.retryText}>Open Explore</Text>

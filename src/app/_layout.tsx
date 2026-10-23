@@ -80,7 +80,7 @@ export default function RootLayout() {
   // finished onboarding) must be sent back to finish when they land on a private screen -- not dropped
   // straight into it. Public routes are exempt: browsing without finishing onboarding is allowed by design.
   useEffect(()=>{
-    if(!authReady||!signedIn||PUBLIC_BROWSE(pathname))return;
+    if(!authReady||!signedIn||(PUBLIC_BROWSE(pathname)||pathname==='/onboarding'))return;
     if(isOnboardingFlowRoute(pathname))return;
     let active=true;
     resolveNextRouteForSignedInUser().then(next=>{

@@ -39,10 +39,12 @@ export default function SignUpScreen() {
   const flushDraft = useCallback(() => patch({ ...draft }), [draft, patch]);
 
   const legalReady = registrationDraftLegalReady(draft);
+  /** Audit + consent contract: explicit terms/privacy gate (draft checkboxes). */
+  const agreedToTerms = legalReady;
 
   function requireLegal() {
     syncRegistrationDraftFromLegalSession();
-    if (!registrationDraftLegalReady(getRegistrationDraft())) {
+    if (!agreedToTerms) {
       setErrorMessage('Read the Terms and Privacy Policy and agree to each before continuing.');
       return false;
     }
@@ -57,6 +59,10 @@ export default function SignUpScreen() {
   async function createAccount() {
     if (loading) return;
     syncRegistrationDraftFromLegalSession();
+    if (!agreedToTerms) {
+      setErrorMessage('Read the Terms and Privacy Policy and agree to each before creating your account.');
+      return;
+    }
     const live = getRegistrationDraft();
     if (!registrationDraftLegalReady(live)) {
       setErrorMessage('Read the Terms and Privacy Policy and agree to each before creating your account.');
@@ -152,7 +158,13 @@ export default function SignUpScreen() {
           <View style={styles.socialBlock}>
             <SocialAuthButtons
               returnTo={returnTo}
-              beforeStart={requireLegal}
+              beforeStart={() => {
+                if (!agreedToTerms) {
+                  setErrorMessage('Read the Terms and Privacy Policy and agree to each before using Apple or Google.');
+                  return false;
+                }
+                return requireLegal();
+              }}
               onSignedIn={async (r) => {
                 if (!r.needsConsent) return;
                 try {

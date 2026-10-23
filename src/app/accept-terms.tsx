@@ -65,7 +65,8 @@ export default function AcceptTerms() {
   });
 
   async function accept() {
-    if (!ready || saving) return;
+    if(!agreedTerms||!agreedPrivacy||saving)return;
+    if (!ready) return;
     setSaving(true);
     setError('');
     try {
