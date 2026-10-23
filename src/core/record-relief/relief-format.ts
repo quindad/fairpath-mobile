@@ -132,10 +132,10 @@ export function evaluationFromLegacySaveRpc(e: EvalDisplayRow): boolean {
 export const LEGACY_PLACEHOLDER_EVAL_NOTICE =
   'FairPath saved your case using a placeholder database check. Tap Re-check to run the shared eligibility engine for this jurisdiction.';
 
-export function partitionEvaluationsForDisplay(
-  evals: EvalDisplayRow[],
+export function partitionEvaluationsForDisplay<T extends EvalDisplayRow>(
+  evals: T[],
   opts: { engineSupported: boolean },
-): { primary: EvalDisplayRow[]; supersededPlaceholders: EvalDisplayRow[]; treatAsUnchecked: boolean } {
+): { primary: T[]; supersededPlaceholders: T[]; treatAsUnchecked: boolean } {
   const engine = evals.filter(evaluationPersistedBySharedEngine);
   if (engine.length) {
     return { primary: engine, supersededPlaceholders: evals.filter((e) => !evaluationPersistedBySharedEngine(e)), treatAsUnchecked: false };
