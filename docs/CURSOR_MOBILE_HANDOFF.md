@@ -1,9 +1,9 @@
 # Cursor Mobile â€” Engineering Handoff
 
-**Updated:** 2026-10-23 (functional QA + DEV readiness batch)  
+**Updated:** 2026-10-23 (DEV release gate + P0 blocker prep)  
 **Branch:** `development/mobile-v1-completion`  
-**HEAD:** `3ca9317`  
-**Ahead of origin:** 46+ commits (not pushed unless separately authorized)  
+**HEAD:** `f149f63`  
+**Ahead of origin:** 48+ commits (not pushed unless separately authorized)  
 **Expo:** Reuse Metro on port **8083** â€” do not start duplicate dev servers.
 
 **Authority:** `docs/FAIRPATH_V1_PRODUCT_TRUTH_AND_COMPLETION_CHECKLIST.md`, `docs/FAIRPATH_V1_ENGINEERING_QUEUE.md`
@@ -98,6 +98,45 @@ Starting verified HEAD: `ac8baae` (security retest `418dac0` already on branch).
 | `2798168` | Jobs/housing `returnTo`, failed-search clear, audit extractors |
 | `8665dd8` | Signal in-scroll composer, `/me` a11y labels, marketplace pickup next step, credit `__DEV__` sample gate, Signal UI contract |
 
+## DEV release gate batch (2026-10-23)
+
+| Deliverable | Path |
+|-------------|------|
+| DEF-RR-001 approval packet | `docs/DEV_MIGRATION_APPROVAL_PACKET.md` |
+| DEV E2E runbook (ordered steps) | `docs/DEV_E2E_EXECUTION_RUNBOOK.md` |
+| Edge deploy manifest + inventory | `docs/DEV_EDGE_FUNCTION_DEPLOYMENT_MANIFEST.md`, `scripts/qa-dev-edge-inventory.mjs` |
+| iPhone native QA setup | `docs/IPHONE_NATIVE_QA_SETUP.md` |
+| Prior local QA index | `docs/DEV_READINESS_QA_PACKAGE.md` |
+
+**Commits:** `f149f63` — RR client `skip_legacy_eval` default, anon probe triage (63/63), job/justice modules committed, edge inventory; `e20847c` / `3ca9317` prior QA docs.
+
+**Anon probe triage:** 2 RPC “failures” were **expected** `SIGNED_OUT` (400); 3 Edge **404** = not deployed on DEV (`create-fasttrack-payment`, `claim-correctional-transition`, `store-subscription-webhook`) — deployment gap, not mobile defect.
+
+**Edge inventory (DEV):** 28/32 repo functions non-404; critical payment/correctional functions missing on DEV until backend deploy.
+
+**Justice integration:** Local-only unified assembly + job compatibility panels committed (`src/core/justice/*`, job components). **DEV BLOCKED** for canonical justice DB until DRAFT migrations approved — UI must stay honest when RPC/data missing.
+
+---
+
+## Capability matrix (release gate)
+
+| Area | Status | Notes |
+|------|--------|-------|
+| Offline regression | **LOCAL ONLY** | **104/104** @ `f149f63` |
+| Anon security probe | **LOCAL ONLY** | **63/63** after probe fix |
+| DEF-RR-001 migration | **DEV BLOCKED** | Packet ready; **not applied** |
+| Edge RR eval / scan | **DEV BLOCKED** | Deploy `evaluate-record-relief`, `extract-record-relief-case` if 404 |
+| Payments Edge | **DEV BLOCKED** | 404 on DEV; Stripe 501 unconfigured (expected) |
+| P0-004 capabilities matrix | **DEV BLOCKED** | `--confirm-dev` + passwords |
+| Community / Food E2E | **DEV BLOCKED** | Runbook §4–5 |
+| Jobs/Housing live RPC | **DEV BLOCKED** | Smoke read-only with `--confirm-dev` |
+| Academy cloud backup | **DEV BLOCKED** | Manual; `member_academy_progress` not migrated |
+| Signal Edge smoke | **DEV BLOCKED** | `qa-dev-signal-smoke.mjs --confirm-dev` |
+| iPhone P0-009 | **DEVICE BLOCKED** | Dev client + EAS internal build (see IPHONE doc) |
+| Job profile / justice UI | **LOCAL ONLY** | Modules + unit tests committed; no canonical DB on DEV |
+
+---
+
 ## Functional QA batch (2026-10-23)
 
 **Objective:** Prove member journeys beyond green TypeScript/audits — local contracts + SQL; prepare DEV authorization package (no DEV writes this batch).
@@ -139,7 +178,7 @@ Starting verified HEAD: `ac8baae` (security retest `418dac0` already on branch).
 | Signal tab (routing/fallback) | **LOCAL ONLY** | Signal UI/orchestrator contracts; Edge ping **DEV BLOCKED** |
 | Member capabilities visibility | **LOCAL ONLY** | Local audit PASS; six-scenario DEV matrix **DEV BLOCKED** |
 | Credit Studio | **LOCAL ONLY** | Audits + workspace tests; sample data **__DEV__** only |
-| Justice/opportunity profile WIP | **DEFECT (partial)** | Untracked modules on disk (`justice`, job-profile UI) — not release-gated in 104 suite |
+| Job profile / justice panels | **LOCAL ONLY** | Committed `f149f63`; canonical justice data **DEV BLOCKED** on DRAFT schema |
 
 Statuses: **VERIFIED** = end-to-end proof on DEV/device (none claimed this batch). **LOCAL ONLY** = offline tests/audits pass. **DEV BLOCKED** = needs `--confirm-dev` + approval. **DEVICE BLOCKED** = physical iPhone/Expo Go not run.
 
