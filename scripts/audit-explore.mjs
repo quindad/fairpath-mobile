@@ -14,11 +14,11 @@ const findHousing = read('src/app/find-housing.tsx');
 const resource = read('src/app/resources.tsx');
 
 check(/SECTIONS:/.test(explore) && /Work and housing/.test(explore), 'Explore must group destinations into labeled sections.');
-for (const route of ['/find-jobs', '/find-housing', '/resources', '/marketplace', '/record-relief', '/fairpath-ai', '/academy']) {
+for (const route of ['/community', '/find-jobs', '/find-housing', '/resources', '/marketplace', '/record-relief', '/fairpath-ai', '/academy']) {
   check(explore.includes(`route: '${route}'`) || explore.includes(`route: "${route}"`), `Explore must link to ${route}.`);
 }
-check(/status: 'live'/.test(explore) && /STATUS_LABEL/.test(explore), 'Explore cards must show honest availability status.');
-check(/item\.status !== 'planned'/.test(explore), 'Planned destinations must not navigate.');
+check(/STATUS_LABEL/.test(explore) && /effectiveExploreStatus/.test(explore), 'Explore must use explore-readiness overrides for honest status.');
+check(/status !== 'planned'/.test(explore), 'Planned destinations must not navigate.');
 check(/isThemedRoute/.test(chrome) && /Explore','\/explore'/.test(chrome.replace(/\s/g, '')), 'Explore must be in bottom nav primary tabs.');
 
 check(/searchJobs\(/.test(findJobs) && /JobMap/.test(findJobs), 'Jobs discovery uses server search + map toggle.');

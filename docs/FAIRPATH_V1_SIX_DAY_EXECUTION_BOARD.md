@@ -3,7 +3,7 @@
 **Branch:** `development/mobile-v1-completion`  
 **Metro:** reuse `npx expo start --lan --port 8083` (do not duplicate)  
 **Native iPhone QA:** **NOT TESTED** unless explicitly marked on a task  
-**Last checkpoint:** Day 1 — Signal gateway hardening + tool orchestration + local chat persistence
+**Last checkpoint:** Nov 1 sprint — **authoritative checklist:** `docs/FAIRPATH_V1_PRODUCT_TRUTH_AND_COMPLETION_CHECKLIST.md` · queue: `docs/FAIRPATH_V1_ENGINEERING_QUEUE.md`
 
 ---
 

@@ -7,6 +7,7 @@ import {
   veteranToolsEnabled,
   type MemberCapabilities,
 } from '@/core/profile/member-capabilities';
+import { effectiveExploreStatus } from '@/core/explore/explore-readiness';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { PageHeader, ScreenFrame, ScreenScroll, SectionTitle } from '@/components/ProductChrome';
 import { FairPathFonts as F } from '@/constants/fairpath';
@@ -103,13 +104,14 @@ export default function ExploreScreen() {
             <SectionTitle>{section.title}</SectionTitle>
             <View style={s.group}>
               {section.items.map((item, index) => {
-                const open = item.route !== null && item.status !== 'planned';
+                const status = effectiveExploreStatus(item.id, item.status);
+                const open = item.route !== null && status !== 'planned';
                 const last = index === section.items.length - 1;
                 return (
                   <Pressable
                     key={item.id}
                     accessibilityRole={open ? 'link' : 'text'}
-                    accessibilityLabel={`${item.title}. ${item.status !== 'live' ? STATUS_LABEL[item.status] + '. ' : ''}${item.body}`}
+                    accessibilityLabel={`${item.title}. ${status !== 'live' ? STATUS_LABEL[status] + '. ' : ''}${item.body}`}
                     accessibilityState={{ disabled: !open }}
                     disabled={!open}
                     onPress={() => {
@@ -123,7 +125,7 @@ export default function ExploreScreen() {
                     <View style={s.copy}>
                       <Text style={s.rowTitle}>{item.title}</Text>
                       <Text style={s.rowBody} numberOfLines={2}>{item.body}</Text>
-                      {item.status !== 'live' ? <Text style={s.status}>{STATUS_LABEL[item.status]}</Text> : null}
+                      {status !== 'live' ? <Text style={s.status}>{STATUS_LABEL[status]}</Text> : null}
                     </View>
                     {open ? <Lucide name="chevron-right" color={tokens.textMuted} size={18} /> : null}
                   </Pressable>

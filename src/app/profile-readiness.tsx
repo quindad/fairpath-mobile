@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
+import { JusticeToolsGate } from '@/components/JusticeToolsGate';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { loadFairPathReadiness } from '@/core/profile/profile-service';
 import { OPPORTUNITY_ROUTES_FOR_READINESS } from '@/core/profile/employment-profile-bridge.ts';
@@ -10,7 +11,7 @@ const copy={identity:['Identity','Contact and basic information'],employment:['E
 export default function ProfileReadiness(){
  const [r,setR]=useState<FairPathReadiness|null>(null);useEffect(()=>{let a=true;loadFairPathReadiness().then(x=>{if(a)setR(x.readiness)}).catch(()=>{});return()=>{a=false}},[]);
  const areas=useMemo(()=>r?.areas.map(x=>[x.area,copy[x.area][0],copy[x.area][1],x.percentage] as const)??[],[r]);const overall=r?.overallPercentage??0;
- return <ScreenFrame><PageHeader eyebrow="FAIRPATH READINESS" title="Your profile" backTo="/me"/>
+ return <JusticeToolsGate eyebrow="FAIRPATH READINESS" title="Justice readiness" backTo="/me"><ScreenFrame><PageHeader eyebrow="FAIRPATH READINESS" title="Your profile" backTo="/me"/>
  <ScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
   <View style={s.score}><View><Text style={s.scoreLabel}>OVERALL READINESS</Text><Text style={s.scoreSub}>Complete information once. Reuse it across FairPath.</Text></View><Text style={s.scoreNumber}>{overall}%</Text></View>
   <View style={s.track}><View style={[s.fill,{width:(overall+'%') as any}]}/></View>
@@ -22,6 +23,6 @@ export default function ProfileReadiness(){
    </View>;
   })}
   <View style={s.privacy}><Text style={s.privacyTitle}>PRIVATE BY DESIGN</Text><Text style={s.privacyBody}>Sensitive justice-history information supports permitted screening and matching. It is not automatically displayed as a general partner-visible profile field.</Text></View>
- </ScrollView></ScreenFrame>
+ </ScrollView></ScreenFrame></JusticeToolsGate>
 }
 const s=StyleSheet.create({content:{paddingHorizontal:L.mobileGutter,paddingBottom:30},score:{paddingVertical:20,flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start'},scoreLabel:{color:C.lime,fontFamily:F.extraBold,fontSize:8,letterSpacing:1.2},scoreSub:{color:C.muted,fontSize:11,marginTop:5,maxWidth:260},scoreNumber:{color:C.white,fontFamily:F.black,fontSize:28},track:{height:4,backgroundColor:C.border},fill:{height:'100%',backgroundColor:C.lime},section:{color:C.muted,fontFamily:F.extraBold,fontSize:9,letterSpacing:1.2,marginTop:24,marginBottom:4},row:{minHeight:96,borderBottomWidth:1,borderBottomColor:C.border,flexDirection:'row',alignItems:'center'},copy:{flex:1,paddingRight:15},titleLine:{flexDirection:'row',justifyContent:'space-between'},title:{color:C.white,fontFamily:F.extraBold,fontSize:17},pct:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:10},body:{color:C.muted,fontSize:11,marginTop:4},miniTrack:{height:2,backgroundColor:C.border,marginTop:10},miniFill:{height:'100%',backgroundColor:C.lime},arrow:{color:C.lime,fontSize:18},bridge:{borderLeftWidth:3,borderLeftColor:C.lime,paddingLeft:12,paddingVertical:10,marginBottom:8,backgroundColor:C.card},bridgeTitle:{color:C.lime,fontFamily:F.extraBold,fontSize:10},bridgeBody:{color:C.muted,fontSize:10,lineHeight:15,marginTop:4},privacy:{paddingVertical:18,borderBottomWidth:1,borderBottomColor:C.border},privacyTitle:{color:C.mutedStrong,fontFamily:F.extraBold,fontSize:8,letterSpacing:1},privacyBody:{color:C.muted,fontSize:11,lineHeight:17,marginTop:6}});

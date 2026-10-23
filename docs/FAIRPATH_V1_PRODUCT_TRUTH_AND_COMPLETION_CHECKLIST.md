@@ -11,9 +11,10 @@
 - FOOD-001: src/app/food-rescue.tsx calls loadMarketplace({foodRescueOnly:true}), links back to /marketplace, links food cards to /market-item/[id], and references Marketplace safety. src/app/marketplace-list-item.tsx lets a Marketplace donor toggle 'SHOW IN FOOD RESCUE'. Separate user experience/data policy not implemented.
 - GIVE-001: src/app/community/can-help.tsx mixes listing Marketplace items, Food Rescue navigation, open request board and Marketplace claim-limit explanation. 'I can help' is not a coherent action.
 - PATH-001: src/core/opportunity/v1-pathways.ts maps many paths into generic /resources or /community/help-now, not a dedicated guided flow; resolveGrowthDiscovery currently maps legal -> transportation, record_relief -> education_scholarships, housing -> family_center. Fix misrouting with regression coverage.
-- PREF-001: src/app/onboarding.tsx 'Neither — skip for now' resolves justice_impacted to 'Prefer not to say', not an explicit 'No'; the 'Both' option is handled by an array; need unambiguous flags and vet opt-in semantics.
-- PREF-002: src/app/me.tsx renders My Justice Records, Record Relief and Justice readiness links for every member with no opt-in gate. src/app/explore.tsx always lists Veterans and Record Relief; overall personalization is inconsistent.
-- PREF-003 (in progress): `member-capabilities-core.ts` + settings `/member-tool-preferences`, gates on Home/Explore/Me/My Path/Signal/Record Relief/Veterans. DEV two-account matrix **NOT TESTED** yet.
+- PREF-001: **Fixed in `01b6755`** — Neither → explicit No; veteran opt-in in profile_answers.
+- PREF-002: **Mostly fixed in `01b6755` + follow-up** — Me/Explore/Home/Signal gated; justice-records + profile-readiness gated; notifications TBD.
+- PREF-003 (in progress): `member-capabilities-core.ts` + `/member-tool-preferences`. P0-004 DEV matrix **NOT TESTED**.
+- EXP-001 (in progress): `explore-readiness.ts` wired in Explore UI; P0-001 inventory in engineering queue doc.
 - PATH-001 (partial): `resolveGrowthDiscovery` special-cases `record_relief`, `legal`, `housing` routes — see `tests/member-capabilities.test.ts`.
 - RR-001: Record Relief home loads cases/evaluations and links add, scan, finder, detail, coverage. src/core/record-relief/relief-service.ts contains both shared engine/Edge evaluation AND coverage based on DB record_relief_rules; metadata/comments indicate previous divergence for manually entered cases. Actual live DEV rules, scan, saved results and iPhone journey NOT VERIFIED. Treat 57-jurisdiction registry existence separately from verified live rule coverage.
 - SIG-001: prior Signal UI and gateway commits exist; do not infer native tool execution, backend conversation sync, or streaming completion from test names.

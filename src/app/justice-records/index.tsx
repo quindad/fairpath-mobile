@@ -10,6 +10,7 @@ import { previewReliefForBundle } from '@/core/justice/per-charge-relief';
 import { unifiedCaseToCaseBundle } from '@/core/justice/mappers';
 import { loadMyConvictions } from '@/core/profile/conviction-service';
 import { loadCases, loadCurrentEvaluations } from '@/core/record-relief/relief-service';
+import { JusticeToolsGate } from '@/components/JusticeToolsGate';
 
 export default function JusticeRecordsHub() {
   const [busy, setBusy] = useState(true);
@@ -41,6 +42,7 @@ export default function JusticeRecordsHub() {
   );
 
   return (
+    <JusticeToolsGate eyebrow="MY JUSTICE RECORDS" title="Cases & charges" backTo="/me">
     <ScreenFrame>
       <PageHeader eyebrow="MY JUSTICE RECORDS" title="Cases & charges" backTo="/me" alwaysBackTo />
       <FormScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: L.mobileGutter, paddingBottom: 48 }}>
@@ -102,5 +104,6 @@ export default function JusticeRecordsHub() {
         ) : null}
       </FormScrollView>
     </ScreenFrame>
+    </JusticeToolsGate>
   );
 }

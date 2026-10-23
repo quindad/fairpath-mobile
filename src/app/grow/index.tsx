@@ -24,11 +24,7 @@ export default function GrowPathwaysScreen() {
           accessibilityLabel={`${p.title}. ${p.subtitle}`}
           style={s.card}
           onPress={() => {
-            if (p.helpNowQuery) {
-              router.push((`/community/help-now?q=${encodeURIComponent(p.helpNowQuery)}`) as never);
-            } else {
-              router.push(p.primaryRoute as never);
-            }
+            router.push(p.primaryRoute as never);
           }}
         >
           <View style={s.iconWrap}>
