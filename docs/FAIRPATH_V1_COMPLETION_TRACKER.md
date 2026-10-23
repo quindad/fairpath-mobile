@@ -1,8 +1,24 @@
 # FairPath Mobile V1 — Completion Tracker
 
 **Branch:** `development/mobile-v1-completion`  
-**Last updated:** 2026-10-23 (Home IA redesign + commit `8c44767`)  
+**Last updated:** 2026-10-23 (V1 sprint — Batch A `e4fac5a`)  
 **Scope:** Mobile repo only; DEV `znvhmuhojvwvjzmaqwff`
+
+---
+
+## V1 completion sprint — batch log
+
+| Batch | Scope | Commit | Audits / tests | Expo web `:8083` | Expo Go iPhone |
+|-------|--------|--------|----------------|------------------|----------------|
+| A | Jobs + Housing lists & detail | `e4fac5a` | `audit-jobs`, `audit-housing`, `audit-scroll`, `tsc` **PASS** | **NOT TESTED** (agent HTTP timeout / blank shell) | **NOT TESTED** |
+| B | Record Relief + Marketplace | — | — | — | **NOT TESTED** |
+| C | Ten pathways | — | — | — | **NOT TESTED** |
+| D | Account / onboarding | — | — | — | **NOT TESTED** |
+| E | Cross-tab QA | — | — | — | **NOT TESTED** |
+
+**Metro:** reuse owner process on **8083** (`exp://192.168.40.7:8083`) — do not start duplicate servers.
+
+Prior UI commits on branch: `8c44767`, `0c85c1b`, `5309b30`, `7a9fd8b`.
 
 ---
 
