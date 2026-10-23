@@ -1,9 +1,9 @@
 # Cursor Mobile â€” Engineering Handoff
 
-**Updated:** 2026-10-23 (regression green batch)  
+**Updated:** 2026-10-23 (V1 functional integration batch)  
 **Branch:** `development/mobile-v1-completion`  
-**HEAD:** `8665dd82126b6bca492f931232718693d257ab8f`  
-**Ahead of origin:** 37 commits (not pushed unless separately authorized)  
+**HEAD:** `e53c55b` (integration reconcile after Agent A/B)  
+**Ahead of origin:** 45 commits (not pushed unless separately authorized)  
 **Expo:** Reuse Metro on port **8083** â€” do not start duplicate dev servers.
 
 **Authority:** `docs/FAIRPATH_V1_PRODUCT_TRUTH_AND_COMPLETION_CHECKLIST.md`, `docs/FAIRPATH_V1_ENGINEERING_QUEUE.md`
@@ -72,6 +72,22 @@
 
 ---
 
+## V1 functional batch (2026-10-23)
+
+| Agent | Task ID | Commits | Scope |
+|-------|---------|---------|--------|
+| A — Member + Opportunity | [2b739771-0e35-4f06-9cb5-395e75631853](2b739771-0e35-4f06-9cb5-395e75631853) | `2e7f002`, `b9ecfa9`, `bfb6709` (+ prior `6e22f7c` pathways) | Legal deep links, opportunity engine modules, professional profile model, v1-pathways tests |
+| B — Services | [2ed381bf-37f3-45af-a2be-b7fc41ad28fa](2ed381bf-37f3-45af-a2be-b7fc41ad28fa) | `90aa0d3`, `46ae7b4` | Community services + local SQL 6/6; academy profile backup + inline Signal worksheet (no paid AI) |
+| Integration lead | — | `fd44294`, `e53c55b` | Reconcile Home vs Explore (`CommunityHelpPanel` on Explore only); `TrackProgress` tsc fix; suite green |
+
+**Verified:** `npm run test:all` **104/104 PASS** @ `e53c55b` (includes academy cloud + worksheet tests). `npx tsc --noEmit` **PASS**.
+
+**E2E not verified:** iPhone native; DEV two-account food pickup; P0-004 capabilities matrix; Record Relief save+Edge parity on live DEV (DEF-RR-001 migration still DRAFT).
+
+**Next assignments:** (1) Record Relief — migration approval + DEV manual loop; (2) Jobs/Housing + Community Exchange DEV smoke with `--confirm-dev` when authorized.
+
+---
+
 ## Regression fix batch (2026-10-23)
 
 Starting verified HEAD: `ac8baae` (security retest `418dac0` already on branch).
@@ -87,7 +103,7 @@ Starting verified HEAD: `ac8baae` (security retest `418dac0` already on branch).
 | Check | Result |
 |-------|--------|
 | `npx tsc --noEmit` | **PASS** |
-| `node scripts/run-all-tests.mjs` | **102/102 PASS** (sequential, ~3.6 min) |
+| `node scripts/run-all-tests.mjs` | **104/104 PASS** @ `e53c55b` |
 | `audit:security` | **PASS** (since `418dac0`) |
 | DEV `--confirm-dev` matrix / exchange / jobs smoke | **BLOCKED / NOT RUN** (no approval for mutating DEV) |
 | iPhone native QA | **NOT VERIFIED** |
