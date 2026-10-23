@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useLocalSearchParams } from 'expo-router';
+import { academyPlanPath, planSectionForLesson } from '@/core/academy/workspace-store';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { PageHeader, ScreenFrame } from '@/components/ProductChrome';
@@ -63,6 +64,8 @@ export default function AcademyLessonScreen() {
   const done = lesson ? progress.completedSteps.includes(lesson.id) : false;
   const percent = academyExerciseTrackPercent(exerciseProgress);
   const exercisesComplete = lesson && isTrackStepId(lesson.id) ? canMarkLessonComplete(exerciseProgress, lesson.id) : false;
+  const linkedPlanSection =
+    lesson && isTrackStepId(lesson.id) ? planSectionForLesson(lesson.id) : null;
 
   const toggleExercise = useCallback(
     async (exerciseId: string, checked: boolean) => {
@@ -131,6 +134,15 @@ export default function AcademyLessonScreen() {
           <>
             <Text style={s.section}>Track progress · {percent}%</Text>
             <Text style={s.body}>{lesson.description}</Text>
+            {linkedPlanSection ? (
+              <Pressable
+                style={s.secondary}
+                accessibilityRole="button"
+                onPress={() => router.push(academyPlanPath(linkedPlanSection) as never)}
+              >
+                <Text style={s.secondaryText}>Open related plan section</Text>
+              </Pressable>
+            ) : null}
             {content ? (
               <>
                 <Text style={s.section}>Read</Text>
@@ -213,4 +225,13 @@ const styles = (t: ThemeTokens) => ({
   primary: { minHeight: 44, justifyContent: 'center' as const, alignItems: 'center' as const, backgroundColor: t.accent },
   primaryDisabled: { opacity: 0.45 },
   primaryText: { color: t.onAccent, fontWeight: '700' as const },
+  secondary: {
+    minHeight: 44,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    borderWidth: 1,
+    borderColor: t.border,
+    backgroundColor: t.surface,
+  },
+  secondaryText: { color: t.text, fontWeight: '600' as const, fontSize: 14 },
 });

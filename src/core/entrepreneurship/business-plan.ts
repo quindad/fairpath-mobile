@@ -49,5 +49,56 @@ export function updateSection(plan: readonly PlanSection[], id: string, content:
   return plan.map((s) => (s.id === id ? { ...s, content: content.slice(0, 2000) } : s));
 }
 
+export function emptyPlanSectionIds(plan: readonly PlanSection[]): string[] {
+  return plan.filter((s) => !s.content.trim()).map((s) => s.id);
+}
+
+export function blankStartupBudget(): StartupBudget {
+  return { oneTimeCosts: [], monthlyCosts: [], expectedMonthlyRevenue: 0 };
+}
+
+const MAX_BUDGET_LINES = 24;
+const MAX_BUDGET_LABEL = 120;
+
+export function sanitizeUsd(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return round2(Math.max(0, value));
+}
+
+/** Parses member-entered currency text; never throws. */
+export function parseBudgetAmount(raw: string): number {
+  const cleaned = raw.replace(/[^0-9.]/g, '');
+  const n = cleaned ? parseFloat(cleaned) : 0;
+  return sanitizeUsd(Number.isFinite(n) ? n : 0);
+}
+
+export function addBudgetLine(lines: readonly BudgetLine[]): BudgetLine[] {
+  if (lines.length >= MAX_BUDGET_LINES) return [...lines];
+  return [...lines, { label: '', monthlyUsd: 0 }];
+}
+
+export function updateBudgetLine(lines: readonly BudgetLine[], index: number, patch: Partial<BudgetLine>): BudgetLine[] {
+  if (index < 0 || index >= lines.length) return [...lines];
+  return lines.map((line, i) => {
+    if (i !== index) return line;
+    const label = typeof patch.label === 'string' ? patch.label.slice(0, MAX_BUDGET_LABEL) : line.label;
+    const monthlyUsd = patch.monthlyUsd !== undefined ? sanitizeUsd(patch.monthlyUsd) : line.monthlyUsd;
+    return { label, monthlyUsd };
+  });
+}
+
+export function removeBudgetLine(lines: readonly BudgetLine[], index: number): BudgetLine[] {
+  if (index < 0 || index >= lines.length) return [...lines];
+  return lines.filter((_, i) => i !== index);
+}
+
+export function setExpectedMonthlyRevenue(budget: StartupBudget, revenueUsd: number): StartupBudget {
+  return { ...budget, expectedMonthlyRevenue: sanitizeUsd(revenueUsd) };
+}
+
+export function isStartupBudgetEmpty(budget: StartupBudget): boolean {
+  return budget.oneTimeCosts.length === 0 && budget.monthlyCosts.length === 0 && budget.expectedMonthlyRevenue === 0;
+}
+
 export const PLAN_DISCLAIMER =
   'This plan reflects what you entered. FairPath does not guarantee funding, grant approval, profitability or business success.';

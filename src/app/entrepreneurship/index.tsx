@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { PageHeader, ScreenFrame, SectionTitle } from '@/components/ProductChrome';
 import { FormScrollView } from '@/components/FormScrollView';
@@ -20,7 +20,15 @@ import {
   academyLessonPath,
 } from '@/core/academy/catalog';
 import { getBusinessIdeaFeedback } from '@/core/ai/signal';
+import {
+  computeAcademyNextActions,
+  loadAcademyWorkspace,
+  saveBusinessIdea,
+  type AcademyNextAction,
+} from '@/core/academy/workspace-store';
 import { router } from 'expo-router';
+
+const IDEA_AUTOSAVE_MS = 450;
 
 type Load = 'loading' | 'ready' | 'error';
 
@@ -34,17 +42,26 @@ export default function EntrepreneurshipHomeScreen() {
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [feedbackRequested, setFeedbackRequested] = useState(false);
+  const [nextActions, setNextActions] = useState<AcademyNextAction[]>([]);
+  const [ideaSaveNote, setIdeaSaveNote] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const ideaTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const exerciseRef = useRef(exerciseProgress);
+  exerciseRef.current = exerciseProgress;
 
   useEffect(() => {
     let alive = true;
     Promise.all([
       AsyncStorage.getItem(ENTREPRENEURSHIP_STORAGE_KEY),
       AsyncStorage.getItem(ACADEMY_LESSON_EXERCISES_STORAGE_KEY),
+      loadAcademyWorkspace(AsyncStorage),
     ])
-      .then(([trackRaw, exerciseRaw]) => {
+      .then(([trackRaw, exerciseRaw, workspace]) => {
         if (alive) {
           setProgress(parseProgress(trackRaw));
-          setExerciseProgress(parseLessonExerciseProgress(exerciseRaw));
+          const exercise = parseLessonExerciseProgress(exerciseRaw);
+          setExerciseProgress(exercise);
+          setIdea(workspace.idea);
+          setNextActions(computeAcademyNextActions(exercise, workspace, 5));
           setLoad('ready');
         }
       })
@@ -55,6 +72,32 @@ export default function EntrepreneurshipHomeScreen() {
       alive = false;
     };
   }, []);
+
+  const scheduleIdeaSave = useCallback((text: string) => {
+    if (ideaTimer.current) clearTimeout(ideaTimer.current);
+    ideaTimer.current = setTimeout(() => {
+      void (async () => {
+        setIdeaSaveNote('saving');
+        const ok = await saveBusinessIdea(AsyncStorage, text);
+        setIdeaSaveNote(ok ? 'saved' : 'error');
+        if (ok) {
+          const ws = await loadAcademyWorkspace(AsyncStorage);
+          setNextActions(computeAcademyNextActions(exerciseRef.current, { ...ws, idea: text }, 5));
+        }
+      })();
+    }, IDEA_AUTOSAVE_MS);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (ideaTimer.current) clearTimeout(ideaTimer.current);
+    };
+  }, []);
+
+  function onIdeaChange(text: string) {
+    setIdea(text);
+    scheduleIdeaSave(text);
+  }
 
   const percent = academyExerciseTrackPercent(exerciseProgress);
   const next = nextStep(progress);
@@ -119,6 +162,23 @@ export default function EntrepreneurshipHomeScreen() {
               </Pressable>
             </View>
 
+            {nextActions.length > 0 ? (
+              <View style={s.card}>
+                <Text style={s.cardLabel}>NEXT ACTIONS</Text>
+                {nextActions.map((action) => (
+                  <Pressable
+                    key={action.id}
+                    style={s.actionRow}
+                    accessibilityRole="button"
+                    onPress={() => router.push(action.route as never)}
+                  >
+                    <Text style={s.cardTitle}>{action.title}</Text>
+                    <Text style={s.body}>{action.body}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
+
             <Text style={s.section}>Progress · {percent}%</Text>
             <View style={s.bar} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: percent }}>
               <View style={[s.barFill, { width: `${percent}%` }]} />
@@ -143,16 +203,26 @@ export default function EntrepreneurshipHomeScreen() {
             )}
 
             <View style={s.card}>
-              <Text style={s.cardTitle}>Signal · Get feedback on your idea</Text>
+              <Text style={s.cardTitle}>Your business idea</Text>
+              <Text style={s.meta}>
+                {ideaSaveNote === 'saving'
+                  ? 'Saving…'
+                  : ideaSaveNote === 'saved'
+                    ? 'Saved on this device.'
+                    : ideaSaveNote === 'error'
+                      ? 'Could not save your idea on this device.'
+                      : 'Autosaves on this device as you type.'}
+              </Text>
               <TextInput
                 style={s.input}
                 value={idea}
-                onChangeText={setIdea}
+                onChangeText={onIdeaChange}
                 placeholder="Describe your business idea…"
                 placeholderTextColor={tokens.textMuted}
                 multiline
-                accessibilityLabel="Describe your business idea for Signal"
+                accessibilityLabel="Describe your business idea"
               />
+              <Text style={s.cardTitle}>Signal · Get feedback on your idea</Text>
               <Pressable style={s.primary} accessibilityRole="button" onPress={() => void askSignal()}>
                 <Text style={s.primaryText}>{feedbackLoading ? 'Asking Signal…' : 'Ask Signal'}</Text>
               </Pressable>
@@ -237,4 +307,5 @@ const styles = (t: ThemeTokens) => ({
   rowBody: { flex: 1, gap: 2 },
   rowTitle: { color: t.textSecondary, fontSize: 15, flexShrink: 1 },
   rowTitleDone: { color: t.textMuted, fontSize: 15, flexShrink: 1, textDecorationLine: 'line-through' as const },
+  actionRow: { gap: 4, paddingVertical: 6, borderTopWidth: 1, borderTopColor: t.border },
 });
