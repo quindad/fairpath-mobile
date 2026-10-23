@@ -1,9 +1,9 @@
 # Cursor Mobile â€” Engineering Handoff
 
-**Updated:** 2026-10-23 (V1 functional integration batch)  
+**Updated:** 2026-10-23 (functional QA + DEV readiness batch)  
 **Branch:** `development/mobile-v1-completion`  
-**HEAD:** `e53c55b` (integration reconcile after Agent A/B)  
-**Ahead of origin:** 45 commits (not pushed unless separately authorized)  
+**HEAD:** _(see latest commit after this edit)_  
+**Ahead of origin:** 46+ commits (not pushed unless separately authorized)  
 **Expo:** Reuse Metro on port **8083** â€” do not start duplicate dev servers.
 
 **Authority:** `docs/FAIRPATH_V1_PRODUCT_TRUTH_AND_COMPLETION_CHECKLIST.md`, `docs/FAIRPATH_V1_ENGINEERING_QUEUE.md`
@@ -98,15 +98,62 @@ Starting verified HEAD: `ac8baae` (security retest `418dac0` already on branch).
 | `2798168` | Jobs/housing `returnTo`, failed-search clear, audit extractors |
 | `8665dd8` | Signal in-scroll composer, `/me` a11y labels, marketplace pickup next step, credit `__DEV__` sample gate, Signal UI contract |
 
+## Functional QA batch (2026-10-23)
+
+**Objective:** Prove member journeys beyond green TypeScript/audits — local contracts + SQL; prepare DEV authorization package (no DEV writes this batch).
+
+| Check | Result |
+|-------|--------|
+| `npm run test:all` | **104/104 PASS** (re-verified this batch) |
+| `npx tsc --noEmit` | **PASS** |
+| `node scripts/qa-local-functional-matrix.mjs` | **9/9 PASS** ? `qa-local-functional-matrix-results.json` |
+| Local QA harness static phases | capabilities, jobs/housing, Signal ? **PASS** (DEV phases **BLOCKED** without `--confirm-dev`) |
+| `node scripts/test-local-relief.mjs` | **17/17** |
+| `node scripts/test-local-community-help.mjs` | **6/6** |
+| `node scripts/qa-dev-anon-probe.mjs` | **58/63** on live DEV anon probe (5 failures: undeployed Edge fns 404 + RPC `SIGNED_OUT` semantics — triage, not app regression) |
+| iPhone / Expo Go native (P0-009) | **DEVICE BLOCKED** — not executed; web preview QA requires `qa-dev-ui-session.mjs --confirm-dev` (mutating, not run) |
+
+**DEV package:** `docs/DEV_READINESS_QA_PACKAGE.md` (commands, credentials, writes, risks, read-only vs mutating).
+
+---
+
+## Capability matrix (verified status)
+
+| Area | Status | Evidence |
+|------|--------|----------|
+| Guest intro / public browse | **LOCAL ONLY** | Audits `auth`, `onboarding`, `public-routes`; browse before onboarding |
+| Sign-up Terms/Privacy + legal deep links | **LOCAL ONLY** | `consent client contract`, `LegalDocumentScreen`, `/legal/*` |
+| Email/social auth + callback ? accept-terms | **LOCAL ONLY** | Static audits; **DEV BLOCKED** full loop (`qa-dev-new-member-journey.mjs`) |
+| Onboarding persistence | **LOCAL ONLY** | Unit tests + audits; device reload **DEVICE BLOCKED** |
+| Home personalization + jobs featured | **LOCAL ONLY** | `audit:home`, `audit:seed`; live jobs need DEV RPC |
+| Explore + 10 V1 pathways | **LOCAL ONLY** | `tests/v1-pathways.test.ts`, Grow `V1_PATHWAYS`, pathway coverage script |
+| Opportunity Engine (help-now) | **LOCAL ONLY** | Orchestrator tests, `audit-opportunity`, local resource fixtures |
+| My Path plan store | **LOCAL ONLY** | Device-local plan + community/job/housing sync modules |
+| Jobs search/detail/save/apply | **DEV BLOCKED** | Static RPC contract PASS; `search_jobs` live smoke needs `--confirm-dev`; `RpcNotDeployed` honest empty states |
+| Housing search/detail/save/apply | **DEV BLOCKED** | Same pattern as jobs |
+| Record Relief engine + UI | **LOCAL ONLY** | `test-local-relief` 17/17; save-time legacy eval **DEF-RR-001** **DEV BLOCKED** until migration approved |
+| Community Exchange RPC layer | **LOCAL ONLY** | `test-local-community-help` 6/6; two-account E2E **DEV BLOCKED** |
+| Food Rescue claim/pickup | **LOCAL ONLY** | Unit/contract tests; **RESERVE_RPC_BLOCKED** when claim RPC missing; FOOD-106 **DEV BLOCKED** |
+| Startup Academy lessons/workspace | **LOCAL ONLY** | Lesson gating tests; progress **device-local** + optional `profile_answers` backup |
+| Academy Signal worksheet | **LOCAL ONLY** | Inline worksheet + consent copy (`academy-signal-worksheet` tests) |
+| Signal tab (routing/fallback) | **LOCAL ONLY** | Signal UI/orchestrator contracts; Edge ping **DEV BLOCKED** |
+| Member capabilities visibility | **LOCAL ONLY** | Local audit PASS; six-scenario DEV matrix **DEV BLOCKED** |
+| Credit Studio | **LOCAL ONLY** | Audits + workspace tests; sample data **__DEV__** only |
+| Justice/opportunity profile WIP | **DEFECT (partial)** | Untracked modules on disk (`justice`, job-profile UI) — not release-gated in 104 suite |
+
+Statuses: **VERIFIED** = end-to-end proof on DEV/device (none claimed this batch). **LOCAL ONLY** = offline tests/audits pass. **DEV BLOCKED** = needs `--confirm-dev` + approval. **DEVICE BLOCKED** = physical iPhone/Expo Go not run.
+
+---
+
 ## Test results (last verified this session)
 
 | Check | Result |
 |-------|--------|
 | `npx tsc --noEmit` | **PASS** |
-| `node scripts/run-all-tests.mjs` | **104/104 PASS** @ `e53c55b` |
-| `audit:security` | **PASS** (since `418dac0`) |
-| DEV `--confirm-dev` matrix / exchange / jobs smoke | **BLOCKED / NOT RUN** (no approval for mutating DEV) |
-| iPhone native QA | **NOT VERIFIED** |
+| `node scripts/run-all-tests.mjs` | **104/104 PASS** |
+| `node scripts/qa-local-functional-matrix.mjs` | **9/9 PASS** |
+| DEV mutating harnesses | **BLOCKED** (see DEV_READINESS_QA_PACKAGE.md) |
+| iPhone native QA | **DEVICE BLOCKED** |
 
 ---
 
@@ -140,17 +187,13 @@ Starting verified HEAD: `ac8baae` (security retest `418dac0` already on branch).
 
 ---
 
-## Next tasks (recommended order ? post 102/102)
+## Next assignments (post QA batch)
 
-1. **Record Relief completion** â€” migration approval for skip-legacy-eval; DEV save/scan parity after apply (`DEF-RR-001`).
-2. **Food Rescue E2E** â€” two-account DEV pickup when `--confirm-dev` authorized (`FOOD-106`).
-3. **Startup Academy** â€” START-104/105 (cloud progress DRAFT, Signal worksheet consent).
-4. **Jobs/Housing DEV verification** â€” `qa-dev-jobs-housing-smoke` with credentials + approval.
-5. **Signal integration** â€” live Edge smoke only when authorized; no unpaid API spend.
-6. **Community Exchange** â€” `scripts/test-local-community-help.mjs` + gated DEV E2E.
-7. **Ten pathways** â€” functional verification from Explore (not route-only).
-8. **Agent 1 next** â€” wire `LegalDocumentScreen` + remaining `src/core/legal/*` untracked WIP into sign-up legal deep links without duplicate consent paths.
-9. **Agent 2 next** â€” integrate untracked opportunity/justice/job-profile modules; run pathway + opportunity audits when stable.
+1. **Owner approval** — DEF-RR-001 migration apply on DEV only; then manual RR save + Edge parity.
+2. **DEV execution** — Run matrix in order: `qa-dev-member-capabilities-matrix`, `qa-dev-jobs-housing-smoke`, `qa-dev-community-exchange-e2e`, Food Rescue two-account flow (see DEV package).
+3. **Device QA (P0-009)** — Expo Go on iPhone: five tabs, keyboard, safe area, auth return paths.
+4. **Integrate untracked WIP** — justice + job-profile modules with scoped commits (no blanket add).
+5. **Anon probe triage** — Align probe expectations with `SIGNED_OUT` / missing Edge deploys or document environment gaps.
 
 ---
 

@@ -1,0 +1,62 @@
+{
+  "generatedAt": "2026-10-23T22:56:40.541Z",
+  "branch": "development/mobile-v1-completion",
+  "passed": 9,
+  "total": 9,
+  "results": [
+    {
+      "name": "member capabilities static",
+      "ok": true,
+      "exit": 0,
+      "tail": "To eliminate this warning, add \"type\": \"module\" to \\\\?\\C:\\Users\\Friend A Felon\\Documents\\GitHub\\fairpath-mobile\\package.json. | (Use `node --trace-warnings ...` to show where the warning was created)"
+    },
+    {
+      "name": "jobs housing static",
+      "ok": true,
+      "exit": 0,
+      "tail": " | Local: PASS. DEV: BLOCKED (missing --confirm-dev). Wrote qa-dev-jobs-housing-smoke-results.json"
+    },
+    {
+      "name": "signal static",
+      "ok": true,
+      "exit": 0,
+      "tail": " | Local: PASS. DEV: BLOCKED (missing --confirm-dev). Wrote qa-dev-signal-smoke-results.json"
+    },
+    {
+      "name": "community help SQL",
+      "ok": true,
+      "exit": 0,
+      "tail": " | 6/6 passed (undefined)."
+    },
+    {
+      "name": "record relief SQL",
+      "ok": true,
+      "exit": 0,
+      "tail": " | 17/17 passed (local Postgres)."
+    },
+    {
+      "name": "opportunity audit",
+      "ok": true,
+      "exit": 0,
+      "tail": "Opportunity Engine audit passed."
+    },
+    {
+      "name": "v1 pathways unit",
+      "ok": true,
+      "exit": 0,
+      "tail": "ℹ todo 0 | ℹ duration_ms 209.586"
+    },
+    {
+      "name": "registration flow unit",
+      "ok": true,
+      "exit": 0,
+      "tail": "ℹ todo 0 | ℹ duration_ms 185.3079"
+    },
+    {
+      "name": "consent contract",
+      "ok": true,
+      "exit": 0,
+      "tail": "ℹ todo 0 | ℹ duration_ms 173.9611"
+    }
+  ]
+}
