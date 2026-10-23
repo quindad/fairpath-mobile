@@ -16,7 +16,7 @@
 - PREF-003 (in progress): `member-capabilities-core.ts` + `/member-tool-preferences`. P0-004 DEV matrix **NOT TESTED**.
 - EXP-001 (in progress): `explore-readiness.ts` wired in Explore UI; P0-001 inventory in engineering queue doc.
 - PATH-001 (partial): **`324d645` + `6e22f7c`** — employment/financial/record_relief/housing discovery fixes; ten pathway `primaryRoute` values dedicated (`tests/v1-pathways.test.ts` 9/9, `scripts/audit-v1-pathways.mjs`).
-- RR-001: **`671cd68`** — `caseRowToEngineFacts`, engine vs DB coverage honesty in UI; local relief 17/17 + `tests/record-relief-evaluation-parity.test.ts`. Legacy RPC eval before Edge (DEF-RR-001) may remain until approved migration. iPhone/DEV live journey NOT TESTED.
+- RR-001: **`9d40728`** (merged `2d45dee`) — canonical Edge eval after save, `partitionEvaluationsForDisplay`, multi-charge bundle + scan note, parity tests **10/10**, local relief **17/17**. DRAFT `20261023120000_record_relief_save_skip_legacy_eval_DRAFT.sql` — **DEF-RR-001 RPC still runs legacy eval on save until migration approved**. iPhone/DEV NOT TESTED.
 - START-001 (partial): **`4502213`** — Academy F-1 routes + catalog; plan/budget placeholders. Backlog: `docs/STARTUP_ACADEMY_V1_IMPLEMENTATION_BACKLOG.md`; `tests/academy-routes.test.ts` 6/6.
 - SIG-001: prior Signal UI and gateway commits exist; do not infer native tool execution, backend conversation sync, or streaming completion from test names.
 - WORKTREE: extensive modified/untracked files belong to parallel agents; never use git add -A, git reset, git clean, blanket stash, or rewrite their work.
