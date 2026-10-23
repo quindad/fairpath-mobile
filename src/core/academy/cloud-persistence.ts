@@ -8,7 +8,8 @@ import {
 } from './lesson-progress-store.ts';
 import { loadEnrollments, type EnrollmentMap, type KeyValueStore } from './progress-store.ts';
 import { loadAcademyWorkspace, type AcademyWorkspace } from './workspace-store.ts';
-import { ENTREPRENEURSHIP_STORAGE_KEY, parseProgress, type TrackProgress } from '../entrepreneurship/progress-store.ts';
+import { ENTREPRENEURSHIP_STORAGE_KEY, parseProgress } from '../entrepreneurship/progress-store.ts';
+import type { TrackProgress } from '../entrepreneurship/tracks.ts';
 export const MEMBER_ACADEMY_PROGRESS_TABLE = 'member_academy_progress';
 
 export const ACADEMY_PROFILE_QUESTION = {

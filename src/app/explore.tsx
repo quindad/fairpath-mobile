@@ -9,6 +9,7 @@ import {
 } from '@/core/profile/member-capabilities';
 import { effectiveExploreStatus } from '@/core/explore/explore-readiness';
 import { Lucide } from '@react-native-vector-icons/lucide';
+import { CommunityHelpPanel } from '@/components/CommunityHelpPanel';
 import { PageHeader, ScreenFrame, ScreenScroll, SectionTitle } from '@/components/ProductChrome';
 import { FairPathFonts as F } from '@/constants/fairpath';
 import { useFairPathTheme, useThemedStyles } from '@/core/theme/ThemeProvider';
@@ -99,6 +100,7 @@ export default function ExploreScreen() {
       <PageHeader eyebrow="DISCOVER" title="Explore" onBack={false} />
       <ScreenScroll contentContainerStyle={s.content}>
         <Text style={s.lead}>Everything FairPath offers beyond the five tabs — pick a destination.</Text>
+        <CommunityHelpPanel />
         {sections.map((section) => (
           <View key={section.title} style={s.section}>
             <SectionTitle>{section.title}</SectionTitle>
