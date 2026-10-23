@@ -10,7 +10,8 @@ import { gateway, deleteAiHistory, logInteraction } from '@/core/ai/gateway';
 import { NO_MODEL, answer, type AiResponse } from '@/core/ai/orchestrator';
 import { getFocusGuidance, getResourceGuidance } from '@/core/ai/signal';
 import { catalogByCategory } from '@/core/ai/signal-catalog';
-import { mergeSignalText, shouldEnrichWithSignal, signalStatusMessage } from '@/core/ai/signal-enrich';
+import { mergeSignalText, shouldEnrichWithSignal } from '@/core/ai/signal-enrich';
+import { noteForAskFailure, noteForSignalResult } from '@/core/signal/signal-member-context';
 import { loadAiCreditBalance } from '@/core/ai/ai-credits';
 import { loadSignalSuggestions } from '@/core/signal/signal-suggestions';
 import {
@@ -166,7 +167,7 @@ export default function FairPathAssistant() {
         if (ac.signal.aborted) return;
         if (sig.status === 'ok') response = mergeSignalText(response, sig.text);
         else {
-          const note = signalStatusMessage(sig.status);
+          const note = noteForSignalResult(sig);
           if (note) response = { ...response, parts: [...response.parts, { text: note, basis: 'app_state' }] };
         }
       }
@@ -183,7 +184,7 @@ export default function FairPathAssistant() {
         intent: 'help',
         title: 'Something went wrong',
         modelAssisted: false,
-        parts: [{ text: 'Try again in a moment, or open a workflow from the suggestions.', basis: 'app_state' }],
+        parts: [{ text: noteForAskFailure(e), basis: 'app_state' }],
         actions: [{ label: 'Explore FairPath', route: '/explore', primary: true }],
         provenance: {
           task: 'navigation',
