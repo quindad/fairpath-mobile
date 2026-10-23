@@ -228,11 +228,11 @@ Statuses: **VERIFIED** = end-to-end proof on DEV/device (none claimed this batch
 
 ## Next assignments (post QA batch)
 
-1. **Owner approval** — DEF-RR-001 migration apply on DEV only; then manual RR save + Edge parity.
-2. **DEV execution** — Run matrix in order: `qa-dev-member-capabilities-matrix`, `qa-dev-jobs-housing-smoke`, `qa-dev-community-exchange-e2e`, Food Rescue two-account flow (see DEV package).
-3. **Device QA (P0-009)** — Expo Go on iPhone: five tabs, keyboard, safe area, auth return paths.
-4. **Integrate untracked WIP** — justice + job-profile modules with scoped commits (no blanket add).
-5. **Anon probe triage** — Align probe expectations with `SIGNED_OUT` / missing Edge deploys or document environment gaps.
+1. **Authorize DEV writes** — follow `docs/DEV_E2E_EXECUTION_RUNBOOK.md` with `--confirm-dev`.
+2. **Approve DEF-RR-001** — DEV-only migration per `docs/DEV_MIGRATION_APPROVAL_PACKET.md`.
+3. **Deploy missing Edge functions** — `docs/DEV_EDGE_FUNCTION_DEPLOYMENT_MANIFEST.md`.
+4. **iPhone dev client** — `docs/IPHONE_NATIVE_QA_SETUP.md` (P0-009).
+5. **Execute DEV runbook** — steps 2–9; capture JSON result artifacts.
 
 ---
 
