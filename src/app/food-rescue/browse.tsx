@@ -6,22 +6,15 @@ import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { FOOD_RESCUE_HOME, foodRescueItemRoute } from '@/core/community/food-rescue-nav';
-import { MarketplaceItem, isMarketplaceItemSaved, loadMarketplace, saveMarketplaceItem, unsaveMarketplaceItem } from '@/core/marketplace/marketplace-service';
-
-function closesIn(iso: string | null): { text: string; urgent: boolean; closed: boolean } {
-  if (!iso) return { text: 'No pickup window listed', urgent: false, closed: false };
-  const ms = new Date(iso).getTime() - Date.now();
-  if (ms <= 0) return { text: 'Pickup window ended', urgent: false, closed: true };
-  const mins = Math.round(ms / 60000);
-  if (mins < 60) return { text: `Closes in ${mins} min`, urgent: true, closed: false };
-  const hrs = Math.floor(mins / 60);
-  return { text: `Closes in ${hrs}h ${mins % 60}m`, urgent: hrs < 2, closed: false };
-}
+import { browseFoodRescue, toggleFoodRescueSaved, type FoodRescueBrowseRow } from '@/core/food-rescue/food-rescue-service';
+import { pickupWindowClosesIn } from '@/core/food-rescue/pickup-window';
+import { FOOD_RESCUE_STATUS_LABEL } from '@/core/food-rescue/status';
 
 export default function FoodRescueBrowseScreen() {
   const [location, setLocation] = useState('');
-  const [items, setItems] = useState<MarketplaceItem[]>([]);
-  const [saved, setSaved] = useState<Record<string, boolean>>({});
+  const [closingSoonOnly, setClosingSoonOnly] = useState(false);
+  const [savedOnly, setSavedOnly] = useState(false);
+  const [items, setItems] = useState<FoodRescueBrowseRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -29,26 +22,31 @@ export default function FoodRescueBrowseScreen() {
     setLoading(true);
     setError('');
     try {
-      const rows = await loadMarketplace({ location, foodRescueOnly: true });
-      setItems(rows.filter((r) => !closesIn(r.pickup_window_end).closed));
-      const checks = await Promise.all(rows.map((r) => isMarketplaceItemSaved(r.id).catch(() => false)));
-      setSaved(Object.fromEntries(rows.map((r, i) => [r.id, checks[i]])));
+      setItems(
+        await browseFoodRescue({
+          location,
+          closingSoonOnly,
+          savedOnly,
+        }),
+      );
     } catch {
       setItems([]);
       setError('Food Rescue could not load. Check your connection and try again.');
     } finally {
       setLoading(false);
     }
-  }, [location]);
+  }, [location, closingSoonOnly, savedOnly]);
 
-  useFocusEffect(useCallback(() => { void run(); }, [run]));
+  useFocusEffect(
+    useCallback(() => {
+      void run();
+    }, [run]),
+  );
 
-  async function toggleSave(item: MarketplaceItem) {
-    const current = Boolean(saved[item.id]);
+  async function onToggleSave(item: FoodRescueBrowseRow) {
     try {
-      if (current) await unsaveMarketplaceItem(item.id);
-      else await saveMarketplaceItem(item.id);
-      setSaved((v) => ({ ...v, [item.id]: !current }));
+      const next = await toggleFoodRescueSaved(item.id, item.saved);
+      setItems((rows) => rows.map((r) => (r.id === item.id ? { ...r, saved: next } : r)));
     } catch {
       router.push(('/sign-up?returnTo=' + encodeURIComponent('/food-rescue/browse')) as never);
     }
@@ -75,6 +73,25 @@ export default function FoodRescueBrowseScreen() {
           </Pressable>
         </View>
 
+        <View style={s.filters}>
+          <Pressable
+            accessibilityRole="button"
+            style={[s.filterChip, closingSoonOnly && s.filterChipOn]}
+            onPress={() => setClosingSoonOnly((v) => !v)}
+          >
+            <Lucide name="clock" color={closingSoonOnly ? C.black : C.mutedStrong} size={12} />
+            <Text style={[s.filterText, closingSoonOnly && s.filterTextOn]}>CLOSING SOON</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            style={[s.filterChip, savedOnly && s.filterChipOn]}
+            onPress={() => setSavedOnly((v) => !v)}
+          >
+            <Lucide name="bookmark" color={savedOnly ? C.black : C.mutedStrong} size={12} />
+            <Text style={[s.filterText, savedOnly && s.filterTextOn]}>SAVED</Text>
+          </Pressable>
+        </View>
+
         <View style={s.resultsHead}>
           <Text style={s.results}>{loading ? 'LOADING' : `${items.length} AVAILABLE NOW`}</Text>
         </View>
@@ -83,13 +100,19 @@ export default function FoodRescueBrowseScreen() {
           <View style={s.empty}>
             <Lucide name="utensils" color={C.mutedStrong} size={26} />
             <Text style={s.emptyTitle}>Nothing listed right now.</Text>
-            <Text style={s.emptyBody}>Check back later — donors post surplus food here as it becomes available.</Text>
+            <Text style={s.emptyBody}>
+              {savedOnly
+                ? 'Save listings from browse to see them here.'
+                : closingSoonOnly
+                  ? 'No pickups closing in the next two hours — try turning off Closing soon.'
+                  : 'Check back later — donors post surplus food here as it becomes available.'}
+            </Text>
           </View>
         ) : null}
 
         {items.map((item) => {
           const photo = item.marketplace_media?.slice().sort((a, b) => a.sort_order - b.sort_order)[0]?.url ?? '';
-          const close = closesIn(item.pickup_window_end);
+          const close = pickupWindowClosesIn(item.pickup_window_end);
           return (
             <Pressable
               accessibilityRole="button"
@@ -113,19 +136,22 @@ export default function FoodRescueBrowseScreen() {
                     accessibilityRole="button"
                     onPress={(e) => {
                       e.stopPropagation?.();
-                      void toggleSave(item);
+                      void onToggleSave(item);
                     }}
                   >
                     <Lucide
-                      name={saved[item.id] ? 'bookmark-check' : 'bookmark'}
-                      color={saved[item.id] ? C.lime : C.mutedStrong}
+                      name={item.saved ? 'bookmark-check' : 'bookmark'}
+                      color={item.saved ? C.lime : C.mutedStrong}
                       size={16}
                     />
                   </Pressable>
                 </View>
-                <Text style={s.itemTitle} numberOfLines={2}>{item.title}</Text>
+                <Text style={s.itemTitle} numberOfLines={2}>
+                  {item.title}
+                </Text>
                 <Text style={s.location}>{item.pickup_area || `${item.city}, ${item.state}`}</Text>
                 {item.best_by_note ? <Text style={s.bestBy}>{item.best_by_note}</Text> : null}
+                <Text style={s.status}>{FOOD_RESCUE_STATUS_LABEL[item.memberStatus].toUpperCase()}</Text>
               </View>
             </Pressable>
           );
@@ -147,7 +173,14 @@ export default function FoodRescueBrowseScreen() {
 
 const s = {
   page: { paddingHorizontal: L.mobileGutter, paddingBottom: 40 },
-  intro: { color: C.mutedStrong, fontSize: 12, lineHeight: 18, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.borderStrong },
+  intro: {
+    color: C.mutedStrong,
+    fontSize: 12,
+    lineHeight: 18,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: C.borderStrong,
+  },
   searchRow: {
     height: 46,
     borderWidth: 1,
@@ -160,24 +193,64 @@ const s = {
     marginTop: 14,
   },
   input: { flex: 1, color: C.white, fontSize: 11, paddingVertical: 0 },
+  filters: { flexDirection: 'row' as const, gap: 8, marginTop: 10, flexWrap: 'wrap' as const },
+  filterChip: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: C.borderStrong,
+    paddingHorizontal: 10,
+    minHeight: 36,
+  },
+  filterChipOn: { backgroundColor: C.lime, borderColor: C.lime },
+  filterText: { color: C.mutedStrong, fontFamily: F.extraBold, fontSize: 8, letterSpacing: 0.6 },
+  filterTextOn: { color: C.black },
   resultsHead: { paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: C.border, marginTop: 10 },
   results: { color: C.white, fontFamily: F.extraBold, fontSize: 10, letterSpacing: 0.8 },
   error: { color: C.danger, fontSize: 10, paddingVertical: 12 },
   empty: { paddingVertical: 34, alignItems: 'flex-start' as const },
   emptyTitle: { color: C.white, fontFamily: F.black, fontSize: 19, marginTop: 10 },
   emptyBody: { color: C.muted, fontSize: 10, lineHeight: 16, marginTop: 5, maxWidth: 320 },
-  card: { flexDirection: 'row' as const, gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: C.border },
-  media: { width: 72, height: 72, backgroundColor: '#0A0C0A', borderWidth: 1, borderColor: C.borderStrong, overflow: 'hidden' as const },
+  card: {
+    flexDirection: 'row' as const,
+    gap: 12,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+  },
+  media: {
+    width: 72,
+    height: 72,
+    backgroundColor: '#0A0C0A',
+    borderWidth: 1,
+    borderColor: C.borderStrong,
+    overflow: 'hidden' as const,
+  },
   photo: { width: '100%' as const, height: '100%' as const },
   noPhoto: { flex: 1, alignItems: 'center' as const, justifyContent: 'center' as const },
   cardBody: { flex: 1, minWidth: 0 },
-  topline: { flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'space-between' as const, gap: 8 },
+  topline: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    gap: 8,
+  },
   closesText: { color: C.lime, fontFamily: F.extraBold, fontSize: 10 },
   closesUrgent: { color: '#FF8A6B' },
   itemTitle: { color: C.white, fontFamily: F.extraBold, fontSize: 13, lineHeight: 16, marginTop: 5 },
   location: { color: C.mutedStrong, fontSize: 9, marginTop: 5 },
   bestBy: { color: C.muted, fontSize: 8, marginTop: 4, fontStyle: 'italic' as const },
-  safety: { borderWidth: 1, borderColor: '#526F2B', backgroundColor: '#0F150B', padding: 13, flexDirection: 'row' as const, gap: 10, marginTop: 18 },
+  status: { color: C.muted, fontFamily: F.extraBold, fontSize: 7, letterSpacing: 0.7, marginTop: 6 },
+  safety: {
+    borderWidth: 1,
+    borderColor: '#526F2B',
+    backgroundColor: '#0F150B',
+    padding: 13,
+    flexDirection: 'row' as const,
+    gap: 10,
+    marginTop: 18,
+  },
   safetyTitle: { color: C.lime, fontFamily: F.extraBold, fontSize: 7, letterSpacing: 0.9 },
   safetyBody: { color: C.mutedStrong, fontSize: 9, lineHeight: 14, marginTop: 5 },
 };

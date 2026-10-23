@@ -21,17 +21,30 @@ test('food rescue browse and item routes are first-class', () => {
   const browse = read('src/app/food-rescue/browse.tsx');
   const item = read('src/app/food-rescue/item/[id].tsx');
   const donate = read('src/app/food-rescue/donate.tsx');
+  const service = read('src/core/food-rescue/food-rescue-service.ts');
 
   assert.match(browse, /eyebrow="FOOD RESCUE"/);
   assert.match(browse, /foodRescueItemRoute/);
+  assert.match(browse, /browseFoodRescue/);
+  assert.match(browse, /CLOSING SOON/);
+  assert.match(browse, /SAVED/);
   assert.doesNotMatch(browse, /backTo="\/marketplace"/);
   assert.doesNotMatch(browse, /\/market-item\//);
 
-  assert.match(item, /Standalone Food Rescue detail in progress/);
+  assert.match(item, /REQUEST PICKUP/);
+  assert.match(item, /reserveFoodRescueListing/);
+  assert.match(item, /foodRescueClaimRoute/);
+  assert.doesNotMatch(item, /CONTINUE TO CLAIM/);
+  assert.doesNotMatch(item, /\/market-item\//);
   assert.match(nav, /food-rescue\/item/);
 
   assert.match(donate, /Donate surplus food/);
-  assert.match(donate, /Show in Food Rescue/);
+  assert.match(donate, /publishFoodRescueDonation/);
+  assert.match(donate, /BEST-BY/);
+  assert.doesNotMatch(donate, /Show in Food Rescue/);
+
+  assert.match(service, /requestMarketplaceClaim/);
+  assert.match(service, /foodRescueOnly: true/);
 });
 
 test('food rescue UX is more than a marketplace filter banner', () => {
