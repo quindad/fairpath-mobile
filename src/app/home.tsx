@@ -94,9 +94,7 @@ export default function Home() {
         <Text style={s.greeting}>
           {greetingName ? `Hello, ${greetingName}` : 'Welcome to FairPath'}
         </Text>
-        {contextLine ? <Text style={s.context}>{contextLine}</Text> : null}
-
-        <HomeStatus />
+        {contextLine ? <Text style={s.context} numberOfLines={2}>{contextLine}</Text> : null}
 
         <View style={s.search}>
           <Lucide name="search" color={C.lime} size={18} />
@@ -115,6 +113,8 @@ export default function Home() {
             </Pressable>
           ) : null}
         </View>
+
+        <HomeStatus />
 
         {readiness != null && readiness < 100 ? (
           <Pressable
@@ -148,8 +148,8 @@ export default function Home() {
         ) : null}
         {jobsState==='ready' && featured.length === 0 ? (
           <View style={s.emptyBox}>
-            <Text style={s.emptyTitle}>NO OPEN JOBS RIGHT NOW</Text>
-            <Text style={s.muted}>Browse resources and Record Relief while listings grow in your area.</Text>
+            <Text style={s.emptyTitle}>No open jobs right now</Text>
+            <Text style={s.muted}>Try Explore for housing, community, and record relief while listings grow.</Text>
             <Pressable accessibilityRole="button" style={s.retryBtn} onPress={() => router.push('/explore' as never)}>
               <Text style={s.retryText}>Open Explore</Text>
             </Pressable>
@@ -207,30 +207,27 @@ export default function Home() {
           })}
         </View>
 
-        <View style={s.quickRow}>
+        <View style={s.shortcuts}>
           <Pressable accessibilityRole="button" onPress={() => router.push('/my-path' as never)}>
             <Text style={s.quickLink}>My Path</Text>
           </Pressable>
-          <Text style={s.quickDot}>·</Text>
           <Pressable accessibilityRole="button" onPress={() => router.push('/job-applications' as never)}>
             <Text style={s.quickLink}>
               Applications{jobAppCount > 0 ? ` (${jobAppCount})` : ''}
             </Text>
           </Pressable>
-          <Text style={s.quickDot}>·</Text>
           <Pressable accessibilityRole="button" onPress={() => router.push('/saved-jobs' as never)}>
             <Text style={s.quickLink}>
-              Saved{savedJobCount > 0 ? ` (${savedJobCount})` : ''}
+              Saved jobs{savedJobCount > 0 ? ` (${savedJobCount})` : ''}
             </Text>
           </Pressable>
-          <Text style={s.quickDot}>·</Text>
           <Pressable accessibilityRole="button" onPress={() => router.push('/fairpath-ai' as never)}>
             <Text style={s.quickLink}>Signal</Text>
           </Pressable>
         </View>
 
         <Pressable accessibilityRole="button" style={s.exploreCta} onPress={() => router.push('/explore' as never)}>
-          <Text style={s.exploreText}>Explore jobs, housing, community, and more</Text>
+          <Text style={s.exploreText}>Browse all of FairPath in Explore</Text>
           <Lucide name="arrow-right" color={C.lime} size={18} />
         </Pressable>
       </FormScrollView>
@@ -240,8 +237,8 @@ export default function Home() {
 
 const s = StyleSheet.create({
   scroll: { flex: 1 },
-  content: { paddingHorizontal: L.mobileGutter, paddingTop: 8, paddingBottom: 32 },
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
+  content: { paddingHorizontal: L.mobileGutter, paddingTop: 8, paddingBottom: 36 },
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   bell: {
     width: 44,
     height: 44,
@@ -265,11 +262,11 @@ const s = StyleSheet.create({
     borderRadius: 9,
   },
   bellBadgeText: { color: C.black, fontFamily: F.extraBold, fontSize: 10 },
-  greeting: { color: C.white, fontFamily: F.extraBold, fontSize: 26, lineHeight: 30, letterSpacing: -0.5 },
-  context: { color: C.mutedStrong, fontFamily: F.medium, fontSize: 13, lineHeight: 18, marginTop: 6 },
+  greeting: { color: C.white, fontFamily: F.extraBold, fontSize: 24, lineHeight: 28, letterSpacing: -0.5 },
+  context: { color: C.mutedStrong, fontFamily: F.medium, fontSize: 12, lineHeight: 17, marginTop: 4, marginBottom: 2 },
   search: {
     minHeight: 48,
-    marginTop: 20,
+    marginTop: 14,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: C.borderStrong,
@@ -294,7 +291,7 @@ const s = StyleSheet.create({
   },
   readinessText: { color: C.mutedStrong, fontFamily: F.semiBold, fontSize: 13 },
   readinessLink: { color: C.lime, fontFamily: F.extraBold, fontSize: 13 },
-  sectionHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 28, marginBottom: 12 },
+  sectionHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 22, marginBottom: 10 },
   sectionTitle: { color: C.white, fontFamily: F.extraBold, fontSize: 17 },
   sectionLink: { color: C.lime, fontFamily: F.semiBold, fontSize: 14 },
   muted: { color: C.mutedStrong, fontSize: 13, lineHeight: 19 },
@@ -334,11 +331,19 @@ const s = StyleSheet.create({
     backgroundColor: C.black,
   },
   saveBtnOn: { backgroundColor: C.lime, borderColor: C.lime },
-  quickRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6, marginTop: 24 },
-  quickLink: { color: C.mutedStrong, fontFamily: F.semiBold, fontSize: 13 },
-  quickDot: { color: C.muted, fontSize: 13 },
+  shortcuts: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 20 },
+  quickLink: {
+    color: C.mutedStrong,
+    fontFamily: F.semiBold,
+    fontSize: 13,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: C.borderStrong,
+    backgroundColor: '#0A0C0A',
+  },
   exploreCta: {
-    marginTop: 20,
+    marginTop: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

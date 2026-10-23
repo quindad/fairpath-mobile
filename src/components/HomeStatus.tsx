@@ -95,18 +95,14 @@ export function HomeStatus() {
         <Lucide name="chevron-right" color="#A8F32C" size={22} />
       </Pressable>
       <Pressable accessibilityRole="button" onPress={() => router.push('/my-path' as never)}>
-        <Text style={s.more}>View My Path</Text>
+        <Text style={s.more}>All steps on My Path</Text>
       </Pressable>
     </View>
   );
 }
 
-function LucidePlaceholder() {
-  return <Text style={{ color: '#A8F32C', fontSize: 20 }}>→</Text>;
-}
-
 const styles = (t: ThemeTokens) => ({
-  wrap: { marginTop: 16, gap: 8 },
+  wrap: { marginTop: 14, gap: 6 },
   card: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
