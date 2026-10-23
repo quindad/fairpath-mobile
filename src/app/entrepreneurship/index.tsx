@@ -27,6 +27,11 @@ import {
   type AcademyNextAction,
 } from '@/core/academy/workspace-store';
 import { router } from 'expo-router';
+import { attemptAcademyCloudBackup } from '@/core/academy/academy-cloud-sync';
+import {
+  academyPersistenceStatusLine,
+  getLastAcademySyncAttempt,
+} from '@/core/academy/cloud-persistence';
 
 const IDEA_AUTOSAVE_MS = 450;
 
@@ -44,6 +49,7 @@ export default function EntrepreneurshipHomeScreen() {
   const [feedbackRequested, setFeedbackRequested] = useState(false);
   const [nextActions, setNextActions] = useState<AcademyNextAction[]>([]);
   const [ideaSaveNote, setIdeaSaveNote] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [syncLine, setSyncLine] = useState<string>(() => academyPersistenceStatusLine());
   const ideaTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const exerciseRef = useRef(exerciseProgress);
   exerciseRef.current = exerciseProgress;
@@ -68,6 +74,9 @@ export default function EntrepreneurshipHomeScreen() {
       .catch(() => {
         if (alive) setLoad('error');
       });
+    void attemptAcademyCloudBackup(AsyncStorage).then((attempt) => {
+      if (alive) setSyncLine(academyPersistenceStatusLine(attempt.state));
+    });
     return () => {
       alive = false;
     };
@@ -130,6 +139,7 @@ export default function EntrepreneurshipHomeScreen() {
         <View style={s.banner}>
           <Text style={s.bannerTitle}>Build at your own pace</Text>
           <Text style={s.body}>{ACADEMY_HONESTY_BANNER}</Text>
+          <Text style={s.meta}>{syncLine || academyPersistenceStatusLine(getLastAcademySyncAttempt().state)}</Text>
         </View>
 
         {load === 'loading' ? (

@@ -24,8 +24,8 @@ import {
   persistExerciseToggle,
   type LessonExerciseProgress,
 } from '@/core/academy/lesson-progress-store';
-import { academyPersistenceStatusLine } from '@/core/academy/cloud-persistence';
-import { academySignalWorksheetPrompt, signalWorksheetConsentLine } from '@/core/academy/signal-worksheet';
+import { academyPersistenceStatusLine, getLastAcademySyncAttempt } from '@/core/academy/cloud-persistence';
+import { AcademyLessonSignalWorksheet } from '@/components/academy/AcademyLessonSignalWorksheet';
 import { ENTREPRENEURSHIP_STORAGE_KEY, parseProgress, persistStepCompletion } from '@/core/entrepreneurship/progress-store';
 import { type TrackProgress, type TrackStep } from '@/core/entrepreneurship/tracks';
 
@@ -123,7 +123,7 @@ export default function AcademyLessonScreen() {
         <View style={s.banner}>
           <Text style={s.bannerTitle}>On this device only</Text>
           <Text style={s.body}>{ACADEMY_HONESTY_BANNER}</Text>
-          <Text style={s.meta}>{academyPersistenceStatusLine()}</Text>
+          <Text style={s.meta}>{academyPersistenceStatusLine(getLastAcademySyncAttempt().state)}</Text>
         </View>
 
         {load === 'loading' ? <Text style={s.body}>Loading your progress…</Text> : null}
@@ -150,21 +150,14 @@ export default function AcademyLessonScreen() {
               <>
                 <Text style={s.section}>Read</Text>
                 <Text style={s.body}>{content.read}</Text>
-                <Text style={s.section}>Reflect</Text>
-                <Text style={s.body}>{content.reflectPrompt}</Text>
-                <Text style={s.meta}>{signalWorksheetConsentLine()}</Text>
-                <Pressable
-                  style={s.secondary}
-                  accessibilityRole="button"
-                  accessibilityLabel="Open Signal worksheet for this lesson"
-                  onPress={() =>
-                    router.push(
-                      (`/fairpath-ai?q=${encodeURIComponent(academySignalWorksheetPrompt(lesson.title, content.reflectPrompt))}`) as never,
-                    )
-                  }
-                >
-                  <Text style={s.secondaryText}>Open Signal worksheet</Text>
-                </Pressable>
+                {isTrackStepId(lesson.id) ? (
+                  <AcademyLessonSignalWorksheet
+                    stepId={lesson.id}
+                    lessonTitle={lesson.title}
+                    reflectPrompt={content.reflectPrompt}
+                    trackProgress={progress}
+                  />
+                ) : null}
                 <Text style={s.section}>Exercises</Text>
                 <Text style={s.meta}>Check each item when you have done the work. Required items must be checked before you can mark this lesson complete.</Text>
                 {content.exercises.map((ex) => {
