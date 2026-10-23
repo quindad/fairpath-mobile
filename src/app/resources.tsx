@@ -51,7 +51,7 @@ export default function ResourcesScreen() {
   const [error, setError] = useState('');
   const [zipHint, setZipHint] = useState('');
   const requestId = useRef(0);
-  const params = useLocalSearchParams<{ q?: string; urgent?: string }>();
+  const params = useLocalSearchParams<{ q?: string; urgent?: string; category?: string }>();
   const autoRan = useRef(false);
   const [situation, setSituation] = useState('');
   const [guidance, setGuidance] = useState('');
@@ -180,16 +180,26 @@ export default function ResourcesScreen() {
     setLoading(false);
   }
 
-  // Deep links from the assistant / notifications: /resources?q=food&urgent=1 runs that search once.
+  // Deep links: /resources?q=food&urgent=1 or /resources?category=benefits runs that search once.
   useEffect(() => {
-    if (autoRan.current || (!params.q && params.urgent !== '1')) return;
+    if (autoRan.current) return;
+    const category = (params.category ?? '').trim().slice(0, 64);
+    if (category) {
+      autoRan.current = true;
+      setDraftQuery('');
+      const next: Search = { ...search, query: '', category, urgent: false };
+      setSearch(next);
+      void run(next);
+      return;
+    }
+    if (!params.q && params.urgent !== '1') return;
     autoRan.current = true;
     const query = (params.q ?? '').slice(0, 120);
     setDraftQuery(query);
     const next: Search = { ...search, query, urgent: params.urgent === '1' };
     setSearch(next);
     void run(next);
-  }, [params.q, params.urgent]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [params.q, params.urgent, params.category]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const activeCategory = search.category ? categoryLabels[search.category] ?? search.category : null;
   const headline = search.urgent ? 'Help today' : activeCategory ?? (search.query ? `“${search.query}”` : 'All resources');

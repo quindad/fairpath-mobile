@@ -45,4 +45,37 @@ describe('V1 opportunity pathways', () => {
     }
     assert.throws(() => v1PathwayById('neighbor_network' as never));
   });
+
+  it('uses dedicated primary routes (not help-now or bare resources)', () => {
+    for (const p of V1_PATHWAYS) {
+      assert.ok(!p.primaryRoute.includes('help-now'), p.id);
+      assert.notEqual(p.primaryRoute, '/resources', p.id);
+    }
+  });
+
+  it('primary route per approved pathway', () => {
+    const expected: Record<string, string> = {
+      skills_exchange: '/academy',
+      microbusiness: '/entrepreneurship',
+      education_scholarships: '/opportunities',
+      family_center: '/resources?category=family',
+      events_volunteering: '/community/can-help',
+      benefits_navigator: '/resources?category=benefits',
+      health_wellness: '/resources?category=health_wellness',
+      mentorship: '/opportunities',
+      transportation: '/resources?category=transportation',
+      community_drives: '/community',
+    };
+    for (const p of V1_PATHWAYS) {
+      assert.equal(p.primaryRoute, expected[p.id], p.id);
+    }
+  });
+
+  it('resolveGrowthDiscovery uses pathway primary routes for direct keys', () => {
+    assert.equal(resolveGrowthDiscovery('mentorship').route, '/opportunities');
+    assert.equal(resolveGrowthDiscovery('transportation').route, '/resources?category=transportation');
+    assert.equal(resolveGrowthDiscovery('community_drives').route, '/community');
+    assert.equal(resolveGrowthDiscovery('skills_exchange').route, '/academy');
+    assert.equal(resolveGrowthDiscovery('microbusiness').route, '/entrepreneurship');
+  });
 });
