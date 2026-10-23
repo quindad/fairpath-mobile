@@ -41,6 +41,11 @@ export default function JobDetail(){
   return()=>{active=false};
  },[id]));
 
+ function signInWithJobReturnTo() {
+  if (!job) return;
+  router.push(('/sign-in?returnTo=' + encodeURIComponent('/job/'+job.id)) as never);
+ }
+
  async function save(){
   if(!job)return;
   if(!(await requireMemberAccess('/job/'+job.id,'save')))return;
@@ -62,7 +67,7 @@ export default function JobDetail(){
    if(r.status==='ok')setFitText(r.text);
    else if(r.status==='out_of_credits')setFitText('You are out of Signal credits for now. They refresh with your plan.');
    else if(r.status==='rate_limited')setFitText('Signal is busy across FairPath right now. Try again shortly.');
-   else if(r.status==='signed_out'){await requireMemberAccess('/job/'+job.id,'member_feature');return}
+   else if(r.status==='signed_out'){signInWithJobReturnTo();return}
    else setFitText(r.message);
   }catch{
    setFitText('Signal could not explain this job right now. Please try again.');
@@ -80,7 +85,7 @@ export default function JobDetail(){
    if(r.status==='ok')setCoverText(r.text);
    else if(r.status==='out_of_credits')setCoverText('You are out of Signal credits for now. They refresh with your plan.');
    else if(r.status==='rate_limited')setCoverText('Signal is busy across FairPath right now. Try again shortly.');
-   else if(r.status==='signed_out'){await requireMemberAccess('/job/'+job.id,'member_feature');return}
+   else if(r.status==='signed_out'){signInWithJobReturnTo();return}
    else setCoverText(r.message);
   }catch{
    setCoverText('Signal could not draft a cover letter right now. Please try again.');

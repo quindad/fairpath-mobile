@@ -85,9 +85,6 @@ export default function FindJobs(){
    void syncJobBrowsePlan({query,location:where,resultCount:r.total}).catch(()=>{});
   }catch(e){
    if(mine!==requestId.current)return;
-   // A failed search must never leave a PRIOR successful search's results on screen next to the error: that
-   // reads as "these are today's results" when they are stale. Error state replaces result state, it never
-   // stacks on top of it.
    setJobs([]);setTotal(0);setSecondCount(0);setVeteranCount(0);setHasMore(false);
    if(e instanceof RpcNotDeployedError){
     setSearchRpcMissing(true);

@@ -41,6 +41,11 @@ export default function HousingDetail(){
   return()=>{active=false};
  },[id]));
 
+ function signInWithHousingReturnTo() {
+  if (!item) return;
+  router.push(('/sign-in?returnTo=' + encodeURIComponent('/housing/'+item.id)) as never);
+ }
+
  async function toggleSave(){
   if(!item)return;
   if(!(await requireMemberAccess('/housing/'+item.id,'save')))return;
@@ -75,7 +80,7 @@ export default function HousingDetail(){
    if(r.status==='ok')setFitText(r.text);
    else if(r.status==='out_of_credits')setFitText('You are out of Signal credits for now. They refresh with your plan.');
    else if(r.status==='rate_limited')setFitText('Signal is busy across FairPath right now. Try again shortly.');
-   else if(r.status==='signed_out'){await requireMemberAccess('/housing/'+item.id,'member_feature');return}
+   else if(r.status==='signed_out'){signInWithHousingReturnTo();return}
    else setFitText(r.message);
   }catch{
    setFitText('Signal could not explain this home right now. Please try again.');

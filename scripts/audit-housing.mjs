@@ -194,8 +194,7 @@ if(!/onOpen=\{onOpen\}/.test(read('src/components/HousingMap.web.tsx')))failures
  // Regression: same fix/finding as Jobs — a failed fresh search must clear homes/total/etc, never leave a prior
  // successful search's results rendered under a fresh error banner.
  const findHousing=read('src/app/find-housing.tsx');
- const runCatch=(findHousing.match(/async function run\(\)\{[\s\S]*?\n \}/)||[''])[0];
- if(!/catch\{[\s\S]*?setHomes\(\[\]\)[\s\S]*?setError\(/.test(runCatch))failures.push('a failed fresh housing search must clear homes/total/etc before setting the error, not leave stale results visible under it');
+ if(!/async function run\(\)\{[\s\S]*catch(?:\([^)]*\))?\{[\s\S]*?setHomes\(\[\]\)[\s\S]*?setError\(/.test(findHousing))failures.push('a failed fresh housing search must clear homes/total/etc before setting the error, not leave stale results visible under it');
 }
 
 if(failures.length){

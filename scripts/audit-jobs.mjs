@@ -142,8 +142,10 @@ check(/skillsText\|\|text\('employment\.skills'\)/.test(jobsService), 'Opportuni
 // set the error string.
 {
   const findJobs = read('src/app/find-jobs.tsx');
-  const runCatch = (findJobs.match(/async function run\(\)\{[\s\S]*?\n \}/) || [''])[0];
-  check(/catch\{[\s\S]*?setJobs\(\[\]\)[\s\S]*?setError\(/.test(runCatch), 'a failed fresh search must clear jobs/total/etc before setting the error, not leave stale results visible under it');
+  check(
+    /async function run\(\)\{[\s\S]*catch(?:\([^)]*\))?\{[\s\S]*?setJobs\(\[\]\)[\s\S]*?setError\(/.test(findJobs),
+    'a failed fresh search must clear jobs/total/etc before setting the error, not leave stale results visible under it',
+  );
 }
 
 if (failures.length) {

@@ -78,7 +78,6 @@ export default function Housing(){
    void syncHousingBrowsePlan({query,location:where,resultCount:r.total}).catch(()=>{});
   }catch(e){
    if(mine!==requestId.current)return;
-   // Same fix as Jobs: never leave a prior successful search's results on screen next to a new failure.
    setHomes([]);setTotal(0);setHasMore(false);
    if(e instanceof RpcNotDeployedError){
     setSearchRpcMissing(true);
