@@ -148,3 +148,12 @@
 ---
 
 *End of handoff â€” update this file at the end of each development batch and commit on `development/mobile-v1-completion`.*
+
+## Independent regression triage — 2026-10-23
+
+- Starting HEAD verified: `720894a`; pre-existing untracked files preserved, no tracked WIP overwritten.
+- Fresh offline `node scripts/run-all-tests.mjs` started; initial TypeScript **PASS**. Complete run output: `%TEMP%\fairpath_full_suite_20261023.log` (the run may still be in progress; do not treat it as a completed release gate until the final count appears).
+- Exact initial failing checks: `audit:canonical-profile` (signup terms state), `audit:seed` (home honest empty state), `audit:housing` (signed-out returnTo + stale search results), `audit:jobs` (signed-out returnTo + stale search results), `audit:keyboard` (Signal footer layout), `audit:auth` (social signup terms gate), `audit:onboarding` (browse route while onboarding incomplete), `audit:community` (pickup next steps), `audit:profile-a11y` (Me tile button labels), `audit:credit` (sample data dev-only gate), `audit:security` (Record Relief console logging), `consent client contract` (signup terms gate).
+- Scoped fix `418dac0`: removed sensitive Edge exception console output from Record Relief; preserved existing throw-on-failure contract. `node scripts/audit-security.mjs` **PASS** after the fix.
+- Remaining failures need actual implementation, not audit weakening. Signup/auth and consent files overlap pre-existing untracked WIP: do not overwrite without ownership reconciliation.
+- No DEV writes, migration application, pushes, deployments, or paid API calls performed.
