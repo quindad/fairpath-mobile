@@ -71,7 +71,7 @@ test('parse drops invalid step ids and unknown exercise ids', () => {
   const parsed = parseLessonExerciseProgress(raw);
   assert.deepEqual(parsed.checkedByStep.choose_idea, ['list_three']);
   assert.deepEqual(parsed.checkedByStep.validate_demand, ['talked']);
-  assert.equal(parsed.checkedByStep.bogus_step, undefined);
+  assert.equal(Object.hasOwn(parsed.checkedByStep, 'bogus_step'), false);
 });
 
 test('persistExerciseToggle keeps prior state when storage fails', async () => {

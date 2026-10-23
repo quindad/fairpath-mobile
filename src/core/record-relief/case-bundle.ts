@@ -51,27 +51,27 @@ export type EngineChargePayloadRow = {
 export function additionalChargesFromSavePayload(p: Record<string, unknown>): ReliefAdditionalCharge[] {
   const raw = p.engine_additional_charges;
   if (!Array.isArray(raw)) return [];
-  return raw
-    .map((row, i) => {
-      if (!row || typeof row !== 'object') return null;
-      const r = row as EngineChargePayloadRow;
-      const offense = String(r.offense_name ?? '').trim();
-      if (offense.length < 2) return null;
-      return {
-        id: String(r.id ?? `extra-${i + 1}`),
-        offense_name: offense,
-        offense_class: r.offense_class,
-        disposition: String(r.disposition ?? 'conviction'),
-        conviction_date: r.conviction_date ?? null,
-        disposition_date: r.disposition_date ?? null,
-        sentence_completion_date: r.sentence_completion_date ?? null,
-        supervision_completion_date: r.supervision_completion_date ?? null,
-        release_date: r.release_date ?? null,
-        fines_paid: r.fines_paid ?? null,
-        restitution_paid: r.restitution_paid ?? null,
-      } satisfies ReliefAdditionalCharge;
-    })
-    .filter((x): x is ReliefAdditionalCharge => x !== null);
+  const out: ReliefAdditionalCharge[] = [];
+  raw.forEach((row, i) => {
+    if (!row || typeof row !== 'object') return;
+    const r = row as EngineChargePayloadRow;
+    const offense = String(r.offense_name ?? '').trim();
+    if (offense.length < 2) return;
+    out.push({
+      id: String(r.id ?? `extra-${i + 1}`),
+      offense_name: offense,
+      offense_class: r.offense_class,
+      disposition: String(r.disposition ?? 'conviction'),
+      conviction_date: r.conviction_date ?? null,
+      disposition_date: r.disposition_date ?? null,
+      sentence_completion_date: r.sentence_completion_date ?? null,
+      supervision_completion_date: r.supervision_completion_date ?? null,
+      release_date: r.release_date ?? null,
+      fines_paid: r.fines_paid ?? null,
+      restitution_paid: r.restitution_paid ?? null,
+    });
+  });
+  return out;
 }
 
 export function degreeFromOffenseClass(offenseClass: string): ChargeDegree {
