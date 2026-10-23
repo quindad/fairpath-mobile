@@ -8,8 +8,8 @@
 
 | Capability | Available | Notes |
 |------------|-----------|--------|
-| Cursor **Task** subagents | Yes | Two explore agents ran 2026-10-23: Record Relief trace, Explore P0-001 inventory |
-| **best-of-n-runner** worktrees | Yes | Use for isolated vertical slices; not started this turn |
+| Cursor **Task** subagents | Yes | Agents C,D,G,H + F,J,K,L launched 2026-10-23 (Task IDs in session checkpoint) |
+| **best-of-n-runner** worktrees | Yes | Isolated branches merged via cherry-pick/FF onto integration |
 | Background agents | Session-limited | No separate “8 agents” unless Task/worktree spawned |
 | Push / deploy / migrations apply | **No** (release boundary) | Local commits only |
 
@@ -32,12 +32,14 @@
 |----|---------|-------|---|--------|----------------|
 | P0-002 | Onboarding justice/veteran Yes/No | B | P0 | COMMITTED | `01b6755` — Neither→No; vet in profile_answers |
 | P0-003 | Canonical visibility | B | P0 | IN PROGRESS | Gates on Explore/Me/Home/Signal/RR/Veterans; **notifications TBD** |
-| P0-004 | DEV account matrix | H | P0 | TODO | Script not run; iPhone **NOT TESTED** |
-| P0-001 | Explore honest readiness | D | P0 | IN PROGRESS | `explore-readiness.ts` + Explore UI wiring (this session) |
-| PATH-101 | Grow → primaryRoute | D | P1 | IN PROGRESS | `/grow` cards use `primaryRoute` (this session) |
-| P0-005–007 | Record Relief E2E | C | P0 | BLOCKED partial | Local SQL 17/17; **dual eval + coverage mismatch** — see subagent trace |
-| RR-P0-1 | Single eval authority on save | C | P0 | TODO | Needs approved migration |
-| SIG-101+ | Signal integration | E | P1 | PARTIAL | `c7a0b54`; streaming N/A |
+| P0-004 | DEV account matrix | H | P0 | HARNESS | `df9c3c5` scripts + matrix tests; DEV run **BLOCKED** without `--confirm-dev` |
+| P0-001 | Explore honest readiness | D | P0 | PARTIAL | `e194679` + `324d645` |
+| PATH-101 | Ten pathway primaries | D/K | P1 | PARTIAL | `6e22f7c` + audit script |
+| P0-005–007 | Record Relief E2E | C | P0 | PARTIAL | `671cd68` client parity tests; DEF-RR-001 RPC still open |
+| START-101 | Academy F-1 routes | F | P1 | PARTIAL | `4502213` |
+| GIVE-101 | Can-help hub | G | P1 | PARTIAL | `9307f78` + `2167d81` open-requests |
+| JOB-101 / HOUSE-101 | DEV smoke | J | P1 | HARNESS | `6053593` local PASS, DEV BLOCKED |
+| SIG-101 | Signal DEV smoke | L | P1 | HARNESS | `dc40090` |
 
 ## P0 defects register (living)
 
