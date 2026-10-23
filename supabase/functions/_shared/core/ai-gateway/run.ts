@@ -4,9 +4,30 @@
 // and run the safety guard on whatever comes back. Callers only build the prompt and the adapter.
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { json } from '../../http.ts';
-import { runWorkflow, type Adapter, type Capability, type Hop, type AdapterInput, type WorkflowId } from './gateway.ts';
+import { runWorkflow, redactForTelemetry, type Adapter, type Capability, type Hop, type AdapterInput, type WorkflowId, type RunResult, type TelemetryEvent } from './gateway.ts';
 import { WORKFLOW_SPECS } from './specs.ts';
 import { guardOutput, fallbackTextFor } from './policy.ts';
+import { edgeProviderHealth } from './provider-health.ts';
+import { signalWorkflowTimeoutMs } from './provider-http.ts';
+import { requireEnv } from '../../http.ts';
+
+async function runWorkflowWithTimeout(args: Parameters<typeof runWorkflow>[0]): Promise<RunResult> {
+  const ms = signalWorkflowTimeoutMs();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const bound = new Promise<RunResult>((resolve, reject) => {
+    timer = setTimeout(() => reject({ kind: 'timeout' }), ms);
+    runWorkflow(args).then(resolve, reject);
+  });
+  try {
+    return await bound;
+  } catch (e) {
+    const failure = e as { kind?: string };
+    if (failure.kind === 'timeout') return { ok: false, reason: 'exhausted' };
+    throw e;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 
 export type SignalCallArgs = {
   userClient: SupabaseClient;
@@ -31,14 +52,19 @@ export async function runSignalCall(args: SignalCallArgs): Promise<Response> {
   }
   const balance = (spend as { balance?: number } | null)?.balance ?? null;
 
-  const result = await runWorkflow({
+  const telemetry: TelemetryEvent[] = [];
+  const result = await runWorkflowWithTimeout({
     workflow: args.workflow,
     input: args.input,
     adapters: args.adapters,
     chainOverride: args.chain,
     capabilities: args.capabilities,
-    record: () => {},
+    health: { tracker: edgeProviderHealth, now: () => Date.now() },
+    record: (e) => telemetry.push(e),
   });
+  if (requireEnv('SIGNAL_TELEMETRY_LOG') === '1') {
+    for (const e of telemetry) console.log(JSON.stringify(redactForTelemetry(e as unknown as Record<string, unknown>)));
+  }
 
   if (!result.ok) return json(200, { text: fallbackTextFor(spec.kind), modelAssisted: false, balance });
 

@@ -31,6 +31,8 @@ const steps = [
   ['community status copy', NODE, ['--test', '--experimental-strip-types', 'tests/community-status-copy.test.ts']],
   ['screen scroll contract', NODE, ['--test', '--experimental-strip-types', 'tests/screen-scroll-contract.test.ts']],
   ['signal UI contract', NODE, ['--test', '--experimental-strip-types', 'tests/signal-ui-contract.test.ts']],
+  ['signal orchestrator', NODE, ['--test', '--experimental-strip-types', 'tests/signal-orchestrator.test.ts']],
+  ['signal eval suite', NODE, ['--test', '--experimental-strip-types', 'tests/signal-eval.test.ts']],
   ['opportunity intent parser', NODE, ['--test', '--experimental-strip-types', 'tests/opportunity-intent-parser.test.ts']],
   ['opportunity orchestrator helpers', NODE, ['--test', '--experimental-strip-types', 'tests/opportunity-orchestrator.test.ts']],
   ['V1 opportunity pathways', NODE, ['--test', '--experimental-strip-types', 'tests/v1-pathways.test.ts']],

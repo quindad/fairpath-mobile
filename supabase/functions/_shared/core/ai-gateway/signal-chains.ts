@@ -1,13 +1,20 @@
 // Multi-provider Signal chains (Anthropic, OpenAI, Google). Keys live in Edge Function secrets only.
 import { requireEnv } from '../../http.ts';
-import type { Adapter, Capability, Hop, ProviderId } from './gateway.ts';
+import type { Adapter, AdapterInput, Capability, Hop, ProviderId } from './gateway.ts';
+import { fetchWithSignalTimeout, signalMaxOutputTokens } from './provider-http.ts';
+
+function maxTokens(input: AdapterInput): number {
+  const n = input.maxTokens;
+  if (typeof n === 'number' && n >= 64 && n <= 4096) return n;
+  return signalMaxOutputTokens();
+}
 
 function anthropicTextAdapter(apiKey: string): Adapter {
   return async ({ model, input }) => {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetchWithSignalTimeout('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model, max_tokens: 600, system: input.system, messages: [{ role: 'user', content: input.user ?? '' }] }),
+      body: JSON.stringify({ model, max_tokens: maxTokens(input), system: input.system, messages: [{ role: 'user', content: input.user ?? '' }] }),
     });
     if (!res.ok) throw { kind: 'http', status: res.status };
     const out = await res.json() as { content?: { type: string; text?: string }[]; usage?: { input_tokens: number; output_tokens: number } };
@@ -17,7 +24,7 @@ function anthropicTextAdapter(apiKey: string): Adapter {
   };
 }
 
-export type ChainTier = 'fast' | 'quality' | 'vision';
+export type ChainTier = 'fast' | 'fast_justice' | 'quality' | 'vision';
 
 function modelFor(provider: ProviderId, fallback: string): string {
   const named = requireEnv(`SIGNAL_MODEL_${provider.toUpperCase()}`);
@@ -30,12 +37,12 @@ function modelFor(provider: ProviderId, fallback: string): string {
 function openaiTextAdapter(apiKey: string): Adapter {
   return async ({ model, input }) => {
     const content: unknown[] = [{ type: 'text', text: input.user ?? '' }];
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await fetchWithSignalTimeout('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
         model,
-        max_tokens: 700,
+        max_tokens: maxTokens(input),
         messages: [
           { role: 'system', content: input.system ?? '' },
           { role: 'user', content },
@@ -58,12 +65,12 @@ function openaiVisionAdapter(apiKey: string): Adapter {
       { type: 'text', text: input.user ?? 'Explain this document in plain English.' },
       { type: 'image_url', image_url: { url: `data:${mime};base64,${input.document.base64}` } },
     ];
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await fetchWithSignalTimeout('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
         model,
-        max_tokens: 700,
+        max_tokens: maxTokens(input),
         messages: [
           { role: 'system', content: input.system ?? '' },
           { role: 'user', content: parts },
@@ -81,13 +88,13 @@ function openaiVisionAdapter(apiKey: string): Adapter {
 function googleTextAdapter(apiKey: string): Adapter {
   return async ({ model, input }) => {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-    const res = await fetch(url, {
+    const res = await fetchWithSignalTimeout(url, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         systemInstruction: input.system ? { parts: [{ text: input.system }] } : undefined,
         contents: [{ role: 'user', parts: [{ text: input.user ?? '' }] }],
-        generationConfig: { maxOutputTokens: 700 },
+        generationConfig: { maxOutputTokens: maxTokens(input) },
       }),
     });
     if (!res.ok) throw { kind: 'http', status: res.status };
@@ -103,7 +110,7 @@ function googleVisionAdapter(apiKey: string): Adapter {
     if (!input.document?.base64) throw { kind: 'unsupported_input' };
     const mime = input.document.mime || 'image/jpeg';
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-    const res = await fetch(url, {
+    const res = await fetchWithSignalTimeout(url, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -115,7 +122,7 @@ function googleVisionAdapter(apiKey: string): Adapter {
             { inlineData: { mimeType: mime, data: input.document.base64 } },
           ],
         }],
-        generationConfig: { maxOutputTokens: 700 },
+        generationConfig: { maxOutputTokens: maxTokens(input) },
       }),
     });
     if (!res.ok) throw { kind: 'http', status: res.status };
@@ -128,6 +135,18 @@ function googleVisionAdapter(apiKey: string): Adapter {
 
 function hop(provider: ProviderId, model: string, sensitiveApproved: boolean): Hop {
   return { provider, model, sensitiveApproved };
+}
+
+/** Pick chain tier from input shape and topic (callers may still override explicitly). */
+export function tierForSignalInput(input: AdapterInput): ChainTier {
+  if (input.document?.base64) return 'vision';
+  const user = (input.user ?? '').toLowerCase();
+  if (/\b(expung|seal(ed|ing)?|record relief|conviction|criminal|felony|misdemeanor|jurisdiction|court|waiting period)\b/.test(user)) {
+    return 'fast_justice';
+  }
+  const tier = requireEnv('SIGNAL_DEFAULT_TIER');
+  if (tier === 'quality' || tier === 'fast' || tier === 'fast_justice' || tier === 'vision') return tier;
+  return 'fast';
 }
 
 /** Builds an ordered provider chain + adapters from whichever secrets are configured. */
@@ -174,6 +193,19 @@ export function resolveSignalChain(tier: ChainTier, sensitiveApproved = false): 
     addText('anthropic', anthropicKey, 'claude-sonnet-5');
     addText('openai', openaiKey, 'gpt-4o-mini');
     addText('google', googleKey, 'gemini-2.0-flash');
+    return { chain, adapters, capabilities };
+  }
+
+  // Same providers/models as 'fast', but Anthropic goes first. A hop that returns malformed output never falls
+  // back to the next provider (gateway.ts treats that as permanent, deliberately, so a real bug never gets
+  // silently masked by retrying elsewhere) -- which means whichever provider is tried FIRST effectively decides
+  // whether the call succeeds at all. For criminal-record/record-relief topics specifically, Google's default
+  // content-safety filtering is the most likely of the three to return empty/malformed output on legitimate,
+  // non-harmful content, so workflows about a member's own record relief case put Anthropic first instead.
+  if (tier === 'fast_justice') {
+    addText('anthropic', anthropicKey, 'claude-sonnet-5');
+    addText('google', googleKey, 'gemini-2.0-flash');
+    addText('openai', openaiKey, 'gpt-4o-mini');
     return { chain, adapters, capabilities };
   }
 

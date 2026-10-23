@@ -13,6 +13,15 @@ import { catalogByCategory } from '@/core/ai/signal-catalog';
 import { mergeSignalText, shouldEnrichWithSignal, signalStatusMessage } from '@/core/ai/signal-enrich';
 import { loadAiCreditBalance } from '@/core/ai/ai-credits';
 import { loadSignalSuggestions } from '@/core/signal/signal-suggestions';
+import {
+  deleteConversation,
+  loadActiveConversation,
+  saveActiveConversation,
+  startNewConversation,
+  type ConversationThreadMeta,
+} from '@/core/signal/signal-conversation-store';
+import { detectWriteToolRequest, enrichWithReadTools, loadingMessageForPhase } from '@/core/signal/signal-orchestrator';
+import { looksLikePromptInjection } from '@/core/signal/signal-prompt-guard';
 import { useFairPathTheme, useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
 import { notify } from '@/core/ui/notify';
@@ -31,8 +40,12 @@ export default function FairPathAssistant() {
   const [credits, setCredits] = useState<number | null | undefined>(undefined);
   const [starters, setStarters] = useState<string[]>([]);
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [threadMeta, setThreadMeta] = useState<ConversationThreadMeta | null>(null);
+  const [loadingStatus, setLoadingStatus] = useState<string | undefined>();
+  const [activeTurnId, setActiveTurnId] = useState<number | null>(null);
   const seq = useRef(0);
   const asked = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<import('react-native').ScrollView>(null);
 
   useFocusEffect(
@@ -43,6 +56,12 @@ export default function FairPathAssistant() {
       });
       loadSignalSuggestions().then((x) => {
         if (live) setStarters(x);
+      });
+      loadActiveConversation().then((active) => {
+        if (!live || !active) return;
+        setThreadMeta(active.meta);
+        setTurns(active.turns);
+        seq.current = active.turns.reduce((m, t) => Math.max(m, t.id), 0);
       });
       return () => {
         live = false;
@@ -56,56 +75,161 @@ export default function FairPathAssistant() {
     }
   }, [turns, busy]);
 
+  async function persistThread(nextTurns: Turn[], meta: ConversationThreadMeta) {
+    await saveActiveConversation(meta, nextTurns);
+  }
+
   async function ask(question: string) {
     const t = question.trim();
     if (!t || busy) return;
+
+    const writeTool = detectWriteToolRequest(t);
+    if (writeTool) {
+      notify(
+        writeTool.title,
+        `${writeTool.summary} Open that workflow so you can review everything before anything is submitted.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Open workflow',
+            onPress: () => {
+              if (writeTool.route) router.push(writeTool.route as never);
+            },
+          },
+        ],
+      );
+      return;
+    }
+
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+
     const id = ++seq.current;
     setBusy(true);
+    setActiveTurnId(id);
+    setLoadingStatus(loadingMessageForPhase('routing'));
     setText('');
+
+    let meta = threadMeta;
+    if (!meta) {
+      meta = await startNewConversation(t);
+      setThreadMeta(meta);
+    }
+
     setTurns((cur) => [...cur, { id, user: t, response: null }]);
+
     try {
+      if (looksLikePromptInjection(t)) {
+        const blocked: AiResponse = {
+          intent: 'help',
+          title: 'I stay on FairPath workflows',
+          modelAssisted: false,
+          parts: [
+            {
+              text: 'I cannot change my rules from a message. Ask about jobs, housing, credit, record relief, or your next steps and I will route you to real tools.',
+              basis: 'rule',
+            },
+          ],
+          actions: [{ label: 'What Signal can do', route: '/fairpath-ai', primary: true }],
+          provenance: {
+            task: 'navigation',
+            intent: 'help',
+            engine: 'deterministic_router',
+            route: '/fairpath-ai',
+            sourceRefs: [],
+            ruleVersions: [],
+            officialSources: [],
+            confidence: 'deterministic',
+          },
+        };
+        setTurns((cur) => {
+          const next = cur.map((x) => (x.id === id ? { ...x, response: blocked } : x));
+          void persistThread(next, meta!);
+          return next;
+        });
+        return;
+      }
+
+      setLoadingStatus(loadingMessageForPhase('routing'));
       let response = await answer(t, gateway, { adapter: NO_MODEL, routeHint: item ? { kind: 'credit_item', id: item } : null });
+      if (ac.signal.aborted) return;
+
+      setLoadingStatus(loadingMessageForPhase('tools', planToolHint(response.intent)));
+      const enriched = await enrichWithReadTools(response, t, gateway, ac.signal);
+      response = enriched.response;
+
       if (shouldEnrichWithSignal(response.intent) && (await gateway.signedIn())) {
+        setLoadingStatus(loadingMessageForPhase('enrich'));
         const sig =
           response.intent === 'next_steps' ? await getFocusGuidance() : await getResourceGuidance(t);
+        if (ac.signal.aborted) return;
         if (sig.status === 'ok') response = mergeSignalText(response, sig.text);
         else {
           const note = signalStatusMessage(sig.status);
           if (note) response = { ...response, parts: [...response.parts, { text: note, basis: 'app_state' }] };
         }
       }
-      setTurns((cur) => cur.map((x) => (x.id === id ? { ...x, response } : x)));
+
+      setTurns((cur) => {
+        const next = cur.map((x) => (x.id === id ? { ...x, response } : x));
+        void persistThread(next, meta!);
+        return next;
+      });
       void logInteraction(response.provenance);
-    } catch {
-      setTurns((cur) =>
-        cur.map((x) =>
-          x.id === id
-            ? {
-                ...x,
-                response: {
-                  intent: 'help',
-                  title: 'Something went wrong',
-                  modelAssisted: false,
-                  parts: [{ text: 'Try again in a moment, or open a workflow from the suggestions.', basis: 'app_state' }],
-                  actions: [{ label: 'Explore FairPath', route: '/explore', primary: true }],
-                  provenance: {
-                    task: 'navigation',
-                    intent: 'help',
-                    engine: 'deterministic_router',
-                    route: '/explore',
-                    sourceRefs: [],
-                    ruleVersions: [],
-                    officialSources: [],
-                    confidence: 'unavailable',
-                  },
-                },
-              }
-            : x,
-        ),
-      );
+    } catch (e) {
+      if (ac.signal.aborted) return;
+      const failed: AiResponse = {
+        intent: 'help',
+        title: 'Something went wrong',
+        modelAssisted: false,
+        parts: [{ text: 'Try again in a moment, or open a workflow from the suggestions.', basis: 'app_state' }],
+        actions: [{ label: 'Explore FairPath', route: '/explore', primary: true }],
+        provenance: {
+          task: 'navigation',
+          intent: 'help',
+          engine: 'deterministic_router',
+          route: '/explore',
+          sourceRefs: [],
+          ruleVersions: [],
+          officialSources: [],
+          confidence: 'unavailable',
+        },
+      };
+      setTurns((cur) => {
+        const next = cur.map((x) => (x.id === id ? { ...x, response: failed } : x));
+        void persistThread(next, meta!);
+        return next;
+      });
     } finally {
+      if (abortRef.current === ac) abortRef.current = null;
       setBusy(false);
+      setLoadingStatus(undefined);
+      setActiveTurnId(null);
     }
+  }
+
+  function planToolHint(intent: import('@/core/ai/intents').IntentId): string | undefined {
+    if (intent === 'find_jobs') return 'search_jobs';
+    if (intent === 'find_housing') return 'search_housing';
+    if (intent === 'next_steps') return 'my_path';
+    return undefined;
+  }
+
+  function cancelAsk() {
+    abortRef.current?.abort();
+    setBusy(false);
+    setLoadingStatus(undefined);
+    setActiveTurnId(null);
+  }
+
+  async function newConversation() {
+    abortRef.current?.abort();
+    setBusy(false);
+    setTurns([]);
+    setOpenProv({});
+    const meta = await startNewConversation();
+    setThreadMeta(meta);
   }
 
   useEffect(() => {
@@ -182,7 +306,8 @@ export default function FairPathAssistant() {
                 key={t.id}
                 user={t.user}
                 response={t.response}
-                loading={!t.response}
+                loading={!t.response && activeTurnId === t.id}
+                loadingStatus={!t.response && activeTurnId === t.id ? loadingStatus : undefined}
                 provOpen={Boolean(openProv[t.id])}
                 onToggleProv={() => setOpenProv((o) => ({ ...o, [t.id]: !o[t.id] }))}
                 onAction={(route) => router.push(route as never)}
@@ -203,19 +328,42 @@ export default function FairPathAssistant() {
               onSubmitEditing={() => void ask(text)}
               blurOnSubmit={false}
             />
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Send message"
-              style={[s.send, (busy || text.trim().length < 2) && s.sendDisabled]}
-              disabled={busy || text.trim().length < 2}
-              onPress={() => void ask(text)}
-            >
-              <Lucide name="arrow-up" color={busy || text.trim().length < 2 ? tokens.textMuted : tokens.onAccent} size={20} />
-            </Pressable>
+            {busy ? (
+              <Pressable accessibilityRole="button" accessibilityLabel="Stop" style={s.send} onPress={cancelAsk}>
+                <Lucide name="square" color={tokens.onAccent} size={18} />
+              </Pressable>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Send message"
+                style={[s.send, text.trim().length < 2 && s.sendDisabled]}
+                disabled={text.trim().length < 2}
+                onPress={() => void ask(text)}
+              >
+                <Lucide name="arrow-up" color={text.trim().length < 2 ? tokens.textMuted : tokens.onAccent} size={20} />
+              </Pressable>
+            )}
           </View>
           {turns.length ? (
             <View style={s.footerRow}>
-              <TextButton label="New conversation" onPress={() => { setTurns([]); setOpenProv({}); }} />
+              <TextButton label="New conversation" onPress={() => void newConversation()} />
+              <TextButton
+                label="Delete this chat"
+                onPress={() =>
+                  notify('Delete this conversation?', 'Removes this chat from this device only.', [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Delete',
+                      style: 'destructive',
+                      onPress: () =>
+                        void (async () => {
+                          if (threadMeta) await deleteConversation(threadMeta.id);
+                          await newConversation();
+                        })(),
+                    },
+                  ])
+                }
+              />
               <TextButton label="Clear logged history" onPress={confirmDeleteHistory} />
             </View>
           ) : null}

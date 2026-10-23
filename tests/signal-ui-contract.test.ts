@@ -13,6 +13,9 @@ test('Signal tab uses conversation-first layout', () => {
   assert.match(src, /loadSignalSuggestions/);
   assert.match(src, /Modal visible=\{toolsOpen\}[\s\S]*catalogByCategory/, 'tool catalog lives in tools modal');
   assert.match(src, /Modal visible=\{toolsOpen\}/);
+  assert.match(src, /enrichWithReadTools/);
+  assert.match(src, /loadActiveConversation/);
+  assert.match(src, /cancelAsk/);
 });
 
 test('Signal tool registry defines read/write separation', () => {

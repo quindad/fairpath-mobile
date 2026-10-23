@@ -3,7 +3,7 @@
 **Branch:** `development/mobile-v1-completion`  
 **Metro:** reuse `npx expo start --lan --port 8083` (do not duplicate)  
 **Native iPhone QA:** **NOT TESTED** unless explicitly marked on a task  
-**Last checkpoint:** Day 1 — Signal conversation IA + tool registry foundation
+**Last checkpoint:** Day 1 — Signal gateway hardening + tool orchestration + local chat persistence
 
 ---
 
@@ -12,9 +12,9 @@
 | ID | Area | Classification | Notes |
 |----|------|----------------|-------|
 | RB-001 | Global scroll (122 routes) | IMPLEMENTED BUT UNVERIFIED | Static `audit-scroll` PASS; Expo Go **NOT TESTED** |
-| RB-002 | Signal conversation UX | IN PROGRESS | Conversation-first UI committed; streaming/model routing **partial** |
-| RB-003 | Signal tool orchestration | PARTIALLY IMPLEMENTED | Registry + orchestrator; multi-step agent **not built** |
-| RB-004 | Signal conversation persistence | BLOCKED BY BACKEND | Provenance log only; no full chat history table |
+| RB-002 | Signal conversation UX | IMPLEMENTED BUT UNVERIFIED | Tool enrichment + cancel + phased loading; device QA **NOT TESTED** |
+| RB-003 | Signal tool orchestration | IMPLEMENTED BUT UNVERIFIED | Read tools via RPC/summary; writes confirm-only |
+| RB-004 | Signal conversation persistence | PARTIAL | AsyncStorage threads; server migration **DRAFT only** |
 | RB-005 | Record Relief E2E member | IMPLEMENTED BUT UNVERIFIED | Deterministic engine; device QA **NOT TESTED** |
 | RB-006 | Marketplace claims E2E | IMPLEMENTED BUT UNVERIFIED | RPC-backed; device QA **NOT TESTED** |
 | RB-007 | Ten pathways primary actions | PARTIALLY IMPLEMENTED | Routes exist; per-pathway device QA **NOT TESTED** |
@@ -36,12 +36,12 @@ Statuses: `TODO` · `IN PROGRESS` · `TESTING` · `VERIFIED` · `COMMITTED` · `
 | SIG-002 | P0 | Contextual suggestion chips (goals + next step) | COMMITTED | `loadSignalSuggestions` | `d08d1d2` |
 | SIG-003 | P0 | Typed read/write tool registry | COMMITTED | `signal-ui-contract` | `d08d1d2` |
 | SIG-004 | P1 | Move specialized catalog to modal (not main scroll) | COMMITTED | `signal-ui-contract` | `d08d1d2` |
-| SIG-005 | P1 | Intelligent model routing (server-side) | TODO | `audit-signal-deploy` | — |
-| SIG-006 | P1 | Streaming responses | BLOCKED | No client streaming contract yet | — |
-| SIG-007 | P1 | Conversation history + titles (member-owned) | BLOCKED | No persistence RPC | — |
-| SIG-008 | P1 | Multi-step plan-and-execute with tool limits | TODO | eval suite | — |
-| SIG-009 | P2 | Voice input/output | TODO | device + provider | — |
-| SIG-010 | P2 | Signal eval suite (tool pick, grounding, injection) | TODO | new tests | — |
+| SIG-005 | P1 | Server gateway timeouts, failover health, token caps | COMMITTED | static gateway tests | pending |
+| SIG-006 | P1 | Typed read-tool orchestration (writes confirm-only) | COMMITTED | `signal-orchestrator`, eval | pending |
+| SIG-007 | P1 | Conversation history + titles (member-owned) | PARTIAL | AsyncStorage + SQL DRAFT | pending |
+| SIG-008 | P1 | Cancel + phased loading (streaming N/A on Edge JSON) | COMMITTED | UI contract | pending |
+| SIG-009 | P2 | Jobs/Housing/My Path/Resources/Pathways data tools | COMMITTED | RPC search + summary | pending |
+| SIG-010 | P2 | Signal eval suite (grounding, injection, gateway) | COMMITTED | `signal-eval.test.ts` | pending |
 
 ### Workstream A — Jobs & Housing
 

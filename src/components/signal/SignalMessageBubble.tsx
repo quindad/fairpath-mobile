@@ -17,12 +17,13 @@ type Props = {
   user: string;
   response: AiResponse | null;
   loading: boolean;
+  loadingStatus?: string;
   provOpen: boolean;
   onToggleProv: () => void;
   onAction: (route: string) => void;
 };
 
-export function SignalTurn({ user, response, loading, provOpen, onToggleProv, onAction }: Props) {
+export function SignalTurn({ user, response, loading, loadingStatus, provOpen, onToggleProv, onAction }: Props) {
   const s = useThemedStyles(styles);
   return (
     <View style={s.turn}>
@@ -31,7 +32,7 @@ export function SignalTurn({ user, response, loading, provOpen, onToggleProv, on
       </View>
       {loading ? (
         <View style={s.assistantBubble}>
-          <Text style={s.typing}>Signal is thinking…</Text>
+          <Text style={s.typing}>{loadingStatus ?? 'Signal is thinking…'}</Text>
         </View>
       ) : null}
       {response ? (
