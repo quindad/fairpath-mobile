@@ -33,6 +33,7 @@ const steps = [
   ['signal UI contract', NODE, ['--test', '--experimental-strip-types', 'tests/signal-ui-contract.test.ts']],
   ['signal orchestrator', NODE, ['--test', '--experimental-strip-types', 'tests/signal-orchestrator.test.ts']],
   ['signal eval suite', NODE, ['--test', '--experimental-strip-types', 'tests/signal-eval.test.ts']],
+  ['signal dev smoke contract', NODE, ['--test', '--experimental-strip-types', 'tests/signal-dev-smoke-contract.test.ts']],
   ['member capabilities', NODE, ['--test', '--experimental-strip-types', 'tests/member-capabilities.test.ts']],
   ['member capabilities matrix', NODE, ['--test', '--experimental-strip-types', 'tests/member-capabilities-matrix.test.ts']],
   ['opportunity intent parser', NODE, ['--test', '--experimental-strip-types', 'tests/opportunity-intent-parser.test.ts']],
