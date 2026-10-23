@@ -7,6 +7,7 @@ import { FairPathLogo } from '@/components/FairPathLogo';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame } from '@/components/ProductChrome';
 import { HomeStatus } from '@/components/HomeStatus';
+import { CommunityHelpPanel } from '@/components/CommunityHelpPanel';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { loadFairPathReadiness } from '@/core/profile/profile-service';
 import { homeFocusLine, loadHomePersonalization, type HomePersonalization } from '@/core/profile/home-personalization';
@@ -120,6 +121,8 @@ export default function Home() {
         </View>
 
         <HomeStatus />
+
+        <CommunityHelpPanel />
 
         {readiness != null && readiness < 100 ? (
           <Pressable
