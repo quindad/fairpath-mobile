@@ -1,0 +1,65 @@
+{
+  "generatedAt": "2026-10-23T23:41:50.132Z",
+  "projectRef": "znvhmuhojvwvjzmaqwff",
+  "rows": [
+    {
+      "name": "search_jobs",
+      "missing": false,
+      "status": 200
+    },
+    {
+      "name": "search_housing",
+      "missing": false,
+      "status": 200
+    },
+    {
+      "name": "save_record_relief_case",
+      "missing": false,
+      "status": 401,
+      "code": "42501",
+      "message": "permission denied for function save_record_relief_case"
+    },
+    {
+      "name": "get_record_relief_case_detail",
+      "missing": false,
+      "status": 401,
+      "code": "42501",
+      "message": "permission denied for function get_record_relief_case_detail"
+    },
+    {
+      "name": "member_create_community_help_request",
+      "missing": false,
+      "status": 401,
+      "code": "42501",
+      "message": "permission denied for function member_create_community_help_request"
+    },
+    {
+      "name": "list_open_community_help_board",
+      "missing": false,
+      "status": 401,
+      "code": "42501",
+      "message": "permission denied for function list_open_community_help_board"
+    },
+    {
+      "name": "request_marketplace_claim",
+      "missing": false,
+      "status": 401,
+      "code": "42501",
+      "message": "permission denied for function request_marketplace_claim"
+    },
+    {
+      "name": "record_document_consent",
+      "missing": false,
+      "status": 401,
+      "code": "42501",
+      "message": "permission denied for function record_document_consent"
+    },
+    {
+      "name": "get_member_home_summary",
+      "missing": false,
+      "status": 401,
+      "code": "42501",
+      "message": "permission denied for function get_member_home_summary"
+    }
+  ]
+}

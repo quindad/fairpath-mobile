@@ -1,9 +1,28 @@
 # Cursor Mobile â€” Engineering Handoff
 
-**Updated:** 2026-10-23 (DEV release gate + P0 blocker prep)  
+**Updated:** 2026-10-23 (DEV preflight read-only)  
 **Branch:** `development/mobile-v1-completion`  
-**HEAD:** `f149f63`  
-**Ahead of origin:** 48+ commits (not pushed unless separately authorized)  
+**HEAD:** _(see latest commit)_  
+**Ahead of origin:** 48+ commits (not pushed unless separately authorized)
+
+### DEV preflight summary (read-only @ ff242b4+)
+
+| Check | Result |
+|-------|--------|
+| DEV project | **PASS** — `.env.local` + `supabase/.temp/project-ref` ? `znvhmuhojvwvjzmaqwff` |
+| Anon probe | **63/63 PASS** — prior “5 failures” = 2× expected `SIGNED_OUT` on member RPCs + 3× Edge **404** (payment/correctional not deployed); not app defects |
+| Edge inventory | **28/32** deployed; **404:** `create-fasttrack-payment`, `store-subscription-webhook`, `claim-correctional-transition`, `public-record-relief-dev` |
+| RR Edge | **PASS** — `evaluate-record-relief` + `extract-record-relief-case` deployed (401 without JWT) |
+| Jobs/Housing RPC | **PASS** — `search_jobs` / `search_housing` return data (anon probe + RPC inventory) |
+| Community / Food RPC | **PASS** — `member_create_community_help_request`, `request_marketplace_claim` present (401 anon) |
+| Signal Edge | **PARTIAL** — `member-focus-guidance` deployed; anon POST returns `credit_spend_failed` / DB permission on `spend_ai_credits` (signed-in DEV test still required) |
+| DEV E2E harness | **BLOCKED** — no `--confirm-dev` run; `QA_DEV_FREE_PASSWORD` / `QA_COMMUNITY_MEMBER_*` **unset** in agent shell |
+| DEF-RR-001 migration | **READY, not applied** — see `docs/DEV_MIGRATION_APPROVAL_PACKET.md`; unsafe only if Edge eval unavailable post-apply (Edge is up on DEV) |
+| Offline suite | **104/104**; local matrix **9/9** |
+
+**DEV readiness (release unlock):** **BLOCKED** — owner `--confirm-dev`, vault passwords, optional Edge deploys for payments, DEF-RR-001 apply, iPhone dev client.
+
+**Read-only inventory:** `node scripts/qa-dev-rpc-inventory.mjs` ? `qa-dev-rpc-inventory-results.json`  
 **Expo:** Reuse Metro on port **8083** â€” do not start duplicate dev servers.
 
 **Authority:** `docs/FAIRPATH_V1_PRODUCT_TRUTH_AND_COMPLETION_CHECKLIST.md`, `docs/FAIRPATH_V1_ENGINEERING_QUEUE.md`
