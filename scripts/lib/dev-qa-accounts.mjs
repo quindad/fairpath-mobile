@@ -30,8 +30,17 @@ export function resolveCommunityE2eMembers() {
 
 export function requireMemberPasswords({ emailA, emailB, passA, passB }) {
   const missing = [];
-  if (!passA) missing.push(`password for ${emailA} (QA_COMMUNITY_MEMBER_A_PASSWORD or QA_DEV_FREE_PASSWORD)`);
-  if (!passB) missing.push(`password for ${emailB} (QA_COMMUNITY_MEMBER_B_PASSWORD or QA_DEV_PLUS_PASSWORD)`);
+  const sameMember = emailA.trim().toLowerCase() === emailB.trim().toLowerCase();
+  if (!passA) {
+    missing.push(
+      `password for ${emailA} (QA_COMMUNITY_MEMBER_A_PASSWORD or QA_DEV_FREE_PASSWORD)`,
+    );
+  }
+  if (!sameMember && !passB) {
+    missing.push(
+      `password for ${emailB} (QA_COMMUNITY_MEMBER_B_PASSWORD or QA_DEV_PLUS_PASSWORD)`,
+    );
+  }
   if (missing.length) {
     throw new Error(`Missing DEV test credentials: ${missing.join('; ')}. Never commit passwords — load from vault into env.`);
   }

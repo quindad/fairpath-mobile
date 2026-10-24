@@ -1,8 +1,8 @@
 # Cursor Mobile â€” Engineering Handoff
 
-**Updated:** 2026-10-23 (DEV E2E safety hardening — no mutating DEV runs)  
+**Updated:** 2026-10-23 (controlled DEV execution attempt — credentials BLOCKED)  
 **Branch:** `development/mobile-v1-completion`  
-**HEAD:** `55fa647`  
+**HEAD:** `7513442` (post-run commit pending)  
 **Ahead of origin:** 48+ commits (not pushed unless separately authorized)
 
 ### DEV E2E harness safety (2026-10-23)
@@ -27,6 +27,27 @@
 7. Still **BLOCKED** until separately approved: **DEF-RR-001** apply, payment Edge deploys, iPhone dev client, paid AI.
 8. Run order: see `docs/DEV_E2E_EXECUTION_RUNBOOK.md`.
 
+### Controlled DEV execution (2026-10-23, `--confirm-dev`)
+
+| Step | Script | DEV result | Evidence |
+|------|--------|------------|----------|
+| A Jobs/Housing | `qa-dev-jobs-housing-smoke.mjs --confirm-dev --use-documented-dev-accounts` | **BLOCKED** | Local static PASS; DEV skipped — no `QA_DEV_FREE_PASSWORD` / `QA_COMMUNITY_MEMBER_A_PASSWORD` in process env |
+| B Community | `qa-dev-community-exchange-e2e.mjs --confirm-dev --use-documented-dev-accounts` | **BLOCKED** | Exit before tests — missing A+B member passwords |
+| C Capabilities | `qa-dev-member-capabilities-matrix.mjs --confirm-dev --use-documented-dev-accounts` | **BLOCKED** | Local audit PASS; DEV matrix SKIPPED — same password gap |
+| D Onboarding | `qa-dev-new-member-journey.mjs --confirm-dev` | **BLOCKED** | Guard: `SUPABASE_SERVICE_ROLE_KEY` not in process env (never read from file) |
+
+**Environment confirmed:** DEV URL + linked ref `znvhmuhojvwvjzmaqwff`, anon key present. **No `QA_*` or service-role keys** in `.env.local` (grep). **No DEV database writes** this session.
+
+**Local re-verify:** `npx tsc --noEmit` PASS · `npm run test:all` **106/106** PASS.
+
+**Owner setup (same PowerShell session, then re-run A?D):**
+```powershell
+$env:QA_DEV_FREE_PASSWORD = "<from vault>"
+$env:QA_DEV_PLUS_PASSWORD = "<from vault>"
+$env:SUPABASE_SERVICE_ROLE_KEY = "<DEV service role from Supabase dashboard>"
+# Optional aliases: QA_COMMUNITY_MEMBER_A_PASSWORD / _B_PASSWORD
+```
+
 ### DEV preflight summary (read-only @ ff242b4+)
 
 | Check | Result |
@@ -38,7 +59,7 @@
 | Jobs/Housing RPC | **PASS** — `search_jobs` / `search_housing` return data (anon probe + RPC inventory) |
 | Community / Food RPC | **PASS** — `member_create_community_help_request`, `request_marketplace_claim` present (401 anon) |
 | Signal Edge | **PARTIAL** — `member-focus-guidance` deployed; anon POST returns `credit_spend_failed` / DB permission on `spend_ai_credits` (signed-in DEV test still required) |
-| DEV E2E harness | **HARDENED, still BLOCKED** — safety guards + cleanup in place; owner `--confirm-dev` + vault passwords required before any mutating run |
+| DEV E2E harness | **EXECUTION BLOCKED @ 2026-10-23** — `--confirm-dev` invoked; **no QA passwords or DEV service role** in shell or `.env.local` (keys absent). Local/static phases PASS only |
 | DEF-RR-001 migration | **READY, not applied** — see `docs/DEV_MIGRATION_APPROVAL_PACKET.md`; unsafe only if Edge eval unavailable post-apply (Edge is up on DEV) |
 | Offline suite | **106/106** (includes DEV QA guard tests); local matrix **9/9** |
 
