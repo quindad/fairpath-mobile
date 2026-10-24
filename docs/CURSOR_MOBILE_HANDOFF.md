@@ -2,7 +2,7 @@
 
 **Updated:** 2026-10-23 (DEV credential unblock + iPhone build inventory — E2E not re-run)  
 **Branch:** `development/mobile-v1-completion`  
-**HEAD:** (pending commit)  
+**HEAD:** `2faa93f`  
 **Ahead of origin:** 48+ commits (not pushed unless separately authorized)
 
 ### DEV E2E harness safety (2026-10-23)
