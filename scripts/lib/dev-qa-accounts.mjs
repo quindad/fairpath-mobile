@@ -1,4 +1,4 @@
-/** Documented DEV member personas — passwords only via environment (never commit). */
+/** Documented DEV member personas — fictional fixtures, not production members. */
 export const DEV_QA_MEMBER_A_EMAIL = 'dev-free@fairpath.test';
 export const DEV_QA_MEMBER_B_EMAIL = 'dev-plus@fairpath.test';
 
@@ -19,17 +19,22 @@ export function devQaPasswordForEmail(email) {
   return null;
 }
 
-export function resolveCommunityE2eMembers(options = {}) {
+/** Passwords MUST come from environment — never hardcoded in repo. */
+export function resolveCommunityE2eMembers() {
   const emailA = process.env.QA_COMMUNITY_MEMBER_A_EMAIL ?? DEV_QA_MEMBER_A_EMAIL;
   const emailB = process.env.QA_COMMUNITY_MEMBER_B_EMAIL ?? DEV_QA_MEMBER_B_EMAIL;
-  let passA = devQaPasswordForEmail(emailA);
-  let passB = devQaPasswordForEmail(emailB);
-  if (options.useDocumentedSeedPasswords) {
-    // Same values as scripts/seed-dev-test-users.mjs (DEV-only fixtures, not production).
-    if (!passA && emailA === DEV_QA_MEMBER_A_EMAIL) passA = 'FairPath-Dev-Free-2026!';
-    if (!passB && emailB === DEV_QA_MEMBER_B_EMAIL) passB = 'FairPath-Dev-Plus-2026!';
-  }
+  const passA = devQaPasswordForEmail(emailA);
+  const passB = devQaPasswordForEmail(emailB);
   return { emailA, emailB, passA, passB };
+}
+
+export function requireMemberPasswords({ emailA, emailB, passA, passB }) {
+  const missing = [];
+  if (!passA) missing.push(`password for ${emailA} (QA_COMMUNITY_MEMBER_A_PASSWORD or QA_DEV_FREE_PASSWORD)`);
+  if (!passB) missing.push(`password for ${emailB} (QA_COMMUNITY_MEMBER_B_PASSWORD or QA_DEV_PLUS_PASSWORD)`);
+  if (missing.length) {
+    throw new Error(`Missing DEV test credentials: ${missing.join('; ')}. Never commit passwords — load from vault into env.`);
+  }
 }
 
 export function maskEmail(email) {

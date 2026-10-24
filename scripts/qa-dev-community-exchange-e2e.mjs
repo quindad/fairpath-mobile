@@ -2,7 +2,7 @@
 // Member RPCs use each member's JWT (anon key + signInWithPassword). No service role in the workflow path.
 //
 // DEV E2E steps (automated in this script):
-//   1. Refuse run unless --confirm-dev and assertDevTarget passes (.env.local → shared DEV).
+//   1. Refuse run unless --confirm-dev and DEV project identity checks pass (.env.local → shared DEV).
 //   2. Sign in Member A and Member B (documented dev accounts or --provision-disposable).
 //   3. Member A creates an open groceries request (list_my persistence).
 //   4. Member B lists board + reads request detail (postal hidden from non-owner).
@@ -13,7 +13,8 @@
 //   9. Member A cancels a separate open request (cancellation path).
 //  10. Writes qa-dev-community-exchange-e2e-results.json (expiration cron sweep SKIPPED).
 //
-//   node scripts/qa-dev-community-exchange-e2e.mjs --confirm-dev --use-documented-dev-accounts
+//   node scripts/qa-dev-community-exchange-e2e.mjs --confirm-dev
+//   node scripts/qa-dev-community-exchange-e2e.mjs --confirm-dev --provision-disposable
 //
 // Prefer vault passwords via env (never printed):
 //   QA_COMMUNITY_MEMBER_A_PASSWORD / QA_COMMUNITY_MEMBER_B_PASSWORD
@@ -24,37 +25,43 @@
 //   --provision-disposable requires SUPABASE_SERVICE_ROLE_KEY — creates @dev-seed.fairpath.test users only.
 import fs from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
-import { assertDevTarget } from '../supabase/seed/lib/guards.mjs';
-import { DEV_QA_MEMBER_A_EMAIL, DEV_QA_MEMBER_B_EMAIL, maskEmail, resolveCommunityE2eMembers } from './lib/dev-qa-accounts.mjs';
+import {
+  DEV_QA_MEMBER_A_EMAIL,
+  DEV_QA_MEMBER_B_EMAIL,
+  maskEmail,
+  requireMemberPasswords,
+  resolveCommunityE2eMembers,
+} from './lib/dev-qa-accounts.mjs';
+import {
+  assertDevMutatingApply,
+  assertDevMutatingSession,
+  assertDocumentedDevTestAccount,
+  CleanupRegistry,
+  createRunId,
+  loadEnvLocal,
+  readLinkedRef,
+} from './lib/dev-qa-run.mjs';
 
 const args = new Set(process.argv.slice(2));
 const useDocumented = args.has('--use-documented-dev-accounts');
 const provisionDisposable = args.has('--provision-disposable');
+const confirmDev = args.has('--confirm-dev');
+const runId = createRunId('comm');
 
-const env = Object.fromEntries(
-  fs.readFileSync('.env.local', 'utf8')
-    .split('\n')
-    .filter((l) => l.includes('=') && !l.trimStart().startsWith('#'))
-    .map((l) => [l.slice(0, l.indexOf('=')).trim(), l.slice(l.indexOf('=') + 1).trim().replace(/^["']|["']$/g, '')]),
-);
+const env = loadEnvLocal();
 const url = env.EXPO_PUBLIC_SUPABASE_URL;
 const anonKey = env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY;
-const linkedRef = fs.existsSync('supabase/.temp/project-ref')
-  ? fs.readFileSync('supabase/.temp/project-ref', 'utf8').trim()
-  : '';
-
-if (!args.has('--confirm-dev')) {
-  console.error('Refusing: pass --confirm-dev to run against shared DEV.');
-  process.exit(1);
-}
+const linkedRef = readLinkedRef();
 
 try {
-  assertDevTarget({ url, serviceKey: serviceKey ?? 'unused', linkedRef, confirmDev: true, apply: false });
+  assertDevMutatingSession({ url, linkedRef, confirmDev });
 } catch (e) {
   console.error(e.message);
   process.exit(1);
 }
+
+const cleanup = new CleanupRegistry();
 
 const opts = { auth: { persistSession: false, autoRefreshToken: false } };
 const results = [];
@@ -91,11 +98,22 @@ let clientB;
 let requestId;
 let offerId;
 let cancelRequestId;
-const stamp = Date.now().toString(36);
+let disposableAId;
+let disposableBId;
+const stamp = runId;
+
+function usesDocumentedPersonas(a, b) {
+  const na = a.trim().toLowerCase();
+  const nb = b.trim().toLowerCase();
+  return (
+    na === DEV_QA_MEMBER_A_EMAIL.toLowerCase() &&
+    nb === DEV_QA_MEMBER_B_EMAIL.toLowerCase()
+  );
+}
 
 if (provisionDisposable) {
   try {
-    assertDevTarget({ url, serviceKey, linkedRef, confirmDev: true, apply: true });
+    assertDevMutatingApply({ url, linkedRef, confirmDev, serviceKey });
   } catch (e) {
     console.error('Provisioning requires SUPABASE_SERVICE_ROLE_KEY:', e.message);
     process.exit(1);
@@ -110,30 +128,59 @@ if (provisionDisposable) {
     for (const email of [emailA, emailB]) {
       const c = await admin.auth.admin.createUser({ email, email_confirm: true, password: passA });
       ok(!c.error, c.error?.message ?? 'createUser');
+      if (email === emailA) disposableAId = c.data.user.id;
+      else disposableBId = c.data.user.id;
     }
   });
+  cleanup.add('delete disposable member B', async () => {
+    if (!disposableBId) return;
+    const { error } = await admin.auth.admin.deleteUser(disposableBId);
+    if (error) throw error;
+  });
+  cleanup.add('delete disposable member A', async () => {
+    if (!disposableAId) return;
+    const { error } = await admin.auth.admin.deleteUser(disposableAId);
+    if (error) throw error;
+  });
 } else {
-  const resolved = resolveCommunityE2eMembers({ useDocumentedSeedPasswords: useDocumented });
+  const resolved = resolveCommunityE2eMembers();
   emailA = resolved.emailA;
   emailB = resolved.emailB;
   passA = resolved.passA;
   passB = resolved.passB;
-  if (!passA || !passB) {
-    console.error(
-      'Missing member passwords. Set QA_COMMUNITY_MEMBER_A_PASSWORD and QA_COMMUNITY_MEMBER_B_PASSWORD, ' +
-        'or pass --use-documented-dev-accounts with DEV seed passwords (see scripts/seed-dev-test-users.mjs).',
-    );
+  try {
+    requireMemberPasswords({ emailA, emailB, passA, passB });
+    if (useDocumented || usesDocumentedPersonas(emailA, emailB)) {
+      assertDocumentedDevTestAccount(emailA);
+      assertDocumentedDevTestAccount(emailB);
+    }
+  } catch (e) {
+    console.error(e.message);
     process.exit(1);
   }
+  cleanup.add('cancel leftover open community requests', async () => {
+    const c = await signInMember(emailA, passA);
+    for (const id of [requestId, cancelRequestId]) {
+      if (!id) continue;
+      const { data: req, error } = await c.rpc('member_get_community_help_request', { p_request_id: id });
+      if (error) continue;
+      const row = Array.isArray(req) ? req[0] : req;
+      if (row?.status === 'open' || row?.status === 'matched') {
+        const { error: cErr } = await c.rpc('member_cancel_community_help_request', { p_request_id: id });
+        if (cErr) throw new Error(`cancel ${id}: ${cErr.message}`);
+      }
+    }
+  });
 }
 
-await test('RPC probe signed out → SIGNED_OUT', async () => {
-  const anon = createClient(url, anonKey, opts);
-  const { error } = await anon.rpc('list_open_community_help_board', { p_state: null, p_category: null });
-  ok(error, 'expected signed out failure');
-});
+try {
+  await test('RPC probe signed out → SIGNED_OUT', async () => {
+    const anon = createClient(url, anonKey, opts);
+    const { error } = await anon.rpc('list_open_community_help_board', { p_state: null, p_category: null });
+    ok(error, 'expected signed out failure');
+  });
 
-await test('Member A session + JWT authenticates RPCs', async () => {
+  await test('Member A session + JWT authenticates RPCs', async () => {
   clientA = await signInMember(emailA, passA);
   const { error } = await clientA.rpc('list_open_community_help_board', { p_state: 'OH', p_category: null });
   ok(!error, error?.message ?? 'board');
@@ -257,15 +304,25 @@ await test('Cancellation on separate request (Member A)', async () => {
   const { data: cancelled, error: cErr } = await clientA.rpc('member_cancel_community_help_request', { p_request_id: cancelRequestId });
   ok(!cErr, cErr?.message ?? 'cancel');
   ok(cancelled?.status === 'cancelled', 'cancelled status');
-});
+  });
 
-// Expiration sweep is intentionally excluded from the passing assertion count:
-// touch_community_help_expiry requires the separate privileged cron test.
-console.log('SKIP Expiration sweep — requires separate service-role cron verification');
+  // Expiration sweep is intentionally excluded from the passing assertion count:
+  // touch_community_help_expiry requires the separate privileged cron test.
+  console.log('SKIP Expiration sweep — requires separate service-role cron verification');
+} finally {
+  await cleanup.runAll();
+  if (cleanup.failed) {
+    for (const err of cleanup.errors) {
+      results.push({ name: `cleanup: ${err.label}`, ok: false, error: err.error });
+      console.log('FAIL cleanup: ' + err.label + '\n     ' + err.error);
+    }
+  }
+}
 
 const failed = results.filter((r) => !r.ok).length;
 const assertionCount = results.length;
 const out = {
+  runId,
   at: new Date().toISOString(),
   project: 'znvhmuhojvwvjzmaqwff',
   migration: '20261021205913',
@@ -280,6 +337,8 @@ const out = {
   myPathSync: 'NOT TESTED in harness (device AsyncStorage); code path: community-plan-sync on create/detail',
   mobileUi: 'NOT TESTED this run (see report § Mobile UI)',
   nativeIphone: 'NOT TESTED',
+  credentialsLogged: false,
+  cleanupErrors: cleanup.errors,
 };
 fs.writeFileSync('qa-dev-community-exchange-e2e-results.json', JSON.stringify(out, null, 2));
 console.log(`\n${assertionCount - failed}/${assertionCount} E2E assertions passed (expiration sweep SKIPPED). Wrote qa-dev-community-exchange-e2e-results.json`);

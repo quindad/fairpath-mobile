@@ -14,6 +14,8 @@ const steps = [
   ['housing application validation', NODE, ['--test', '--experimental-strip-types', 'tests/housing-application-form.test.ts']],
   ['intro screen layout', NODE, ['--test', '--experimental-strip-types', 'tests/intro-screen-layout.test.ts']],
   ['registration draft persistence', NODE, ['--test', '--experimental-strip-types', 'tests/registration-draft.test.ts']],
+  ['DEV QA account helpers', NODE, ['--test', '--experimental-strip-types', 'tests/dev-qa-accounts.test.ts']],
+  ['DEV QA run guards', NODE, ['--test', '--experimental-strip-types', 'tests/dev-qa-run.test.ts']],
   ['legal review session', NODE, ['--test', '--experimental-strip-types', 'tests/legal-review-session.test.ts']],
   ['consent client contract', NODE, ['--test', '--experimental-strip-types', 'tests/consent-client-contract.test.ts']],
   ['justice unified model', NODE, ['--test', '--experimental-strip-types', 'tests/justice-unified-model.test.ts']],

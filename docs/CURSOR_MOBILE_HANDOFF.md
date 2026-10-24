@@ -1,9 +1,31 @@
 # Cursor Mobile â€” Engineering Handoff
 
-**Updated:** 2026-10-23 (DEV preflight read-only)  
+**Updated:** 2026-10-23 (DEV E2E safety hardening — no mutating DEV runs)  
 **Branch:** `development/mobile-v1-completion`  
-**HEAD:** `57e07f9`  
+**HEAD:** (pending commit — DEV E2E safety batch)  
 **Ahead of origin:** 48+ commits (not pushed unless separately authorized)
+
+### DEV E2E harness safety (2026-10-23)
+
+| Change | Detail |
+|--------|--------|
+| Passwords | **Removed from repo** — `scripts/lib/dev-qa-accounts.mjs`, `scripts/seed-dev-test-users.mjs`; load from env/vault only |
+| Documented personas | `dev-free@fairpath.test` / `dev-plus@fairpath.test` — **fictional DEV fixtures**, not production members (`assertDocumentedDevTestAccount`) |
+| DEV guard | All mutating harnesses use `scripts/lib/dev-qa-run.mjs` (`assertDevMutatingSession` / `assertDevMutatingApply` + linked ref `znvhmuhojvwvjzmaqwff`) |
+| Cleanup | `CleanupRegistry` + `try/finally` — disposable auth users deleted; community open requests cancelled on failure; capability matrix restores profile snapshot (run **fails** if restore/cleanup fails) |
+| Reports | Each run gets `runId`; JSON reports include record IDs (`requestId`, `userId`, etc.) — **no credentials logged** |
+| Offline tests | `tests/dev-qa-accounts.test.ts`, `tests/dev-qa-run.test.ts` in `npm run test:all` |
+
+**Owner-approved DEV execution prerequisites (not run by agents until explicit GO):**
+
+1. `.env.local` points at DEV only (`EXPO_PUBLIC_SUPABASE_URL` contains `znvhmuhojvwvjzmaqwff`); `supabase/.temp/project-ref` matches.
+2. Vault passwords in shell (never commit): `QA_DEV_FREE_PASSWORD` or `QA_COMMUNITY_MEMBER_A_PASSWORD`; `QA_DEV_PLUS_PASSWORD` or `QA_COMMUNITY_MEMBER_B_PASSWORD`.
+3. Mutating scripts: pass **`--confirm-dev`** on the CLI (no env bypass).
+4. Service-role scripts (`qa-dev-new-member-journey.mjs`, community `--provision-disposable`, seed): `SUPABASE_SERVICE_ROLE_KEY` for **DEV only**.
+5. Optional: seed personas once — `node scripts/seed-dev-test-users.mjs` (reads passwords from env).
+6. Community E2E on shared seed accounts: `node scripts/qa-dev-community-exchange-e2e.mjs --confirm-dev` — prefer **`--provision-disposable`** to avoid touching seed personas.
+7. Still **BLOCKED** until separately approved: **DEF-RR-001** apply, payment Edge deploys, iPhone dev client, paid AI.
+8. Run order: see `docs/DEV_E2E_EXECUTION_RUNBOOK.md`.
 
 ### DEV preflight summary (read-only @ ff242b4+)
 
@@ -16,9 +38,9 @@
 | Jobs/Housing RPC | **PASS** — `search_jobs` / `search_housing` return data (anon probe + RPC inventory) |
 | Community / Food RPC | **PASS** — `member_create_community_help_request`, `request_marketplace_claim` present (401 anon) |
 | Signal Edge | **PARTIAL** — `member-focus-guidance` deployed; anon POST returns `credit_spend_failed` / DB permission on `spend_ai_credits` (signed-in DEV test still required) |
-| DEV E2E harness | **BLOCKED** — no `--confirm-dev` run; `QA_DEV_FREE_PASSWORD` / `QA_COMMUNITY_MEMBER_*` **unset** in agent shell |
+| DEV E2E harness | **HARDENED, still BLOCKED** — safety guards + cleanup in place; owner `--confirm-dev` + vault passwords required before any mutating run |
 | DEF-RR-001 migration | **READY, not applied** — see `docs/DEV_MIGRATION_APPROVAL_PACKET.md`; unsafe only if Edge eval unavailable post-apply (Edge is up on DEV) |
-| Offline suite | **104/104**; local matrix **9/9** |
+| Offline suite | **106/106** (includes DEV QA guard tests); local matrix **9/9** |
 
 **DEV readiness (release unlock):** **BLOCKED** — owner `--confirm-dev`, vault passwords, optional Edge deploys for payments, DEF-RR-001 apply, iPhone dev client.
 

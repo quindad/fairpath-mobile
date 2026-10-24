@@ -7,25 +7,21 @@
 // Passwords (never printed): QA_DEV_FREE_PASSWORD / QA_COMMUNITY_MEMBER_A_PASSWORD (member A)
 import fs from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
-import { assertDevTarget } from '../supabase/seed/lib/guards.mjs';
-import { maskEmail, resolveCommunityE2eMembers } from './lib/dev-qa-accounts.mjs';
+import { maskEmail, requireMemberPasswords, resolveCommunityE2eMembers } from './lib/dev-qa-accounts.mjs';
+import {
+  assertDevMutatingSession,
+  assertDocumentedDevTestAccount,
+  createRunId,
+  loadEnvLocal,
+  readLinkedRef,
+} from './lib/dev-qa-run.mjs';
 
 const args = new Set(process.argv.slice(2));
 const useDocumented = args.has('--use-documented-dev-accounts');
 const confirmDev = args.has('--confirm-dev');
+const runId = createRunId('jobs-housing');
 
 const REPORT_PATH = 'qa-dev-jobs-housing-smoke-results.json';
-
-function loadEnvLocal() {
-  if (!fs.existsSync('.env.local')) return {};
-  return Object.fromEntries(
-    fs
-      .readFileSync('.env.local', 'utf8')
-      .split('\n')
-      .filter((l) => l.includes('=') && !l.trimStart().startsWith('#'))
-      .map((l) => [l.slice(0, l.indexOf('=')).trim(), l.slice(l.indexOf('=') + 1).trim().replace(/^["']|["']$/g, '')]),
-  );
-}
 
 function staticRouteContract() {
   const read = (p) => fs.readFileSync(p, 'utf8');
@@ -72,11 +68,9 @@ let devReason = '';
 const env = loadEnvLocal();
 const url = env.EXPO_PUBLIC_SUPABASE_URL;
 const anonKey = env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
-const linkedRef = fs.existsSync('supabase/.temp/project-ref')
-  ? fs.readFileSync('supabase/.temp/project-ref', 'utf8').trim()
-  : '';
+const linkedRef = readLinkedRef();
 
-const { emailA, passA } = resolveCommunityE2eMembers({ useDocumentedSeedPasswords: useDocumented });
+const { emailA, passA } = resolveCommunityE2eMembers();
 const memberEmail = emailA;
 const memberPassword = passA;
 
@@ -86,12 +80,11 @@ if (!confirmDev) {
 } else if (!url || !anonKey) {
   devReason = 'missing EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_ANON_KEY in .env.local';
   blocked.push(devReason);
-} else if (!memberPassword) {
-  devReason = 'missing member password (QA_DEV_FREE_PASSWORD or QA_COMMUNITY_MEMBER_A_PASSWORD)';
-  blocked.push(devReason);
 } else {
   try {
-    assertDevTarget({ url, serviceKey: 'unused', linkedRef, confirmDev: true, apply: false });
+    assertDevMutatingSession({ url, linkedRef, confirmDev });
+    if (useDocumented) assertDocumentedDevTestAccount(memberEmail);
+    requireMemberPasswords({ emailA: memberEmail, emailB: memberEmail, passA: memberPassword, passB: memberPassword });
   } catch (e) {
     devReason = String(e.message ?? e);
     blocked.push(devReason);
@@ -183,6 +176,7 @@ if (devReason && devStatus === 'BLOCKED') {
 
 const failedDev = results.filter((r) => r.ok === false).length;
 const payload = {
+  runId,
   at: new Date().toISOString(),
   mission: 'JOB-101 / HOUSE-101 prep',
   local: { status: localOk ? 'PASSED' : 'FAILED' },

@@ -8,8 +8,14 @@
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { createClient } from '@supabase/supabase-js';
-import { assertDevTarget } from '../supabase/seed/lib/guards.mjs';
-import { maskEmail, resolveCommunityE2eMembers } from './lib/dev-qa-accounts.mjs';
+import { maskEmail, requireMemberPasswords, resolveCommunityE2eMembers } from './lib/dev-qa-accounts.mjs';
+import {
+  assertDevMutatingSession,
+  assertDocumentedDevTestAccount,
+  createRunId,
+  loadEnvLocal,
+  readLinkedRef,
+} from './lib/dev-qa-run.mjs';
 import {
   VETERAN_TOOLS_QUESTION_ID,
   justiceToolsEnabled,
@@ -22,6 +28,7 @@ import {
 const args = new Set(process.argv.slice(2));
 const useDocumented = args.has('--use-documented-dev-accounts');
 const confirmDev = args.has('--confirm-dev');
+const runId = createRunId('caps');
 
 const SCENARIOS = [
   { id: 'neither', justice: 'no', veteran: 'no' },
@@ -35,17 +42,6 @@ const SCENARIOS = [
 function runLocalAudit() {
   const r = spawnSync(process.execPath, ['scripts/audit-member-capabilities.mjs'], { encoding: 'utf8' });
   return { ok: r.status === 0, last: (r.stdout + r.stderr).trim().split('\n').slice(-1)[0] ?? '' };
-}
-
-function loadEnvLocal() {
-  if (!fs.existsSync('.env.local')) return {};
-  return Object.fromEntries(
-    fs
-      .readFileSync('.env.local', 'utf8')
-      .split('\n')
-      .filter((l) => l.includes('=') && !l.trimStart().startsWith('#'))
-      .map((l) => [l.slice(0, l.indexOf('=')).trim(), l.slice(l.indexOf('=') + 1).trim().replace(/^["']|["']$/g, '')]),
-  );
 }
 
 const localAudit = runLocalAudit();
@@ -63,11 +59,9 @@ console.log('PASS local audit-member-capabilities');
 const env = loadEnvLocal();
 const url = env.EXPO_PUBLIC_SUPABASE_URL;
 const anonKey = env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
-const linkedRef = fs.existsSync('supabase/.temp/project-ref')
-  ? fs.readFileSync('supabase/.temp/project-ref', 'utf8').trim()
-  : '';
+const linkedRef = readLinkedRef();
 
-const { emailA, passA } = resolveCommunityE2eMembers({ useDocumentedSeedPasswords: useDocumented });
+const { emailA, passA } = resolveCommunityE2eMembers();
 const memberEmail = emailA;
 const memberPassword = passA;
 
@@ -85,7 +79,9 @@ if (!confirmDev) {
   blocked.push(devReason);
 } else {
   try {
-    assertDevTarget({ url, serviceKey: 'unused', linkedRef, confirmDev: true, apply: false });
+    assertDevMutatingSession({ url, linkedRef, confirmDev });
+    if (useDocumented) assertDocumentedDevTestAccount(memberEmail);
+    requireMemberPasswords({ emailA: memberEmail, emailB: memberEmail, passA: memberPassword, passB: memberPassword });
   } catch (e) {
     devReason = String(e.message ?? e);
     blocked.push(devReason);
@@ -181,7 +177,10 @@ if (!devReason) {
           await applyScenario(client, userId, snapshot);
           console.log('Restored member capability snapshot after matrix.');
         } catch (e) {
-          blocked.push(`restore failed: ${String(e.message ?? e).slice(0, 200)}`);
+          const msg = String(e.message ?? e).slice(0, 400);
+          results.push({ name: 'restore capability snapshot', ok: false, error: msg });
+          blocked.push(`restore failed: ${msg}`);
+          console.log('FAIL restore capability snapshot\n     ' + msg);
         }
       }
     }
@@ -199,7 +198,9 @@ if (devReason && devStatus === 'SKIPPED') {
 }
 
 const failedDev = results.filter((r) => r.ok === false).length;
+const restoreFailed = results.some((r) => r.name === 'restore capability snapshot' && r.ok === false);
 writeReport({
+  runId,
   localAudit,
   results,
   dev: { status: devStatus, reason: devReason || undefined, member: maskEmail(memberEmail) },
@@ -216,7 +217,7 @@ console.log(
     '. Wrote qa-dev-member-capabilities-matrix-results.json',
 );
 
-process.exit(localAudit.ok && failedDev === 0 ? 0 : failedDev ? 1 : 0);
+process.exit(localAudit.ok && failedDev === 0 && !restoreFailed ? 0 : failedDev || restoreFailed ? 1 : 0);
 
 function writeReport(payload) {
   fs.writeFileSync(

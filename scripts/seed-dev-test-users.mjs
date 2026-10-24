@@ -36,9 +36,23 @@ if (!serviceKey) {
 
 const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
 
+function passwordForSeedUser(email) {
+  if (email === 'dev-free@fairpath.test') {
+    const p = process.env.QA_DEV_FREE_PASSWORD ?? process.env.QA_COMMUNITY_MEMBER_A_PASSWORD;
+    if (!p) throw new Error('Set QA_DEV_FREE_PASSWORD (or QA_COMMUNITY_MEMBER_A_PASSWORD) before seeding DEV test users.');
+    return p;
+  }
+  if (email === 'dev-plus@fairpath.test') {
+    const p = process.env.QA_DEV_PLUS_PASSWORD ?? process.env.QA_COMMUNITY_MEMBER_B_PASSWORD;
+    if (!p) throw new Error('Set QA_DEV_PLUS_PASSWORD (or QA_COMMUNITY_MEMBER_B_PASSWORD) before seeding DEV test users.');
+    return p;
+  }
+  throw new Error('Unknown seed user');
+}
+
 const USERS = [
-  { email: 'dev-free@fairpath.test', password: 'FairPath-Dev-Free-2026!', credits: 10 },
-  { email: 'dev-plus@fairpath.test', password: 'FairPath-Dev-Plus-2026!', credits: 50 },
+  { email: 'dev-free@fairpath.test', credits: 10 },
+  { email: 'dev-plus@fairpath.test', credits: 50 },
 ];
 
 async function ensureUser(email, password) {
@@ -61,9 +75,9 @@ async function grant(userId, amount) {
 
 console.log('Seeding DEV test users on', url);
 for (const u of USERS) {
-  const id = await ensureUser(u.email, u.password);
+  const password = passwordForSeedUser(u.email);
+  const id = await ensureUser(u.email, password);
   await grant(id, u.credits);
   console.log('OK', u.email, id, `+${u.credits} credits`);
 }
-console.log('\nPasswords printed once here — store in your vault, then change if you prefer:');
-for (const u of USERS) console.log(`  ${u.email}  →  ${u.password}`);
+console.log('Done. Passwords were read from env only — not logged.');
