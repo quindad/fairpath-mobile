@@ -26,15 +26,26 @@ select public.grant_ai_credits(u.id, 50, 'admin_adjustment') from auth.users u w
 
 5. In the app (Expo Go or web): sign in as each user and note Home / Signal balance.
 
-## B — CLI script (optional, service role on your machine)
+## B — Secure session setup (recommended before QA harnesses)
 
-If `SUPABASE_SERVICE_ROLE_KEY` and `EXPO_PUBLIC_SUPABASE_URL` are in `.env.local`:
+In PowerShell (prompts for secrets; **does not write passwords to disk**):
+
+```powershell
+. .\scripts\Start-DevQaSession.ps1
+node scripts/probe-dev-auth-personas.mjs
+```
+
+Probe is read-only: confirms whether `dev-free` / `dev-plus` exist in DEV Auth.
+
+## C — CLI seed (mutating — owner approval)
+
+Requires `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` **or** session env, plus `QA_DEV_*_PASSWORD` in session env:
 
 ```bash
 node scripts/seed-dev-test-users.mjs
 ```
 
-(Script creates both users if missing and grants credits.)
+Creates both users if missing and grants credits. **Do not run** until probe shows missing users or owner approves reset.
 
 ## QA script (after accounts exist)
 

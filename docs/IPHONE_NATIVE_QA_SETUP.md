@@ -22,13 +22,24 @@
 
 ## Path A — Development client (recommended)
 
-1. **One-time build** (requires EAS approval / Apple credentials — not run in CI batch):
+### Reuse existing iOS dev build (check before starting a new cloud build)
+
+EAS project: `@fairpathfwd/fairpath-mobile` (`extra.eas.projectId` in `app.json`).
+
+As of 2026-10-23, Expo account **fairpathfwd** has a **finished** iOS **development** build (SDK **57.0.0**, internal distribution). Install from [Expo builds](https://expo.dev/accounts/fairpathfwd/projects/fairpath-mobile/builds) — open the latest **development** profile build and use the install artifact link on the registered iPhone.
+
+**Caveat:** That build was produced from an older commit; if native modules or `app.config.js` changed materially, owner may approve a fresh `eas build --profile development --platform ios` (not run by agents without approval).
+
+1. **One-time build** (only if no compatible artifact exists):
    ```powershell
-   npx eas build --profile development --platform ios
+   npx eas-cli@">=24.8.0" build --profile development --platform ios
    ```
    Profile defined in `eas.json` (`developmentClient: true`, `distribution: internal`).
 
-2. Install the `.ipa` on iPhone (TestFlight internal or ad hoc per org process).
+2. Install the dev client on iPhone (Expo internal install page, TestFlight internal, or ad hoc per org process). Register the device first if prompted:
+   ```powershell
+   npx eas-cli@">=24.8.0" device:create
+   ```
 
 3. **Start Metro** (reuse port **8083** if already running):
    ```powershell

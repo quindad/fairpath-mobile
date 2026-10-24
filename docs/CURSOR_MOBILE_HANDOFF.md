@@ -1,8 +1,8 @@
 # Cursor Mobile â€” Engineering Handoff
 
-**Updated:** 2026-10-23 (controlled DEV execution attempt — credentials BLOCKED)  
+**Updated:** 2026-10-23 (DEV credential unblock + iPhone build inventory — E2E not re-run)  
 **Branch:** `development/mobile-v1-completion`  
-**HEAD:** `27e6280`  
+**HEAD:** (pending commit)  
 **Ahead of origin:** 48+ commits (not pushed unless separately authorized)
 
 ### DEV E2E harness safety (2026-10-23)
@@ -40,13 +40,37 @@
 
 **Local re-verify:** `npx tsc --noEmit` PASS · `npm run test:all` **106/106** PASS.
 
-**Owner setup (same PowerShell session, then re-run A?D):**
+**Owner setup (secure — no secrets in chat/Git):**
 ```powershell
-$env:QA_DEV_FREE_PASSWORD = "<from vault>"
-$env:QA_DEV_PLUS_PASSWORD = "<from vault>"
-$env:SUPABASE_SERVICE_ROLE_KEY = "<DEV service role from Supabase dashboard>"
-# Optional aliases: QA_COMMUNITY_MEMBER_A_PASSWORD / _B_PASSWORD
+. .\scripts\Start-DevQaSession.ps1
+node scripts/probe-dev-auth-personas.mjs
+# Then re-run jobs/housing, community, capabilities, journey with --confirm-dev
 ```
+
+### DEV credential unblock (2026-10-23)
+
+| Finding | Detail |
+|---------|--------|
+| `.env.local` | DEV URL + anon/publishable key only — **no** service role, **no** QA passwords |
+| Auth persona existence | **UNKNOWN** until probe runs with service role (agent had none) |
+| Read-only probe | `node scripts/probe-dev-auth-personas.mjs` |
+| Session loader | `scripts/Start-DevQaSession.ps1` |
+| Mutating seed | `seed-dev-test-users.mjs` — **owner approval** before create/reset |
+| E2E this batch | **Not re-run** (credentials absent) |
+
+**If probe shows missing users:** approve Dashboard Auth create (`docs/DEV_TEST_ACCOUNTS.md`) or approved `seed-dev-test-users.mjs`.
+
+### iPhone readiness (2026-10-23)
+
+| Item | Status |
+|------|--------|
+| Expo / EAS account | **fairpathfwd** (Owner) |
+| Apple team | **H2BNT8CR6Q** (Friend A Felon) |
+| Registered iPhones | **2** UDIDs on team (EAS `device:list`) |
+| iOS dev build | **Finished** — profile `development`, SDK **57.0.0** (may predate current HEAD) |
+| Install | [Project builds](https://expo.dev/accounts/fairpathfwd/projects/fairpath-mobile/builds) ? development ? install on phone |
+| New EAS build | **Not started** (owner approval) |
+| Metro | `npx expo start --dev-client --port 8083` |
 
 ### DEV preflight summary (read-only @ ff242b4+)
 
