@@ -19,15 +19,23 @@ Fill `EXPO_PUBLIC_SUPABASE_ANON_KEY` from Dashboard → **fairpath-mobile-dev** 
 
 ## 2. One-time: install a dev build on the phone
 
+**FairPath iOS bundle ID (separate from Friend A Felon):** `com.fairpathfwd.fairpathmobile` · Apple team **H2BNT8CR6Q**.
+
+**Reuse existing build first** (SDK 57, profile `development`): open on the iPhone →  
+https://expo.dev/accounts/fairpathfwd/projects/fairpath-mobile/builds/8c03f2b0-53ee-4924-b3a0-1af24b93940b  
+Internal installs **expire** (~14 days). If the link fails, owner approves a fresh build:
+
 ```powershell
-npm install
-npx eas login
-npx eas build --profile development --platform android
+npx eas-cli@">=24.8.0" build --profile development --platform ios
 ```
 
-For **iPhone**, use `--platform ios` (Apple Developer account required). When the build finishes, open the EAS install link on the device and install the app.
+Set EAS **development** env vars in the Expo dashboard before rebuilding: `EXPO_PUBLIC_SUPABASE_URL` = DEV (`znvhmuhojvwvjzmaqwff`), `EXPO_PUBLIC_SUPABASE_ANON_KEY` = DEV publishable key (never commit). With a dev client, Metro on your PC still rebundles JS from `.env.local` for day-to-day work.
 
-Profiles live in `eas.json` (`development` → `developmentClient: true`).
+Register a new iPhone if install says device not registered:
+
+```powershell
+npx eas-cli@">=24.8.0" device:create --apple-team-id H2BNT8CR6Q
+```
 
 Docs: [Development builds](https://docs.expo.dev/develop/development-builds/introduction/).
 
@@ -38,8 +46,10 @@ Docs: [Development builds](https://docs.expo.dev/develop/development-builds/intr
 On the **PC** (same folder, `.env.local` present):
 
 ```powershell
-npm start
+npm run start:dev-client
 ```
+
+(Reuses Metro port **8083** when you already run Expo there.)
 
 **Same Wi‑Fi as the phone:** scan the QR code with the **FairPath dev client** (not Expo Go).
 
