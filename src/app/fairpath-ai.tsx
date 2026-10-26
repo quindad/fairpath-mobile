@@ -283,17 +283,17 @@ export default function FairPathAssistant() {
       <ScreenColumn>
           <FormScrollView
             ref={scrollRef}
-            style={{ flex: 1 }}
+            style={s.chatScroll}
             contentContainerStyle={s.chatContent}
             showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
           >
             {showEmpty ? (
               <View style={s.welcome}>
                 <Text style={s.welcomeTitle}>What do you need help with?</Text>
                 <Text style={s.welcomeBody}>
                   Ask in plain language — Signal searches verified jobs, housing, and resources near your saved ZIP or device
-                  location, then opens the right FairPath screen. Tap &quot;How I got this&quot; for sources. Optional AI enrichment uses credits when configured.
+                  location, then opens the right FairPath screen. Tap &quot;How I got this&quot; for sources and basis. Built-in guidance
+                  runs on your phone; no AI model is connected unless optional cloud enrichment is configured and you have credits.
                 </Text>
                 <TextButton label="Set or update location (ZIP)" onPress={() => router.push('/location-setup' as never)} />
                 <View style={s.chips}>
@@ -317,60 +317,60 @@ export default function FairPathAssistant() {
               />
             ))}
 
-          <View style={s.composer}>
-            <TextInput
-              value={text}
-              onChangeText={setText}
-              placeholder="Message Signal…"
-              placeholderTextColor={tokens.textMuted}
-              style={s.input}
-              multiline
-              maxLength={500}
-              editable={!busy}
-              onSubmitEditing={() => void ask(text)}
-              blurOnSubmit={false}
-            />
-            {busy ? (
-              <Pressable accessibilityRole="button" accessibilityLabel="Stop" style={s.send} onPress={cancelAsk}>
-                <Lucide name="square" color={tokens.onAccent} size={18} />
-              </Pressable>
-            ) : (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Send message"
-                style={[s.send, text.trim().length < 2 && s.sendDisabled]}
-                disabled={text.trim().length < 2}
-                onPress={() => void ask(text)}
-              >
-                <Lucide name="arrow-up" color={text.trim().length < 2 ? tokens.textMuted : tokens.onAccent} size={20} />
-              </Pressable>
-            )}
-          </View>
-          {turns.length ? (
-            <View style={s.footerRow}>
-              <TextButton label="New conversation" onPress={() => void newConversation()} />
-              <TextButton
-                label="Delete this chat"
-                onPress={() =>
-                  notify('Delete this conversation?', 'Removes this chat from this device only.', [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                      text: 'Delete',
-                      style: 'destructive',
-                      onPress: () =>
-                        void (async () => {
-                          if (threadMeta) await deleteConversation(threadMeta.id);
-                          await newConversation();
-                        })(),
-                    },
-                  ])
-                }
+            <View style={s.composer}>
+              <TextInput
+                value={text}
+                onChangeText={setText}
+                placeholder="Message Signal…"
+                placeholderTextColor={tokens.textMuted}
+                style={s.input}
+                multiline
+                maxLength={500}
+                editable={!busy}
+                onSubmitEditing={() => void ask(text)}
+                blurOnSubmit={false}
               />
-              <TextButton label="Clear logged history" onPress={confirmDeleteHistory} />
+              {busy ? (
+                <Pressable accessibilityRole="button" accessibilityLabel="Stop" style={s.send} onPress={cancelAsk}>
+                  <Lucide name="square" color={tokens.onAccent} size={18} />
+                </Pressable>
+              ) : (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Send message"
+                  style={[s.send, text.trim().length < 2 && s.sendDisabled]}
+                  disabled={text.trim().length < 2}
+                  onPress={() => void ask(text)}
+                >
+                  <Lucide name="arrow-up" color={text.trim().length < 2 ? tokens.textMuted : tokens.onAccent} size={20} />
+                </Pressable>
+              )}
             </View>
-          ) : null}
+            {turns.length ? (
+              <View style={s.footerRow}>
+                <TextButton label="New conversation" onPress={() => void newConversation()} />
+                <TextButton
+                  label="Delete this chat"
+                  onPress={() =>
+                    notify('Delete this conversation?', 'Removes this chat from this device only.', [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Delete',
+                        style: 'destructive',
+                        onPress: () =>
+                          void (async () => {
+                            if (threadMeta) await deleteConversation(threadMeta.id);
+                            await newConversation();
+                          })(),
+                      },
+                    ])
+                  }
+                />
+                <TextButton label="Clear logged history" onPress={confirmDeleteHistory} />
+              </View>
+            ) : null}
           </FormScrollView>
-        </ScreenColumn>
+      </ScreenColumn>
 
       <Modal visible={toolsOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setToolsOpen(false)}>
         <View style={s.modal}>
@@ -428,7 +428,7 @@ const styles = (t: ThemeTokens) => ({
   creditText: { color: t.accentText, fontFamily: F.semiBold, fontSize: 11 },
   signInLink: { color: t.accentText, fontFamily: F.semiBold, fontSize: 12 },
   chatScroll: { flex: 1 },
-  chatContent: { paddingHorizontal: L.mobileGutter, paddingTop: 12, paddingBottom: 16, flexGrow: 1 },
+  chatContent: { paddingHorizontal: L.mobileGutter, paddingTop: 12, paddingBottom: 24, flexGrow: 1 },
   welcome: { gap: 10, paddingBottom: 8 },
   welcomeTitle: { color: t.text, fontFamily: F.extraBold, fontSize: 20, lineHeight: 24 },
   welcomeBody: { color: t.textSecondary, fontFamily: F.medium, fontSize: 14, lineHeight: 20 },

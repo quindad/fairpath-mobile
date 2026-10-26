@@ -1,5 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { loadMemberSearchLocation } from '@/core/location/member-search-location';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { FormScrollView } from '@/components/FormScrollView';
 import { Lucide } from '@react-native-vector-icons/lucide';
@@ -53,6 +54,14 @@ export default function Marketplace(){
  },[query,location,category,safeOnly,condition,sort]);
 
  useFocusEffect(useCallback(()=>{void run()},[run]));
+ useEffect(()=>{
+  loadMemberSearchLocation().then(loc=>{
+   if(loc.zip)setLocation(z=>z.trim()?z:loc.zip!);
+   else if(loc.deviceSnapshot?.city&&loc.deviceSnapshot.region){
+    setLocation(z=>z.trim()?z:`${loc.deviceSnapshot!.city}, ${loc.deviceSnapshot!.region}`);
+   }
+  }).catch(()=>{});
+ },[]);
  const visible=useMemo(()=>items,[items]);
 
  async function toggleSave(item:MarketplaceItem){

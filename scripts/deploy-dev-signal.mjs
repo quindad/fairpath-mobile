@@ -31,6 +31,7 @@ const fns = [
   'business-idea-feedback',
   'meeting-prep',
   'marketplace-listing-draft',
+  'fairpath-ai-gateway',
 ];
 
 console.log(`${dryRun ? 'Dry run — would deploy' : 'Deploying'} ${fns.length} Signal functions to project ${ref}…`);

@@ -38,6 +38,9 @@ export function SignalTurn({ user, response, loading, loadingStatus, provOpen, o
       {response ? (
         <View style={s.assistantBubble}>
           {response.title ? <Text style={s.title}>{response.title}</Text> : null}
+          {response.provenance.confidence === 'deterministic' ? (
+            <Text style={s.verified}>Verified FairPath routing · live data when available</Text>
+          ) : null}
           {response.parts.map((p, k) => (
             <Text key={k} style={s.body}>{p.text}</Text>
           ))}
@@ -106,6 +109,7 @@ const styles = (t: ThemeTokens) => ({
   },
   typing: { color: t.textMuted, fontFamily: F.medium, fontSize: 14 },
   title: { color: t.text, fontFamily: F.extraBold, fontSize: 17, lineHeight: 22 },
+  verified: { color: t.accentText, fontFamily: F.semiBold, fontSize: 10, letterSpacing: 0.3 },
   body: { color: t.textSecondary, fontFamily: F.medium, fontSize: 14, lineHeight: 21 },
   actions: { gap: 8, marginTop: 4 },
   prov: { borderTopWidth: 1, borderTopColor: t.border, paddingTop: 8, gap: 4 },

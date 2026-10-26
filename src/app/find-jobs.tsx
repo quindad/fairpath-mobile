@@ -126,7 +126,8 @@ export default function FindJobs(){
     if(!whereTouched.current){
      const next=zip??'';
      if(next!==whereRef.current){setWhere(next);setNonce(n=>n+1)}
-     setRadius(s?.search_radius_miles??shared.radiusMiles);
+     if(s)setRadius(s.search_radius_miles);
+     else setRadius(shared.radiusMiles??DEFAULT_SEARCH_RADIUS_MILES);
     }
    })
    .finally(()=>{if(active)setLocationReady(true)});

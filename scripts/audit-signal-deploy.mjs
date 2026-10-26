@@ -22,7 +22,10 @@ for (const fn of clientUnique) {
   check(deployFns.includes(fn), `${fn} is invoked by the client but missing from deploy-dev-signal.mjs`);
 }
 
+const deployOnlyOrchestration = new Set(['fairpath-ai-gateway']); // auth metadata Edge fn; invoked from fairpath-ai-gateway-client.ts
+
 for (const fn of deployFns) {
+  if (deployOnlyOrchestration.has(fn)) continue;
   check(clientFns.includes(fn), `${fn} is in deploy script but not invoked from signal.ts`);
   check(fs.existsSync(`supabase/functions/${fn}/index.ts`), `deploy lists missing function: ${fn}`);
 }

@@ -15,6 +15,7 @@ import {
   planReadToolsForIntent,
   type SignalToolStep,
 } from './signal-tool-plan.ts';
+import { actionsFromSourceRefs, mergeResponseActions } from './signal-result-actions.ts';
 
 export {
   MAX_READ_TOOL_STEPS,
@@ -189,10 +190,12 @@ export async function enrichWithReadTools(
     refs.push(...out.extraRefs);
   }
 
+  const toolActions = actionsFromSourceRefs(refs);
   return {
     response: {
       ...response,
       parts: mergedParts,
+      actions: mergeResponseActions(response.actions, toolActions),
       provenance: {
         ...response.provenance,
         engine: 'deterministic_router',

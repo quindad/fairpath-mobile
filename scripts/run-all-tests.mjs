@@ -48,6 +48,8 @@ const steps = [
   ['audit: community contributions', NODE, ['scripts/audit-community-contributions.mjs']],
   ['location search context', NODE, ['--test', '--experimental-strip-types', 'tests/location-search-context.test.ts']],
   ['audit: location', NODE, ['scripts/audit-location.mjs']],
+  ['signal result actions', NODE, ['--test', '--experimental-strip-types', 'tests/signal-result-actions.test.ts']],
+  ['audit: fairpath ai gateway', NODE, ['scripts/audit-fairpath-ai-gateway.mjs']],
   ['opportunity intent parser', NODE, ['--test', '--experimental-strip-types', 'tests/opportunity-intent-parser.test.ts']],
   ['opportunity orchestrator helpers', NODE, ['--test', '--experimental-strip-types', 'tests/opportunity-orchestrator.test.ts']],
   ['V1 opportunity pathways', NODE, ['--test', '--experimental-strip-types', 'tests/v1-pathways.test.ts']],
