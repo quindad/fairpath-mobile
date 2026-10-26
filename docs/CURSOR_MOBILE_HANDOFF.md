@@ -2,7 +2,7 @@
 
 **Updated:** 2026-10-26 (Batch A/B — RR coverage matrix + resource fixture isolation + source catalog dry-run)  
 **Branch:** `development/mobile-v1-completion`  
-**HEAD:** *(see latest commit on branch after push)*  
+**HEAD:** `45e1deb`  
 **Ship policy:** Sterling — built work committed and pushed to `origin/development/mobile-v1-completion` (DEV only; no prod/migrations/Edge deploy without approval).
 
 ### Batch A/B engineering (2026-10-26)
