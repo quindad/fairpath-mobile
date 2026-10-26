@@ -47,6 +47,18 @@ export const SIGNAL_CATALOG: SignalCatalogEntry[] = [
   { id: 'meeting_prep', category: 'work', title: 'Meeting prep', description: 'Before a scheduled meeting — agenda-style prep from real details.', creditCost: 1, route: '/meetings' },
 ];
 
+/** Compact tools sheet — high-value workflows only (not the full grid). */
+export function signalQuickTools(max = 8): SignalCatalogEntry[] {
+  const pick = ['focus', 'resources', 'job_fit', 'housing_fit', 'credit_report', 'relief_case', 'letter_explainer', 'veteran_translate'];
+  const out: SignalCatalogEntry[] = [];
+  for (const id of pick) {
+    const row = SIGNAL_CATALOG.find((e) => e.id === id);
+    if (row) out.push(row);
+    if (out.length >= max) break;
+  }
+  return out;
+}
+
 export function catalogByCategory(): { category: SignalCategory; label: string; items: SignalCatalogEntry[] }[] {
   const order: SignalCategory[] = ['life', 'work', 'housing', 'credit', 'records', 'business'];
   return order.map((category) => ({

@@ -50,6 +50,7 @@ const steps = [
   ['audit: location', NODE, ['scripts/audit-location.mjs']],
   ['signal result actions', NODE, ['--test', '--experimental-strip-types', 'tests/signal-result-actions.test.ts']],
   ['audit: fairpath ai gateway', NODE, ['scripts/audit-fairpath-ai-gateway.mjs']],
+  ['audit: signal member journey', NODE, ['--experimental-strip-types', 'scripts/audit-signal-member-journey.mjs']],
   ['opportunity intent parser', NODE, ['--test', '--experimental-strip-types', 'tests/opportunity-intent-parser.test.ts']],
   ['multi-need planner', NODE, ['--test', '--experimental-strip-types', 'tests/multi-need-planner.test.ts']],
   ['opportunity orchestrator helpers', NODE, ['--test', '--experimental-strip-types', 'tests/opportunity-orchestrator.test.ts']],

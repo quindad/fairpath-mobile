@@ -1,11 +1,12 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Image, Pressable, Text, TextInput, View } from 'react-native';
 import { FormScrollView } from '@/components/FormScrollView';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { FOOD_RESCUE_HOME, foodRescueItemRoute } from '@/core/community/food-rescue-nav';
+import { loadMemberSearchLocation } from '@/core/location/member-search-location';
 import { browseFoodRescue, toggleFoodRescueSaved, type FoodRescueBrowseRow } from '@/core/food-rescue/food-rescue-service';
 import { pickupWindowClosesIn } from '@/core/food-rescue/pickup-window';
 import { FOOD_RESCUE_STATUS_LABEL } from '@/core/food-rescue/status';
@@ -17,6 +18,7 @@ export default function FoodRescueBrowseScreen() {
   const [items, setItems] = useState<FoodRescueBrowseRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const locationPrefilled = useRef(false);
 
   const run = useCallback(async () => {
     setLoading(true);
@@ -39,8 +41,34 @@ export default function FoodRescueBrowseScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      void run();
-    }, [run]),
+      void (async () => {
+        let locStr = location;
+        if (!locationPrefilled.current) {
+          const shared = await loadMemberSearchLocation().catch(() => null);
+          if (shared?.zip) {
+            locStr = shared.zip;
+            setLocation(shared.zip);
+            locationPrefilled.current = true;
+          }
+        }
+        setLoading(true);
+        setError('');
+        try {
+          setItems(
+            await browseFoodRescue({
+              location: locStr,
+              closingSoonOnly,
+              savedOnly,
+            }),
+          );
+        } catch {
+          setItems([]);
+          setError('Food Rescue could not load. Check your connection and try again.');
+        } finally {
+          setLoading(false);
+        }
+      })();
+    }, [location, closingSoonOnly, savedOnly]),
   );
 
   async function onToggleSave(item: FoodRescueBrowseRow) {

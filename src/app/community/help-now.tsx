@@ -5,7 +5,7 @@ import { FormScrollView } from '@/components/FormScrollView';
 import { OpportunityResultsList } from '@/components/opportunity/OpportunityResultsList';
 import { PageHeader, ScreenFrame } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
-import { loadHomePersonalization } from '@/core/profile/home-personalization';
+import { loadMemberSearchLocation } from '@/core/location/member-search-location';
 import type { InterpretedOpportunity, OpportunityLocation, StructuredNeed } from '@/core/opportunity/needs-model';
 import { interpretOpportunityQuery } from '@/core/opportunity/intent-parser';
 import { searchOpportunities } from '@/core/opportunity/orchestrator';
@@ -23,15 +23,9 @@ export default function HelpNowScreen() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    loadHomePersonalization().then((p) => {
-      if (!p?.locationText) return;
-      const parts = p.locationText.split(',').map((x) => x.trim());
-      setLocation({
-        city: parts[0] ?? null,
-        state: parts[1]?.slice(0, 2).toUpperCase() ?? null,
-        zip: /\d{5}/.test(p.locationText) ? p.locationText.match(/\d{5}/)?.[0] ?? null : null,
-        missing: false,
-      });
+    loadMemberSearchLocation().then((loc) => {
+      if (!loc.zip) return;
+      setLocation({ zip: loc.zip, city: null, state: null, missing: false });
     });
   }, []);
 

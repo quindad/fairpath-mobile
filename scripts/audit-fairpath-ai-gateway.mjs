@@ -8,6 +8,7 @@ const edge = fs.readFileSync('supabase/functions/fairpath-ai-gateway/index.ts', 
 check(/auth\.getUser/.test(edge), 'Gateway must authenticate members.');
 check(!/runSignalCall/.test(edge), 'Orchestration gateway must not spend AI credits.');
 check(/modelAssisted:\s*false/.test(edge), 'Gateway response must not claim model assistance.');
+check(/search_jobs/.test(edge) && /search_resources/.test(edge), 'Gateway must execute RLS-backed read tools.');
 
 const client = fs.readFileSync('src/core/ai/fairpath-ai-gateway-client.ts', 'utf8');
 check(/fairpath-ai-gateway/.test(client), 'Client must invoke fairpath-ai-gateway.');

@@ -2,7 +2,7 @@
  * Client-side Signal tool orchestration: deterministic intent routing first, then capped read-only tool calls.
  * Write tools never execute here — UI must confirm and route to the owning workflow.
  */
-import type { AiGateway, AiResponse, AnswerPart, Provenance } from '../ai/orchestrator.ts';
+import type { AiGateway, AiResponse, AiResultCard, AnswerPart, Provenance } from '../ai/orchestrator.ts';
 import { loadMemberSearchLocation } from '../location/member-search-location.ts';
 import { searchHousing } from '../housing/housing-service.ts';
 import { searchJobs } from '../jobs/jobs-service.ts';
@@ -12,7 +12,8 @@ import { V1_PATHWAYS } from '../opportunity/v1-pathways.ts';
 import { sanitizeToolQuery } from './signal-prompt-guard.ts';
 import {
   MAX_READ_TOOL_STEPS,
-  planReadToolsForIntent,
+  planReadToolsForQuestion,
+  toolQueryForStep,
   type SignalToolStep,
 } from './signal-tool-plan.ts';
 import { actionsFromSourceRefs, mergeResponseActions } from './signal-result-actions.ts';
@@ -22,12 +23,14 @@ export {
   detectWriteToolRequest,
   loadingMessageForPhase,
   planReadToolsForIntent,
+  planReadToolsForQuestion,
+  toolQueryForStep,
   type SignalToolStep,
 } from './signal-tool-plan.ts';
 
 export type SignalLoadingPhase = 'routing' | 'tools' | 'enrich' | null;
 
-export type ReadToolResult = { parts: AnswerPart[]; extraRefs: Provenance['sourceRefs'] };
+export type ReadToolResult = { parts: AnswerPart[]; extraRefs: Provenance['sourceRefs']; cards?: AiResultCard[] };
 
 async function executeReadTool(
   toolId: string,
@@ -36,7 +39,7 @@ async function executeReadTool(
   signal?: AbortSignal,
 ): Promise<ReadToolResult | null> {
   if (signal?.aborted) return null;
-  const q = sanitizeToolQuery(question);
+  const q = sanitizeToolQuery(toolQueryForStep(toolId, question));
   const loc = await loadMemberSearchLocation(question);
 
   switch (toolId) {
@@ -71,6 +74,17 @@ async function executeReadTool(
           { text: lines.join('\n'), basis: 'app_state' },
         ],
         extraRefs: r.jobs.slice(0, 3).map((j) => ({ kind: 'summary' as const, id: `job:${j.id}` })),
+        cards: r.jobs.slice(0, 3).map((j) => {
+          const place = j.city && j.state ? `${j.city}, ${j.state}` : j.location_text ?? 'See listing';
+          return {
+            kind: 'job' as const,
+            recordId: j.id,
+            title: j.title,
+            subtitle: j.company_name,
+            route: `/job/${j.id}`,
+            detail: place,
+          };
+        }),
       };
     }
     case 'search_housing': {
@@ -92,6 +106,14 @@ async function executeReadTool(
           { text: lines.join('\n'), basis: 'app_state' },
         ],
         extraRefs: r.homes.slice(0, 3).map((h) => ({ kind: 'summary' as const, id: `housing:${h.id}` })),
+        cards: r.homes.slice(0, 3).map((h) => ({
+          kind: 'housing' as const,
+          recordId: h.id,
+          title: h.title,
+          subtitle: h.city && h.state ? `${h.city}, ${h.state}` : 'See listing',
+          route: `/housing/${h.id}`,
+          detail: h.rent_monthly ? `$${h.rent_monthly}/mo` : undefined,
+        })),
       };
     }
     case 'my_path': {
@@ -161,6 +183,22 @@ async function executeReadTool(
           { text: lines.join('\n'), basis: 'app_state' },
         ],
         extraRefs: r.resources.slice(0, 5).map((row) => ({ kind: 'summary' as const, id: `resource:${row.id}` })),
+        cards: r.resources.slice(0, 3).map((row) => {
+          const place = row.nearest_location
+            ? [row.nearest_location.city, row.nearest_location.state_code].filter(Boolean).join(', ')
+            : row.is_national
+              ? 'Nationwide'
+              : 'See listing';
+          const dist = row.distance_miles != null ? `${row.distance_miles.toFixed(1)} mi` : undefined;
+          return {
+            kind: 'resource' as const,
+            recordId: row.id,
+            title: row.title,
+            subtitle: row.organization.name,
+            route: `/resource/${row.id}`,
+            detail: [place, dist].filter(Boolean).join(' · '),
+          };
+        }),
       };
     }
     default:
@@ -174,11 +212,12 @@ export async function enrichWithReadTools(
   gw: AiGateway,
   signal?: AbortSignal,
 ): Promise<{ response: AiResponse; phase: SignalLoadingPhase }> {
-  const plan = planReadToolsForIntent(response.intent).slice(0, MAX_READ_TOOL_STEPS);
+  const plan = planReadToolsForQuestion(question, response.intent).slice(0, MAX_READ_TOOL_STEPS);
   if (!plan.length) return { response, phase: null };
 
   const mergedParts: AnswerPart[] = [...response.parts];
   const refs: Provenance['sourceRefs'] = [...response.provenance.sourceRefs];
+  const cards: AiResultCard[] = [...(response.resultCards ?? [])];
   let lastTool: string | undefined;
 
   for (const step of plan) {
@@ -188,13 +227,21 @@ export async function enrichWithReadTools(
     if (!out) break;
     mergedParts.push(...out.parts);
     refs.push(...out.extraRefs);
+    if (out.cards?.length) cards.push(...out.cards);
   }
 
   const toolActions = actionsFromSourceRefs(refs);
+  const seenCardRoutes = new Set<string>();
+  const dedupedCards = cards.filter((c) => {
+    if (seenCardRoutes.has(c.route)) return false;
+    seenCardRoutes.add(c.route);
+    return true;
+  });
   return {
     response: {
       ...response,
       parts: mergedParts,
+      resultCards: dedupedCards.slice(0, 6),
       actions: mergeResponseActions(response.actions, toolActions),
       provenance: {
         ...response.provenance,

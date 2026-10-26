@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import type { IntentId } from '@/core/ai/intents.ts';
+import type { AiResultCard } from '@/core/ai/orchestrator.ts';
+import { loadMemberSearchLocation } from '@/core/location/member-search-location';
 
 export type FairpathGatewayRouteResponse = {
   authenticated: boolean;
@@ -7,6 +9,7 @@ export type FairpathGatewayRouteResponse = {
   tools: string[];
   routes: { label: string; route: string }[];
   location: { zip: string | null; radiusMiles: number | null };
+  resultCards?: AiResultCard[];
   modelAssisted: false;
 };
 
@@ -17,7 +20,15 @@ function missingFunction(error: { message?: string } | null): boolean {
 
 /** Server-side orchestration metadata (no credit spend). Falls back to null when Edge is not deployed. */
 export async function fetchFairpathGatewayPlan(message: string): Promise<FairpathGatewayRouteResponse | null> {
-  const { data, error } = await supabase.functions.invoke('fairpath-ai-gateway', { body: { message: message.trim() } });
+  const loc = await loadMemberSearchLocation(message).catch(() => null);
+  const { data, error } = await supabase.functions.invoke('fairpath-ai-gateway', {
+    body: {
+      message: message.trim(),
+      zip: loc?.zip ?? undefined,
+      radiusMiles: loc?.radiusMiles,
+      executeTools: true,
+    },
+  });
   if (error && missingFunction(error)) return null;
   if (error) return null;
   if (!data || typeof data !== 'object') return null;

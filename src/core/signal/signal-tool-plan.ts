@@ -22,6 +22,47 @@ export function planReadToolsForIntent(intent: IntentId): SignalToolStep[] {
   }
 }
 
+function addStep(steps: SignalToolStep[], toolId: string) {
+  if (!steps.some((s) => s.toolId === toolId)) steps.push({ toolId, risk: 'read' });
+}
+
+/** Multi-need planning from natural language (e.g. jobs + transportation). */
+export function planReadToolsForQuestion(question: string, intent: IntentId): SignalToolStep[] {
+  const t = (question ?? '').toLowerCase();
+  const steps: SignalToolStep[] = [];
+
+  const wantsJobs = intent === 'find_jobs' || /\b(job|jobs|work|employ|hire|career)\b/.test(t);
+  const wantsHousing = intent === 'find_housing' || /\b(hous|rent|apartment|shelter)\b/.test(t);
+  const wantsResources =
+    intent === 'find_resources' ||
+    /\b(food|grocer|transport|transportation|ride|bus pass|childcare|daycare|benefit|utility|legal help|veteran resource)\b/.test(t);
+
+  if (wantsJobs) addStep(steps, 'search_jobs');
+  if (wantsHousing) addStep(steps, 'search_housing');
+  if (wantsResources) addStep(steps, 'search_resources');
+  if (intent === 'next_steps') addStep(steps, 'my_path');
+  if (!steps.length) {
+    for (const s of planReadToolsForIntent(intent)) addStep(steps, s.toolId);
+  }
+  if (!steps.length && intent === 'help') addStep(steps, 'pathways');
+
+  return steps.slice(0, MAX_READ_TOOL_STEPS);
+}
+
+export function toolQueryForStep(toolId: string, question: string): string {
+  const t = question.trim();
+  if (toolId === 'search_jobs') {
+    return t.replace(/\band\b[^.]*?(transport|transportation|ride|bus)[^.]*/gi, '').trim() || t;
+  }
+  if (toolId === 'search_resources') {
+    if (/\b(transport|transportation|ride|bus pass|no car)\b/i.test(t)) return 'transportation assistance';
+    if (/\b(childcare|daycare)\b/i.test(t)) return 'childcare';
+    if (/\b(food|grocer|hungry)\b/i.test(t)) return 'food assistance';
+    if (/\b(veteran)\b/i.test(t)) return 'veteran benefits';
+  }
+  return t;
+}
+
 const WRITE_PATTERNS: { toolId: string; patterns: RegExp[] }[] = [
   { toolId: 'submit_job_application', patterns: [/\b(submit|send)\b.*\b(job )?application\b/i] },
   { toolId: 'submit_housing_application', patterns: [/\b(submit|send)\b.*\bhousing\b.*\bapplication\b/i] },

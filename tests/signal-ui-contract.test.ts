@@ -8,16 +8,16 @@ test('Signal tab uses conversation-first layout', () => {
   const src = read('src/app/fairpath-ai.tsx');
   assert.match(src, /FairPath Signal/);
   assert.match(src, /FormScrollView/);
-  assert.match(src, /s\.composer/, 'composer stays in scroll flow so iOS keyboard insets work');
-  assert.doesNotMatch(src, /KeyboardFooterLayout/, 'Signal must not use fixed footer outside scroll (keyboard audit)');
+  assert.match(src, /KeyboardFooterLayout/, 'fixed composer stays above iOS keyboard');
+  assert.match(src, /s\.composer/, 'composer is pinned outside the scroll region');
   assert.match(src, /ScreenColumn/);
   assert.match(src, /SignalTurn/);
   assert.match(src, /loadSignalSuggestions/);
-  assert.match(src, /Modal visible=\{toolsOpen\}[\s\S]*catalogByCategory/, 'tool catalog lives in tools modal');
-  assert.match(src, /Modal visible=\{toolsOpen\}/);
+  assert.match(src, /signalQuickTools/, 'tools menu stays compact');
   assert.match(src, /enrichWithReadTools/);
   assert.match(src, /loadActiveConversation/);
   assert.match(src, /cancelAsk/);
+  assert.match(src, /letter-explainer/, 'attachment entry routes to supported document workflow');
 });
 
 test('Signal tool registry defines read/write separation', () => {

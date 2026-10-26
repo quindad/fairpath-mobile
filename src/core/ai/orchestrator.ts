@@ -25,7 +25,25 @@ export type Provenance = {
   ruleVersions: { rule_key: string; rule_version: number }[]; officialSources: { label: string; url: string }[];
   confidence: 'deterministic' | 'high' | 'medium' | 'low' | 'unavailable';
 };
-export type AiResponse = { intent: IntentId; title: string; parts: AnswerPart[]; actions: AiAction[]; provenance: Provenance; modelAssisted: boolean };
+export type AiResultCard = {
+  kind: 'job' | 'housing' | 'resource';
+  recordId: string;
+  title: string;
+  subtitle: string;
+  route: string;
+  detail?: string;
+};
+
+export type AiResponse = {
+  intent: IntentId;
+  title: string;
+  parts: AnswerPart[];
+  actions: AiAction[];
+  provenance: Provenance;
+  modelAssisted: boolean;
+  /** Live search hits from Signal read tools (verified IDs only). */
+  resultCards?: AiResultCard[];
+};
 
 /** The ONLY data the assistant may read. Implemented by src/core/ai/gateway.ts with read-only loaders. */
 export type AiGateway = {

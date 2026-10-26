@@ -1,15 +1,17 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, Text, TextInput, View } from 'react-native';
-import { FormScrollView } from '@/components/FormScrollView';
+import { FormScrollView, KeyboardFooterLayout } from '@/components/FormScrollView';
 import { FairBackButton, ScreenColumn, ScreenFrame, SharpChip } from '@/components/ProductChrome';
+import { fetchFairpathGatewayPlan } from '@/core/ai/fairpath-ai-gateway-client';
 import { SignalTurn } from '@/components/signal/SignalMessageBubble';
 import { TextButton } from '@/components/ui-kit';
 import { FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { gateway, deleteAiHistory, logInteraction } from '@/core/ai/gateway';
 import { NO_MODEL, answer, type AiResponse } from '@/core/ai/orchestrator';
 import { getFocusGuidance, getResourceGuidance } from '@/core/ai/signal';
-import { catalogByCategory } from '@/core/ai/signal-catalog';
+import { signalQuickTools } from '@/core/ai/signal-catalog';
+import { loadMemberSearchLocation } from '@/core/location/member-search-location';
 import { mergeSignalText, shouldEnrichWithSignal } from '@/core/ai/signal-enrich';
 import { noteForAskFailure, noteForSignalResult } from '@/core/signal/signal-member-context';
 import { loadAiCreditBalance } from '@/core/ai/ai-credits';
@@ -44,6 +46,7 @@ export default function FairPathAssistant() {
   const [threadMeta, setThreadMeta] = useState<ConversationThreadMeta | null>(null);
   const [loadingStatus, setLoadingStatus] = useState<string | undefined>();
   const [activeTurnId, setActiveTurnId] = useState<number | null>(null);
+  const [locationHint, setLocationHint] = useState<string | null>(null);
   const seq = useRef(0);
   const asked = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -57,6 +60,12 @@ export default function FairPathAssistant() {
       });
       loadSignalSuggestions().then((x) => {
         if (live) setStarters(x);
+      });
+      loadMemberSearchLocation().then((loc) => {
+        if (!live) return;
+        if (loc.zip) setLocationHint(`Searching near ZIP ${loc.zip} (${loc.radiusMiles} mi)`);
+        else if (loc.source === 'device') setLocationHint('Using your device location for nearby results');
+        else setLocationHint('Add a ZIP for distance-sorted results');
       });
       loadActiveConversation().then((active) => {
         if (!live || !active) return;
@@ -159,6 +168,20 @@ export default function FairPathAssistant() {
       setLoadingStatus(loadingMessageForPhase('tools', planToolHint(response.intent)));
       const enriched = await enrichWithReadTools(response, t, gateway, ac.signal);
       response = enriched.response;
+
+      if (await gateway.signedIn()) {
+        const gwPlan = await fetchFairpathGatewayPlan(t);
+        if (gwPlan?.resultCards?.length) {
+          const seen = new Set((response.resultCards ?? []).map((c) => c.route));
+          const merged = [...(response.resultCards ?? [])];
+          for (const card of gwPlan.resultCards) {
+            if (seen.has(card.route)) continue;
+            seen.add(card.route);
+            merged.push(card);
+          }
+          response = { ...response, resultCards: merged.slice(0, 6) };
+        }
+      }
 
       if (shouldEnrichWithSignal(response.intent) && (await gateway.signedIn())) {
         setLoadingStatus(loadingMessageForPhase('enrich'));
@@ -280,13 +303,15 @@ export default function FairPathAssistant() {
         </View>
       </View>
 
-      <ScreenColumn>
+      <KeyboardFooterLayout>
+        <ScreenColumn>
           <FormScrollView
             ref={scrollRef}
             style={s.chatScroll}
             contentContainerStyle={s.chatContent}
             showsVerticalScrollIndicator={false}
           >
+            {locationHint ? <Text style={s.locHint}>{locationHint}</Text> : null}
             {showEmpty ? (
               <View style={s.welcome}>
                 <Text style={s.welcomeTitle}>What do you need help with?</Text>
@@ -317,35 +342,6 @@ export default function FairPathAssistant() {
               />
             ))}
 
-            <View style={s.composer}>
-              <TextInput
-                value={text}
-                onChangeText={setText}
-                placeholder="Message Signal…"
-                placeholderTextColor={tokens.textMuted}
-                style={s.input}
-                multiline
-                maxLength={500}
-                editable={!busy}
-                onSubmitEditing={() => void ask(text)}
-                blurOnSubmit={false}
-              />
-              {busy ? (
-                <Pressable accessibilityRole="button" accessibilityLabel="Stop" style={s.send} onPress={cancelAsk}>
-                  <Lucide name="square" color={tokens.onAccent} size={18} />
-                </Pressable>
-              ) : (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Send message"
-                  style={[s.send, text.trim().length < 2 && s.sendDisabled]}
-                  disabled={text.trim().length < 2}
-                  onPress={() => void ask(text)}
-                >
-                  <Lucide name="arrow-up" color={text.trim().length < 2 ? tokens.textMuted : tokens.onAccent} size={20} />
-                </Pressable>
-              )}
-            </View>
             {turns.length ? (
               <View style={s.footerRow}>
                 <TextButton label="New conversation" onPress={() => void newConversation()} />
@@ -370,7 +366,46 @@ export default function FairPathAssistant() {
               </View>
             ) : null}
           </FormScrollView>
-      </ScreenColumn>
+
+          <View style={s.composer}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Attach a document photo"
+              style={s.attach}
+              onPress={() => router.push('/letter-explainer' as never)}
+            >
+              <Lucide name="paperclip" color={tokens.textSecondary} size={20} />
+            </Pressable>
+            <TextInput
+              value={text}
+              onChangeText={setText}
+              placeholder="Message Signal…"
+              placeholderTextColor={tokens.textMuted}
+              style={s.input}
+              multiline
+              maxLength={500}
+              editable={!busy}
+              onSubmitEditing={() => void ask(text)}
+              blurOnSubmit={false}
+            />
+            {busy ? (
+              <Pressable accessibilityRole="button" accessibilityLabel="Stop" style={s.send} onPress={cancelAsk}>
+                <Lucide name="square" color={tokens.onAccent} size={18} />
+              </Pressable>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Send message"
+                style={[s.send, text.trim().length < 2 && s.sendDisabled]}
+                disabled={text.trim().length < 2}
+                onPress={() => void ask(text)}
+              >
+                <Lucide name="arrow-up" color={text.trim().length < 2 ? tokens.textMuted : tokens.onAccent} size={20} />
+              </Pressable>
+            )}
+          </View>
+        </ScreenColumn>
+      </KeyboardFooterLayout>
 
       <Modal visible={toolsOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setToolsOpen(false)}>
         <View style={s.modal}>
@@ -381,26 +416,21 @@ export default function FairPathAssistant() {
             </Pressable>
           </View>
           <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.modalBody}>
-            <Text style={s.modalLead}>Open a screen, then use Signal there for document or AI-heavy tasks.</Text>
-            {catalogByCategory().map((group) => (
-              <View key={group.category} style={s.modalGroup}>
-                <Text style={s.groupTitle}>{group.label}</Text>
-                {group.items.map((row) => (
-                  <Pressable
-                    key={row.id}
-                    accessibilityRole="button"
-                    style={s.catalogRow}
-                    onPress={() => {
-                      setToolsOpen(false);
-                      if (row.assistantPrompt) void ask(row.assistantPrompt);
-                      else if (row.route) router.push(row.route as never);
-                    }}
-                  >
-                    <Text style={s.catalogTitle}>{row.title}</Text>
-                    <Text style={s.catalogBody} numberOfLines={2}>{row.description}</Text>
-                  </Pressable>
-                ))}
-              </View>
+            <Text style={s.modalLead}>Shortcuts to FairPath workflows. Document-heavy tasks open on their screen.</Text>
+            {signalQuickTools().map((row) => (
+              <Pressable
+                key={row.id}
+                accessibilityRole="button"
+                style={s.catalogRow}
+                onPress={() => {
+                  setToolsOpen(false);
+                  if (row.assistantPrompt) void ask(row.assistantPrompt);
+                  else if (row.route) router.push(row.route as never);
+                }}
+              >
+                <Text style={s.catalogTitle}>{row.title}</Text>
+                <Text style={s.catalogBody} numberOfLines={2}>{row.description}</Text>
+              </Pressable>
             ))}
           </FormScrollView>
         </View>
@@ -428,7 +458,8 @@ const styles = (t: ThemeTokens) => ({
   creditText: { color: t.accentText, fontFamily: F.semiBold, fontSize: 11 },
   signInLink: { color: t.accentText, fontFamily: F.semiBold, fontSize: 12 },
   chatScroll: { flex: 1 },
-  chatContent: { paddingHorizontal: L.mobileGutter, paddingTop: 12, paddingBottom: 24, flexGrow: 1 },
+  chatContent: { paddingHorizontal: L.mobileGutter, paddingTop: 12, paddingBottom: 12, flexGrow: 1 },
+  locHint: { color: t.textMuted, fontFamily: F.medium, fontSize: 11, marginBottom: 8 },
   welcome: { gap: 10, paddingBottom: 8 },
   welcomeTitle: { color: t.text, fontFamily: F.extraBold, fontSize: 20, lineHeight: 24 },
   welcomeBody: { color: t.textSecondary, fontFamily: F.medium, fontSize: 14, lineHeight: 20 },
@@ -439,11 +470,12 @@ const styles = (t: ThemeTokens) => ({
     gap: 8,
     paddingHorizontal: L.mobileGutter,
     paddingTop: 8,
-    paddingBottom: 6,
+    paddingBottom: 8,
     borderTopWidth: 1,
     borderTopColor: t.border,
     backgroundColor: t.background,
   },
+  attach: { width: 40, height: 44, alignItems: 'center' as const, justifyContent: 'center' as const },
   input: {
     flex: 1,
     minHeight: 44,

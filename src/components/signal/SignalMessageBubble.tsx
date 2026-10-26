@@ -44,6 +44,23 @@ export function SignalTurn({ user, response, loading, loadingStatus, provOpen, o
           {response.parts.map((p, k) => (
             <Text key={k} style={s.body}>{p.text}</Text>
           ))}
+          {response.resultCards?.length ? (
+            <View style={s.cards}>
+              {response.resultCards.map((card) => (
+                <Pressable
+                  key={card.route}
+                  accessibilityRole="link"
+                  style={s.card}
+                  onPress={() => onAction(card.route)}
+                >
+                  <Text style={s.cardKind}>{card.kind.replace(/_/g, ' ')}</Text>
+                  <Text style={s.cardTitle}>{card.title}</Text>
+                  <Text style={s.cardSub} numberOfLines={2}>{card.subtitle}</Text>
+                  {card.detail ? <Text style={s.cardMeta}>{card.detail}</Text> : null}
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
           {response.actions.length ? (
             <View style={s.actions}>
               {response.actions.map((a) =>
@@ -111,6 +128,19 @@ const styles = (t: ThemeTokens) => ({
   title: { color: t.text, fontFamily: F.extraBold, fontSize: 17, lineHeight: 22 },
   verified: { color: t.accentText, fontFamily: F.semiBold, fontSize: 10, letterSpacing: 0.3 },
   body: { color: t.textSecondary, fontFamily: F.medium, fontSize: 14, lineHeight: 21 },
+  cards: { gap: 8, marginTop: 4 },
+  card: {
+    borderWidth: 1,
+    borderColor: t.borderStrong,
+    backgroundColor: t.background,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 2,
+  },
+  cardKind: { color: t.accentText, fontFamily: F.semiBold, fontSize: 10, letterSpacing: 0.4, textTransform: 'uppercase' as const },
+  cardTitle: { color: t.text, fontFamily: F.bold, fontSize: 15, lineHeight: 20 },
+  cardSub: { color: t.textSecondary, fontFamily: F.medium, fontSize: 13, lineHeight: 18 },
+  cardMeta: { color: t.textMuted, fontFamily: F.medium, fontSize: 12, marginTop: 2 },
   actions: { gap: 8, marginTop: 4 },
   prov: { borderTopWidth: 1, borderTopColor: t.border, paddingTop: 8, gap: 4 },
   link: { color: t.accentText, fontFamily: F.semiBold, fontSize: 13, marginTop: 4 },

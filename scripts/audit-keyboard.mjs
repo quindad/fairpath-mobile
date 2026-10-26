@@ -14,7 +14,7 @@ if (!/keyboardShouldPersistTaps:\s*'handled'/.test(shared)) failures.push("FormS
 if (!/keyboardDismissMode/.test(shared)) failures.push('FormScrollView must set a keyboardDismissMode.');
 
 const withInputs = files.filter((f) => f.startsWith('src/app/') && /<TextInput\b/.test(read(f)));
-const footerScreens = new Set(['src/app/complete-profile.tsx', 'src/app/onboarding.tsx']); // fixed footer outside the scroll view
+const footerScreens = new Set(['src/app/complete-profile.tsx', 'src/app/onboarding.tsx', 'src/app/fairpath-ai.tsx']); // fixed footer outside the scroll view
 
 for (const f of withInputs) {
   const src = read(f);
