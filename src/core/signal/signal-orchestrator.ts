@@ -17,6 +17,12 @@ import {
   type SignalToolStep,
 } from './signal-tool-plan.ts';
 import { actionsFromSourceRefs, mergeResponseActions } from './signal-result-actions.ts';
+import {
+  nearMeRequiresZip,
+  resourceNeedHints,
+  resourceSearchRpcParams,
+  shouldKeepResourceResult,
+} from './signal-resource-relevance.ts';
 
 export {
   MAX_READ_TOOL_STEPS,
@@ -152,22 +158,44 @@ async function executeReadTool(
       };
     }
     case 'search_resources': {
+      if (nearMeRequiresZip(question, loc.zip)) {
+        return {
+          parts: [
+            {
+              text: 'To search near you, set a ZIP in location settings or allow device location — Signal will not guess with unrelated nationwide listings.',
+              basis: 'app_state',
+            },
+          ],
+          extraRefs: [{ kind: 'summary', id: 'resources_need_zip' }],
+        };
+      }
+      const rpcParams = resourceSearchRpcParams(question, loc.zip);
       const r = await searchResources({
-        query: q,
+        query: rpcParams.query ?? q,
         zip: loc.zip ?? undefined,
         radiusMiles: loc.radiusMiles,
-        limit: 5,
+        category: rpcParams.category,
+        includeNational: rpcParams.includeNational,
+        limit: 8,
         urgent: /\b(today|tonight|emergency|urgent)\b/i.test(question),
       });
       if (signal?.aborted) return null;
-      if (!r.resources.length) {
+      const resources = r.resources.filter((row) => shouldKeepResourceResult(row.title, row.categories, question));
+      if (!resources.length) {
         const locHint = loc.zip ? ` near ZIP ${loc.zip}` : ' — try a ZIP or allow location';
+        const hints = resourceNeedHints(question);
+        const scope =
+          hints.wantsTransport && hints.wantsJobs
+            ? 'transportation or job-access programs'
+            : hints.wantsTransport
+              ? 'transportation programs'
+              : 'verified resources';
         return {
-          parts: [{ text: `No verified resources matched${locHint}. Open Resource Center to search manually.`, basis: 'app_state' }],
+          parts: [{ text: `No ${scope} matched${locHint}. Open Resource Center to search manually.`, basis: 'app_state' }],
           extraRefs: [{ kind: 'summary', id: 'resources_search_empty' }],
         };
       }
-      const lines = r.resources.map((row) => {
+      const lines = resources.map((row) => {
         const place = row.nearest_location
           ? [row.nearest_location.city, row.nearest_location.state_code].filter(Boolean).join(', ')
           : row.is_national
@@ -182,8 +210,8 @@ async function executeReadTool(
           { text: locLine, basis: 'app_state' },
           { text: lines.join('\n'), basis: 'app_state' },
         ],
-        extraRefs: r.resources.slice(0, 5).map((row) => ({ kind: 'summary' as const, id: `resource:${row.id}` })),
-        cards: r.resources.slice(0, 3).map((row) => {
+        extraRefs: resources.slice(0, 5).map((row) => ({ kind: 'summary' as const, id: `resource:${row.id}` })),
+        cards: resources.slice(0, 3).map((row) => {
           const place = row.nearest_location
             ? [row.nearest_location.city, row.nearest_location.state_code].filter(Boolean).join(', ')
             : row.is_national
@@ -233,6 +261,7 @@ export async function enrichWithReadTools(
   const toolActions = actionsFromSourceRefs(refs);
   const seenCardRoutes = new Set<string>();
   const dedupedCards = cards.filter((c) => {
+    if (c.kind === 'resource' && !shouldKeepResourceResult(c.title, [], question)) return false;
     if (seenCardRoutes.has(c.route)) return false;
     seenCardRoutes.add(c.route);
     return true;

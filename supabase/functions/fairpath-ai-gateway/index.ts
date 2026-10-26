@@ -1,6 +1,11 @@
 // FairPath AI Gateway — authenticated orchestration + RLS-backed read tools (no model spend).
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, json, requireEnv } from '../_shared/http.ts';
+import {
+  nearMeRequiresZip,
+  resourceSearchRpcParams,
+  shouldKeepResourceResult,
+} from '../_shared/signal/resource-relevance.ts';
 
 type IntentId = 'find_jobs' | 'find_housing' | 'find_resources' | 'next_steps' | 'help';
 
@@ -173,23 +178,35 @@ Deno.serve(async (req: Request) => {
         }
       }
       if (toolId === 'search_resources') {
+        if (nearMeRequiresZip(message, zip)) {
+          continue;
+        }
+        const rpcParams = resourceSearchRpcParams(message, zip);
         const { data } = await userClient.rpc('search_resources', {
-          p_query: q || null,
+          p_query: (rpcParams.query ?? q) || null,
           p_zip: zip,
           p_radius_miles: radiusMiles,
-          p_category: null,
+          p_category: rpcParams.category,
           p_free_only: false,
           p_urgent: false,
           p_delivery: null,
-          p_include_national: true,
-          p_limit: 3,
+          p_include_national: rpcParams.includeNational,
+          p_limit: 6,
           p_offset: 0,
         });
-        for (const row of (data ?? []).slice(0, 3) as {
-          resource_row: { id: string; title: string; organization: { name: string }; is_national: boolean };
+        for (const row of (data ?? []) as {
+          resource_row: {
+            id: string;
+            title: string;
+            organization: { name: string };
+            is_national: boolean;
+            categories?: string[];
+          };
           distance_miles: number | null;
         }[]) {
           const r = row.resource_row;
+          const cats = Array.isArray(r.categories) ? r.categories : [];
+          if (!shouldKeepResourceResult(r.title, cats, message)) continue;
           resultCards.push({
             kind: 'resource',
             recordId: r.id,
@@ -198,6 +215,7 @@ Deno.serve(async (req: Request) => {
             route: `/resource/${r.id}`,
             detail: row.distance_miles != null ? `${row.distance_miles.toFixed(1)} mi` : r.is_national ? 'Nationwide' : undefined,
           });
+          if (resultCards.filter((c) => c.kind === 'resource').length >= 3) break;
         }
       }
     }

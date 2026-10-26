@@ -37,6 +37,9 @@ for (const f of files) {
 for (const f of footerScreens) {
   const src = read(f);
   if (!/KeyboardFooterLayout/.test(src) || !/FormScrollView/.test(src)) failures.push(`${f}: fixed-footer screen must wrap its content in KeyboardFooterLayout and use FormScrollView.`);
+  if (f === 'src/app/fairpath-ai.tsx' && !/\bfooterScroll\b/.test(src)) {
+    failures.push(`${f}: Signal chat must use FormScrollView footerScroll (no stacked keyboard insets with KeyboardFooterLayout).`);
+  }
 }
 
 if (failures.length) {

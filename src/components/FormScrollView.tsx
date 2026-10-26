@@ -1,6 +1,5 @@
-import { forwardRef } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, type ScrollViewProps } from 'react-native';
-import type { ReactNode } from 'react';
+import { forwardRef, useEffect, type ReactNode, type RefObject } from 'react';
+import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, type ScrollViewProps } from 'react-native';
 
 /**
  * The ONE keyboard strategy for every screen with text inputs.
@@ -22,9 +21,18 @@ export const KEYBOARD_LIST_PROPS={
  keyboardDismissMode:Platform.OS==='ios'?'interactive':'on-drag'
 } as const;
 
+/** Scroll props for fixed-footer chat screens (composer outside scroll). Do not stack with automaticallyAdjustKeyboardInsets. */
+export const FOOTER_SCROLL_PROPS={
+ keyboardShouldPersistTaps:'handled',
+ keyboardDismissMode:Platform.OS==='ios'?'interactive':'on-drag'
+} as const;
+
+export type FormScrollViewProps=ScrollViewProps&{/** When true, omit iOS keyboard insets (use with KeyboardFooterLayout). */footerScroll?:boolean};
+
 /** Drop-in ScrollView for forms. Taps on empty space dismiss the keyboard; taps on buttons still work. */
-export const FormScrollView=forwardRef<ScrollView,ScrollViewProps>(function FormScrollView(props,ref){
- return <ScrollView ref={ref} {...KEYBOARD_LIST_PROPS} {...props}/>;
+export const FormScrollView=forwardRef<ScrollView,FormScrollViewProps>(function FormScrollView({footerScroll,...props},ref){
+ const kb=footerScroll?FOOTER_SCROLL_PROPS:KEYBOARD_LIST_PROPS;
+ return <ScrollView ref={ref} {...kb} {...props}/>;
 });
 
 /**
@@ -33,7 +41,17 @@ export const FormScrollView=forwardRef<ScrollView,ScrollViewProps>(function Form
  * inside no longer overlaps the keyboard, so the two mechanisms never both apply. Screens whose button is
  * inside the scroll content need only FormScrollView.
  */
-export function KeyboardFooterLayout({children}:{children:ReactNode}){
+export function KeyboardFooterLayout({
+ children,
+ chatScrollRef,
+}:{children:ReactNode;/** Keeps latest chat messages visible when the iOS keyboard opens. */chatScrollRef?:RefObject<ScrollView|null>}){
+ useEffect(()=>{
+  if(Platform.OS!=='ios'||!chatScrollRef)return;
+  const show=Keyboard.addListener('keyboardWillShow',()=>{
+   requestAnimationFrame(()=>chatScrollRef.current?.scrollToEnd({animated:true}));
+  });
+  return ()=>show.remove();
+ },[chatScrollRef]);
  return <KeyboardAvoidingView style={layout.fill} behavior={Platform.OS==='ios'?'padding':undefined}>{children}</KeyboardAvoidingView>;
 }
 const layout=StyleSheet.create({fill:{flex:1}});

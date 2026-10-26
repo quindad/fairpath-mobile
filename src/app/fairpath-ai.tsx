@@ -25,6 +25,7 @@ import {
 } from '@/core/signal/signal-conversation-store';
 import { detectWriteToolRequest, enrichWithReadTools, loadingMessageForPhase } from '@/core/signal/signal-orchestrator';
 import { looksLikePromptInjection } from '@/core/signal/signal-prompt-guard';
+import { shouldKeepResourceResult } from '@/core/signal/signal-resource-relevance';
 import { useFairPathTheme, useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
 import { notify } from '@/core/ui/notify';
@@ -176,6 +177,7 @@ export default function FairPathAssistant() {
           const merged = [...(response.resultCards ?? [])];
           for (const card of gwPlan.resultCards) {
             if (seen.has(card.route)) continue;
+            if (card.kind === 'resource' && !shouldKeepResourceResult(card.title, [], t)) continue;
             seen.add(card.route);
             merged.push(card);
           }
@@ -303,9 +305,10 @@ export default function FairPathAssistant() {
         </View>
       </View>
 
-      <KeyboardFooterLayout>
+      <KeyboardFooterLayout chatScrollRef={scrollRef}>
         <ScreenColumn>
           <FormScrollView
+            footerScroll
             ref={scrollRef}
             style={s.chatScroll}
             contentContainerStyle={s.chatContent}

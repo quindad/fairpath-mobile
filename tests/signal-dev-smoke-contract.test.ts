@@ -42,6 +42,13 @@ test('prompt guard heuristics match UI injection block path', () => {
   assert.equal(looksLikePromptInjection('What jobs are near Columbus?'), false);
 });
 
+test('fairpath-ai-gateway filters multi-need resources (no nationwide financial backfill)', () => {
+  const gw = read('supabase/functions/fairpath-ai-gateway/index.ts');
+  assert.match(gw, /resource-relevance\.ts/);
+  assert.match(gw, /shouldKeepResourceResult/);
+  assert.match(gw, /nearMeRequiresZip/);
+});
+
 test('SIG-101 dev smoke harness documents the same client contract', () => {
   assert.ok(fs.existsSync('scripts/qa-dev-signal-smoke.mjs'));
   const script = read('scripts/qa-dev-signal-smoke.mjs');
