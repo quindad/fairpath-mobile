@@ -1,0 +1,65 @@
+{
+  "at": "2026-10-26T19:32:32.985Z",
+  "linkedProject": "znvhmuhojvwvjzmaqwff",
+  "counts": {
+    "remoteOnly": 43,
+    "localOnly": 27,
+    "localFiles": 146
+  },
+  "remoteOnlySample": [
+    "20261007233711",
+    "20261007233719",
+    "20261007233732",
+    "20261007233744",
+    "20261007234149",
+    "20261007234156",
+    "20261007234207",
+    "20261007234223",
+    "20261007234241",
+    "20261007234247",
+    "20261008000024",
+    "20261008000033",
+    "20261008000044",
+    "20261008000053",
+    "20261008000916"
+  ],
+  "localOnly": [
+    "20261008222300",
+    "20261008222400",
+    "20261008520000",
+    "20261008530000",
+    "20261008540000",
+    "20261008550000",
+    "20261008560000",
+    "20261008570000",
+    "20261008580000",
+    "20261008590000",
+    "20261009010000",
+    "20261009020000",
+    "20261009030000",
+    "20261009040000",
+    "20261009050000",
+    "20261009053401",
+    "20261009060000",
+    "20261009070000",
+    "20261009080000",
+    "20261014000000",
+    "20261014010000",
+    "20261014020000",
+    "20261017193000",
+    "20261017200000",
+    "20261017201000",
+    "20261017202000",
+    "20261026210000"
+  ],
+  "recommendedSteps": [
+    "Export DEV schema-only snapshot and diff against PGlite apply of all local migrations.",
+    "For each remote-only version: locate applied SQL in Supabase dashboard history or backup; add matching local file OR repair as reverted only if schema already matches repo.",
+    "For each local-only version: after remote history aligns, run supabase db push --linked once (never reset).",
+    "Verify community contributions + member_opportunity_plan_items tables via PostgREST before enabling client sync."
+  ],
+  "blockedUntilReconciled": [
+    "docs/proposed-migrations/20261026140000_community_contributions_DRAFT.sql (promote to versioned migration after history sync)",
+    "supabase/migrations/20261026210000_member_opportunity_plan_items.sql"
+  ]
+}

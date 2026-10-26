@@ -53,6 +53,7 @@ const steps = [
   ['audit: signal member journey', NODE, ['--experimental-strip-types', 'scripts/audit-signal-member-journey.mjs']],
   ['opportunity intent parser', NODE, ['--test', '--experimental-strip-types', 'tests/opportunity-intent-parser.test.ts']],
   ['multi-need planner', NODE, ['--test', '--experimental-strip-types', 'tests/multi-need-planner.test.ts']],
+  ['member opportunity plan sync', NODE, ['--test', '--experimental-strip-types', 'tests/member-opportunity-plan-sync.test.ts']],
   ['opportunity orchestrator helpers', NODE, ['--test', '--experimental-strip-types', 'tests/opportunity-orchestrator.test.ts']],
   ['V1 opportunity pathways', NODE, ['--test', '--experimental-strip-types', 'tests/v1-pathways.test.ts']],
   ['academy Signal worksheet', NODE, ['--test', '--experimental-strip-types', 'tests/academy-signal-worksheet.test.ts']],

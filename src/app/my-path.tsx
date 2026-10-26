@@ -13,7 +13,12 @@ import { homeQuickLinks, loadHomePersonalization, type HomePersonalization } fro
 import { loadMemberCapabilities, veteranToolsEnabled, type MemberCapabilities } from '@/core/profile/member-capabilities';
 import { interpretOpportunityQuery } from '@/core/opportunity/intent-parser';
 import { planStepsFromInterpretation, type PlannedNeedStep } from '@/core/opportunity/multi-need-planner';
-import { loadOpportunityPlan, upsertPlanItem, type OpportunityPlan } from '@/core/opportunity/plan-store';
+import {
+  loadMergedOpportunityPlan,
+  syncOpportunityPlanItems,
+} from '@/core/opportunity/member-opportunity-plan-service';
+import { upsertPlanItem, type OpportunityPlan } from '@/core/opportunity/plan-store';
+import { notify } from '@/core/ui/notify';
 import { loadMemberSearchLocation } from '@/core/location/member-search-location';
 import { useFairPathTheme } from '@/core/theme/ThemeProvider';
 import { loadMyResourceReferralRequests, type MemberReferralRow } from '@/core/opportunity/referral-service';
@@ -48,7 +53,7 @@ export default function MyPathScreen() {
     Promise.all([
       AsyncStorage.getItem(VETERAN_PROFILE_KEY),
       loadHomePersonalization().catch(() => null),
-      loadOpportunityPlan().catch(() => ({ items: [] })),
+      loadMergedOpportunityPlan().catch(() => ({ items: [] })),
       loadMyResourceReferralRequests().catch(() => []),
       loadMemberCapabilities().catch(() => null),
     ])
@@ -76,23 +81,44 @@ export default function MyPathScreen() {
     setPlannerSteps(planStepsFromInterpretation(interp));
   }
 
+  function confirmSavePlanner() {
+    if (!plannerSteps.length || plannerBusy) return;
+    notify(
+      'Save these steps to My Path?',
+      `${plannerSteps.length} step(s) will be saved on this device${'. When signed in, FairPath will also sync them to your account if My Path sync is enabled on DEV.'}`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Save', onPress: () => void savePlannerToDevice() },
+      ],
+    );
+  }
+
   async function savePlannerToDevice() {
     if (!plannerSteps.length || plannerBusy) return;
     setPlannerBusy(true);
     try {
       let plan = opportunityPlan ?? { items: [] };
+      const batch: import('@/core/opportunity/plan-store').OpportunityPlanItem[] = [];
       for (const step of plannerSteps) {
-        plan = await upsertPlanItem({
+        const item = {
           id: `plan_${step.route}_${step.needLabel}`.replace(/[^a-z0-9_]/gi, '_').slice(0, 48),
           title: step.needLabel,
-          status: 'exploring',
+          status: 'exploring' as const,
           route: step.route,
           needLabels: [step.needLabel],
-        });
+          updatedAt: new Date().toISOString(),
+        };
+        batch.push(item);
+        plan = await upsertPlanItem(item);
       }
+      const sync = await syncOpportunityPlanItems(plan.items);
       setOpportunityPlan(plan);
       setPlannerText('');
       setPlannerSteps([]);
+      if (sync.synced) notify('Saved', 'My Path steps synced to your account.');
+      else if (sync.reason === 'signed_out') notify('Saved on this device', 'Sign in to sync these steps across devices.');
+      else if (sync.reason === 'table_not_deployed') notify('Saved on this device', 'Account sync will activate after the DEV migration is applied.');
+      else notify('Saved on this device', sync.reason ?? 'Account sync did not complete.');
     } finally {
       setPlannerBusy(false);
     }
@@ -121,7 +147,8 @@ export default function MyPathScreen() {
         <View style={s.banner}>
           <Text style={s.bannerTitle}>Your plan on this device</Text>
           <Text style={s.body}>
-            Progress is saved on this device for now. Sync and case-manager tools come later. Signal suggestions never change your records without your OK.
+            Plan steps are saved on this device. When you are signed in and My Path sync is live on DEV, the same steps also save to your FairPath account.
+            Case-manager tasks are still planned. Signal never changes your records without your OK.
           </Text>
         </View>
 
@@ -180,9 +207,9 @@ export default function MyPathScreen() {
                 style={s.button}
                 accessibilityRole="button"
                 disabled={plannerBusy}
-                onPress={() => void savePlannerToDevice()}
+                onPress={confirmSavePlanner}
               >
-                <Text style={s.buttonText}>{plannerBusy ? 'Saving…' : 'Save to My Path on this device'}</Text>
+                <Text style={s.buttonText}>{plannerBusy ? 'Saving…' : 'Save to My Path'}</Text>
               </Pressable>
             </View>
           ) : null}

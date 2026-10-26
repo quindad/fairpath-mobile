@@ -53,6 +53,11 @@ function staticFairpathSignalContract() {
   check(/enrichWithReadTools/.test(ui), 'fairpath-ai must call enrichWithReadTools');
   check(/detectWriteToolRequest/.test(ui), 'fairpath-ai must detect write-tool requests (confirm-only)');
   check(/loadingMessageForPhase/.test(ui), 'fairpath-ai must show orchestrator loading phases');
+  check(/KeyboardFooterLayout/.test(ui), 'fairpath-ai must pin composer for keyboard');
+  check(/signalQuickTools/.test(ui), 'fairpath-ai must use compact tools menu');
+  check(/fetchFairpathGatewayPlan/.test(ui), 'fairpath-ai must call fairpath-ai-gateway when signed in');
+  check(/letter-explainer/.test(ui), 'fairpath-ai attachment must route to letter explainer');
+  check(/resultCards/.test(read('src/components/signal/SignalMessageBubble.tsx')), 'Signal UI must render result cards');
 
   check(/from '@\/core\/signal\/signal-conversation-store'/.test(ui), 'fairpath-ai must import conversation store');
   check(/loadActiveConversation/.test(ui) && /saveActiveConversation/.test(ui), 'fairpath-ai must load and persist threads');
