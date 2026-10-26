@@ -28,7 +28,7 @@ EAS project: `@fairpathfwd/fairpath-mobile` (`extra.eas.projectId` in `app.json`
 
 As of 2026-10-23, Expo account **fairpathfwd** has a **finished** iOS **development** build (SDK **57.0.0**, internal distribution). Install from [Expo builds](https://expo.dev/accounts/fairpathfwd/projects/fairpath-mobile/builds) — open the latest **development** profile build and use the install artifact link on the registered iPhone.
 
-**Caveat:** That build was produced from an older commit; if native modules or `app.config.js` changed materially, owner may approve a fresh `eas build --profile development --platform ios` (not run by agents without approval).
+**Caveat (2026-10-26):** The finished iOS development build on EAS is commit `0a181d2`, which **predates** the `expo-location` plugin (`292a0d5`). GPS, geocoding, and Signal nearby search **require a new** `eas build --profile development --platform ios` from current `development/mobile-v1-completion` before iPhone location QA.
 
 1. **One-time build** (only if no compatible artifact exists):
    ```powershell

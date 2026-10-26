@@ -56,6 +56,7 @@ async function probe(name) {
 }
 
 const mobileCritical = [
+  'fairpath-ai-gateway',
   'evaluate-record-relief',
   'extract-record-relief-case',
   'member-focus-guidance',

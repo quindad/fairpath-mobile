@@ -28,4 +28,4 @@ if (-not $env:SUPABASE_SERVICE_ROLE_KEY) {
 }
 
 Write-Host 'Set QA_DEV_FREE_PASSWORD, QA_DEV_PLUS_PASSWORD, SUPABASE_SERVICE_ROLE_KEY for this session.' -ForegroundColor Green
-Write-Host 'Next: node scripts/probe-dev-auth-personas.mjs' -ForegroundColor Yellow
+Write-Host 'Next: node scripts/Run-DevAuthenticatedQa.mjs --confirm-dev --use-documented-dev-accounts' -ForegroundColor Yellow
