@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-10-26",
+  "disclaimer": "Verified public programs only. FairPath has no partnership until a signed agreement exists.",
+  "programs": [
+    {
+      "id": "uber-move-together",
+      "organization": "Uber",
+      "programName": "Uber Health / community mobility (research channel)",
+      "officialSourceUrl": "https://www.uber.com/us/en/business/health/",
+      "verificationStatus": "public_program_documented",
+      "fairpathPartnershipStatus": "not_established",
+      "whoQualifies": "Healthcare and social-service organizations (B2B); not a universal consumer free-ride program.",
+      "nextAction": "Owner outreach via Uber Health business contact — do not claim member ride credits in app."
+    },
+    {
+      "id": "lyft-up",
+      "organization": "Lyft",
+      "programName": "Lyft Up / community access (research channel)",
+      "officialSourceUrl": "https://www.lyft.com/lyftup",
+      "verificationStatus": "public_program_documented",
+      "fairpathPartnershipStatus": "not_established",
+      "whoQualifies": "Nonprofit partners via Lyft Up initiatives; eligibility varies by program.",
+      "nextAction": "Document nonprofit partnership application path before any in-app redemption UI."
+    },
+    {
+      "id": "transit-agencies",
+      "organization": "Local transit agencies",
+      "programName": "Reduced-fare / paratransit programs",
+      "officialSourceUrl": "https://www.transit.dot.gov/",
+      "verificationStatus": "referral_hub",
+      "fairpathPartnershipStatus": "not_established",
+      "whoQualifies": "Varies by agency; ingest per MSA from official agency sites.",
+      "nextAction": "Ingest state/county transit benefit pages into Resource Center by geography."
+    }
+  ]
+}

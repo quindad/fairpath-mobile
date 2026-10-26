@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-23T22:56:40.541Z",
+  "generatedAt": "2026-10-24T00:04:09.746Z",
   "branch": "development/mobile-v1-completion",
   "passed": 9,
   "total": 9,
@@ -44,19 +44,19 @@
       "name": "v1 pathways unit",
       "ok": true,
       "exit": 0,
-      "tail": "ℹ todo 0 | ℹ duration_ms 209.586"
+      "tail": "ℹ todo 0 | ℹ duration_ms 206.9531"
     },
     {
       "name": "registration flow unit",
       "ok": true,
       "exit": 0,
-      "tail": "ℹ todo 0 | ℹ duration_ms 185.3079"
+      "tail": "ℹ todo 0 | ℹ duration_ms 197.7902"
     },
     {
       "name": "consent contract",
       "ok": true,
       "exit": 0,
-      "tail": "ℹ todo 0 | ℹ duration_ms 173.9611"
+      "tail": "ℹ todo 0 | ℹ duration_ms 191.8769"
     }
   ]
 }

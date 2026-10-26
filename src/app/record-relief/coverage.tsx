@@ -5,6 +5,7 @@ import { InlineBadge, PageHeader, ScreenFrame } from '@/components/ProductChrome
 import { BodyText, Panel, StatusLine, SecondaryButton } from '@/components/ui-kit';
 import { FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { ENGINE_COVERAGE_LAYER } from '@/core/record-relief/engine-coverage';
+import { classifyJurisdictionCoverage, COVERAGE_STATUS_COPY } from '@/core/record-relief/jurisdiction-coverage-matrix';
 import { loadCoveredJurisdictions, loadEngineSupportedJurisdictionCodes, loadJurisdictions, type Jurisdiction } from '@/core/record-relief/relief-service';
 import { useFairPathTheme, useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
@@ -37,9 +38,14 @@ export default function Coverage() {
   const row = (j: Jurisdiction) => {
     const verified = covered.has(j.code);
     const engine = engineSupported.has(j.code);
+    const { status } = classifyJurisdictionCoverage(j.code);
+    const statusHint = COVERAGE_STATUS_COPY[status].slice(0, 72) + (COVERAGE_STATUS_COPY[status].length > 72 ? '…' : '');
     return (
       <View key={j.code} style={s.row}>
-        <Text style={s.name}>{j.name}</Text>
+        <View style={{ flex: 1, paddingRight: 10 }}>
+          <Text style={s.name}>{j.name}</Text>
+          <Text style={s.statusHint}>{statusHint}</Text>
+        </View>
         <View style={s.badges}>
           <InlineBadge tone={engine ? 'lime' : 'default'}>{engine ? ENGINE_COVERAGE_LAYER.engine : 'NO ENGINE'}</InlineBadge>
           <InlineBadge tone={verified ? 'lime' : 'default'}>{verified ? ENGINE_COVERAGE_LAYER.dbRule : 'NO DB RULE'}</InlineBadge>
@@ -74,6 +80,7 @@ const styles = (t: ThemeTokens) => ({
   spinner: { marginTop: 28 },
   section: { color: t.textMuted, fontFamily: F.extraBold, fontSize: 10, letterSpacing: 1.2, marginTop: 18, marginBottom: 8 },
   row: { flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'space-between' as const, paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: t.borderStrong },
-  name: { color: t.text, fontFamily: F.semiBold, fontSize: 13, flex: 1, paddingRight: 10 },
+  name: { color: t.text, fontFamily: F.semiBold, fontSize: 13 },
+  statusHint: { color: t.textMuted, fontSize: 9, lineHeight: 13, marginTop: 3 },
   badges: { flexDirection: 'row' as const, gap: 6, flexShrink: 0 },
 });

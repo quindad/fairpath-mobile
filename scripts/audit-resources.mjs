@@ -146,13 +146,15 @@ check(fmt.formatHours([{ weekday: 6, opens_at: '10:00', closes_at: '14:00', is_2
 check(fmt.telUrl('(555) 010-0123') === 'tel:5550100123' && fmt.telUrl('n/a') === null, 'tel: links must be digits only and refuse non-numbers.');
 check(fmt.safeExternalUrl('https://a.example.test/x') !== null && fmt.safeExternalUrl('javascript:alert(1)') === null && fmt.safeExternalUrl('file:///etc/passwd') === null && fmt.safeExternalUrl('not a url') === null, 'Only http(s) links may be opened from resource data.');
 check(fmt.provenanceBadge('dev_fixture') === 'DEV TEST DATA' && fmt.provenanceBadge('production') === '', 'Non-production rows must be labelled; production rows must not.');
+const svc = read('src/core/resources/resources-service.ts');
+check(/filterResourcesForMember/.test(svc), 'searchResources must filter dev_fixture rows for members.');
+check(/isMemberVisibleResourceOrigin/.test(svc), 'Resource detail must hide dev_fixture unless QA flag enabled.');
 check(fmt.freshnessLabel('stale').tone === 'warn' && fmt.freshnessLabel('fresh').tone === 'ok' && fmt.freshnessLabel('expired').tone === 'none', 'Freshness labels.');
 check(fmt.isZip5('44113') && !fmt.isZip5('4411') && !fmt.isZip5('441133') && !fmt.isZip5('abcde'), 'ZIP validation.');
 check(fmt.distanceLabel(2.345) === '2.3 mi' && fmt.distanceLabel(14.6) === '15 mi' && fmt.distanceLabel(null) === '', 'Distance labels.');
 check(fmt.costLabel('paid') === 'Costs money' && fmt.costLabel('free') === 'Free' && fmt.costLabel(undefined) === 'Cost not listed', 'Cost labels never imply free when unknown.');
 
 // ---- client never queries resource base tables directly (guests/members read only via functions) ----
-const svc = read('src/core/resources/resources-service.ts');
 const fromTables = [...svc.matchAll(/\.from\('(\w+)'\)/g)].map((m) => m[1]);
 check(fromTables.every((t) => ['resource_categories', 'resource_needs'].includes(t)), 'The client may only read the public taxonomy tables directly: ' + fromTables.join(','));
 check(/rpc\('search_resources'/.test(svc) && /rpc\('get_resource_detail'/.test(svc), 'Client must use the search/detail functions.');

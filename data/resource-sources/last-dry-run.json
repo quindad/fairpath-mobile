@@ -1,0 +1,22 @@
+{
+  "at": "2026-10-26T16:41:23.383Z",
+  "catalogPath": "data/resource-sources/authoritative-catalog.json",
+  "sourceCount": 6,
+  "categories": [
+    "benefits",
+    "childcare",
+    "crisis",
+    "employment",
+    "food",
+    "health",
+    "homelessness",
+    "housing",
+    "legal",
+    "transportation",
+    "utilities",
+    "veterans"
+  ],
+  "problems": [],
+  "wroteDatabase": false,
+  "mode": "dry-run"
+}

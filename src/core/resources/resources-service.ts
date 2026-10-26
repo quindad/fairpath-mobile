@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { ResourceHoursRow } from '@/core/resources/resource-format';
+import { filterResourcesForMember, isMemberVisibleResourceOrigin } from '@/core/resources/resource-member-visibility';
 
 export type ResourceCategory = { slug: string; label: string; description: string | null; sort_order: number; urgent_default: boolean };
 export type ResourceNeed = { need_slug: string; label: string; urgent: boolean; category_slugs: string[]; sort_order?: number };
@@ -62,11 +63,15 @@ export async function searchResources(p: ResourceSearchParams = {}): Promise<Res
   });
   if (error) throw error;
   const rows = (data ?? []) as { resource_row: Omit<ResourceSummary, 'distance_miles'>; distance_miles: number | null; total_count: number | string }[];
-  const total = rows.length ? Number(rows[0].total_count) : 0;
+  const mapped = rows.map((r) => ({ ...r.resource_row, distance_miles: r.distance_miles }));
+  const resources = filterResourcesForMember(mapped);
+  const hiddenFixtures = mapped.length - resources.length;
+  const totalRaw = rows.length ? Number(rows[0].total_count) : 0;
+  const total = Math.max(0, totalRaw - hiddenFixtures);
   return {
-    resources: rows.map((r) => ({ ...r.resource_row, distance_miles: r.distance_miles })),
+    resources,
     total,
-    hasMore: offset + rows.length < total,
+    hasMore: offset + resources.length < totalRaw,
   };
 }
 
@@ -113,7 +118,9 @@ export type ResourceDetail = {
 export async function loadResourceDetail(id: string): Promise<ResourceDetail | null> {
   const { data, error } = await supabase.rpc('get_resource_detail', { p_id: id });
   if (error) throw error;
-  return (data as ResourceDetail | null) ?? null;
+  const detail = (data as ResourceDetail | null) ?? null;
+  if (detail && !isMemberVisibleResourceOrigin(detail.data_origin)) return null;
+  return detail;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

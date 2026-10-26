@@ -1,9 +1,22 @@
 # Cursor Mobile â€” Engineering Handoff
 
-**Updated:** 2026-10-26 (completion truth + P0-003 notification capability filter)  
+**Updated:** 2026-10-26 (Batch A/B — RR coverage matrix + resource fixture isolation + source catalog dry-run)  
 **Branch:** `development/mobile-v1-completion`  
-**HEAD:** `e142d3c`  
-**Ahead of origin:** 48+ commits (not pushed unless separately authorized)
+**HEAD:** *(see latest commit on branch after push)*  
+**Ship policy:** Sterling — built work committed and pushed to `origin/development/mobile-v1-completion` (DEV only; no prod/migrations/Edge deploy without approval).
+
+### Batch A/B engineering (2026-10-26)
+
+| Area | Status | Evidence |
+|------|--------|----------|
+| RR jurisdiction matrix | **PARTIAL** | `jurisdiction-coverage-matrix.ts` + coverage screen honest status copy; **not** attorney-reviewed legal coverage |
+| RR release gate | **PARTIAL** | `scripts/audit-record-relief-release-gate.mjs`; save guard tests (`skip_legacy_eval` default true) |
+| Resource fixtures | **PARTIAL** | `resource-member-visibility.ts` hides `dev_fixture` unless `EXPO_PUBLIC_SHOW_DEV_RESOURCE_FIXTURES=true` in `__DEV__` |
+| Source catalog | **PARTIAL** | `data/resource-sources/authoritative-catalog.json` + `scripts/ingest-resource-sources-dry-run.mjs` (no network/DB) |
+| Transportation research | **PARTIAL** | `data/transportation/partnership-tracker.json` — public programs only, **no FairPath partnerships claimed** |
+| Offline suite | **112/112 PASS** | `npm run test:all` after adding matrix, visibility, save-guard, RR gate, catalog dry-run |
+| DEF-RR-001 | **BLOCKED** | Migration not applied; server save may still run legacy eval until owner approval |
+| DEV E2E | **BLOCKED** | QA passwords / service role not in agent env — `Start-DevQaSession.ps1` |
 
 ### DEV E2E harness safety (2026-10-23)
 

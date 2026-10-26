@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-10-26",
+  "description": "Authoritative upstream directories for FairPath Resource Center ingestion (references only — no bulk copy without license review).",
+  "sources": [
+    {
+      "id": "211-united-way",
+      "name": "211 (United Way)",
+      "officialUrl": "https://www.211.org/",
+      "coverage": "national",
+      "categories": ["food", "housing", "utilities", "health", "legal", "transportation", "childcare", "crisis"],
+      "accessMethod": "referral_api_or_partner",
+      "licenseNotes": "Use official 211 API/partner program; do not scrape confidential shelter locations.",
+      "status": "catalogued"
+    },
+    {
+      "id": "benefits-gov",
+      "name": "Benefits.gov",
+      "officialUrl": "https://www.benefits.gov/",
+      "coverage": "national",
+      "categories": ["benefits", "employment", "housing", "health"],
+      "accessMethod": "public_website",
+      "licenseNotes": "Federal program directory; link or structured import per agency terms.",
+      "status": "catalogued"
+    },
+    {
+      "id": "hud-resource-locator",
+      "name": "HUD Resource Locator",
+      "officialUrl": "https://www.hud.gov/findshelter",
+      "coverage": "national",
+      "categories": ["housing", "homelessness"],
+      "accessMethod": "public_website",
+      "licenseNotes": "Do not expose non-public DV shelter addresses.",
+      "status": "catalogued"
+    },
+    {
+      "id": "va-benefits",
+      "name": "U.S. Department of Veterans Affairs",
+      "officialUrl": "https://www.va.gov/",
+      "coverage": "national",
+      "categories": ["veterans", "health", "housing", "employment"],
+      "accessMethod": "public_website",
+      "status": "catalogued"
+    },
+    {
+      "id": "legal-services-corporation",
+      "name": "Legal Services Corporation (LSC)",
+      "officialUrl": "https://www.lsc.gov/",
+      "coverage": "national",
+      "categories": ["legal"],
+      "accessMethod": "public_website",
+      "licenseNotes": "Route members to LSC-funded legal aid locators; no representation guarantees.",
+      "status": "catalogued"
+    },
+    {
+      "id": "feeding-america",
+      "name": "Feeding America network",
+      "officialUrl": "https://www.feedingamerica.org/find-your-local-foodbank",
+      "coverage": "national",
+      "categories": ["food"],
+      "accessMethod": "public_website",
+      "status": "catalogued"
+    }
+  ]
+}
