@@ -37,6 +37,7 @@ import { useFairPathTheme, useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
 import { notify } from '@/core/ui/notify';
 import { memberReferralBackendReady, submitResourceReferralRequest } from '@/core/opportunity/referral-service';
+import { ResourceReactionBar } from '@/components/resources/ResourceReactionBar';
 
 const AUTHORITY: Record<string, string> = {
   government: 'Government source',
@@ -74,9 +75,11 @@ export default function ResourceDetailScreen() {
   const [reportNote, setReportNote] = useState('');
   const [reportDone, setReportDone] = useState(false);
   const [referralReady, setReferralReady] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
     memberReferralBackendReady().then(setReferralReady).catch(() => setReferralReady(false));
+    isSignedIn().then(setSignedIn).catch(() => setSignedIn(false));
   }, []);
 
   useEffect(() => {
@@ -326,6 +329,26 @@ export default function ResourceDetailScreen() {
               </>
             ) : null}
 
+            <ResourceReactionBar
+              resourceId={resource.id}
+              sensitiveCategories={resource.categories}
+              signedIn={signedIn}
+              busy={busy}
+              setBusy={setBusy}
+              onRequireSignIn={() => router.push(('/sign-in?returnTo=' + encodeURIComponent('/resource/' + id)) as never)}
+            />
+
+            <View style={s.communityRow}>
+              <Pressable
+                accessibilityRole="button"
+                style={s.secondary}
+                onPress={() => router.push(('/resources/contribute/suggest-edit?resourceId=' + resource.id) as never)}
+              >
+                <Text style={s.secondaryText}>SUGGEST AN EDIT</Text>
+              </Pressable>
+            </View>
+            <Text style={s.memberNote}>Community submissions are reviewed before any verified listing changes.</Text>
+
             <Sec>WHERE THIS COMES FROM</Sec>
             <View style={s.box}>
               <Text style={s.body}>{AUTHORITY[resource.source_authority] ?? 'Source not listed'}</Text>
@@ -428,4 +451,5 @@ const styles = (t: ThemeTokens) => ({
   primaryInline: { flex: 1, height: 46, backgroundColor: t.accent, alignItems: 'center' as const, justifyContent: 'center' as const },
   cancelInline: { flex: 1, height: 46, borderWidth: 1, borderColor: t.borderStrong, alignItems: 'center' as const, justifyContent: 'center' as const },
   testNote: { color: t.warning, fontSize: 11, lineHeight: 16, marginTop: 10 },
+  communityRow: { marginTop: 8 },
 });

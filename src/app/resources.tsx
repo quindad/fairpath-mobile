@@ -227,6 +227,14 @@ export default function ResourcesScreen() {
           </View>
         ) : null}
         {!searched ? (
+          <View style={s.contribRow}>
+            <Pressable accessibilityRole="button" style={s.contribBtn} onPress={() => router.push('/resources/contribute/add' as never)}>
+              <Text style={s.contribText}>ADD A RESOURCE</Text>
+            </Pressable>
+            <Text style={s.contribHint}>Suggestions are reviewed before they appear as verified listings.</Text>
+          </View>
+        ) : null}
+        {!searched ? (
           <Pressable accessibilityRole="button" accessibilityLabel="I need help today" style={s.urgent} onPress={startUrgent}>
             <View style={s.urgentCopy}>
               <Text style={s.urgentTitle}>I NEED HELP TODAY</Text>
@@ -382,6 +390,10 @@ export default function ResourcesScreen() {
 
 const styles = (t: ThemeTokens) => ({
   content: { paddingHorizontal: L.mobileGutter, paddingBottom: 32 },
+  contribRow: { marginTop: 14, gap: 6 },
+  contribBtn: { height: 44, borderWidth: 1, borderColor: t.borderStrong, alignItems: 'center' as const, justifyContent: 'center' as const },
+  contribText: { color: t.text, fontFamily: F.extraBold, fontSize: 10, letterSpacing: 1 },
+  contribHint: { color: t.textMuted, fontSize: 11, lineHeight: 16 },
   signalBox: { marginTop: 16, borderWidth: 1, borderColor: t.accentBorder, backgroundColor: t.surface, padding: 14 },
   guidanceText: { color: t.textSecondary, fontSize: 13, lineHeight: 19, marginTop: 12 },
   urgent: { marginTop: 16, borderWidth: 1, borderColor: t.accentBorder, backgroundColor: t.accentSubtle, flexDirection: 'row' as const, alignItems: 'center' as const, padding: 16 },

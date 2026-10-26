@@ -260,7 +260,15 @@ export default function ReliefCaseScreen() {
         ) : null}
 
         <View style={s.block}><SectionTitle>FORMS</SectionTitle></View>
-        {detail.forms.length === 0 ? <Panel><BodyText>FairPath has no verified forms for {jName} yet. The court clerk or a legal aid organization can tell you which forms apply. FairPath never invents a court form.</BodyText></Panel> : null}
+        {detail.forms.length === 0 ? (
+          <Panel>
+            <BodyText>FairPath has no verified forms for {jName} yet. The court clerk or a legal aid organization can tell you which forms apply. FairPath never invents a court form.</BodyText>
+            <TextButton
+              label="KNOW WHERE TO FIND THIS FORM? HELP IMPROVE FAIRPATH"
+              onPress={() => router.push(('/record-relief/contribute-source?jurisdiction=' + encodeURIComponent(c.jurisdiction_code)) as never)}
+            />
+          </Panel>
+        ) : null}
         {detail.forms.map((f) => (
           <Panel key={f.form_key}>
             <View style={s.badgeRow}>{f.kind === 'official_form' ? <InlineBadge tone="lime">OFFICIAL FORM · VERIFIED SOURCE</InlineBadge> : <InlineBadge>{f.kind === 'fee_waiver_form' ? 'FEE WAIVER FORM' : 'INSTRUCTIONS'}</InlineBadge>}{f.data_origin === 'dev_fixture' ? <InlineBadge>TEST DATA</InlineBadge> : null}</View>
