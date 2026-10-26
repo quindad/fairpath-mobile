@@ -14,6 +14,8 @@ const fairpathAi = read('src/app/fairpath-ai.tsx');
 const homeStatus = read('src/components/HomeStatus.tsx');
 const justiceRecords = read('src/app/justice-records/index.tsx');
 const signalSuggestions = read('src/core/signal/signal-suggestions.ts');
+const notifications = read('src/app/notifications.tsx');
+const notificationsSvc = read('src/core/notifications/notifications-service.ts');
 
 check(/loadMemberCapabilities/.test(explore), 'explore.tsx must load member capabilities');
 check(/justiceToolsEnabled/.test(explore) && /veteranToolsEnabled/.test(explore), 'explore.tsx must gate justice and veteran destinations');
@@ -33,6 +35,10 @@ check(/filterNextStepsForCapabilities/.test(homeStatus), 'HomeStatus must filter
 check(/JusticeToolsGate/.test(justiceRecords), 'justice-records must wrap content in JusticeToolsGate');
 check(!/loadMemberCapabilities/.test(justiceRecords), 'justice-records must rely on JusticeToolsGate, not duplicate loadMemberCapabilities');
 
+check(/loadUserNotificationsForMember/.test(notifications), 'notifications.tsx must load capability-filtered inbox');
+check(/filterNotificationsForCapabilities/.test(notificationsSvc), 'notifications-service must filter by member capabilities');
+check(/loadCapabilityFilteredUnreadCount/.test(notificationsSvc), 'notifications-service must expose filtered unread count');
+
 const gate = read('src/components/JusticeToolsGate.tsx');
 check(/loadMemberCapabilities/.test(gate) && /justiceToolsEnabled/.test(gate), 'JusticeToolsGate must load capabilities and block when justice not opted in');
 
@@ -40,4 +46,4 @@ if (failures.length) {
   console.error('Member capabilities audit failed:\n- ' + failures.join('\n- '));
   process.exit(1);
 }
-console.log('Member capabilities audit passed: Explore, Me, Signal, HomeStatus, and justice-records gates wired.');
+console.log('Member capabilities audit passed: Explore, Me, Signal, HomeStatus, notifications, and justice-records gates wired.');

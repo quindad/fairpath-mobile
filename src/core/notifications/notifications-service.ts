@@ -1,5 +1,10 @@
 import { supabase } from '@/lib/supabase';
 import { currentUser } from '@/core/supabase/current-user';
+import { loadMemberCapabilities } from '@/core/profile/member-capabilities';
+import {
+  filterNotificationsForCapabilities,
+  type MemberCapabilities,
+} from '@/core/profile/member-capabilities-core';
 
 export type UserNotification={id:string;category:string;title:string;body:string;route:string|null;metadata:Record<string,unknown>;read_at:string|null;created_at:string;entity_type?:string|null;entity_id?:string|null};
 /** Unread badge count (server-side count, owner only). Never throws for signed-out callers: returns 0. */
@@ -8,6 +13,24 @@ export async function loadUnreadNotificationCount():Promise<number>{
  if(error)return 0;
  return Number(data??0);
 }
+
+/** Unread count for inbox/badge after capability filtering (P0-003). */
+export async function loadCapabilityFilteredUnreadCount(
+  caps?: MemberCapabilities | null,
+): Promise<number> {
+  const resolved = caps ?? (await loadMemberCapabilities().catch(() => null));
+  const rows = await loadUserNotifications();
+  return filterNotificationsForCapabilities(rows, resolved).filter((r) => !r.read_at).length;
+}
+
+export async function loadUserNotificationsForMember(
+  caps?: MemberCapabilities | null,
+): Promise<UserNotification[]> {
+  const resolved = caps ?? (await loadMemberCapabilities().catch(() => null));
+  const rows = await loadUserNotifications();
+  return filterNotificationsForCapabilities(rows, resolved);
+}
+
 export async function loadUserNotifications():Promise<UserNotification[]>{
  const user=await currentUser();const {data,error}=await supabase.from('user_notifications').select('id,category,title,body,route,metadata,read_at,created_at,entity_type,entity_id').eq('user_id',user.id).order('created_at',{ascending:false}).limit(100);if(error)throw error;return (data??[]) as UserNotification[];
 }

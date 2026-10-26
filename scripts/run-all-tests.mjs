@@ -38,6 +38,7 @@ const steps = [
   ['signal dev smoke contract', NODE, ['--test', '--experimental-strip-types', 'tests/signal-dev-smoke-contract.test.ts']],
   ['member capabilities', NODE, ['--test', '--experimental-strip-types', 'tests/member-capabilities.test.ts']],
   ['member capabilities matrix', NODE, ['--test', '--experimental-strip-types', 'tests/member-capabilities-matrix.test.ts']],
+  ['notification capability filter', NODE, ['--test', '--experimental-strip-types', 'tests/notification-capability-filter.test.ts']],
   ['opportunity intent parser', NODE, ['--test', '--experimental-strip-types', 'tests/opportunity-intent-parser.test.ts']],
   ['opportunity orchestrator helpers', NODE, ['--test', '--experimental-strip-types', 'tests/opportunity-orchestrator.test.ts']],
   ['V1 opportunity pathways', NODE, ['--test', '--experimental-strip-types', 'tests/v1-pathways.test.ts']],

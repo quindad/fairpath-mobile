@@ -67,3 +67,33 @@ export function filterGoalLabels(goals: string[], caps: MemberCapabilities | nul
     return true;
   });
 }
+
+/** In-app inbox rows (UI-only; server still stores all categories). */
+export type CapabilityScopedNotification = {
+  category?: string | null;
+  route?: string | null;
+};
+
+export function notificationVisibleForCapabilities(
+  n: CapabilityScopedNotification,
+  caps: MemberCapabilities | null,
+): boolean {
+  const route = (n.route ?? '').toLowerCase();
+  const cat = (n.category ?? '').toLowerCase().replaceAll('-', '_');
+  if (!justiceToolsEnabled(caps)) {
+    if (route.includes('record-relief') || route.includes('justice-records')) return false;
+    if (cat.includes('record_relief') || cat === 'justice' || cat.includes('relief')) return false;
+  }
+  if (!veteranToolsEnabled(caps)) {
+    if (route.includes('/veterans') || route.startsWith('/veteran')) return false;
+    if (cat.includes('veteran')) return false;
+  }
+  return true;
+}
+
+export function filterNotificationsForCapabilities<T extends CapabilityScopedNotification>(
+  rows: T[],
+  caps: MemberCapabilities | null,
+): T[] {
+  return rows.filter((n) => notificationVisibleForCapabilities(n, caps));
+}

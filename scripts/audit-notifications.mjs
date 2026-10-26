@@ -60,11 +60,11 @@ check(st.hasUnreadReply({ ...base, responded_at: 'z' }) === true && st.hasUnread
 // ---- UI ----
 const act = read('src/app/housing-activity.tsx');
 check(/NEW REPLY/.test(act) && /markHousingInquiryReplyRead/.test(act) && /inquiryStages/.test(act), 'Housing Activity must show stages, an unread-reply indicator and mark replies read via the server.');
-check(/loadUnreadNotificationCount/.test(read('src/app/home.tsx')), 'Home must show the unread notification count.');
-check(/loadUnreadNotificationCount/.test(read('src/core/notifications/notifications-service.ts')), 'Unread count loader missing.');
+check(/loadCapabilityFilteredUnreadCount|loadUnreadNotificationCount/.test(read('src/app/home.tsx')), 'Home must show the unread notification count.');
+check(/loadCapabilityFilteredUnreadCount|loadUnreadNotificationCount/.test(read('src/core/notifications/notifications-service.ts')), 'Unread count loader missing.');
 
 const inbox = read('src/app/notifications.tsx');
-check(/loadUserNotifications/.test(inbox) && /markNotificationRead/.test(inbox) && /markAllNotificationsRead/.test(inbox), 'Notifications inbox must load and mark read via server.');
+check(/loadUserNotificationsForMember|loadUserNotifications/.test(inbox) && /markNotificationRead/.test(inbox) && /markAllNotificationsRead/.test(inbox), 'Notifications inbox must load and mark read via server.');
 check(/notification-settings/.test(inbox), 'Inbox must link to notification settings.');
 
 const settings = read('src/app/notification-settings.tsx');

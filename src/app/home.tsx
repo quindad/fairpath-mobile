@@ -11,7 +11,7 @@ import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/
 import { loadFairPathReadiness } from '@/core/profile/profile-service';
 import { homeFocusLine, loadHomePersonalization, type HomePersonalization } from '@/core/profile/home-personalization';
 import { loadMemberCapabilities, type MemberCapabilities } from '@/core/profile/member-capabilities';
-import { loadJobs, loadSavedJobIds, loadUnreadNotificationCount, saveJob, unsaveJob, type Job } from '@/core/opportunities/opportunity-service';
+import { loadCapabilityFilteredUnreadCount, loadJobs, loadSavedJobIds, saveJob, unsaveJob, type Job } from '@/core/opportunities/opportunity-service';
 import { loadMemberSummary } from '@/core/profile/member-summary';
 
 export default function Home() {
@@ -33,7 +33,9 @@ export default function Home() {
 
   useEffect(() => {
     let a = true;
-    loadUnreadNotificationCount().then((n) => { if (a) setUnread(n); });
+    loadCapabilityFilteredUnreadCount()
+      .then((n) => { if (a) setUnread(n); })
+      .catch(() => { if (a) setUnread(0); });
     return () => { a = false; };
   }, [pathname, reloadKey]);
 

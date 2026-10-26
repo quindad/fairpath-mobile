@@ -4,11 +4,16 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Lucide } from '@react-native-vector-icons/lucide';
 import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
-import { loadUserNotifications, markAllNotificationsRead, markNotificationRead, UserNotification } from '@/core/opportunities/opportunity-service';
+import {
+  loadUserNotificationsForMember,
+  markAllNotificationsRead,
+  markNotificationRead,
+  UserNotification,
+} from '@/core/opportunities/opportunity-service';
 
 export default function Notifications(){
  const [rows,setRows]=useState<UserNotification[]>([]);const [loading,setLoading]=useState(true);const [error,setError]=useState('');const [actionError,setActionError]=useState('');const [busy,setBusy]=useState(false);
- const load=useCallback(()=>{setLoading(true);setError('');loadUserNotifications().then(setRows).catch(e=>setError(e?.message==='SIGNED_OUT'?'Sign in to see notifications.':'Notifications could not be loaded.')).finally(()=>setLoading(false))},[]);
+ const load=useCallback(()=>{setLoading(true);setError('');loadUserNotificationsForMember().then(setRows).catch(e=>setError(e?.message==='SIGNED_OUT'?'Sign in to see notifications.':'Notifications could not be loaded.')).finally(()=>setLoading(false))},[]);
  useFocusEffect(useCallback(()=>{load()},[load]));
  const unread=rows.filter(x=>!x.read_at).length;
  async function open(n:UserNotification){setActionError('');if(n.route)router.push(n.route as never);if(!n.read_at){try{await markNotificationRead(n.id);setRows(v=>v.map(x=>x.id===n.id?{...x,read_at:new Date().toISOString()}:x))}catch{setActionError('Could not mark this notification as read. Try again.')}}}
