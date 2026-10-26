@@ -23,6 +23,7 @@ revoke all on table public.member_opportunity_plan_items from public, anon;
 grant select, insert, update, delete on table public.member_opportunity_plan_items to authenticated;
 grant all on table public.member_opportunity_plan_items to service_role;
 
+drop policy if exists "member_opportunity_plan_items_own" on public.member_opportunity_plan_items;
 create policy "member_opportunity_plan_items_own"
   on public.member_opportunity_plan_items
   for all to authenticated

@@ -10,8 +10,8 @@ const { test, ok, done } = makeRunner();
 const { db, errors } = await createLocalDb();
 if (errors.length) { console.error('Baseline failed:', errors); process.exit(1); }
 await loadResourceFixtures(db);
-const draft = fs.readFileSync(path.join('docs/proposed-migrations/20261026140000_community_contributions_DRAFT.sql'), 'utf8');
-await db.exec(draft);
+const migration = fs.readFileSync(path.join('supabase/migrations/20261026220000_community_contributions.sql'), 'utf8');
+await db.exec(migration);
 
 const must = (r, what) => { if (r.error) throw new Error(`${what}: ${r.error}`); return r.rows; };
 const denied = (r, code, what) => ok(r.error && r.error.includes(code), `${what}: expected ${code}`);

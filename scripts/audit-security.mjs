@@ -14,7 +14,7 @@ check(NEW.length >= 10, 'expected the new migrations, found ' + NEW.length);
 
 // Functions that guests (anon) may execute: only public, member-state-free reference reads.
 const ANON_OK = new Set(['resolve_resource_needs', 'search_resources', 'get_resource_detail', 'resource_location_open_now', 'resource_freshness',
-  'get_market_coverage', 'search_jobs']);
+  'get_market_coverage', 'search_jobs', 'get_resource_reaction_summary', 'resource_feedback_is_sensitive', 'community_contributions_backend_ready']);
 
 for (const f of NEW) {
   const sql = strip(read('supabase/migrations/' + f));
