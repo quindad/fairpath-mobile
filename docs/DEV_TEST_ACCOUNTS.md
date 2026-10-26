@@ -6,8 +6,8 @@ Use **only** the DEV project (`znvhmuhojvwvjzmaqwff`). Never create test users o
 
 | Persona | Suggested email | Password (your vault) | Credits (after create) |
 |--------|-----------------|-------------------------|-------------------------|
-| Free member | `dev-free@fairpath.test` | you choose | 10 |
-| Plus-style tester | `dev-plus@fairpath.test` | you choose | 50 |
+| Free member | `dev-free1@fairpath.test` | you choose | 10 |
+| Plus-style tester | `dev-plus2@fairpath.test` | you choose | 50 |
 
 Use real inboxes you control if you prefer (password reset). Do **not** commit passwords.
 
@@ -20,8 +20,9 @@ Use real inboxes you control if you prefer (password reset). Do **not** commit p
 
 ```sql
 -- Replace UUIDs from Authentication → Users → copy user id
-select public.grant_ai_credits(u.id, 10, 'admin_adjustment') from auth.users u where u.email = 'dev-free@fairpath.test';
-select public.grant_ai_credits(u.id, 50, 'admin_adjustment') from auth.users u where u.email = 'dev-plus@fairpath.test';
+-- Idempotent top-up (linked CLI): npx supabase db query --linked -f scripts/dev-grant-qa-ai-credits.sql
+select public.grant_ai_credits(u.id, 10, 'admin_adjustment') from auth.users u where u.email = 'dev-free1@fairpath.test';
+select public.grant_ai_credits(u.id, 50, 'admin_adjustment') from auth.users u where u.email = 'dev-plus2@fairpath.test';
 ```
 
 5. In the app (Expo Go or web): sign in as each user and note Home / Signal balance.

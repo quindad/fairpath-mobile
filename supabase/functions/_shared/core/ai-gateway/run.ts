@@ -44,10 +44,20 @@ export type SignalCallArgs = {
 export async function runSignalCall(args: SignalCallArgs): Promise<Response> {
   const spec = WORKFLOW_SPECS[args.workflow];
 
+  const { data: authData, error: authError } = await args.userClient.auth.getUser();
+  if (authError || !authData?.user) {
+    return json(401, { error: 'unauthorized' });
+  }
+
   const { data: spend, error: spendError } = await args.userClient.rpc('spend_ai_credits', { p_workflow: args.workflow, p_cost: args.cost });
   if (spendError) {
     const reason = spendError.message || 'SPEND_FAILED';
-    const status = reason.includes('SIGNED_OUT') ? 401 : reason.includes('INSUFFICIENT_CREDITS') ? 402 : reason.includes('GLOBAL_SPEND_LIMIT_TRIPPED') ? 503 : 400;
+    const status =
+      reason.includes('permission denied') ? 401
+        : reason.includes('SIGNED_OUT') ? 401
+        : reason.includes('INSUFFICIENT_CREDITS') ? 402
+        : reason.includes('GLOBAL_SPEND_LIMIT_TRIPPED') ? 503
+        : 400;
     return json(status, { error: 'credit_spend_failed', reason });
   }
   const balance = (spend as { balance?: number } | null)?.balance ?? null;

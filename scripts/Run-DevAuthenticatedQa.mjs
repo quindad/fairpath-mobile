@@ -16,6 +16,7 @@ if (!needConfirm) {
 }
 
 const scripts = [
+  'scripts/grant-dev-qa-ai-credits.mjs',
   'scripts/probe-dev-auth-personas.mjs',
   'scripts/qa-dev-fairpath-ai-gateway.mjs',
   'scripts/qa-dev-my-path-sync.mjs',

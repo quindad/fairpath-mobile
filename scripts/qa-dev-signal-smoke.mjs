@@ -149,11 +149,7 @@ if (!confirmDev) {
 
 if (!devReason) {
   const anonProbe = await invokeSignalEdge(null);
-  const anonBody = anonProbe.body && typeof anonProbe.body === 'object' ? anonProbe.body : {};
-  const anonOk =
-    anonProbe.status === 401
-    || anonProbe.status === 403
-    || (anonProbe.status === 400 && (anonBody.error === 'credit_spend_failed' || anonBody.error === 'unauthorized'));
+  const anonOk = anonProbe.status === 401;
   pushResult(`DEV anon cannot invoke ${SIGNAL_EDGE_FN}`, anonOk, {
     detail: edgeReachableDetail(anonProbe.status, anonProbe.body),
   });

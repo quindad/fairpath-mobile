@@ -7,6 +7,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { DEV_QA_MEMBER_A_EMAIL, DEV_QA_MEMBER_B_EMAIL, devQaPasswordForEmail } from './lib/dev-qa-accounts.mjs';
 
 const DEV_REF = 'znvhmuhojvwvjzmaqwff';
 
@@ -37,22 +38,18 @@ if (!serviceKey) {
 const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
 
 function passwordForSeedUser(email) {
-  if (email === 'dev-free@fairpath.test') {
-    const p = process.env.QA_DEV_FREE_PASSWORD ?? process.env.QA_COMMUNITY_MEMBER_A_PASSWORD;
-    if (!p) throw new Error('Set QA_DEV_FREE_PASSWORD (or QA_COMMUNITY_MEMBER_A_PASSWORD) before seeding DEV test users.');
-    return p;
+  const p = devQaPasswordForEmail(email);
+  if (!p) {
+    throw new Error(
+      `Set QA password env for ${email} (QA_DEV_FREE_PASSWORD / QA_COMMUNITY_MEMBER_A_PASSWORD or plus variants) before seeding.`,
+    );
   }
-  if (email === 'dev-plus@fairpath.test') {
-    const p = process.env.QA_DEV_PLUS_PASSWORD ?? process.env.QA_COMMUNITY_MEMBER_B_PASSWORD;
-    if (!p) throw new Error('Set QA_DEV_PLUS_PASSWORD (or QA_COMMUNITY_MEMBER_B_PASSWORD) before seeding DEV test users.');
-    return p;
-  }
-  throw new Error('Unknown seed user');
+  return p;
 }
 
 const USERS = [
-  { email: 'dev-free@fairpath.test', credits: 10 },
-  { email: 'dev-plus@fairpath.test', credits: 50 },
+  { email: DEV_QA_MEMBER_A_EMAIL, credits: 10 },
+  { email: DEV_QA_MEMBER_B_EMAIL, credits: 50 },
 ];
 
 async function ensureUser(email, password) {
