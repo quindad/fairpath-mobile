@@ -9,9 +9,12 @@
  * Set them as EAS environment variables (never in source) and rebuild the native client.
  */
 module.exports = ({ config }) => {
+  /** EAS profile `development-signal`: Ad Hoc QA binary with expo-location; matches current provisioning (no push/Apple Sign In). */
+  const iosQaMinimal =
+    process.env.FAIRPATH_IOS_QA_MINIMAL === '1' || process.env.EAS_BUILD_PROFILE === 'development-signal';
   const androidMapsKey = process.env.GOOGLE_MAPS_ANDROID_API_KEY?.trim();
   const iosMapsKey = process.env.GOOGLE_MAPS_IOS_API_KEY?.trim();
-  const plugins = (config.plugins ?? []).map((plugin) => {
+  let plugins = (config.plugins ?? []).map((plugin) => {
     const name = Array.isArray(plugin) ? plugin[0] : plugin;
     if (name !== '@stripe/stripe-react-native') return plugin;
     return [
@@ -22,6 +25,12 @@ module.exports = ({ config }) => {
       },
     ];
   });
+  if (iosQaMinimal) {
+    plugins = plugins.filter((plugin) => {
+      const name = Array.isArray(plugin) ? plugin[0] : plugin;
+      return name !== 'expo-notifications' && name !== 'expo-apple-authentication';
+    });
+  }
   if ((androidMapsKey || iosMapsKey) && !plugins.some((p) => (Array.isArray(p) ? p[0] : p) === 'react-native-maps')) {
     plugins.push(['react-native-maps', {
       androidGoogleMapsApiKey: androidMapsKey || undefined,
@@ -30,8 +39,12 @@ module.exports = ({ config }) => {
   }
   return {
     ...config,
+    ios: {
+      ...config.ios,
+      usesAppleSignIn: iosQaMinimal ? false : config.ios?.usesAppleSignIn,
+    },
     android: { ...config.android, package: config.android?.package || 'com.fairpathfwd.fairpathmobile' },
-    extra: { ...config.extra, googleMapsIosEnabled: Boolean(iosMapsKey) },
+    extra: { ...config.extra, googleMapsIosEnabled: Boolean(iosMapsKey), fairpathIosQaMinimal: iosQaMinimal },
     plugins,
   };
 };
