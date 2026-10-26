@@ -2,7 +2,7 @@
 
 **Updated:** 2026-10-26 (completion truth + P0-003 notification capability filter)  
 **Branch:** `development/mobile-v1-completion`  
-**HEAD:** `be21598` (pre-batch)  
+**HEAD:** `e142d3c`  
 **Ahead of origin:** 48+ commits (not pushed unless separately authorized)
 
 ### DEV E2E harness safety (2026-10-23)
