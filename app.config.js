@@ -30,6 +30,7 @@ module.exports = ({ config }) => {
       const name = Array.isArray(plugin) ? plugin[0] : plugin;
       return name !== 'expo-notifications' && name !== 'expo-apple-authentication';
     });
+    plugins.push('./plugins/withFairpathIosQaEntitlements.js');
   }
   if ((androidMapsKey || iosMapsKey) && !plugins.some((p) => (Array.isArray(p) ? p[0] : p) === 'react-native-maps')) {
     plugins.push(['react-native-maps', {
