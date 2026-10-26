@@ -51,6 +51,7 @@ const steps = [
   ['signal result actions', NODE, ['--test', '--experimental-strip-types', 'tests/signal-result-actions.test.ts']],
   ['audit: fairpath ai gateway', NODE, ['scripts/audit-fairpath-ai-gateway.mjs']],
   ['opportunity intent parser', NODE, ['--test', '--experimental-strip-types', 'tests/opportunity-intent-parser.test.ts']],
+  ['multi-need planner', NODE, ['--test', '--experimental-strip-types', 'tests/multi-need-planner.test.ts']],
   ['opportunity orchestrator helpers', NODE, ['--test', '--experimental-strip-types', 'tests/opportunity-orchestrator.test.ts']],
   ['V1 opportunity pathways', NODE, ['--test', '--experimental-strip-types', 'tests/v1-pathways.test.ts']],
   ['academy Signal worksheet', NODE, ['--test', '--experimental-strip-types', 'tests/academy-signal-worksheet.test.ts']],

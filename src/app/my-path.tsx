@@ -1,8 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
-import { PageHeader, ScreenFrame, ScreenScroll, SectionTitle } from '@/components/ProductChrome';
+import { Pressable, Text, TextInput, View } from 'react-native';
+import { FormScrollView } from '@/components/FormScrollView';
+import { PageHeader, ScreenFrame, SectionTitle } from '@/components/ProductChrome';
 import { useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
 import { parseProfile, VETERAN_PROFILE_KEY, type VeteranProfile } from '@/core/veterans/profile-store';
@@ -10,7 +11,11 @@ import { BRANCHES } from '@/core/veterans/branches';
 import { getFocusGuidance } from '@/core/ai/signal';
 import { homeQuickLinks, loadHomePersonalization, type HomePersonalization } from '@/core/profile/home-personalization';
 import { loadMemberCapabilities, veteranToolsEnabled, type MemberCapabilities } from '@/core/profile/member-capabilities';
-import { loadOpportunityPlan, type OpportunityPlan } from '@/core/opportunity/plan-store';
+import { interpretOpportunityQuery } from '@/core/opportunity/intent-parser';
+import { planStepsFromInterpretation, type PlannedNeedStep } from '@/core/opportunity/multi-need-planner';
+import { loadOpportunityPlan, upsertPlanItem, type OpportunityPlan } from '@/core/opportunity/plan-store';
+import { loadMemberSearchLocation } from '@/core/location/member-search-location';
+import { useFairPathTheme } from '@/core/theme/ThemeProvider';
 import { loadMyResourceReferralRequests, type MemberReferralRow } from '@/core/opportunity/referral-service';
 
 type Load = 'loading' | 'ready' | 'error';
@@ -24,6 +29,7 @@ const PLANNED = [
 // My Path reads only what this device has stored. Nothing here is server-synced or case-manager-assigned yet.
 export default function MyPathScreen() {
   const s = useThemedStyles(styles);
+  const { tokens } = useFairPathTheme();
   const [load, setLoad] = useState<Load>('loading');
   const [veteran, setVeteran] = useState<VeteranProfile | null>(null);
   const [personalization, setPersonalization] = useState<HomePersonalization | null>(null);
@@ -33,6 +39,9 @@ export default function MyPathScreen() {
   const [opportunityPlan, setOpportunityPlan] = useState<OpportunityPlan | null>(null);
   const [resourceReferrals, setResourceReferrals] = useState<MemberReferralRow[]>([]);
   const [caps, setCaps] = useState<MemberCapabilities | null>(null);
+  const [plannerText, setPlannerText] = useState('');
+  const [plannerSteps, setPlannerSteps] = useState<PlannedNeedStep[]>([]);
+  const [plannerBusy, setPlannerBusy] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -56,6 +65,39 @@ export default function MyPathScreen() {
     return () => { alive = false; };
   }, []);
 
+  async function previewPlanner() {
+    const q = plannerText.trim();
+    if (q.length < 4) return;
+    const shared = await loadMemberSearchLocation().catch(() => null);
+    const location = shared?.zip
+      ? { zip: shared.zip, city: null, state: null, missing: false as const }
+      : { missing: true as const };
+    const interp = interpretOpportunityQuery(q, location);
+    setPlannerSteps(planStepsFromInterpretation(interp));
+  }
+
+  async function savePlannerToDevice() {
+    if (!plannerSteps.length || plannerBusy) return;
+    setPlannerBusy(true);
+    try {
+      let plan = opportunityPlan ?? { items: [] };
+      for (const step of plannerSteps) {
+        plan = await upsertPlanItem({
+          id: `plan_${step.route}_${step.needLabel}`.replace(/[^a-z0-9_]/gi, '_').slice(0, 48),
+          title: step.needLabel,
+          status: 'exploring',
+          route: step.route,
+          needLabels: [step.needLabel],
+        });
+      }
+      setOpportunityPlan(plan);
+      setPlannerText('');
+      setPlannerSteps([]);
+    } finally {
+      setPlannerBusy(false);
+    }
+  }
+
   async function askSignal() {
     if (focusLoading) return;
     setFocusLoading(true); setFocusRequested(true);
@@ -75,7 +117,7 @@ export default function MyPathScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="MY PATH" title="My Path" onBack={false} />
-      <ScreenScroll contentContainerStyle={s.content}>
+      <FormScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
         <View style={s.banner}>
           <Text style={s.bannerTitle}>Your plan on this device</Text>
           <Text style={s.body}>
@@ -96,6 +138,55 @@ export default function MyPathScreen() {
             </View>
           </>
         ) : null}
+
+        <View style={s.card}>
+          <Text style={s.cardTitle}>Plan several needs</Text>
+          <Text style={s.body}>
+            Describe everything in one sentence — food, housing, jobs, GED, record relief. FairPath splits it into steps you
+            confirm before saving on this device.
+          </Text>
+          <TextInput
+            value={plannerText}
+            onChangeText={setPlannerText}
+            placeholder="Example: groceries tonight, childcare, and I need a job"
+            placeholderTextColor={tokens.textMuted}
+            style={s.plannerInput}
+            multiline
+            maxLength={400}
+          />
+          <Pressable
+            style={[s.button, plannerText.trim().length < 4 && s.buttonDisabled]}
+            accessibilityRole="button"
+            disabled={plannerText.trim().length < 4}
+            onPress={() => void previewPlanner()}
+          >
+            <Text style={s.buttonText}>Preview steps</Text>
+          </Pressable>
+          {plannerSteps.length ? (
+            <View style={s.plannerPreview}>
+              {plannerSteps.map((step) => (
+                <Pressable
+                  key={`${step.route}-${step.needLabel}`}
+                  accessibilityRole="link"
+                  onPress={() => router.push(step.route as never)}
+                  style={s.planRow}
+                >
+                  <Text style={s.body}>
+                    {step.needLabel} — {step.actionLabel}
+                  </Text>
+                </Pressable>
+              ))}
+              <Pressable
+                style={s.button}
+                accessibilityRole="button"
+                disabled={plannerBusy}
+                onPress={() => void savePlannerToDevice()}
+              >
+                <Text style={s.buttonText}>{plannerBusy ? 'Saving…' : 'Save to My Path on this device'}</Text>
+              </Pressable>
+            </View>
+          ) : null}
+        </View>
 
         <View style={s.card}>
           <Text style={s.cardTitle}>Signal · What should I focus on?</Text>
@@ -212,7 +303,7 @@ export default function MyPathScreen() {
 
         <SectionTitle>Coming to My Path</SectionTitle>
         <Text style={s.bodyMuted}>{PLANNED.join(' · ')}</Text>
-      </ScreenScroll>
+      </FormScrollView>
     </ScreenFrame>
   );
 }
@@ -229,6 +320,20 @@ const styles = (t: ThemeTokens) => ({
   item: { color: t.text, fontSize: 15, lineHeight: 22 },
   planRow: { paddingVertical: 4 },
   button: { minHeight: 44, justifyContent: 'center' as const, alignItems: 'center' as const, backgroundColor: t.accent, marginTop: 6 },
+  buttonDisabled: { opacity: 0.45 },
+  plannerInput: {
+    borderWidth: 1,
+    borderColor: t.borderStrong,
+    backgroundColor: t.input,
+    color: t.text,
+    fontSize: 14,
+    lineHeight: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minHeight: 72,
+    marginTop: 6,
+  },
+  plannerPreview: { gap: 4, marginTop: 8 },
   row: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8 },
   chip: { borderWidth: 1, borderColor: t.border, paddingVertical: 8, paddingHorizontal: 12 },
   chipText: { color: t.text, fontWeight: '700' as const, fontSize: 13 },
