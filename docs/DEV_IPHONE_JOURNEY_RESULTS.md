@@ -10,6 +10,8 @@
 **Metro URL:** `npx expo start --dev-client --lan --port 8083` (scan QR from terminal after install)  
 **Authenticated DEV QA (2026-10-26 ~20:45 UTC):** gateway **PASSED** (200, 3 resultCards); My Path sync **PASSED**; legacy `member-focus-guidance` smoke adjusted (Signal 2.0 uses `fairpath-ai-gateway`).  
 
+**Physical device (P0 gate):** _Not started — required before Signal 2.0 release sign-off. Open-source research does not replace this checklist._  
+
 | Step | Pass/Fail | Notes |
 | --- | --- | --- |
 | GPS permission granted → location hint in Signal | | |
