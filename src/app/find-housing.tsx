@@ -12,6 +12,7 @@ import {
 } from '@/core/opportunities/opportunity-service';
 import { isZip, normalizePlace, resolveZipCenter } from '@/core/opportunities/opportunity-service';
 import { VOUCHER_TYPE_OPTIONS, type VoucherType } from '@/core/housing/housing-filters';
+import { loadMemberSearchLocation } from '@/core/location/member-search-location';
 import { DEFAULT_SEARCH_RADIUS_MILES, loadLocationSettings } from '@/core/profile/location-service';
 import { supabase } from '@/lib/supabase';
 import { HousingMap } from '@/components/HousingMap';
@@ -111,17 +112,17 @@ export default function Housing(){
  useFocusEffect(useCallback(()=>{
   let active=true;
   supabase.auth.getUser().then(({data})=>{if(active)setSignedIn(Boolean(data.user))});
-  loadLocationSettings()
-   .then(s=>{
+  Promise.all([loadLocationSettings().catch(() => null), loadMemberSearchLocation()])
+   .then(([s, shared])=>{
     if(!active)return;
-    setSavedZip(s.zip_code);
+    const zip=s?.zip_code??shared.zip;
+    setSavedZip(zip);
     if(!whereTouched.current){
-     const next=s.zip_code??'';
+     const next=zip??'';
      if(next!==whereRef.current){setWhere(next);setNonce(n=>n+1)}
-     setRadius(s.search_radius_miles);
+     setRadius(s?.search_radius_miles??shared.radiusMiles);
     }
    })
-   .catch(()=>{})
    .finally(()=>{if(active)setLocationReady(true)});
   setSavedIdsError('');
   loadSavedHousingIds()

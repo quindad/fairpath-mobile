@@ -5,6 +5,7 @@ import { FormScrollView } from '@/components/FormScrollView';
 import { FilterStrip, PageHeader, ScreenFrame, SectionTitle, SharpChip } from '@/components/ProductChrome';
 import { ResourceCard } from '@/components/ResourceCard';
 import { FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
+import { loadMemberSearchLocation } from '@/core/location/member-search-location';
 import { loadLocationSettings } from '@/core/profile/location-service';
 import { isZip5, radiusOptions } from '@/core/resources/resource-format';
 import { useResourceMemberState } from '@/core/resources/use-resource-states';
@@ -67,12 +68,13 @@ export default function ResourcesScreen() {
     let active = true;
     loadResourceCategories().then((c) => active && setCategories(c)).catch(() => {});
     loadResourceNeeds().then((n) => active && setNeeds(n)).catch(() => {});
-    loadLocationSettings()
-      .then((l) => {
+    Promise.all([loadLocationSettings().catch(() => null), loadMemberSearchLocation()])
+      .then(([l, shared]) => {
         if (!active) return;
-        if (l.zip_code && isZip5(l.zip_code)) {
-          setDraftZip(l.zip_code);
-          setSearch((cur) => ({ ...cur, zip: l.zip_code as string, radius: l.search_radius_miles }));
+        const zip = (l?.zip_code && isZip5(l.zip_code) ? l.zip_code : shared.zip) ?? '';
+        if (zip && isZip5(zip)) {
+          setDraftZip(zip);
+          setSearch((cur) => ({ ...cur, zip, radius: l?.search_radius_miles ?? shared.radiusMiles }));
         }
       })
       .catch(() => {});

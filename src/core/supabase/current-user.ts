@@ -10,3 +10,8 @@ export async function currentUser() {
   if (!user) throw new Error('SIGNED_OUT');
   return user;
 }
+
+export async function currentUserOptional() {
+  const { data: { user } } = await supabase.auth.getUser();
+  return user ?? null;
+}

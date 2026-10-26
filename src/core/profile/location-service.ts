@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { DEFAULT_SEARCH_RADIUS_MILES } from '@/core/location/constants.ts';
 import { currentUser } from '@/core/supabase/current-user';
 
 export type LocationSettings = {
@@ -6,7 +7,8 @@ export type LocationSettings = {
   search_radius_miles: number;
 };
 
-export const DEFAULT_SEARCH_RADIUS_MILES = 25;
+export { DEFAULT_SEARCH_RADIUS_MILES } from '@/core/location/constants.ts';
+// re-export for existing imports from location-service
 
 /**
  * Reads/writes profiles.zip_code / search_radius_miles / location_captured_at

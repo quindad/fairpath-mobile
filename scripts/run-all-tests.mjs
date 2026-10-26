@@ -46,6 +46,8 @@ const steps = [
   ['resource source catalog dry-run', NODE, ['scripts/ingest-resource-sources-dry-run.mjs']],
   ['community contribution validation', NODE, ['--test', '--experimental-strip-types', 'tests/community-contribution-validation.test.ts']],
   ['audit: community contributions', NODE, ['scripts/audit-community-contributions.mjs']],
+  ['location search context', NODE, ['--test', '--experimental-strip-types', 'tests/location-search-context.test.ts']],
+  ['audit: location', NODE, ['scripts/audit-location.mjs']],
   ['opportunity intent parser', NODE, ['--test', '--experimental-strip-types', 'tests/opportunity-intent-parser.test.ts']],
   ['opportunity orchestrator helpers', NODE, ['--test', '--experimental-strip-types', 'tests/opportunity-orchestrator.test.ts']],
   ['V1 opportunity pathways', NODE, ['--test', '--experimental-strip-types', 'tests/v1-pathways.test.ts']],

@@ -8,6 +8,7 @@ import { ScreenFrame, PageHeader, SharpChip, InlineBadge } from '@/components/Pr
 import { JobMap } from '@/components/JobMap';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
 import { isZip, JOB_PAGE_SIZE, normalizePlace, loadSavedJobIds, resolveZipCenter, RpcNotDeployedError, saveJob, saveJobSearch, searchJobs, unsaveJob, type Job } from '@/core/opportunities/opportunity-service';
+import { loadMemberSearchLocation } from '@/core/location/member-search-location';
 import { DEFAULT_SEARCH_RADIUS_MILES, loadLocationSettings } from '@/core/profile/location-service';
 import { getMarketCoverage, isLowCoverage, type MarketCoverage } from '@/core/coverage/coverage-service';
 import { THIN_MARKET_ACTIONS } from '@/core/product/thin-market-value';
@@ -117,17 +118,17 @@ export default function FindJobs(){
  // but never overwrites a WHERE value the member has typed themselves.
  useFocusEffect(useCallback(()=>{
   let active=true;
-  loadLocationSettings()
-   .then(s=>{
+  Promise.all([loadLocationSettings().catch(() => null), loadMemberSearchLocation()])
+   .then(([s, shared])=>{
     if(!active)return;
-    setSavedZip(s.zip_code);
+    const zip=s?.zip_code??shared.zip;
+    setSavedZip(zip);
     if(!whereTouched.current){
-     const next=s.zip_code??'';
+     const next=zip??'';
      if(next!==whereRef.current){setWhere(next);setNonce(n=>n+1)}
-     setRadius(s.search_radius_miles);
+     setRadius(s?.search_radius_miles??shared.radiusMiles);
     }
    })
-   .catch(()=>{})
    .finally(()=>{if(active)setLocationReady(true)});
   setSavedIdsError('');
   loadSavedJobIds()

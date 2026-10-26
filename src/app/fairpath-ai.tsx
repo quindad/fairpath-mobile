@@ -292,8 +292,10 @@ export default function FairPathAssistant() {
               <View style={s.welcome}>
                 <Text style={s.welcomeTitle}>What do you need help with?</Text>
                 <Text style={s.welcomeBody}>
-                  Built-in guidance routes you to real workflows. Tap &quot;How I got this&quot; on any answer for basis and sources. Server AI tools on other screens use credits when configured.
+                  Ask in plain language — Signal searches verified jobs, housing, and resources near your saved ZIP or device
+                  location, then opens the right FairPath screen. Tap &quot;How I got this&quot; for sources. Optional AI enrichment uses credits when configured.
                 </Text>
+                <TextButton label="Set or update location (ZIP)" onPress={() => router.push('/location-setup' as never)} />
                 <View style={s.chips}>
                   {starters.map((sug) => (
                     <SharpChip key={sug} label={sug} onPress={() => void ask(sug)} />

@@ -44,6 +44,14 @@
       [
         "@stripe/stripe-react-native",
         {}
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "FairPath uses your location while you are using the app to find verified jobs, housing, food, and resources near you. You can always search by ZIP instead.",
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false
+        }
       ]
     ],
     "experiments": {

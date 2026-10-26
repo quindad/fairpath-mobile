@@ -3,8 +3,10 @@
  * Write tools never execute here — UI must confirm and route to the owning workflow.
  */
 import type { AiGateway, AiResponse, AnswerPart, Provenance } from '../ai/orchestrator.ts';
+import { loadMemberSearchLocation } from '../location/member-search-location.ts';
 import { searchHousing } from '../housing/housing-service.ts';
 import { searchJobs } from '../jobs/jobs-service.ts';
+import { searchResources } from '../resources/resources-service.ts';
 import { nextSteps } from '../profile/next-step.ts';
 import { V1_PATHWAYS } from '../opportunity/v1-pathways.ts';
 import { sanitizeToolQuery } from './signal-prompt-guard.ts';
@@ -34,14 +36,24 @@ async function executeReadTool(
 ): Promise<ReadToolResult | null> {
   if (signal?.aborted) return null;
   const q = sanitizeToolQuery(question);
+  const loc = await loadMemberSearchLocation(question);
 
   switch (toolId) {
     case 'search_jobs': {
-      const r = await searchJobs({ query: q, limit: 3, secondChance: true });
+      const r = await searchJobs({
+        query: q,
+        limit: 3,
+        secondChance: true,
+        zip: loc.zip,
+        radiusMiles: loc.radiusMiles,
+      });
       if (signal?.aborted) return null;
       if (!r.jobs.length) {
+        const locHint = loc.zip
+          ? ` (searched near ZIP ${loc.zip}, ${loc.radiusMiles} mi)`
+          : ' — add a ZIP in location settings or allow location for nearby results';
         return {
-          parts: [{ text: 'No published jobs matched that search right now. Open job search to adjust filters or location.', basis: 'app_state' }],
+          parts: [{ text: `No published jobs matched that search right now${locHint}. Open job search to adjust filters.`, basis: 'app_state' }],
           extraRefs: [{ kind: 'summary', id: 'jobs_search_empty' }],
         };
       }
@@ -61,7 +73,7 @@ async function executeReadTool(
       };
     }
     case 'search_housing': {
-      const r = await searchHousing({ query: q, limit: 3 });
+      const r = await searchHousing({ query: q, limit: 3, zip: loc.zip, radiusMiles: loc.radiusMiles });
       if (signal?.aborted) return null;
       if (!r.homes.length) {
         return {
@@ -116,11 +128,40 @@ async function executeReadTool(
         extraRefs: [{ kind: 'summary', id: 'v1_pathways' }],
       };
     }
-    case 'search_resources':
+    case 'search_resources': {
+      const r = await searchResources({
+        query: q,
+        zip: loc.zip ?? undefined,
+        radiusMiles: loc.radiusMiles,
+        limit: 5,
+        urgent: /\b(today|tonight|emergency|urgent)\b/i.test(question),
+      });
+      if (signal?.aborted) return null;
+      if (!r.resources.length) {
+        const locHint = loc.zip ? ` near ZIP ${loc.zip}` : ' — try a ZIP or allow location';
+        return {
+          parts: [{ text: `No verified resources matched${locHint}. Open Resource Center to search manually.`, basis: 'app_state' }],
+          extraRefs: [{ kind: 'summary', id: 'resources_search_empty' }],
+        };
+      }
+      const lines = r.resources.map((row) => {
+        const place = row.nearest_location
+          ? [row.nearest_location.city, row.nearest_location.state_code].filter(Boolean).join(', ')
+          : row.is_national
+            ? 'Nationwide'
+            : 'See listing';
+        const dist = row.distance_miles != null ? ` · ${row.distance_miles.toFixed(1)} mi` : '';
+        return `• ${row.title} (${place}${dist})`;
+      });
+      const locLine = loc.zip ? `Near ZIP ${loc.zip}, ${loc.radiusMiles} mi — verified FairPath listings only.` : 'Verified FairPath listings (add ZIP for distance sorting).';
       return {
-        parts: [{ text: 'Use Search resources below for verified services. Signal does not invent providers.', basis: 'rule' }],
-        extraRefs: [],
+        parts: [
+          { text: locLine, basis: 'app_state' },
+          { text: lines.join('\n'), basis: 'app_state' },
+        ],
+        extraRefs: r.resources.slice(0, 5).map((row) => ({ kind: 'summary' as const, id: `resource:${row.id}` })),
       };
+    }
     default:
       return null;
   }

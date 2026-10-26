@@ -45,6 +45,7 @@ export function loadingMessageForPhase(phase: 'routing' | 'tools' | 'enrich' | n
   if (phase === 'enrich') return 'Checking Signal guidance…';
   if (phase === 'tools' && toolId === 'search_jobs') return 'Searching live job listings…';
   if (phase === 'tools' && toolId === 'search_housing') return 'Searching housing listings…';
+  if (phase === 'tools' && toolId === 'search_resources') return 'Searching verified resources…';
   if (phase === 'tools') return 'Loading your FairPath data…';
   return 'Signal is thinking…';
 }

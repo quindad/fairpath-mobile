@@ -5,6 +5,7 @@ import { FormScrollView } from '@/components/FormScrollView';
 import { notify } from '@/core/ui/notify';
 import { ScreenFrame, PageHeader } from '@/components/ProductChrome';
 import { FairPathColors as C, FairPathFonts as F, FairPathLayout as L } from '@/constants/fairpath';
+import { refreshDeviceLocation } from '@/core/location/device-location-service';
 import { DEFAULT_SEARCH_RADIUS_MILES, loadLocationSettings, saveLocationSettings } from '@/core/profile/location-service';
 
 const RADIUS_OPTIONS = [10, 25, 50, 100];
@@ -14,6 +15,8 @@ export default function LocationSetup() {
   const [radius, setRadius] = useState(DEFAULT_SEARCH_RADIUS_MILES);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [locMessage, setLocMessage] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -42,6 +45,24 @@ export default function LocationSetup() {
 
   const zipValid = /^\d{5}$/.test(zip.trim());
 
+  async function useCurrentLocation() {
+    setLocating(true);
+    setLocMessage('');
+    try {
+      const r = await refreshDeviceLocation({ requestPermission: true });
+      if (r.status === 'ok' && r.snapshot.postalCode) {
+        setZip(r.snapshot.postalCode);
+        setLocMessage(`Using approximate area near ${r.snapshot.city ?? 'you'} (${r.snapshot.postalCode}).`);
+      } else if (r.status !== 'ok') {
+        setLocMessage(r.message);
+      } else {
+        setLocMessage('Could not determine a ZIP from your location. Enter it manually.');
+      }
+    } finally {
+      setLocating(false);
+    }
+  }
+
   async function save() {
     if (!zipValid || saving) return;
     setSaving(true);
@@ -67,6 +88,16 @@ export default function LocationSetup() {
         <Text style={s.intro}>
           Used to find Jobs and Housing near you. Optional — you can browse without it, and change it anytime.
         </Text>
+
+        <Pressable
+          accessibilityRole="button"
+          style={[s.secondaryBtn, locating && s.primaryDisabled]}
+          disabled={locating || loading}
+          onPress={() => void useCurrentLocation()}
+        >
+          <Text style={s.secondaryBtnText}>{locating ? 'LOCATING…' : 'USE CURRENT LOCATION'}</Text>
+        </Pressable>
+        {locMessage ? <Text style={s.note}>{locMessage}</Text> : null}
 
         <Text style={s.label}>ZIP CODE</Text>
         <TextInput
@@ -116,6 +147,8 @@ const s = StyleSheet.create({
   chipText: { color: C.mutedStrong, fontFamily: F.bold, fontSize: 12 },
   chipTextActive: { color: C.black, fontFamily: F.extraBold },
   note: { color: C.muted, fontSize: 10, lineHeight: 15, marginTop: 10 },
+  secondaryBtn: { height: 48, borderWidth: 1, borderColor: C.borderStrong, alignItems: 'center', justifyContent: 'center', marginTop: 18 },
+  secondaryBtnText: { color: C.white, fontFamily: F.extraBold, fontSize: 10, letterSpacing: 0.8 },
   primary: { height: 52, backgroundColor: C.lime, alignItems: 'center', justifyContent: 'center', marginTop: 30 },
   primaryDisabled: { backgroundColor: '#1B201A', borderWidth: 1, borderColor: '#303630' },
   primaryText: { color: C.black, fontFamily: F.extraBold, fontSize: 11, letterSpacing: 0.9 },

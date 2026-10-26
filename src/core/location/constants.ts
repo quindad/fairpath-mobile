@@ -1,0 +1,1 @@
+export const DEFAULT_SEARCH_RADIUS_MILES = 25;
