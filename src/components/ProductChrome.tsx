@@ -1,7 +1,7 @@
 import { router, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { createContext, useContext } from 'react';
-import { Pressable, ScrollView, Text, View, type ScrollViewProps } from 'react-native';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { Keyboard, Platform, Pressable, ScrollView, Text, View, type ScrollViewProps } from 'react-native';
 import { FormScrollView } from '@/components/FormScrollView';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Lucide } from '@react-native-vector-icons/lucide';
@@ -32,7 +32,18 @@ export function ScreenFrame({children,showNav=true}:{children:React.ReactNode;sh
 function Frame({children,showNav}:{children:React.ReactNode;showNav:boolean}){
   const s=useThemedStyles(styles);
   const {tokens}=useFairPathTheme();
-  return <View style={s.screen}><StatusBar style={tokens.scheme==='dark'?'light':'dark'}/><SafeAreaView style={s.safe} edges={['top','left','right']}><NavProvided.Provider value={showNav}><View style={s.bodySlot}>{children}</View></NavProvided.Provider>{showNav?<BottomNavBar/>:null}</SafeAreaView></View>;
+  const pathname=usePathname();
+  const [keyboardVisible,setKeyboardVisible]=useState(false);
+  useEffect(()=>{
+    if(Platform.OS!=='ios'||pathname!=='/fairpath-ai')return;
+    const shown=Keyboard.addListener('keyboardWillShow',()=>setKeyboardVisible(true));
+    const hidden=Keyboard.addListener('keyboardWillHide',()=>setKeyboardVisible(false));
+    const didHide=Keyboard.addListener('keyboardDidHide',()=>setKeyboardVisible(false));
+    return ()=>{shown.remove();hidden.remove();didHide.remove();};
+  },[pathname]);
+  /** Tab bar hides while typing so SignalKeyboardFooterLayout can extend to the screen bottom (see FormScrollView). */
+  const renderNav=showNav&&!(Platform.OS==='ios'&&pathname==='/fairpath-ai'&&keyboardVisible);
+  return <View style={s.screen}><StatusBar style={tokens.scheme==='dark'?'light':'dark'}/><SafeAreaView style={s.safe} edges={['top','left','right']}><NavProvided.Provider value={showNav}><View style={s.bodySlot}>{children}</View></NavProvided.Provider>{renderNav?<BottomNavBar/>:null}</SafeAreaView></View>;
 }
 /** Primary scroll region below PageHeader — flex:1 so iOS can scroll above tab bar. */
 export function ScreenScroll({children,contentContainerStyle,style,...rest}:ScrollViewProps){

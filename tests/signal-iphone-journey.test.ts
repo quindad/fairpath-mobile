@@ -7,12 +7,15 @@ const IPHONE_QA_PROMPT = 'I need a job and transportation near me.';
 
 const read = (p: string) => fs.readFileSync(p, 'utf8').replace(/\r\n/g, '\n');
 
-test('Signal chat uses single keyboard strategy (footerScroll + KeyboardFooterLayout)', () => {
+test('Signal chat uses keyboard-safe footer layout (footerScroll + SignalKeyboardFooterLayout)', () => {
   const ui = read('src/app/fairpath-ai.tsx');
-  assert.match(ui, /KeyboardFooterLayout/);
+  const form = read('src/components/FormScrollView.tsx');
+  assert.match(ui, /SignalKeyboardFooterLayout/);
   assert.match(ui, /\bfooterScroll\b/);
   assert.match(ui, /chatScrollRef=\{scrollRef\}/);
-  assert.match(ui, /useSafeAreaInsets/);
+  assert.match(ui, /useSignalKeyboardInset/);
+  assert.match(form, /paddingBottom:keyboardInset/);
+  assert.doesNotMatch(ui, /bottomNavHeight/);
 });
 
 test('Signal ask path merges tools, filters resources, and nudges location for near me', () => {

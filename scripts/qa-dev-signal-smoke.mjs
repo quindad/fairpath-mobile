@@ -53,7 +53,7 @@ function staticFairpathSignalContract() {
   check(/enrichWithReadTools/.test(ui), 'fairpath-ai must call enrichWithReadTools');
   check(/detectWriteToolRequest/.test(ui), 'fairpath-ai must detect write-tool requests (confirm-only)');
   check(/loadingMessageForPhase/.test(ui), 'fairpath-ai must show orchestrator loading phases');
-  check(/KeyboardFooterLayout/.test(ui), 'fairpath-ai must pin composer for keyboard');
+  check(/SignalKeyboardFooterLayout/.test(ui), 'fairpath-ai must pin composer for keyboard');
   check(/signalQuickTools/.test(ui), 'fairpath-ai must use compact tools menu');
   check(/fetchFairpathGatewayPlan/.test(ui), 'fairpath-ai must call fairpath-ai-gateway when signed in');
   check(/letter-explainer/.test(ui), 'fairpath-ai attachment must route to letter explainer');

@@ -37,8 +37,13 @@ for (const f of files) {
 for (const f of footerScreens) {
   const src = read(f);
   if (!/KeyboardFooterLayout/.test(src) || !/FormScrollView/.test(src)) failures.push(`${f}: fixed-footer screen must wrap its content in KeyboardFooterLayout and use FormScrollView.`);
-  if (f === 'src/app/fairpath-ai.tsx' && !/\bfooterScroll\b/.test(src)) {
-    failures.push(`${f}: Signal chat must use FormScrollView footerScroll (no stacked keyboard insets with KeyboardFooterLayout).`);
+  if (f === 'src/app/fairpath-ai.tsx') {
+    if (!/\bfooterScroll\b/.test(src)) failures.push(`${f}: Signal chat must use FormScrollView footerScroll (no stacked keyboard insets).`);
+    if (!/SignalKeyboardFooterLayout/.test(src)) failures.push(`${f}: Signal chat must use SignalKeyboardFooterLayout (keyboard height padding; ScreenFrame hides tab bar while typing).`);
+    const withoutSignalLayout = src.replace(/SignalKeyboardFooterLayout/g, '');
+    if (/bottomNavHeight/.test(src) || /\bKeyboardFooterLayout\b/.test(withoutSignalLayout)) {
+      failures.push(`${f}: Signal must not use KeyboardFooterLayout/bottomNavHeight (failed on device).`);
+    }
   }
 }
 

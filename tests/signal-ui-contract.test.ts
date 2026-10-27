@@ -8,7 +8,7 @@ test('Signal tab uses conversation-first layout', () => {
   const src = read('src/app/fairpath-ai.tsx');
   assert.match(src, /FairPath Signal/);
   assert.match(src, /FormScrollView/);
-  assert.match(src, /KeyboardFooterLayout/, 'fixed composer stays above iOS keyboard');
+  assert.match(src, /SignalKeyboardFooterLayout/, 'fixed composer stays above iOS keyboard');
   assert.match(src, /s\.composer/, 'composer is pinned outside the scroll region');
   assert.match(src, /ScreenColumn/);
   assert.match(src, /SignalTurn/);

@@ -2,7 +2,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { FormScrollView, KeyboardFooterLayout } from '@/components/FormScrollView';
+import { FormScrollView, SignalKeyboardFooterLayout, useSignalKeyboardInset } from '@/components/FormScrollView';
 import { FairBackButton, ScreenColumn, ScreenFrame, SharpChip } from '@/components/ProductChrome';
 import { fetchFairpathGatewayPlan } from '@/core/ai/fairpath-ai-gateway-client';
 import { SignalTurn } from '@/components/signal/SignalMessageBubble';
@@ -38,7 +38,6 @@ type Turn = { id: number; user: string; response: AiResponse | null };
 export default function FairPathAssistant() {
   const s = useThemedStyles(styles);
   const { tokens } = useFairPathTheme();
-  const insets = useSafeAreaInsets();
   const { q, item } = useLocalSearchParams<{ q?: string; item?: string }>();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [text, setText] = useState('');
@@ -322,7 +321,7 @@ export default function FairPathAssistant() {
         </View>
       </View>
 
-      <KeyboardFooterLayout chatScrollRef={scrollRef}>
+      <SignalKeyboardFooterLayout chatScrollRef={scrollRef}>
         <ScreenColumn>
           <FormScrollView
             footerScroll
@@ -387,46 +386,19 @@ export default function FairPathAssistant() {
             ) : null}
           </FormScrollView>
 
-          <View style={[s.composer, { paddingBottom: Math.max(insets.bottom, 8) }]}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Attach a document photo"
-              style={s.attach}
-              onPress={() => router.push('/letter-explainer' as never)}
-            >
-              <Lucide name="paperclip" color={tokens.textSecondary} size={20} />
-            </Pressable>
-            <TextInput
-              value={text}
-              onChangeText={setText}
-              placeholder="Message Signal…"
-              placeholderTextColor={tokens.textMuted}
-              style={s.input}
-              multiline
-              maxLength={500}
-              editable={!busy}
-              onFocus={() => requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }))}
-              onSubmitEditing={() => void ask(text)}
-              blurOnSubmit={false}
-            />
-            {busy ? (
-              <Pressable accessibilityRole="button" accessibilityLabel="Stop" style={s.send} onPress={cancelAsk}>
-                <Lucide name="square" color={tokens.onAccent} size={18} />
-              </Pressable>
-            ) : (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Send message"
-                style={[s.send, text.trim().length < 2 && s.sendDisabled]}
-                disabled={text.trim().length < 2}
-                onPress={() => void ask(text)}
-              >
-                <Lucide name="arrow-up" color={text.trim().length < 2 ? tokens.textMuted : tokens.onAccent} size={20} />
-              </Pressable>
-            )}
-          </View>
+          <SignalComposer
+            s={s}
+            tokens={tokens}
+            text={text}
+            busy={busy}
+            setText={setText}
+            onAsk={() => void ask(text)}
+            onCancel={cancelAsk}
+            onAttach={() => router.push('/letter-explainer' as never)}
+            onFocusComposer={() => requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }))}
+          />
         </ScreenColumn>
-      </KeyboardFooterLayout>
+      </SignalKeyboardFooterLayout>
 
       <Modal visible={toolsOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setToolsOpen(false)}>
         <View style={s.modal}>
@@ -457,6 +429,67 @@ export default function FairPathAssistant() {
         </View>
       </Modal>
     </ScreenFrame>
+  );
+}
+
+function SignalComposer({
+  s,
+  tokens,
+  text,
+  busy,
+  setText,
+  onAsk,
+  onCancel,
+  onAttach,
+  onFocusComposer,
+}: {
+  s: ReturnType<typeof styles>;
+  tokens: ThemeTokens;
+  text: string;
+  busy: boolean;
+  setText: (v: string) => void;
+  onAsk: () => void;
+  onCancel: () => void;
+  onAttach: () => void;
+  onFocusComposer: () => void;
+}) {
+  const insets = useSafeAreaInsets();
+  const keyboardInset = useSignalKeyboardInset();
+  const composerPad = keyboardInset > 0 ? 8 : Math.max(insets.bottom, 8);
+  return (
+    <View style={[s.composer, { paddingBottom: composerPad }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Attach a document photo" style={s.attach} onPress={onAttach}>
+        <Lucide name="paperclip" color={tokens.textSecondary} size={20} />
+      </Pressable>
+      <TextInput
+        value={text}
+        onChangeText={setText}
+        placeholder="Message Signal…"
+        placeholderTextColor={tokens.textMuted}
+        style={s.input}
+        multiline
+        maxLength={500}
+        editable={!busy}
+        onFocus={onFocusComposer}
+        onSubmitEditing={onAsk}
+        blurOnSubmit={false}
+      />
+      {busy ? (
+        <Pressable accessibilityRole="button" accessibilityLabel="Stop" style={s.send} onPress={onCancel}>
+          <Lucide name="square" color={tokens.onAccent} size={18} />
+        </Pressable>
+      ) : (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Send message"
+          style={[s.send, text.trim().length < 2 && s.sendDisabled]}
+          disabled={text.trim().length < 2}
+          onPress={onAsk}
+        >
+          <Lucide name="arrow-up" color={text.trim().length < 2 ? tokens.textMuted : tokens.onAccent} size={20} />
+        </Pressable>
+      )}
+    </View>
   );
 }
 
