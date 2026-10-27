@@ -129,6 +129,7 @@ Legend: **Complete (verified)** · **Implemented (unverified)** · **Partial** �
 
 | ID | Blocker | Owner | Next action |
 |----|---------|-------|-------------|
+| P0-NATIVE-MODULES | Startup crash: missing ExpoPushTokenManager / ExpoPrint | Eng | JS lazy-load fix (local); full caps: EAS **`development`** — [DEV_IOS_NATIVE_BUILD_RECOVERY.md](./DEV_IOS_NATIVE_BUILD_RECOVERY.md) |
 | P0-SIGNAL-IPHONE | Signal keyboard / composer on physical iPhone | User + eng | Metro OK; reconnect `exp://192.168.40.7:8083` — see IPHONE doc |
 | P0-SIGNAL-RELEVANCE | Job + transport returned irrelevant financial cards | Eng | Code + tests green; **device re-test** |
 | P0-001 | DEV cloud migrations not fully reconciled | Operator | [DEV_MIGRATION_RECONCILIATION_SPRINT1.md](./DEV_MIGRATION_RECONCILIATION_SPRINT1.md) — no repair applied |

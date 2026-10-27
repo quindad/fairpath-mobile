@@ -37,6 +37,8 @@ const steps = [
   ['signal orchestrator', NODE, ['--test', '--experimental-strip-types', 'tests/signal-orchestrator.test.ts']],
   ['signal resource relevance', NODE, ['--test', '--experimental-strip-types', 'tests/signal-resource-relevance.test.ts']],
   ['signal iphone journey contract', NODE, ['--test', '--experimental-strip-types', 'tests/signal-iphone-journey.test.ts']],
+  ['native capability contract', NODE, ['--test', '--experimental-strip-types', 'tests/native-capability-contract.test.ts']],
+  ['audit: native startup', NODE, ['scripts/audit-native-startup.mjs']],
   ['signal eval suite', NODE, ['--test', '--experimental-strip-types', 'tests/signal-eval.test.ts']],
   ['signal dev smoke contract', NODE, ['--test', '--experimental-strip-types', 'tests/signal-dev-smoke-contract.test.ts']],
   ['member capabilities', NODE, ['--test', '--experimental-strip-types', 'tests/member-capabilities.test.ts']],

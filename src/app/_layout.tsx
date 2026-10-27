@@ -1,8 +1,8 @@
 import { Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold, useFonts } from '@expo-google-fonts/manrope';
 import { router, Stack, usePathname } from 'expo-router';
-import * as Notifications from 'expo-notifications';
 import { notificationTapId, planNotificationTap } from '@/core/notifications/notification-tap';
 import { syncPushRegistration } from '@/core/notifications/push-registration';
+import { loadExpoNotificationsModule } from '@/core/native/native-module-capability';
 
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useRef, useState } from 'react';
@@ -25,15 +25,6 @@ if (typeof ErrorUtils !== 'undefined') {
     prevHandler?.(error, isFatal);
   });
 }
-
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-});
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -64,6 +55,22 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
+  useEffect(() => {
+    let active = true;
+    void loadExpoNotificationsModule().then((Notifications) => {
+      if (!active || !Notifications) return;
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowBanner: true,
+          shouldShowList: true,
+          shouldPlaySound: false,
+          shouldSetBadge: false,
+        }),
+      });
+    });
+    return () => { active = false; };
+  }, []);
+
   useEffect(()=>{
     let active=true;
     supabase.auth.getUser().then(({data})=>{if(active){setSignedIn(Boolean(data.user));setAuthReady(true)}});
@@ -91,20 +98,26 @@ export default function RootLayout() {
 
   useEffect(()=>{
     if(!authReady||!signedIn)return;
-    void syncPushRegistration().catch(()=>{});
-    let handledTapId: string | null = null;
-    const openFromResponse=(response: Notifications.NotificationResponse | null)=>{
-      const tapId=notificationTapId(response);
-      const plan=planNotificationTap(pathnameRef.current, tapId, handledTapId);
-      if(!plan.consume || !tapId) return;
-      handledTapId=tapId;
-      try { Notifications.clearLastNotificationResponse(); } catch { /* Web has no native last-response store. */ }
-      if(plan.route) router.push(plan.route as never);
-    };
-    const listener=Notifications.addNotificationResponseReceivedListener(openFromResponse);
-    try { openFromResponse(Notifications.getLastNotificationResponse()); }
-    catch { /* Web and runtimes without the native notifications module. */ }
-    return()=>listener.remove();
+    let active=true;
+    let listener: { remove: () => void } | undefined;
+    void (async () => {
+      void syncPushRegistration().catch(()=>{});
+      const Notifications = await loadExpoNotificationsModule();
+      if (!active || !Notifications) return;
+      let handledTapId: string | null = null;
+      const openFromResponse=(response: import('expo-notifications').NotificationResponse | null)=>{
+        const tapId=notificationTapId(response);
+        const plan=planNotificationTap(pathnameRef.current, tapId, handledTapId);
+        if(!plan.consume || !tapId) return;
+        handledTapId=tapId;
+        try { Notifications.clearLastNotificationResponse(); } catch { /* Web has no native last-response store. */ }
+        if(plan.route) router.push(plan.route as never);
+      };
+      listener=Notifications.addNotificationResponseReceivedListener(openFromResponse);
+      try { openFromResponse(Notifications.getLastNotificationResponse()); }
+      catch { /* Web and runtimes without the native notifications module. */ }
+    })();
+    return()=>{active=false;listener?.remove();};
   },[authReady,signedIn]);
 
   if ((!fontsLoaded && !fontError)||!authReady) {

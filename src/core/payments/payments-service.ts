@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { currentUser } from '@/core/supabase/current-user';
 import { isSettled } from '@/core/payments/payment-format';
+import { stripeNativeAvailable } from '@/core/native/native-module-capability';
 
 /**
  * Client side of the payment architecture. What this file can and cannot do:
@@ -29,6 +30,11 @@ export type PrepareResult =
 
 export function paymentsConfigured(): boolean {
   return Boolean(process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim());
+}
+
+/** Publishable key alone is not enough on device — StripeSdk must exist in the native binary. */
+export function paymentsNativeModuleAvailable(): boolean {
+  return stripeNativeAvailable();
 }
 
 export async function prepareFastTrackPayment(applicationId: string): Promise<PrepareResult> {

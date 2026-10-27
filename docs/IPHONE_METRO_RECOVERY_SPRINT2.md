@@ -1,5 +1,7 @@
 # iPhone + Metro recovery — Sprint 2
 
+**Native module red screens (`ExpoPushTokenManager`, `ExpoPrint`, etc.):** see [DEV_IOS_NATIVE_BUILD_RECOVERY.md](./DEV_IOS_NATIVE_BUILD_RECOVERY.md). After the JS guard fix, reload Metro; push/print need a **`development`** EAS build, not `development-signal`.
+
 **Verified on dev PC (2026-10-26 evening):**
 
 | Check | Result |

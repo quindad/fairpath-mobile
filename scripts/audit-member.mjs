@@ -52,7 +52,7 @@ check(/createSignedUrl\(path, 60\)/.test(docSvc), 'signed URLs are short-lived (
 check(!/getPublicUrl|public: true/.test(docSvc), 'no public URLs');
 const deliverNative = read('src/core/documents/deliver.ts');
 const deliverWeb = read('src/core/documents/deliver.web.ts');
-check(/expo-sharing/.test(deliverNative) && /expo-print/.test(deliverNative) && !/expo-sharing|expo-print|expo-file-system/.test(deliverWeb), 'native modules stay out of the web bundle');
+check(/loadExpoSharingModule|loadExpoPrintModule/.test(deliverNative) && !/from 'expo-print'|from 'expo-sharing'/.test(deliverNative) && !/expo-sharing|expo-print|expo-file-system/.test(deliverWeb), 'native print/share load lazily on native; web bundle stays free of them');
 check(/temp\?\.delete\(\)/.test(deliverNative), 'temp files are deleted after hand-off');
 check(!/console\.(log|info|debug)/.test(docSvc + deliverNative + deliverWeb + read('src/core/documents/generate.ts')), 'document code never logs');
 const gen = read('src/core/documents/generate.ts');

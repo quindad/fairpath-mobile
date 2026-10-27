@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
+import { appleSignInNativeAvailable } from '@/core/native/native-module-capability';
 import { supabase } from '@/lib/supabase';
 import { parseAuthRedirect } from '@/core/auth/auth-redirect';
 import { hasCurrentDocumentConsent } from '@/core/profile/consent-status';
@@ -55,6 +56,7 @@ async function resolveProfile(names?: { first?: string | null; last?: string | n
 
 export async function isAppleSignInAvailable(): Promise<boolean> {
   if (Platform.OS !== 'ios') return false;
+  if (!appleSignInNativeAvailable()) return false;
   try {
     const Apple = await import('expo-apple-authentication');
     return await Apple.isAvailableAsync();

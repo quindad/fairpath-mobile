@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { initPaymentSheet, presentPaymentSheet } from '@stripe/stripe-react-native';
+import { loadStripeReactNativeModule, stripeNativeAvailable } from '@/core/native/native-module-capability';
 import type { PreparedPayment } from '@/core/payments/payments-service';
 
 export type SheetResult = { status: 'completed' } | { status: 'canceled' } | { status: 'error'; message: string };
@@ -11,6 +11,17 @@ export type SheetResult = { status: 'completed' } | { status: 'canceled' } | { s
  * wait for the server (Stripe webhook) to record the transaction as succeeded.
  */
 export async function presentPaymentSheetFor(payment: PreparedPayment): Promise<SheetResult> {
+  if (!stripeNativeAvailable()) {
+    return {
+      status: 'error',
+      message: 'Card payments are not available in this development build. Install the full FairPath iOS dev client or use a build that includes Stripe.',
+    };
+  }
+  const stripe = await loadStripeReactNativeModule();
+  if (!stripe) {
+    return { status: 'error', message: 'The payment form could not be opened. You were not charged.' };
+  }
+  const { initPaymentSheet, presentPaymentSheet } = stripe;
   const merchantId = process.env.EXPO_PUBLIC_APPLE_MERCHANT_ID?.trim();
   const googlePay = Platform.OS === 'android' && process.env.EXPO_PUBLIC_GOOGLE_PAY_ENABLED === 'true';
   const testMode = (process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '').startsWith('pk_test');
