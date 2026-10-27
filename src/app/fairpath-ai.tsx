@@ -1,6 +1,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FormScrollView, KeyboardFooterLayout } from '@/components/FormScrollView';
 import { FairBackButton, ScreenColumn, ScreenFrame, SharpChip } from '@/components/ProductChrome';
 import { fetchFairpathGatewayPlan } from '@/core/ai/fairpath-ai-gateway-client';
@@ -25,7 +26,8 @@ import {
 } from '@/core/signal/signal-conversation-store';
 import { detectWriteToolRequest, enrichWithReadTools, loadingMessageForPhase } from '@/core/signal/signal-orchestrator';
 import { looksLikePromptInjection } from '@/core/signal/signal-prompt-guard';
-import { shouldKeepResourceResult } from '@/core/signal/signal-resource-relevance';
+import { mergeResponseActions } from '@/core/signal/signal-result-actions';
+import { nearMeLocationNudgePart, nearMeRequiresZip, shouldKeepResourceResult } from '@/core/signal/signal-resource-relevance';
 import { useFairPathTheme, useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
 import { notify } from '@/core/ui/notify';
@@ -36,6 +38,7 @@ type Turn = { id: number; user: string; response: AiResponse | null };
 export default function FairPathAssistant() {
   const s = useThemedStyles(styles);
   const { tokens } = useFairPathTheme();
+  const insets = useSafeAreaInsets();
   const { q, item } = useLocalSearchParams<{ q?: string; item?: string }>();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [text, setText] = useState('');
@@ -169,6 +172,20 @@ export default function FairPathAssistant() {
       setLoadingStatus(loadingMessageForPhase('tools', planToolHint(response.intent)));
       const enriched = await enrichWithReadTools(response, t, gateway, ac.signal);
       response = enriched.response;
+
+      const searchLoc = await loadMemberSearchLocation(t);
+      if (nearMeRequiresZip(t, searchLoc.zip)) {
+        const nudge = nearMeLocationNudgePart();
+        if (!response.parts.some((p) => p.text.includes(nudge.text.slice(0, 40)))) {
+          response = {
+            ...response,
+            parts: [...response.parts, nudge],
+            actions: mergeResponseActions(response.actions, [
+              { label: 'Set location (ZIP)', route: '/location-setup', primary: !response.actions.some((a) => a.primary) },
+            ]),
+          };
+        }
+      }
 
       if (await gateway.signedIn()) {
         const gwPlan = await fetchFairpathGatewayPlan(t);
@@ -370,7 +387,7 @@ export default function FairPathAssistant() {
             ) : null}
           </FormScrollView>
 
-          <View style={s.composer}>
+          <View style={[s.composer, { paddingBottom: Math.max(insets.bottom, 8) }]}>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Attach a document photo"
@@ -388,6 +405,7 @@ export default function FairPathAssistant() {
               multiline
               maxLength={500}
               editable={!busy}
+              onFocus={() => requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }))}
               onSubmitEditing={() => void ask(text)}
               blurOnSubmit={false}
             />

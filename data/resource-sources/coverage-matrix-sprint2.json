@@ -1,0 +1,88 @@
+{
+  "at": "2026-10-27T02:29:06.061Z",
+  "authoritativeCatalog": {
+    "sourceCount": 9,
+    "categoriesListed": [
+      "benefits",
+      "childcare",
+      "crisis",
+      "education",
+      "employment",
+      "food",
+      "health",
+      "homelessness",
+      "housing",
+      "legal",
+      "reentry",
+      "transportation",
+      "utilities",
+      "veterans"
+    ],
+    "ohioPrioritySources": [
+      "ohio-211",
+      "ohiomeansjobs",
+      "odrc-reentry"
+    ]
+  },
+  "devGuestSearch": {
+    "connected": true,
+    "categories": {
+      "employment": {
+        "total": 0
+      },
+      "housing": {
+        "total": 2
+      },
+      "transportation": {
+        "total": 1
+      },
+      "food": {
+        "total": 1
+      },
+      "legal": {
+        "total": 0
+      },
+      "reentry": {
+        "total": 0
+      },
+      "veterans": {
+        "total": 0
+      },
+      "childcare": {
+        "total": 0
+      },
+      "crisis": {
+        "total": 0
+      },
+      "education": {
+        "total": 1
+      },
+      "credit": {
+        "total": 1
+      },
+      "money": {
+        "total": 2
+      },
+      "health": {
+        "total": 0
+      },
+      "homelessness": {
+        "total": 0
+      },
+      "entrepreneurship": {
+        "total": 0
+      }
+    },
+    "totalSearch": 60,
+    "columbusTransport": {
+      "count": 1,
+      "titles": [
+        "Columbus Job Ride Program"
+      ]
+    },
+    "note": ""
+  },
+  "signalIntegration": "search_resources RPC + signal-resource-relevance.ts (transport category, no national backfill)",
+  "myPathIntegration": "member_opportunity_plan_items — blocked if migration not on DEV",
+  "nextAction": "Expand authoritative-catalog with OH workforce/211 adapters; batch import after approval"
+}

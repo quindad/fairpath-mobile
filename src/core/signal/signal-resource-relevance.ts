@@ -76,3 +76,11 @@ export function nearMeRequiresZip(question: string, zip: string | null | undefin
   if (!hints.wantsNearMe) return false;
   return !zip || !/^\d{5}$/.test(zip);
 }
+
+/** Deterministic copy when a near-me prompt cannot run a local resource search. */
+export function nearMeLocationNudgePart(): { text: string; basis: 'app_state' } {
+  return {
+    text: 'You asked for results near you, but FairPath does not have a saved ZIP or device location yet. Set a ZIP to search nearby jobs and transportation programs — we will not backfill with unrelated nationwide listings.',
+    basis: 'app_state',
+  };
+}

@@ -18,10 +18,10 @@ function Read-SecretPlain {
 }
 
 if (-not $env:QA_DEV_FREE_PASSWORD) {
-  $env:QA_DEV_FREE_PASSWORD = Read-SecretPlain 'QA password for dev-free@fairpath.test'
+  $env:QA_DEV_FREE_PASSWORD = Read-SecretPlain 'QA password for dev-free1@fairpath.test'
 }
 if (-not $env:QA_DEV_PLUS_PASSWORD) {
-  $env:QA_DEV_PLUS_PASSWORD = Read-SecretPlain 'QA password for dev-plus@fairpath.test'
+  $env:QA_DEV_PLUS_PASSWORD = Read-SecretPlain 'QA password for dev-plus2@fairpath.test'
 }
 if (-not $env:SUPABASE_SERVICE_ROLE_KEY) {
   $env:SUPABASE_SERVICE_ROLE_KEY = Read-SecretPlain 'DEV SUPABASE service_role key (paste from Supabase dashboard)'

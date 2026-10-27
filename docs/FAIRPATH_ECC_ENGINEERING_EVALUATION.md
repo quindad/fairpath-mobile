@@ -104,9 +104,10 @@ Copy-Item "$env:USERPROFILE\.cursor" "$env:USERPROFILE\.cursor.backup-ecc-$(Get-
 |-------|--------|--------|
 | 0 | This audit + backup policy | **Done** |
 | 1 | iPhone acceptance + Signal DEV stable | **In progress** |
-| 2 | Claude Code: `npx ecc-universal@2.2.3 install --guided --harness claude --claude-scope local --profile core --dry-run` | Pending human |
-| 3 | If dry-run clean: install **core** profile only | Pending approval |
-| 4 | Cursor: add **FairPath rule file** (no ECC hook sync) | Pending |
+| 2 | Claude Code dry-run (`install --target claude --dry-run --profile core`) | **Done 2026-10-26** (no prior `install-state.json`; external dry-run had not applied) |
+| 3 | Claude Code install **core** profile, **`--no-hooks`** (avoid Metro/IDE collision) | **Done 2026-10-26** → `~/.claude/ecc/install-state.json` v2.2.3 |
+| 4 | Cursor: `.cursor/rules/fairpath-engineering.mdc` (no ECC hook sync) | **Done 2026-10-26** |
+| 3b | Backups | `~/.claude.backup-ecc-20261026-1918`, `~/.cursor.backup-ecc-20261026-1918` (robocopy `/XJ`) |
 | 5 | Optional ECC Pro GitHub App on **private** repos | Business decision ($19/seat/mo) |
 
 ## Rejected for now

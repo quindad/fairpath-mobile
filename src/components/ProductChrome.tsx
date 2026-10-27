@@ -68,7 +68,7 @@ export function SharpChip({label,active,onPress}:{label:string;active?:boolean;o
   const s=useThemedStyles(styles);
   return <Pressable onPress={onPress} style={[s.chip,active&&s.chipActive]}><Text style={[s.chipText,active&&s.chipTextActive]}>{label}</Text></Pressable>;
 }
-export function FilterStrip({children}:{children:React.ReactNode}){const s=useThemedStyles(styles);return <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterStrip}>{children}</ScrollView>}
+export function FilterStrip({children}:{children:React.ReactNode}){const s=useThemedStyles(styles);return <ScrollView horizontal style={{flexGrow:0}} showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterStrip}>{children}</ScrollView>}
 /** Guarded public export: renders nothing when a ScreenFrame already provides the nav. */
 export function BottomNav(){
  const provided=useContext(NavProvided);

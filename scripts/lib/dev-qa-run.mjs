@@ -46,7 +46,7 @@ export function createRunId(prefix = 'qa') {
 /** DEV seed personas — fictional fixtures, not production members (see scripts/seed-dev-test-users.mjs). */
 export function assertDocumentedDevTestAccount(email) {
   const e = email.trim().toLowerCase();
-  const allowed = ['dev-free@fairpath.test', 'dev-plus@fairpath.test'];
+  const allowed = ['dev-free1@fairpath.test', 'dev-plus2@fairpath.test'];
   if (!allowed.includes(e)) {
     throw new Error(
       `Refusing documented-account mode for "${email}": only disposable DEV seed personas ${allowed.join(', ')} are allowed.`,

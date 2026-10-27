@@ -1,17 +1,19 @@
 {
-  "at": "2026-10-26T16:41:23.383Z",
+  "at": "2026-10-27T02:32:39.925Z",
   "catalogPath": "data/resource-sources/authoritative-catalog.json",
-  "sourceCount": 6,
+  "sourceCount": 9,
   "categories": [
     "benefits",
     "childcare",
     "crisis",
+    "education",
     "employment",
     "food",
     "health",
     "homelessness",
     "housing",
     "legal",
+    "reentry",
     "transportation",
     "utilities",
     "veterans"

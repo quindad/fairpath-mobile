@@ -60,6 +60,37 @@
       "categories": ["food"],
       "accessMethod": "public_website",
       "status": "catalogued"
+    },
+    {
+      "id": "ohio-211",
+      "name": "Ohio 211 (United Way statewide referral)",
+      "officialUrl": "https://www.211oh.org/",
+      "coverage": "state:OH",
+      "categories": ["food", "housing", "transportation", "childcare", "crisis", "health", "utilities"],
+      "accessMethod": "referral_api_or_partner",
+      "licenseNotes": "Partner/API only; do not scrape confidential shelter locations.",
+      "status": "catalogued",
+      "priorityMarkets": ["Columbus", "Cleveland"]
+    },
+    {
+      "id": "ohiomeansjobs",
+      "name": "OhioMeansJobs",
+      "officialUrl": "https://ohiomeansjobs.ohio.gov/",
+      "coverage": "state:OH",
+      "categories": ["employment", "education"],
+      "accessMethod": "public_website",
+      "licenseNotes": "Workforce listings; verify second-chance friendly flags separately in FairPath.",
+      "status": "catalogued",
+      "priorityMarkets": ["Columbus", "Cleveland"]
+    },
+    {
+      "id": "odrc-reentry",
+      "name": "Ohio Department of Rehabilitation and Correction — Reentry resources",
+      "officialUrl": "https://drc.ohio.gov/",
+      "coverage": "state:OH",
+      "categories": ["reentry", "employment", "housing", "legal"],
+      "accessMethod": "public_website",
+      "status": "catalogued"
     }
   ]
 }

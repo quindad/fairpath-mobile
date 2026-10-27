@@ -8,6 +8,7 @@ import { FairPathLayout as L } from '@/constants/fairpath';
 import { ISSUE_LABEL, PAYMENT_STATUS_LABEL, STAGE_INFO, formatCents } from '@/core/credit/credit-format';
 import { creditErrorMessage, loadAccount, loadItem, setItemStage, type CreditAccount, type ReviewItem } from '@/core/credit/credit-service';
 import { explainCreditItem } from '@/core/ai/signal';
+import { signalPlainText } from '@/core/ai/signal-plain-text';
 import { useFairPathTheme } from '@/core/theme/ThemeProvider';
 import { notify } from '@/core/ui/notify';
 
@@ -19,7 +20,15 @@ function evidenceLines(item: ReviewItem): string[] {
   if (e.this_report_status && e.other_report_status) out.push(`This report: ${PAYMENT_STATUS_LABEL[String(e.this_report_status)] ?? e.this_report_status}. Other report: ${PAYMENT_STATUS_LABEL[String(e.other_report_status)] ?? e.other_report_status}.`);
   if (e.opened_date || e.closed_date) out.push(`Opened ${e.opened_date ?? '—'} · Closed ${e.closed_date ?? '—'} · Last reported ${e.last_reported_date ?? '—'}`);
   if (e.first_delinquency_date) out.push(`First delinquency: ${e.first_delinquency_date}`);
-  if (e.payment_status && item.issue_type === 'negative_item') out.push(`Status: ${PAYMENT_STATUS_LABEL[String(e.payment_status)] ?? e.payment_status} · Balance ${formatCents(e.balance_cents as number)}`);
+  if (e.payment_status && item.issue_type === 'negative_item') {
+    const status = PAYMENT_STATUS_LABEL[String(e.payment_status)] ?? String(e.payment_status);
+    out.push(`Status on report: ${status} · Reported balance ${formatCents(e.balance_cents as number)}`);
+    if (String(e.payment_status) === 'settled') {
+      out.push('Settled means the creditor reported a settlement — it does not by itself mean you still owe the full reported balance or that a third party is actively collecting.');
+    }
+    if (e.is_collection === true) out.push('The account is flagged as collection-related on this report; FairPath does not verify who is collecting today.');
+    if (e.prior_dispute === true) out.push('Prior dispute activity was noted on the source report — check your own records before disputing again.');
+  }
   if (Array.isArray(e.fields) && e.fields.length) out.push(`Hard to read: ${(e.fields as string[]).map((f) => f.replace(/_/g, ' ')).join(', ')}`);
   return out;
 }
@@ -58,7 +67,7 @@ export default function CreditItemScreen() {
     setSignalLoading(true); setSignalRequested(true);
     try {
       const r = await explainCreditItem(item.id);
-      if (r.status === 'ok') setSignalText(r.text);
+      if (r.status === 'ok') setSignalText(signalPlainText(r.text));
       else if (r.status === 'out_of_credits') setSignalText('You are out of Signal credits for now. They refresh with your plan.');
       else if (r.status === 'rate_limited') setSignalText('Signal is busy across FairPath right now. Try again shortly.');
       else if (r.status === 'signed_out') { router.push(('/sign-in?returnTo=' + encodeURIComponent('/credit/item/' + item.id)) as never); return; }

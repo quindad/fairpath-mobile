@@ -1,0 +1,16 @@
+{
+  "runId": "gateway-mvpu8a45-4rrn76",
+  "at": "2026-10-26T22:38:12.955Z",
+  "function": "fairpath-ai-gateway",
+  "dev": {
+    "status": "BLOCKED",
+    "reason": "Missing DEV test credentials: password for dev-free1@fairpath.test (QA_COMMUNITY_MEMBER_A_PASSWORD or QA_DEV_FREE_PASSWORD). Never commit passwords — load from vault into env."
+  },
+  "results": [
+    {
+      "name": "DEV anon gateway rejected",
+      "ok": true,
+      "detail": "status 401"
+    }
+  ]
+}

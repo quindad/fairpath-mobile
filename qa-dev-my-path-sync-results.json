@@ -1,0 +1,24 @@
+{
+  "runId": "my-path-sync-mvpsid2f-o30op5",
+  "at": "2026-10-26T21:50:04.311Z",
+  "results": [
+    {
+      "name": "insert own plan item",
+      "ok": true
+    },
+    {
+      "name": "read back plan item",
+      "ok": true,
+      "detail": "QA transportation step"
+    },
+    {
+      "name": "anon cannot read plan items",
+      "ok": true,
+      "detail": "rows=0"
+    },
+    {
+      "name": "cleanup test row",
+      "ok": true
+    }
+  ]
+}

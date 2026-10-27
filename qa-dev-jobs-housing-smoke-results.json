@@ -1,0 +1,31 @@
+{
+  "runId": "jobs-housing-mvpsifya-y6l5a4",
+  "at": "2026-10-26T21:50:07.691Z",
+  "mission": "JOB-101 / HOUSE-101 prep",
+  "local": {
+    "status": "PASSED"
+  },
+  "dev": {
+    "status": "PASSED",
+    "member": "de***@fairpath.test"
+  },
+  "blocked": [],
+  "results": [
+    {
+      "name": "local jobs/housing route + RPC contract",
+      "ok": true,
+      "detail": "static OK"
+    },
+    {
+      "name": "DEV signed-in search_jobs browse",
+      "ok": true,
+      "detail": "5 rows; first=QA Tester"
+    },
+    {
+      "name": "DEV signed-in search_housing browse",
+      "ok": true,
+      "detail": "5 rows; first=4BR Duplex in Northland"
+    }
+  ],
+  "credentialsLogged": false
+}

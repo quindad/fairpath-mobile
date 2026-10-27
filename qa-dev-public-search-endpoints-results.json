@@ -1,0 +1,20 @@
+{
+  "at": "2026-10-26T21:40:03.411Z",
+  "results": [
+    {
+      "name": "DEV anon search_jobs",
+      "ok": true,
+      "detail": "3 rows"
+    },
+    {
+      "name": "DEV anon search_resources",
+      "ok": true,
+      "detail": "3 rows"
+    },
+    {
+      "name": "DEV fairpath-ai-gateway deployed (anon auth gate)",
+      "ok": true,
+      "detail": "status 401"
+    }
+  ]
+}

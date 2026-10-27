@@ -1,0 +1,32 @@
+{
+  "runId": "signal-mvpsiec6-zsf4hv",
+  "at": "2026-10-26T21:50:06.437Z",
+  "mission": "SIG-101 prep",
+  "local": {
+    "status": "PASSED"
+  },
+  "dev": {
+    "status": "PASSED",
+    "member": "de***@fairpath.test",
+    "edgeFunction": "member-focus-guidance"
+  },
+  "blocked": [],
+  "results": [
+    {
+      "name": "local fairpath-ai Signal wiring contract",
+      "ok": true,
+      "detail": "static OK"
+    },
+    {
+      "name": "DEV anon cannot invoke member-focus-guidance",
+      "ok": true,
+      "detail": "status 401 {\"error\":\"unauthorized\"}"
+    },
+    {
+      "name": "DEV signed-in member-focus-guidance ping",
+      "ok": true,
+      "detail": "status 200 {\"text\":\"Signal could not explain this right now. Review the source records and rules directly.\",\"modelAssisted\":false,\""
+    }
+  ],
+  "credentialsLogged": false
+}

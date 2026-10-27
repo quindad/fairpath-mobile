@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   isIrrelevantFinancialResource,
+  nearMeLocationNudgePart,
   nearMeRequiresZip,
   resourceSearchRpcParams,
   shouldKeepResourceResult,
@@ -19,6 +20,7 @@ test('iPhone QA prompt: transport search stays local and category-scoped', () =>
 test('iPhone QA prompt: near me without ZIP blocks silent nationwide resource search', () => {
   assert.equal(nearMeRequiresZip(IPHONE_QA_PROMPT, null), true);
   assert.equal(nearMeRequiresZip(IPHONE_QA_PROMPT, '43215'), false);
+  assert.match(nearMeLocationNudgePart().text, /nationwide|ZIP/i);
 });
 
 test('iPhone QA prompt: irrelevant financial fixtures are rejected for jobs + transport', () => {

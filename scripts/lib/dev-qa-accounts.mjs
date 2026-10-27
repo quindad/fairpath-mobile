@@ -1,6 +1,6 @@
 /** Documented DEV member personas — fictional fixtures, not production members. */
-export const DEV_QA_MEMBER_A_EMAIL = 'dev-free@fairpath.test';
-export const DEV_QA_MEMBER_B_EMAIL = 'dev-plus@fairpath.test';
+export const DEV_QA_MEMBER_A_EMAIL = 'dev-free1@fairpath.test';
+export const DEV_QA_MEMBER_B_EMAIL = 'dev-plus2@fairpath.test';
 
 export function devQaPasswordForEmail(email) {
   const normalized = email.trim().toLowerCase();

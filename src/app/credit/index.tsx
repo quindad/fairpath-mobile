@@ -13,6 +13,7 @@ import {
   type CreditAccount, type CreditReport, type Dispute, type ReviewItem, type Upload,
 } from '@/core/credit/credit-service';
 import { explainCreditReport } from '@/core/ai/signal';
+import { signalPlainText } from '@/core/ai/signal-plain-text';
 import { useFairPathTheme, useThemedStyles } from '@/core/theme/ThemeProvider';
 import type { ThemeTokens } from '@/core/theme/tokens';
 import { notify } from '@/core/ui/notify';
@@ -68,7 +69,7 @@ export default function CreditWorkspace() {
       const file = await pickReportFile();
       if (!file) return;
       await uploadReportFile(file, bureau[0] ?? 'unknown');
-      setNote('Uploaded privately. You can try reading it automatically below, or add the accounts you want to review yourself.');
+      setNote('Report saved privately. Account extraction is a separate step; use Analyze report below or add accounts manually. Nothing read from a file is trusted until you confirm each account.');
       await load();
     } catch (e) { notify('Could not upload', creditErrorMessage(e)); } finally { setBusy(false); }
   }
@@ -84,7 +85,7 @@ export default function CreditWorkspace() {
     setSignalLoading(true); setSignalRequested(true);
     try {
       const r = await explainCreditReport();
-      if (r.status === 'ok') setSignalText(r.text);
+      if (r.status === 'ok') setSignalText(signalPlainText(r.text));
       else if (r.status === 'out_of_credits') setSignalText('You are out of Signal credits for now. They refresh with your plan.');
       else if (r.status === 'rate_limited') setSignalText('Signal is busy across FairPath right now. Try again shortly.');
       else if (r.status === 'signed_out') { router.replace(('/sign-in?returnTo=' + encodeURIComponent('/credit')) as never); return; }
@@ -97,9 +98,9 @@ export default function CreditWorkspace() {
 
   function confirmAndRead(u: Upload) {
     notify(
-      'Read this file with FairPath?',
-      'FairPath will send this file to a reading service to find the accounts on it. Nothing found is trusted until you confirm it yourself, and the file stays private either way.',
-      [{ text: 'Cancel', style: 'cancel' }, { text: 'Read it', onPress: () => void doRead(u) }],
+      'Analyze this credit report?',
+      'With your permission, FairPath will send this credit report to an external AI provider for extraction. The provider will receive the report contents, which may contain sensitive personal information. The extracted accounts will be saved for your review, not automatically verified. Cancel to keep the report stored without sending it.',
+      [{ text: 'Cancel', style: 'cancel' }, { text: 'Analyze report', onPress: () => void doRead(u) }],
     );
   }
   async function doRead(u: Upload) {
@@ -108,7 +109,7 @@ export default function CreditWorkspace() {
       const r = await readUploadedReport(u.id, true);
       setNote(`Read ${r.accounts} account${r.accounts === 1 ? '' : 's'}${r.inquiries ? ` and ${r.inquiries} inquir${r.inquiries === 1 ? 'y' : 'ies'}` : ''}. Review each one before it counts as yours.`);
       await load();
-    } catch (e) { notify('Could not read this file', creditErrorMessage(e)); } finally { setBusy(false); }
+    } catch (e) { notify('Could not analyze this report', creditErrorMessage(e)); } finally { setBusy(false); }
   }
 
   return (
@@ -161,7 +162,12 @@ export default function CreditWorkspace() {
 
         {loaded && tab === 'accounts' ? (
           <>
-            {toConfirm.length ? <Panel tone="warning"><BodyText strong>{toConfirm.length} account{toConfirm.length === 1 ? '' : 's'} need your review</BodyText><BodyText muted>Reading a report is never perfectly reliable. Confirm or correct each one.</BodyText></Panel> : null}
+            {toConfirm.length ? (
+              <Panel tone="warning">
+                <BodyText strong>{toConfirm.length} account{toConfirm.length === 1 ? '' : 's'} need your review</BodyText>
+                <BodyText muted>Reading a report is never perfectly reliable. Nothing found is trusted until you confirm each account — open it, check the details, then confirm or correct.</BodyText>
+              </Panel>
+            ) : null}
             {accounts.length === 0 ? <EmptyState title="No accounts yet" body="Upload a report or enter accounts yourself from the Studio tab." /> : null}
             {reports.map((r) => {
               const list = sortAccountsForReview(accounts.filter((a) => a.report_id === r.id));

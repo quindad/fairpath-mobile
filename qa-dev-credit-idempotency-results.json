@@ -1,0 +1,12 @@
+{
+  "at": "2026-10-26T21:49:59.071Z",
+  "before": {
+    "dev-free1@fairpath.test": 9,
+    "dev-plus2@fairpath.test": 50
+  },
+  "after": {
+    "dev-free1@fairpath.test": 9,
+    "dev-plus2@fairpath.test": 50
+  },
+  "ok": true
+}

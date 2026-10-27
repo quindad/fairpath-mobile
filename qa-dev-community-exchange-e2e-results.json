@@ -1,0 +1,74 @@
+{
+  "at": "2026-10-23T16:31:51.904Z",
+  "project": "znvhmuhojvwvjzmaqwff",
+  "migration": "20261021205913",
+  "authMethod": {
+    "memberSessions": "supabase_auth_password_anon_client",
+    "serviceRoleUsed": false,
+    "provisioning": "none"
+  },
+  "members": {
+    "a": "de***@fairpath.test",
+    "b": "de***@fairpath.test"
+  },
+  "requestId": "d2e06356-8ec6-4f15-9e49-1e4a3511123a",
+  "offerId": "b0c0bfa0-8875-4832-9eb2-dff590c1bab3",
+  "cancelRequestId": "52af058d-ac2a-46e8-886b-f86bec8640fb",
+  "results": [
+    {
+      "name": "RPC probe signed out → SIGNED_OUT",
+      "ok": true
+    },
+    {
+      "name": "Member A session + JWT authenticates RPCs",
+      "ok": true
+    },
+    {
+      "name": "Member A creates open request (persistence)",
+      "ok": true
+    },
+    {
+      "name": "Member B discovers request; postal hidden from non-owner",
+      "ok": true
+    },
+    {
+      "name": "Member B offers help",
+      "ok": true
+    },
+    {
+      "name": "Member B cannot read offers via RLS (owner-only visibility)",
+      "ok": true
+    },
+    {
+      "name": "Member A sees offer; request still open until accept",
+      "ok": true
+    },
+    {
+      "name": "Member B cannot accept offer (not owner)",
+      "ok": true
+    },
+    {
+      "name": "Member A accepts → matched (not fulfilled)",
+      "ok": true
+    },
+    {
+      "name": "Member A marks assistance fulfilled",
+      "ok": true
+    },
+    {
+      "name": "Member A list shows fulfilled; B cannot get closed request",
+      "ok": true
+    },
+    {
+      "name": "Member A notification inbox (community category)",
+      "ok": true
+    },
+    {
+      "name": "Cancellation on separate request (Member A)",
+      "ok": true
+    }
+  ],
+  "myPathSync": "NOT TESTED in harness (device AsyncStorage); code path: community-plan-sync on create/detail",
+  "mobileUi": "NOT TESTED this run (see report § Mobile UI)",
+  "nativeIphone": "NOT TESTED"
+}

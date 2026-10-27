@@ -1,0 +1,32 @@
+{
+  "at": "2026-10-24T00:13:55.583Z",
+  "runId": "caps-mvlnbtnk-ni6wrq",
+  "localAudit": {
+    "ok": true,
+    "last": "Member capabilities audit passed: Explore, Me, Signal, HomeStatus, and justice-records gates wired."
+  },
+  "results": [
+    {
+      "name": "local audit-member-capabilities",
+      "ok": true,
+      "detail": "Member capabilities audit passed: Explore, Me, Signal, HomeStatus, and justice-records gates wired."
+    },
+    {
+      "name": "DEV capability matrix",
+      "ok": null,
+      "skipped": true,
+      "reason": "missing member password (QA_DEV_FREE_PASSWORD or QA_COMMUNITY_MEMBER_A_PASSWORD)"
+    }
+  ],
+  "dev": {
+    "status": "SKIPPED",
+    "reason": "missing member password (QA_DEV_FREE_PASSWORD or QA_COMMUNITY_MEMBER_A_PASSWORD)",
+    "member": "de***@fairpath.test"
+  },
+  "blocked": [
+    "missing member password (QA_DEV_FREE_PASSWORD or QA_COMMUNITY_MEMBER_A_PASSWORD)"
+  ],
+  "assertionCount": 1,
+  "nativeIphone": "NOT TESTED",
+  "uiSurfacesAfterReload": "NOT TESTED (persistence only)"
+}

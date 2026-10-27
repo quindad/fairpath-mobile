@@ -1,0 +1,16 @@
+---
+description: FairPath Mobile engineering harness (Cursor primary; complements Claude ECC core)
+alwaysApply: true
+---
+
+# FairPath Mobile engineering
+
+- **Primary IDE:** Cursor Ultra. **Claude Code** may use ECC `core` profile (`~/.claude/ecc/`); do not duplicate ECC hooks in Cursor.
+- **Expo:** Read [Expo SDK 57 docs](https://docs.expo.dev/versions/v57.0.0/) before native or router changes.
+- **Supabase:** DEV only unless explicitly approved; RLS with `(select auth.uid())`; no service role in client; no bulk migration apply without approval.
+- **Signal:** Auth before credit spend; gateway orchestration stays; multi-need relevance must not backfill unrelated resources.
+- **Record Relief:** Deterministic jurisdiction engine is authoritative; never invent legal eligibility.
+- **Credit Studio:** No real credit PDFs in repo/tests; member confirm before disputes; no score invention.
+- **QA:** Run `npm run test:all` before claiming regression green; device claims require iPhone evidence.
+- **iPhone dev:** Preserve Metro **8083** and existing dev client; do not stop Metro without user approval.
+- **Git:** Do not blanket-stage or reset unrelated uncommitted work.
